@@ -48,6 +48,8 @@ export interface ChartBuildInput {
   readonly rows: readonly Record<string, unknown>[];
   readonly selection: SlotSelection;
   readonly theme?: ChartTheme;
+  /** A series colour asked for on this chart. The palette fills any further series. */
+  readonly color?: string | null;
   readonly seriesCap?: number;
   readonly categoryCap?: number;
   readonly heatmapCap?: number;
@@ -58,7 +60,11 @@ export interface ChartBuildInput {
 type Row = Record<string, unknown>;
 
 function themeOf(input: ChartBuildInput): ChartTheme {
-  return input.theme ?? chartTheme("dark");
+  const theme = input.theme ?? chartTheme("dark");
+  const color = input.color;
+  if (color === undefined || color === null || color === "") return theme;
+  const lower = color.toLowerCase();
+  return { ...theme, series: [color, ...theme.series.filter((item) => item.toLowerCase() !== lower)] };
 }
 
 function first(selection: SlotSelection, id: string): string | null {

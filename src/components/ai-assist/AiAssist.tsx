@@ -8,11 +8,18 @@ import { MidstLockup } from "@/components/midst-logo";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
 import {
+  ASSIST_TRANSCRIPT_KEY,
+  readAssistTranscript,
+  writeAssistTranscript,
+  type AssistTranscriptTurn,
+} from "@/lib/ai/assist-history";
+import {
   acceptAssistPlan,
   explanationWithEdits,
-  queriesBesideEdits,
+  splitAssistFollowUp,
   type AssistChart,
   type AssistHistoryTurn,
+  type AssistRecolor,
 } from "@/lib/ai/assist-plan";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
@@ -44,6 +51,8 @@ interface AssistCard {
   readonly connectionId: string | null;
   readonly connectionName: string;
   readonly chart: AssistChart | null;
+  /** A series colour from the model. Null keeps the palette. */
+  readonly color: string | null;
   readonly result: QueryResult | null;
   readonly error: string | null;
   readonly running: boolean;
@@ -53,6 +62,7 @@ interface Turn {
   readonly id: string;
   readonly role: "user" | "assistant";
   readonly text: string;
+  readonly at: string;
   readonly cards: readonly AssistCard[];
 }
 
@@ -61,6 +71,104 @@ let sequence = 0;
 function nextId(): string {
   sequence += 1;
   return `assist-${sequence}`;
+}
+
+function bump(id: string): void {
+  const match = /^assist-(\d+)$/.exec(id);
+  if (match === null) return;
+  const value = Number(match[1]);
+  if (value > sequence) sequence = value;
+}
+
+function noteIds(turns: readonly Turn[]): void {
+  for (const turn of turns) {
+    bump(turn.id);
+    for (const card of turn.cards) bump(card.id);
+  }
+}
+
+function fromStored(turn: AssistTranscriptTurn): Turn {
+  return {
+    id: turn.id,
+    role: turn.role,
+    text: turn.text,
+    at: turn.at,
+    cards: turn.cards.map((card) => ({ ...card, running: false })),
+  };
+}
+
+function askedAt(): string {
+  return new Date().toISOString();
+}
+
+const EMPTY_TURNS: readonly Turn[] = [];
+let transcriptRaw = "\u0000";
+let transcriptSnapshot: readonly Turn[] = EMPTY_TURNS;
+const transcriptListeners = new Set<() => void>();
+
+function subscribeTranscript(listener: () => void): () => void {
+  transcriptListeners.add(listener);
+  return () => {
+    transcriptListeners.delete(listener);
+  };
+}
+
+function readTranscriptSnapshot(): readonly Turn[] {
+  const raw = localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "";
+  if (raw === transcriptRaw) return transcriptSnapshot;
+  transcriptRaw = raw;
+  const loaded = readAssistTranscript(Date.now()).map(fromStored);
+  noteIds(loaded);
+  transcriptSnapshot = loaded;
+  return transcriptSnapshot;
+}
+
+function publishTranscript(turns: readonly Turn[]): void {
+  writeAssistTranscript(storedOf(turns), Date.now());
+  transcriptSnapshot = turns;
+  transcriptRaw = localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "";
+  for (const listener of transcriptListeners) listener();
+}
+
+function storedOf(turns: readonly Turn[]): AssistTranscriptTurn[] {
+  return turns.map((turn) => ({
+    id: turn.id,
+    role: turn.role,
+    text: turn.text,
+    at: turn.at,
+    cards: turn.cards.map((card) => ({
+      id: card.id,
+      title: card.title,
+      titledSql: card.titledSql,
+      modelSql: card.modelSql,
+      locked: card.locked,
+      sql: card.titledSql,
+      connectionId: card.connectionId,
+      connectionName: card.connectionName,
+      chart: card.chart,
+      color: card.color,
+      result: card.result,
+      error: card.error,
+    })),
+  }));
+}
+
+/** The latest chart with that statement takes the new colour. Its SQL, title, and type stay. */
+function paint(turns: readonly Turn[], recolors: readonly AssistRecolor[]): readonly Turn[] {
+  if (recolors.length === 0) return turns;
+  const colors = new Map(recolors.map((item) => [item.sql, item.color]));
+  return turns.map((turn) => ({
+    ...turn,
+    cards: turn.cards.map((card) => {
+      const color = colors.get(card.titledSql.trim());
+      if (color === undefined) return card;
+      return {
+        ...card,
+        color,
+        chart: card.chart === null ? null : { ...card.chart, color },
+      };
+    }),
+  }));
 }
 
 function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
@@ -144,11 +252,37 @@ export function AiAssist() {
   const schemaContext = schemaReady ? loadedSchema.context : "[]";
   const schemaNotes = schemaReady ? loadedSchema.notes : [];
   const schemas = schemaReady ? loadedSchema.byConnection : {};
-  const [turns, setTurns] = useState<readonly Turn[]>([]);
+  const storedTurns = useSyncExternalStore(subscribeTranscript, readTranscriptSnapshot, () => EMPTY_TURNS);
+  const [draftTurns, setDraftTurns] = useState<readonly Turn[] | null>(null);
+  const turns = draftTurns ?? storedTurns;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const sendingRef = useRef(false);
+  const turnsRef = useRef<readonly Turn[]>([]);
+  const mounted = useRef(true);
+
+  const commit = (next: readonly Turn[], save: boolean) => {
+    if (!mounted.current) return;
+    turnsRef.current = next;
+    if (save) {
+      publishTranscript(next);
+      setDraftTurns(null);
+      return;
+    }
+    setDraftTurns(next);
+  };
+
+  useEffect(() => {
+    turnsRef.current = turns;
+  }, [turns, turnsRef]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,18 +335,19 @@ export function AiAssist() {
     };
   }, [connections, schemaKey]);
 
-  const updateCard = (id: string, patch: Partial<AssistCard>) => {
-    setTurns((current) =>
-      current.map((turn) => ({
+  const updateCard = (id: string, patch: Partial<AssistCard>, save: boolean) => {
+    commit(
+      turnsRef.current.map((turn) => ({
         ...turn,
         cards: turn.cards.map((card) => (card.id === id ? { ...card, ...patch } : card)),
       })),
+      save,
     );
   };
 
   const runCard = async (id: string, connectionId: string | null, sql: string) => {
-    setTurns((current) =>
-      current.map((turn) => ({
+    commit(
+      turnsRef.current.map((turn) => ({
         ...turn,
         cards: turn.cards.map((card) => {
           if (card.id !== id) return card;
@@ -229,22 +364,27 @@ export function AiAssist() {
           };
         }),
       })),
+      false,
     );
     const target = connectionId === null ? null : (connections.find((item) => item.id === connectionId) ?? null);
     if (target === null) {
-      updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." });
+      updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." }, true);
       return;
     }
     if (!isReadOnlySql(sql)) {
-      updateCard(id, { running: false, error: "AI Assist only runs read-only queries." });
+      updateCard(id, { running: false, error: "AI Assist only runs read-only queries." }, true);
       return;
     }
     const outcome = await runAssistQuery(target, sql, appFetch);
-    updateCard(id, {
-      running: false,
-      result: outcome.ok ? outcome.result : null,
-      error: outcome.ok ? null : outcome.error,
-    });
+    updateCard(
+      id,
+      {
+        running: false,
+        result: outcome.ok ? outcome.result : null,
+        error: outcome.ok ? null : outcome.error,
+      },
+      true,
+    );
   };
 
   const send = async () => {
@@ -260,8 +400,9 @@ export function AiAssist() {
     setSending(true);
     setNotice(null);
     setDraft("");
-    const history = historyOf(turns);
-    setTurns((current) => [...current, { id: nextId(), role: "user", text: question, cards: [] }]);
+    const history = historyOf(turnsRef.current);
+    const at = askedAt();
+    commit([...turnsRef.current, { id: nextId(), role: "user", text: question, at, cards: [] }], true);
     try {
       const response = await appFetch("/api/ai/assist", {
         method: "POST",
@@ -278,15 +419,27 @@ export function AiAssist() {
       });
       const body: unknown = await response.json().catch(() => null);
       if (!response.ok) {
-        setTurns((current) => [
-          ...current,
-          { id: nextId(), role: "assistant", text: errorText(body, "The assistant could not answer."), cards: [] },
-        ]);
+        commit(
+          [
+            ...turnsRef.current,
+            {
+              id: nextId(),
+              role: "assistant",
+              text: errorText(body, "The assistant could not answer."),
+              at: askedAt(),
+              cards: [],
+            },
+          ],
+          true,
+        );
         return;
       }
       const plan = acceptAssistPlan(body);
-      const editedSql = turns.flatMap((turn) => turn.cards.filter((card) => card.locked).map((card) => card.sql));
-      const cards: AssistCard[] = queriesBesideEdits(plan.queries, editedSql).map((query) => {
+      const follow = splitAssistFollowUp(
+        plan.queries,
+        turnsRef.current.flatMap((turn) => turn.cards.map((card) => ({ sql: card.titledSql, locked: card.locked }))),
+      );
+      const cards: AssistCard[] = follow.queries.map((query) => {
         const resolved = connectionForAssistQuery(connections, query.connection);
         return {
           id: nextId(),
@@ -298,30 +451,50 @@ export function AiAssist() {
           connectionId: resolved.ok ? resolved.connection.id : null,
           connectionName: resolved.ok ? resolved.connection.name : query.connection,
           chart: query.chart,
+          color: query.chart?.color ?? null,
           result: null,
           error: resolved.ok ? null : resolved.error,
           running: resolved.ok,
         };
       });
-      setTurns((current) => [...current, { id: nextId(), role: "assistant", text: plan.explanation, cards }]);
+      commit(
+        [
+          ...paint(turnsRef.current, follow.recolors),
+          { id: nextId(), role: "assistant", text: plan.explanation, at: askedAt(), cards },
+        ],
+        true,
+      );
       await Promise.all(
         cards.map(async (card) => {
           const target =
             card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
           if (target === null) return;
           const outcome = await runAssistQuery(target, card.sql, appFetch);
-          updateCard(card.id, {
-            running: false,
-            result: outcome.ok ? outcome.result : null,
-            error: outcome.ok ? null : outcome.error,
-          });
+          updateCard(
+            card.id,
+            {
+              running: false,
+              result: outcome.ok ? outcome.result : null,
+              error: outcome.ok ? null : outcome.error,
+            },
+            true,
+          );
         }),
       );
     } catch {
-      setTurns((current) => [
-        ...current,
-        { id: nextId(), role: "assistant", text: "The assistant could not be reached.", cards: [] },
-      ]);
+      commit(
+        [
+          ...turnsRef.current,
+          {
+            id: nextId(),
+            role: "assistant",
+            text: "The assistant could not be reached.",
+            at: askedAt(),
+            cards: [],
+          },
+        ],
+        true,
+      );
     } finally {
       sendingRef.current = false;
       setSending(false);
@@ -423,8 +596,9 @@ export function AiAssist() {
                           result={card.result}
                           error={card.error}
                           chart={card.chart}
+                          color={card.color}
                           running={card.running}
-                          onSqlChange={(sql) => updateCard(card.id, { sql })}
+                          onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
                           onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
                         />
                       );
