@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { appFetch } from "@/lib/config/base-path";
 import {
   dashboardName,
@@ -21,6 +22,14 @@ import {
   withoutChart,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
+import { classifyColumns } from "@/lib/charts/echarts-catalog";
+import {
+  clearQueryFilters,
+  readQueryFilters,
+  writeMetricCompare,
+  writeMetricFilter,
+  writeQueryFilter,
+} from "@/lib/charts/query-filters";
 import { loadSavedChart, optionForSavedChart, type SavedChartView } from "@/lib/charts/saved-chart-run";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import { chartTheme } from "@/lib/charts/palette";
@@ -41,7 +50,7 @@ export function DashboardStudio() {
   const boardRef = useRef<HTMLDivElement>(null);
   const [dashboards, setDashboards] = useState<SavedDashboard[]>(() => storage.getSavedDashboards());
   const [activeId, setActiveId] = useState<string | null>(() => storage.getActiveDashboardId());
-  const [charts] = useState<SavedChartConfig[]>(() => storage.getSavedCharts());
+  const [charts, setCharts] = useState<SavedChartConfig[]>(() => storage.getSavedCharts());
   const [connections] = useState<DatabaseConnection[]>(() => storage.getConnections());
   const [picked, setPicked] = useState("");
   const active = dashboards.find((item) => item.id === activeId) ?? null;
@@ -168,6 +177,15 @@ export function DashboardStudio() {
                   connections={connections}
                   onRemove={() => remember(withoutChart(active, chart.id))}
                   onResize={(size) => remember(withFrame(active, chart.id, size))}
+                  onQuery={(query) => {
+                    storage.saveChart({ ...chart, query });
+                    setCharts(storage.getSavedCharts());
+                  }}
+                  onUnsave={() => {
+                    storage.deleteChart(chart.id);
+                    setCharts(storage.getSavedCharts());
+                    setDashboards(storage.getSavedDashboards());
+                  }}
                 />
               );
             })}
@@ -185,6 +203,8 @@ function DashboardChart({
   connections,
   onRemove,
   onResize,
+  onQuery,
+  onUnsave,
 }: {
   readonly chart: SavedChartConfig;
   readonly width: number;
@@ -192,6 +212,8 @@ function DashboardChart({
   readonly connections: readonly DatabaseConnection[];
   readonly onRemove: () => void;
   readonly onResize: (size: { width: number; height: number }) => void;
+  readonly onQuery: (query: string) => void;
+  readonly onUnsave: () => void;
 }) {
   const theme = chartTheme(useEffectiveTheme());
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
@@ -226,6 +248,9 @@ function DashboardChart({
 
   const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme) : null;
   const missingShelves = chart.typeId === undefined || chart.variationId === undefined;
+  const sql = chart.query ?? "";
+  const filters = readQueryFilters(sql);
+  const metrics = view.kind === "result" ? classifyColumns(view.result.fields, view.result.rows).metrics : [];
 
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     event.currentTarget.focus();
@@ -267,10 +292,26 @@ function DashboardChart({
     >
       <div className="flex items-center justify-between gap-2 border-b border-hairline px-2 py-1">
         <h2 className="min-w-0 truncate text-xs font-medium text-fg">{chart.name}</h2>
-        <button type="button" onClick={onRemove} className="text-xs text-fg-muted underline">
-          Remove {chart.name}
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={onUnsave} className="text-xs text-danger underline">
+            Unsave {chart.name}
+          </button>
+          <button type="button" onClick={onRemove} className="text-xs text-fg-muted underline">
+            Remove {chart.name}
+          </button>
+        </div>
       </div>
+      {filters.length > 0 && (
+        <QueryFilterBar
+          filters={filters}
+          metrics={metrics}
+          onChange={(name, value) =>
+            onQuery(metrics.includes(name) ? writeMetricFilter(sql, name, value) : writeQueryFilter(sql, name, value))
+          }
+          onCompare={(name, compare) => onQuery(writeMetricCompare(sql, filters, name, compare))}
+          onClear={() => onQuery(clearQueryFilters(sql))}
+        />
+      )}
       <div className="min-h-0 flex-1">
         {view.kind === "loading" && <p className="p-3 text-xs text-fg-muted">Running the query…</p>}
         {view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
