@@ -149,6 +149,13 @@ const barChart: AssistChart = {
   caption: "Revenue by month",
   color: null,
 };
+const areaChart: AssistChart = {
+  type: "bar",
+  x: "area",
+  y: ["revenue"],
+  caption: "",
+  color: null,
+};
 
 beforeEach(() => {
   calls.length = 0;
@@ -315,6 +322,99 @@ describe("ChartWithEditor", () => {
     fireEvent.change(input, { target: { value: "3" } });
     fireEvent.blur(input);
     expect(onRun).toHaveBeenLastCalledWith("SELECT month, revenue FROM orders WHERE revenue > {{revenue:3}}");
+  });
+
+  test("filters a renamed column by its original name and can clear it", () => {
+    const ran: string[] = [];
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT region AS area, revenue FROM orders"
+        result={{
+          rows: [{ area: "east", revenue: 4 }],
+          fields: ["area", "revenue"],
+          rowCount: 1,
+          executionTime: 1,
+        }}
+        error={null}
+        chart={areaChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={(sql) => ran.push(sql)}
+      />,
+    );
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    expect(filter.queryByRole("button", { name: "missing" })).toBeNull();
+    fireEvent.click(filter.getByRole("button", { name: "area" }));
+    expect(ran[0]).toContain("WHERE region = {{region:");
+    expect(ran[0]).not.toContain("area =");
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql={ran[0] ?? ""}
+        result={{
+          rows: [{ area: "east", revenue: 4 }],
+          fields: ["area", "revenue"],
+          rowCount: 1,
+          executionTime: 1,
+        }}
+        error={null}
+        chart={areaChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={(sql) => ran.push(sql)}
+      />,
+    );
+    fireEvent.click(within(view.getByRole("group", { name: "Filter" })).getByRole("button", { name: "Clear filters" }));
+    expect(ran[1]).not.toContain("{{");
+  });
+
+  test("does not offer a filter for a column renamed from an expression", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT lower(region) AS area, revenue FROM orders"
+        result={{
+          rows: [{ area: "east", revenue: 4 }],
+          fields: ["area", "revenue"],
+          rowCount: 1,
+          executionTime: 1,
+        }}
+        error={null}
+        chart={areaChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    expect(filter.queryByRole("button", { name: "area" })).toBeNull();
+    expect(filter.getByRole("button", { name: "revenue" })).toBeTruthy();
+  });
+
+  test("wraps the SQL when a filter query fails so the clause can be removed", () => {
+    const changed: string[] = [];
+    const ran: string[] = [];
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT region AS area FROM orders WHERE area = {{area:east}}"
+        result={null}
+        error="column area does not exist"
+        chart={null}
+        running={false}
+        onSqlChange={(sql) => changed.push(sql)}
+        onRun={(sql) => ran.push(sql)}
+      />,
+    );
+    expect(view.getByRole("alert").textContent).toBe("column area does not exist");
+    const sql = view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement;
+    expect(sql.getAttribute("wrap")).toBe("soft");
+    expect(sql.value).toContain("area = {{area:east}}");
+    fireEvent.change(sql, { target: { value: "SELECT region FROM orders" } });
+    expect(changed).toEqual(["SELECT region FROM orders"]);
+    fireEvent.click(view.getByRole("button", { name: "Clear filters" }));
+    expect(ran).toEqual(["SELECT region AS area FROM orders"]);
   });
 
   test("listens for the editor's run event only while the query is showing", () => {

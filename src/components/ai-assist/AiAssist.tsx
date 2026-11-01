@@ -393,8 +393,7 @@ export function AiAssist() {
       id,
       {
         running: false,
-        result: outcome.ok ? outcome.result : null,
-        error: outcome.ok ? null : outcome.error,
+        ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
       },
       true,
     );
@@ -489,8 +488,7 @@ export function AiAssist() {
             card.id,
             {
               running: false,
-              result: outcome.ok ? outcome.result : null,
-              error: outcome.ok ? null : outcome.error,
+              ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
             },
             true,
           );

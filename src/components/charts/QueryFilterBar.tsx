@@ -3,6 +3,8 @@
 import { useState } from "react";
 import {
   addQueryFilter,
+  clearQueryFilters,
+  columnForFilter,
   isNumericFilterValue,
   metricFilterValue,
   readQueryFilters,
@@ -134,6 +136,7 @@ export interface QueryFilterBarProps {
   readonly hideNames?: boolean;
   readonly onChange: (name: string, value: string) => void;
   readonly onCompare?: (name: string, compare: FilterCompare) => void;
+  readonly onClear?: () => void;
 }
 
 /** The controls for the placeholders in the query behind this chart. */
@@ -145,6 +148,7 @@ export function QueryFilterBar({
   hideNames = false,
   onChange,
   onCompare,
+  onClear,
 }: QueryFilterBarProps) {
   const metricNames = new Set(metrics);
   return (
@@ -164,6 +168,17 @@ export function QueryFilterBar({
           onCompare={onCompare}
         />
       ))}
+      {!embedded && onClear !== undefined && (
+        <button
+          type="button"
+          aria-label="Clear filters"
+          disabled={disabled}
+          onClick={onClear}
+          className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50"
+        >
+          Clear
+        </button>
+      )}
     </div>
   );
 }
@@ -206,30 +221,34 @@ export function ChartFilterShelf({
   onSql,
 }: ChartFilterShelfProps) {
   const filters = readQueryFilters(sql);
-  const names = columns.filter((name) => /^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(name));
-  const named = new Set(names);
+  const targets = columns.flatMap((name) => {
+    const target = columnForFilter(sql, name);
+    return target === null ? [] : [{ label: name, target }];
+  });
+  const named = new Set(targets.map((item) => item.target.name));
   const metricNames = new Set(metrics);
-  const toggle = (name: string) => {
-    if (filters.some((filter) => filter.name === name)) onSql(removeQueryFilter(sql, name));
-    else if (metricNames.has(name)) onSql(addQueryFilter(sql, name, metricFilterValue(rows, name)));
-    else {
-      const choices = choicesFor(name, rows);
-      onSql(addQueryFilter(sql, name, choices[0] ?? "", choices));
+  const toggle = (label: string, target: { name: string; expression: string }) => {
+    if (filters.some((filter) => filter.name === target.name)) onSql(removeQueryFilter(sql, target.name));
+    else if (metricNames.has(label)) {
+      onSql(addQueryFilter(sql, target.name, metricFilterValue(rows, label), [], "=", target.expression));
+    } else {
+      const choices = choicesFor(label, rows);
+      onSql(addQueryFilter(sql, target.name, choices[0] ?? "", choices, "=", target.expression));
     }
   };
   return (
     <fieldset aria-label="Filter" className="m-0 flex min-w-0 flex-wrap items-center gap-1 border-0 p-0">
       <span className="text-xs text-fg-muted">Filter</span>
-      {names.map((name) => {
-        const filter = filters.find((item) => item.name === name);
+      {targets.map(({ label, target }) => {
+        const filter = filters.find((item) => item.name === target.name);
         const pressed = filter !== undefined;
         return (
-          <span key={name} className="inline-flex items-center gap-1">
+          <span key={label} className="inline-flex items-center gap-1">
             <button
               type="button"
               aria-pressed={pressed}
               disabled={disabled}
-              onClick={() => toggle(name)}
+              onClick={() => toggle(label, target)}
               className={cn(
                 "rounded border px-2 py-0.5 text-xs",
                 pressed
@@ -237,18 +256,18 @@ export function ChartFilterShelf({
                   : "border-hairline-strong text-fg-secondary hover:bg-raised",
               )}
             >
-              {name}
+              {label}
             </button>
             {filter !== undefined && (
               <FilterControl
                 filter={filter}
                 disabled={disabled}
                 hideName
-                numeric={metricNames.has(name)}
+                numeric={metricNames.has(label)}
                 onCompare={(filterName, compare) => onSql(writeMetricFilter(sql, filterName, filter.value, compare))}
                 onChange={(filterName, value) =>
                   onSql(
-                    metricNames.has(name)
+                    metricNames.has(label)
                       ? writeMetricFilter(sql, filterName, value)
                       : writeQueryFilter(sql, filterName, value),
                   )
@@ -258,6 +277,17 @@ export function ChartFilterShelf({
           </span>
         );
       })}
+      {filters.length > 0 && (
+        <button
+          type="button"
+          aria-label="Clear filters"
+          disabled={disabled}
+          onClick={() => onSql(clearQueryFilters(sql))}
+          className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50"
+        >
+          Clear
+        </button>
+      )}
       <QueryFilterBar
         embedded
         filters={filters.filter((filter) => !named.has(filter.name))}

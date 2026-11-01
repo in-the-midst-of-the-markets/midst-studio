@@ -202,6 +202,15 @@ interface FilterLiteral {
   readonly end: number;
   readonly name: string;
   readonly value: string;
+  /** Where the compared column is written, so a select alias can be put back. */
+  readonly columnStart: number;
+  readonly op: string;
+}
+
+/** The column a filter compares, and the text written in front of the placeholder. */
+export interface FilterColumn {
+  readonly name: string;
+  readonly expression: string;
 }
 
 function filterName(text: string): string | null {
@@ -258,12 +267,20 @@ function literalsInFilterClauses(sql: string): FilterLiteral[] {
   let depth = 0;
   let quote: "'" | '"' | "`" | null = null;
   let column: string | null = null;
+  let columnStart = -1;
+  let operator = "";
   let pendingOp = false;
+
+  const clearColumn = () => {
+    column = null;
+    columnStart = -1;
+    operator = "";
+    pendingOp = false;
+  };
 
   const closeOpened = (atDepth: number) => {
     while (stack.length > 0 && (stack[stack.length - 1] ?? -1) >= atDepth) stack.pop();
-    column = null;
-    pendingOp = false;
+    clearColumn();
   };
 
   for (let index = 0; index < sql.length; index += 1) {
@@ -294,10 +311,16 @@ function literalsInFilterClauses(sql: string): FilterLiteral[] {
       const literal = readQuoted(sql, index, current);
       if (literal === null) break;
       if (literal.value.length <= VALUE_CAP && !/[|}\r\n]/.test(literal.value)) {
-        hits.push({ start: index, end: literal.end, name: column, value: literal.value });
+        hits.push({
+          start: index,
+          end: literal.end,
+          name: column,
+          value: literal.value,
+          columnStart,
+          op: operator,
+        });
       }
-      column = null;
-      pendingOp = false;
+      clearColumn();
       index = literal.end - 1;
       continue;
     }
@@ -305,6 +328,7 @@ function literalsInFilterClauses(sql: string): FilterLiteral[] {
       const ident = readQuoted(sql, index, current);
       if (ident === null) break;
       column = filterName(ident.value);
+      columnStart = index;
       index = ident.end - 1;
       continue;
     }
@@ -314,8 +338,7 @@ function literalsInFilterClauses(sql: string): FilterLiteral[] {
     }
     if (current === "(") {
       depth += 1;
-      column = null;
-      pendingOp = false;
+      clearColumn();
       continue;
     }
     if (current === ")") {
@@ -337,67 +360,277 @@ function literalsInFilterClauses(sql: string): FilterLiteral[] {
         index = word.end - 1;
         continue;
       }
-      if (inClause && !pendingOp) column = filterName(word.word);
-      else {
-        column = null;
-        pendingOp = false;
-      }
+      if (inClause && !pendingOp) {
+        column = filterName(word.word);
+        columnStart = index;
+      } else clearColumn();
       index = word.end - 1;
       continue;
     }
     if (current === ".") {
-      column = null;
-      pendingOp = false;
+      clearColumn();
       continue;
     }
     const op = readOp(sql, index);
     if (op !== null) {
       pendingOp = inClause && column !== null;
-      if (!pendingOp) column = null;
+      operator = pendingOp ? op : "";
+      if (!pendingOp) clearColumn();
       index += op.length - 1;
       continue;
     }
     if (inClause && pendingOp && column !== null) {
       const number = readNumber(sql, index);
       if (number !== null) {
-        hits.push({ start: index, end: number.end, name: column, value: number.value });
-        column = null;
-        pendingOp = false;
+        hits.push({
+          start: index,
+          end: number.end,
+          name: column,
+          value: number.value,
+          columnStart,
+          op: operator,
+        });
+        clearColumn();
         index = number.end - 1;
         continue;
       }
     }
-    if (!/\s/.test(current)) {
-      column = null;
-      pendingOp = false;
-    }
+    if (!/\s/.test(current)) clearColumn();
   }
   return hits;
 }
 
+interface AliasMap {
+  readonly columns: ReadonlyMap<string, FilterColumn>;
+  readonly expressions: ReadonlySet<string>;
+  readonly plain: ReadonlySet<string>;
+}
+
+function keywordAt(sql: string, index: number, word: string): boolean {
+  if (index > 0 && /[A-Za-z0-9_]/.test(sql[index - 1] ?? "")) return false;
+  if (!sql.toLowerCase().startsWith(word, index)) return false;
+  return !/[A-Za-z0-9_]/.test(sql[index + word.length] ?? " ");
+}
+
+function unquoteIdent(text: string): string {
+  if (
+    (text.startsWith('"') && text.endsWith('"') && text.length >= 2) ||
+    (text.startsWith("`") && text.endsWith("`") && text.length >= 2) ||
+    (text.startsWith("[") && text.endsWith("]") && text.length >= 2)
+  ) {
+    return text.slice(1, -1);
+  }
+  return text;
+}
+
+function simpleColumn(source: string): FilterColumn | null {
+  const match = /^(?:([A-Za-z_][A-Za-z0-9_]*)\.)?([A-Za-z_][A-Za-z0-9_]*)$/.exec(source.trim());
+  const name = match?.[2];
+  if (name === undefined || filterName(name) === null) return null;
+  const qualifier = match?.[1];
+  return { name, expression: qualifier === undefined ? name : `${qualifier}.${name}` };
+}
+
+/** Comments are not part of a column or its alias. An unclosed comment drops the rest of the text. */
+function withoutComments(sql: string): string {
+  let out = "";
+  let quote: "'" | '"' | "`" | null = null;
+  for (let index = 0; index < sql.length; index += 1) {
+    const current = sql[index] ?? "";
+    if (quote !== null) {
+      out += current;
+      if (current === quote) {
+        if (sql[index + 1] === quote && quote !== "`") {
+          out += sql[index + 1] ?? "";
+          index += 1;
+        } else quote = null;
+      }
+      continue;
+    }
+    const pair = sql.slice(index, index + 2);
+    if (pair === "--") {
+      const newline = sql.indexOf("\n", index);
+      index = newline === -1 ? sql.length : newline;
+      out += " ";
+      continue;
+    }
+    if (pair === "/*") {
+      const end = sql.indexOf("*/", index + 2);
+      index = end < 0 ? sql.length : end + 1;
+      out += " ";
+      continue;
+    }
+    if (current === "'" || current === '"' || current === "`") quote = current;
+    out += current;
+  }
+  return out;
+}
+
+/** The outer select list, or null when a comment never closes. */
+function readSelectList(sql: string): string | null {
+  let depth = 0;
+  let quote: "'" | '"' | "`" | null = null;
+  let selectAt = -1;
+  for (let index = 0; index < sql.length; index += 1) {
+    const current = sql[index] ?? "";
+    if (quote !== null) {
+      if (current === quote) {
+        if (sql[index + 1] === quote && quote !== "`") index += 1;
+        else quote = null;
+      }
+      continue;
+    }
+    if (current === "-" && sql[index + 1] === "-") {
+      const newline = sql.indexOf("\n", index);
+      index = newline === -1 ? sql.length : newline;
+      continue;
+    }
+    if (current === "/" && sql[index + 1] === "*") {
+      const end = sql.indexOf("*/", index + 2);
+      if (end < 0) return null;
+      index = end + 1;
+      continue;
+    }
+    if (current === "'" || current === '"' || current === "`") {
+      quote = current;
+      continue;
+    }
+    if (current === "(") {
+      depth += 1;
+      continue;
+    }
+    if (current === ")") {
+      if (depth > 0) depth -= 1;
+      continue;
+    }
+    if (depth === 0 && selectAt < 0 && keywordAt(sql, index, "select")) {
+      selectAt = index + "select".length;
+      index = selectAt - 1;
+      continue;
+    }
+    if (depth === 0 && selectAt >= 0 && keywordAt(sql, index, "from")) return sql.slice(selectAt, index);
+  }
+  return selectAt < 0 ? null : sql.slice(selectAt);
+}
+
+function splitSelectItems(list: string): string[] {
+  const items: string[] = [];
+  let depth = 0;
+  let quote: "'" | '"' | "`" | null = null;
+  let start = 0;
+  for (let index = 0; index < list.length; index += 1) {
+    const current = list[index] ?? "";
+    if (quote !== null) {
+      if (current === quote) {
+        if (list[index + 1] === quote && quote !== "`") index += 1;
+        else quote = null;
+      }
+      continue;
+    }
+    if (current === "'" || current === '"' || current === "`") {
+      quote = current;
+      continue;
+    }
+    if (current === "(") depth += 1;
+    else if (current === ")" && depth > 0) depth -= 1;
+    else if (current === "," && depth === 0) {
+      items.push(list.slice(start, index));
+      start = index + 1;
+    }
+  }
+  items.push(list.slice(start));
+  return items;
+}
+
+const ALIAS_TAIL = String.raw`(\[[^\]]+\]|"[^"]+"|` + "`[^`]+`" + String.raw`|[A-Za-z_][A-Za-z0-9_]*)`;
+const AS_ALIAS = new RegExp(String.raw`^(.*)\s+as\s+${ALIAS_TAIL}$`, "i");
+const BARE_ALIAS = new RegExp(String.raw`^(.*\S)\s+${ALIAS_TAIL}$`, "i");
+
+function aliasMap(sql: string): AliasMap {
+  const columns = new Map<string, FilterColumn>();
+  const expressions = new Set<string>();
+  const plain = new Set<string>();
+  const list = readSelectList(sql);
+  if (list === null) return { columns, expressions, plain };
+  const body = withoutComments(list)
+    .replace(/^\s*(?:distinct|all)\s+/i, "")
+    .replace(/^\s*top\s+\(?\d+\)?\s+/i, "");
+  for (const item of splitSelectItems(body)) {
+    const text = item.trim().replace(/\s+/g, " ");
+    if (text === "" || text === "*") continue;
+    const asMatch = AS_ALIAS.exec(text);
+    const bare = asMatch === null ? BARE_ALIAS.exec(text) : null;
+    const match = asMatch ?? bare;
+    if (match === null) {
+      const column = simpleColumn(text);
+      if (column !== null) plain.add(column.name.toLowerCase());
+      continue;
+    }
+    const alias = unquoteIdent(match[2] ?? "");
+    if (filterName(alias) === null) continue;
+    const key = alias.toLowerCase();
+    const column = simpleColumn(match[1] ?? "");
+    if (column === null) expressions.add(key);
+    else if (column.name.toLowerCase() !== key) columns.set(key, column);
+  }
+  return { columns, expressions, plain };
+}
+
+function aliasBinding(map: AliasMap, column: string): FilterColumn | "expression" | null {
+  const key = column.toLowerCase();
+  if (map.plain.has(key)) return null;
+  if (map.expressions.has(key)) return "expression";
+  return map.columns.get(key) ?? null;
+}
+
+/**
+ * The column a filter should compare.
+ *
+ * A select alias of a real column uses that original column. An alias of an
+ * expression, such as `lower(region) AS area`, cannot be filtered by the new name.
+ */
+export function columnForFilter(sql: string, column: string): FilterColumn | null {
+  if (filterName(column) === null) return null;
+  const binding = aliasBinding(aliasMap(sql), column);
+  if (binding === "expression") return null;
+  if (binding === null) return { name: column, expression: column };
+  return binding;
+}
+
 /**
  * Turns a comparison the model wrote in WHERE or HAVING into a chart filter.
- * `region = 'east'` becomes `region = {{region:east}}`. Text that already has a
- * placeholder, and a statement with nothing to edit, is returned unchanged.
+ * `region = 'east'` becomes `region = {{region:east}}`. A comparison on a renamed
+ * column uses the original column: `region AS area` with `area = 'east'` becomes
+ * `region = {{region:east}}`. An alias of an expression is left as the model wrote it.
+ * Text that already has a placeholder, and a statement with nothing to edit, is returned unchanged.
  */
 export function promoteQueryFilters(sql: string): string {
   const hits = literalsInFilterClauses(sql);
   if (hits.length === 0) return sql;
+  const aliases = aliasMap(sql);
   const taken = new Set(tokensIn(sql).map((token) => token.name));
-  const named = hits.map((hit) => {
-    let name = hit.name;
+  const named: Array<FilterLiteral & { expression: string | null }> = [];
+  for (const hit of hits) {
+    const binding = aliasBinding(aliases, hit.name);
+    if (binding === "expression") continue;
+    const base = binding === null ? hit.name : binding.name;
+    let name = base;
     let suffix = 2;
     while (taken.has(name)) {
       const tail = `_${suffix}`;
-      name = `${hit.name.slice(0, 40 - tail.length)}${tail}`;
+      name = `${base.slice(0, Math.max(0, 40 - tail.length))}${tail}`;
       suffix += 1;
     }
     taken.add(name);
-    return { start: hit.start, end: hit.end, name, value: hit.value };
-  });
+    named.push({ ...hit, name, expression: binding === null ? null : binding.expression });
+  }
   let next = sql;
   for (const hit of [...named].reverse()) {
-    next = `${next.slice(0, hit.start)}{{${hit.name}:${hit.value}}}${next.slice(hit.end)}`;
+    if (hit.expression !== null && hit.columnStart >= 0) {
+      next = `${next.slice(0, hit.columnStart)}${hit.expression} ${hit.op} {{${hit.name}:${hit.value}}}${next.slice(hit.end)}`;
+    } else {
+      next = `${next.slice(0, hit.start)}{{${hit.name}:${hit.value}}}${next.slice(hit.end)}`;
+    }
   }
   return next;
 }
@@ -466,7 +699,13 @@ function whereSpot(sql: string): WhereSpot {
   return { kind: "where", index: clauseEnd ?? sql.length };
 }
 
-function filterToken(name: string, value: string, options: readonly string[], compare: FilterCompare): string {
+function filterToken(
+  name: string,
+  value: string,
+  options: readonly string[],
+  compare: FilterCompare,
+  expression = name,
+): string {
   const clean = value
     .replace(/[|}\r\n]/g, "")
     .trim()
@@ -483,7 +722,7 @@ function filterToken(name: string, value: string, options: readonly string[], co
   }
   const choices = listed.length > 0 ? `|${listed.join(",")}` : "";
   const body = clean === "" && choices === "" ? name : `${name}:${clean}${choices}`;
-  return `${name} ${compare} {{${body}}}`;
+  return `${expression} ${compare} {{${body}}}`;
 }
 
 /** Adds one comparison the chart can edit. A name that is already a filter is left as it is. */
@@ -493,9 +732,10 @@ export function addQueryFilter(
   value: string,
   options: readonly string[] = [],
   compare: FilterCompare = "=",
+  expression = name,
 ): string {
   if (filterName(name) === null || tokensIn(sql).some((token) => token.name === name)) return sql;
-  const predicate = filterToken(name, value, options, compare);
+  const predicate = filterToken(name, value, options, compare, expression);
   const spot = whereSpot(sql);
   const left = sql.slice(0, spot.index).trimEnd();
   const rest = sql.slice(spot.index).trimStart();
@@ -522,6 +762,19 @@ function wordBefore(sql: string, cursor: number): { word: string; start: number 
   return { word: sql.slice(start, end), start };
 }
 
+/** The start of the column compared to this placeholder, including `orders.region`. */
+function comparedColumnStart(sql: string, cursor: number, name: string): number | null {
+  if (sql.slice(cursor - name.length, cursor) !== name) return null;
+  let start = cursor - name.length;
+  if (start > 0 && /[A-Za-z0-9_]/.test(sql[start - 1] ?? "")) return null;
+  if (start > 0 && sql[start - 1] === ".") {
+    let qualifier = start - 1;
+    while (qualifier > 0 && /[A-Za-z0-9_]/.test(sql[qualifier - 1] ?? "")) qualifier -= 1;
+    if (qualifier < start - 1) start = qualifier;
+  }
+  return start;
+}
+
 function stripPredicate(sql: string, token: FilterToken, name: string): string | null {
   let cursor = token.start;
   while (cursor > 0 && /\s/.test(sql[cursor - 1] ?? "")) cursor -= 1;
@@ -529,10 +782,9 @@ function stripPredicate(sql: string, token: FilterToken, name: string): string |
   if (opAt === null) return null;
   cursor = opAt;
   while (cursor > 0 && /\s/.test(sql[cursor - 1] ?? "")) cursor -= 1;
-  if (sql.slice(cursor - name.length, cursor) !== name) return null;
-  const beforeName = cursor - name.length - 1;
-  if (beforeName >= 0 && /[A-Za-z0-9_]/.test(sql[beforeName] ?? "")) return null;
-  cursor -= name.length;
+  const columnAt = comparedColumnStart(sql, cursor, name);
+  if (columnAt === null) return null;
+  cursor = columnAt;
   const previous = wordBefore(sql, cursor);
   if (previous?.word.toLowerCase() === "and") {
     const left = sql.slice(0, previous.start).trimEnd();
@@ -551,6 +803,15 @@ function stripPredicate(sql: string, token: FilterToken, name: string): string |
   const left = sql.slice(0, previous.start).trimEnd();
   const right = sql.slice(token.end).trimStart();
   return right === "" ? left : `${left} ${right}`;
+}
+
+/** Removes every filter comparison. A placeholder that is not a comparison stays. */
+export function clearQueryFilters(sql: string): string {
+  let next = sql;
+  for (const filter of readQueryFilters(sql)) {
+    next = removeQueryFilter(next, filter.name);
+  }
+  return next;
 }
 
 /** Removes one filter and the comparison around it. A placeholder that is not a comparison stays. */
