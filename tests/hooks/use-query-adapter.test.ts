@@ -520,6 +520,39 @@ describe("useQueryAdapter", () => {
     expect(result.current.bottomPanelMode).toBe("history");
   });
 
+  test("executeQuery leaves the panel on Charts and still writes the result", async () => {
+    const params = makeHookParams();
+    const { result } = renderHook(() => useQueryAdapter(params));
+
+    act(() => {
+      result.current.setBottomPanelMode("charts");
+    });
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT 1");
+    });
+
+    expect(result.current.bottomPanelMode).toBe("charts");
+    expect(params.tabs[0]?.result).not.toBeNull();
+  });
+
+  test("forceExecuteQuery leaves the panel on Charts", async () => {
+    const params = makeHookParams();
+    const { result } = renderHook(() => useQueryAdapter(params));
+
+    act(() => {
+      result.current.setBottomPanelMode("charts");
+    });
+
+    await act(async () => {
+      result.current.forceExecuteQuery("DROP TABLE users");
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+
+    expect(result.current.bottomPanelMode).toBe("charts");
+    expect(params.onQueryExecute).toHaveBeenCalledWith("conn-1", "DROP TABLE users");
+  });
+
   // ── safetyCheckQuery and setter work ───────────────────────────────────────
 
   test("safetyCheckQuery defaults to null and can be set", () => {

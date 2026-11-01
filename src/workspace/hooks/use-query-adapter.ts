@@ -250,7 +250,8 @@ export function useQueryAdapter({
             : t,
         ),
       );
-      setBottomPanelMode("results");
+      // A run refreshes the view already open. The embedded shell has the same
+      // Charts, Pivot and dashboard tabs, and a rerun leaves that selection in place.
 
       const startTime = Date.now();
 
@@ -386,7 +387,7 @@ export function useQueryAdapter({
             : t,
         ),
       );
-      setBottomPanelMode("results");
+      // Proceed is a run too, so it keeps the panel the user already selected.
 
       const startTime = Date.now();
 

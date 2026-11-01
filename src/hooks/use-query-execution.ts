@@ -502,7 +502,13 @@ export function useQueryExecution({
             : t,
         ),
       );
-      setBottomPanelMode(isExplain ? "explain" : "results");
+      // A run refreshes the view already open. Charts, Pivot, Graph and the dashboard
+      // all read this tab's result, so a rerun — including one a schedule will fire —
+      // updates that picture and leaves the selection where the user put it. Explain
+      // is the exception: its output is a plan, and only the Explain tab draws one.
+      // A declined Explain still comes through here, so that tab is already forward
+      // when the refusal clears the plan of the statement before it.
+      if (isExplain) setBottomPanelMode("explain");
 
       const explainStrategy = getExplainStrategy(metadata?.capabilities.explainFormat);
 
