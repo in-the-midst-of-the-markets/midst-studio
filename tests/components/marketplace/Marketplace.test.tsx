@@ -48,6 +48,12 @@ describe("Marketplace", () => {
 
     expect(screen.getByText("Reading the marketplace...")).not.toBeNull();
     expect(await screen.findByText("No third-party data is listed yet.")).not.toBeNull();
+    expect(
+      screen.getByText(
+        "Subscribe to third-party databases. Each database has its own monthly price. Payment is collected by Stripe.",
+      ),
+    ).not.toBeNull();
+    expect(screen.queryByText("$5/month")).toBeNull();
   });
 
   test("treats a catalog that is not a list as empty", async () => {

@@ -1,7 +1,7 @@
 /**
  * The third-party data a signed-in account can subscribe to.
  *
- * The catalog is operator configuration (`MARKETPLACE_OFFERINGS`), one Stripe price per offering.
+ * The catalog is operator configuration (`MARKETPLACE_OFFERINGS`). Each database has its own monthly price.
  * A personal database connection is never an entry: those are added in the editor, and Stripe does
  * not grant them.
  */
@@ -10,11 +10,11 @@ export interface MarketplaceOffering {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly priceId: string;
-  readonly priceLabel: string;
+  /** US cents billed every month. 500 is five dollars. Each database sets its own. */
+  readonly monthlyCents: number;
 }
 
-/** What the browser is allowed to see. The Stripe price id stays on the server. */
+/** What the browser is allowed to see. The charge stays on the server. */
 export interface PublicMarketplaceOffering {
   readonly id: string;
   readonly name: string;
@@ -25,18 +25,24 @@ export interface PublicMarketplaceOffering {
 export type MarketplaceCatalog = { ok: true; offerings: readonly MarketplaceOffering[] } | { ok: false };
 
 const OFFERING_ID = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
-const STRIPE_PRICE_ID = /^price_[A-Za-z0-9]+$/;
 
-/**
- * What Checkout charges for every offering, and what the list shows.
- * Five US dollars, billed each month. A catalog price id is not the charge.
- */
-export const MARKETPLACE_SUBSCRIPTION = {
-  currency: "usd",
-  unitAmount: "500",
-  interval: "month",
-  label: "$5/month",
-} as const;
+/** Stripe's smallest US-dollar charge, and the largest unit amount Checkout accepts. */
+export const MONTHLY_CENTS_MIN = 50;
+export const MONTHLY_CENTS_MAX = 99_999_999;
+
+/** The list label for a monthly price, in US dollars. Five hundred cents is "$5/month". */
+export function monthlyPriceLabel(cents: number): string {
+  const dollars = Math.trunc(cents / 100);
+  const remainder = cents % 100;
+  const amount = remainder === 0 ? String(dollars) : `${dollars}.${String(remainder).padStart(2, "0")}`;
+  return `$${amount}/month`;
+}
+
+function isMonthlyCents(value: unknown): value is number {
+  return (
+    typeof value === "number" && Number.isInteger(value) && value >= MONTHLY_CENTS_MIN && value <= MONTHLY_CENTS_MAX
+  );
+}
 
 function isOffering(value: unknown): value is MarketplaceOffering {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -49,11 +55,7 @@ function isOffering(value: unknown): value is MarketplaceOffering {
     row.name.length <= 80 &&
     typeof row.description === "string" &&
     row.description.length <= 400 &&
-    typeof row.priceId === "string" &&
-    STRIPE_PRICE_ID.test(row.priceId) &&
-    typeof row.priceLabel === "string" &&
-    row.priceLabel.trim() !== "" &&
-    row.priceLabel.length <= 40
+    isMonthlyCents(row.monthlyCents)
   );
 }
 
@@ -76,8 +78,7 @@ export function parseMarketplaceCatalog(raw: string | undefined): MarketplaceCat
       id: item.id,
       name: item.name,
       description: item.description,
-      priceId: item.priceId,
-      priceLabel: item.priceLabel,
+      monthlyCents: item.monthlyCents,
     });
   }
   return { ok: true, offerings };
@@ -88,10 +89,10 @@ export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): Ma
 }
 
 export function publicMarketplaceOfferings(offerings: readonly MarketplaceOffering[]): PublicMarketplaceOffering[] {
-  return offerings.map(({ id, name, description }) => ({
+  return offerings.map(({ id, name, description, monthlyCents }) => ({
     id,
     name,
     description,
-    priceLabel: MARKETPLACE_SUBSCRIPTION.label,
+    priceLabel: monthlyPriceLabel(monthlyCents),
   }));
 }

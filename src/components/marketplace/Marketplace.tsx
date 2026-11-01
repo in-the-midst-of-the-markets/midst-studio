@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/config/base-path";
-import { MARKETPLACE_SUBSCRIPTION, type PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
+import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
 
@@ -119,7 +119,7 @@ export function Marketplace() {
     <main className="pt-6">
       <h1 className="text-lg font-semibold tracking-tight text-fg">Marketplace</h1>
       <p className="mt-1 text-sm text-fg-secondary">
-        Subscribe to third-party data for {MARKETPLACE_SUBSCRIPTION.label}. Payment is collected by Stripe.
+        Subscribe to third-party databases. Each database has its own monthly price. Payment is collected by Stripe.
       </p>
 
       {checkout === "cancel" && (

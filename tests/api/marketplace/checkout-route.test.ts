@@ -27,11 +27,10 @@ const originalBasePath = process.env.NEXT_PUBLIC_BASE_PATH;
 const originalFetch = globalThis.fetch;
 
 const OFFERING = {
-  id: "acme-trades",
-  name: "Acme Trades",
-  description: "Tick history",
-  priceId: "price_abc",
-  priceLabel: "$49/month",
+  id: "opensearch",
+  name: "OpenSearch",
+  description: "Search indexes",
+  monthlyCents: 500,
 };
 
 function post(body: string, origin: string | null = "https://studio.example"): Request {
@@ -77,7 +76,7 @@ describe("POST /api/marketplace/checkout", () => {
     });
     globalThis.fetch = fetchImpl as unknown as typeof fetch;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "Authentication required", code: "AUTH_REQUIRED" });
@@ -97,7 +96,7 @@ describe("POST /api/marketplace/checkout", () => {
   test("a catalog that does not parse is a configuration error", async () => {
     process.env.MARKETPLACE_OFFERINGS = "{";
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "The marketplace catalog is not valid" });
@@ -119,7 +118,7 @@ describe("POST /api/marketplace/checkout", () => {
     });
     globalThis.fetch = fetchImpl as unknown as typeof fetch;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" });
@@ -133,7 +132,7 @@ describe("POST /api/marketplace/checkout", () => {
     });
     globalThis.fetch = fetchImpl as unknown as typeof fetch;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(200);
   });
@@ -142,43 +141,52 @@ describe("POST /api/marketplace/checkout", () => {
     if (secret === undefined) delete process.env.STRIPE_SECRET_KEY;
     else process.env.STRIPE_SECRET_KEY = secret;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: "Stripe checkout is not configured" });
   });
 
   test("refuses to start checkout from a request that has no origin", async () => {
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" }), null));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" }), null));
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: "Checkout has to start from the marketplace page" });
   });
 
-  test("returns the Checkout URL and charges $5 a month, not a price id from the request", async () => {
+  test("charges each database its own monthly price and ignores an amount on the request", async () => {
     process.env.NEXT_PUBLIC_BASE_PATH = "/studio";
+    process.env.MARKETPLACE_OFFERINGS = JSON.stringify([
+      OFFERING,
+      { id: "postgres", name: "PostgreSQL", description: "Tables", monthlyCents: 1200 },
+    ]);
+    const amounts: string[] = [];
     const fetchImpl = mock(async (_url: string, init?: RequestInit) => {
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer sk_test_marketplace");
-      const body = String(init?.body);
-      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
-      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Brecurring%5D%5Binterval%5D=month");
-      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=Acme+Trades");
-      expect(body).not.toContain("price_from_the_browser");
-      expect(body).not.toContain("price_abc");
-      expect(body).toContain(
-        "https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dsuccess%26session_id%3D{CHECKOUT_SESSION_ID}",
-      );
-      expect(body).toContain("https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dcancel");
+      amounts.push(String(init?.body));
       return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" }), { status: 200 });
     });
     globalThis.fetch = fetchImpl as unknown as typeof fetch;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades", priceId: "price_from_the_browser" })));
-    const payload = await response.json();
-
+    const response = await POST(post(JSON.stringify({ id: "opensearch", monthlyCents: 1 })));
     expect(response.status).toBe(200);
+    const payload = await response.json();
     expect(payload).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" });
     expect(JSON.stringify(payload)).not.toContain("sk_test_marketplace");
+    const postgres = await POST(post(JSON.stringify({ id: "postgres", monthlyCents: 1 })));
+    expect(postgres.status).toBe(200);
+
+    const opensearchBody = amounts[0] ?? "";
+    expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
+    expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Brecurring%5D%5Binterval%5D=month");
+    expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=OpenSearch");
+    expect(opensearchBody).not.toContain("unit_amount%5D=1");
+    expect(opensearchBody).toContain(
+      "https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dsuccess%26session_id%3D{CHECKOUT_SESSION_ID}",
+    );
+    expect(opensearchBody).toContain("https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dcancel");
+    expect(amounts[1]).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=1200");
+    expect(amounts[1]).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=PostgreSQL");
   });
 
   test("answers 502 when Stripe does not return a Checkout URL", async () => {
@@ -189,7 +197,7 @@ describe("POST /api/marketplace/checkout", () => {
         }),
     ) as unknown as typeof fetch;
 
-    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+    const response = await POST(post(JSON.stringify({ id: "opensearch" })));
 
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "Stripe could not start checkout" });
@@ -245,19 +253,19 @@ describe("GET /api/marketplace/checkout", () => {
   test("reports complete only when Stripe says so and the offering is still listed", async () => {
     globalThis.fetch = mock(
       async () =>
-        new Response(JSON.stringify({ status: "complete", client_reference_id: "acme-trades" }), { status: 200 }),
+        new Response(JSON.stringify({ status: "complete", client_reference_id: "opensearch" }), { status: 200 }),
     ) as unknown as typeof fetch;
 
     const complete = await GET(get("cs_test_abc"));
 
     expect(complete.status).toBe(200);
-    expect(await complete.json()).toEqual({ offeringId: "acme-trades", complete: true });
+    expect(await complete.json()).toEqual({ offeringId: "opensearch", complete: true });
 
     globalThis.fetch = mock(
-      async () => new Response(JSON.stringify({ status: "open", client_reference_id: "acme-trades" }), { status: 200 }),
+      async () => new Response(JSON.stringify({ status: "open", client_reference_id: "opensearch" }), { status: 200 }),
     ) as unknown as typeof fetch;
     const open = await GET(get("cs_test_abc"));
-    expect(await open.json()).toEqual({ offeringId: "acme-trades", complete: false });
+    expect(await open.json()).toEqual({ offeringId: "opensearch", complete: false });
 
     globalThis.fetch = mock(
       async () => new Response(JSON.stringify({ status: "complete", client_reference_id: "other" }), { status: 200 }),
