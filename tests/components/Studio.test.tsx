@@ -2938,13 +2938,20 @@ describe("Studio", () => {
     expect(capturedSidebarProps.onDeleteConnection).toBeDefined();
     expect(capturedMobileHeaderProps.onAddConnection).toBeUndefined();
     expect(capturedCommandPaletteProps.onAddConnection).toBeUndefined();
+    expect(capturedSidebarProps.onSearchMarketplace).toEqual(expect.any(Function));
+    expect(capturedMobileHeaderProps.onSearchMarketplace).toEqual(expect.any(Function));
+    expect(capturedCommandPaletteProps.onSearchMarketplace).toEqual(expect.any(Function));
 
     act(() => (capturedMobileNavProps.onTabChange as (tab: string) => void)("database"));
 
     expect(capturedConnectionsListProps.onAddConnection).toBeUndefined();
+    expect(capturedConnectionsListProps.onSearchMarketplace).toEqual(expect.any(Function));
     expect(capturedConnectionsListProps.onDuplicateConnection).toBeUndefined();
     expect(capturedConnectionsListProps.onDeleteConnection).toBeDefined();
     expect(queryByText(/Add/)).toBeNull();
+    mockRouterPush.mockClear();
+    fireEvent.click(queryByText("Search Marketplace")!);
+    expect(mockRouterPush).toHaveBeenCalledWith("/marketplace");
   });
 
   /*

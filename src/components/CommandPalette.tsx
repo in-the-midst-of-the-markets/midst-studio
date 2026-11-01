@@ -15,6 +15,7 @@ import {
   Table2,
   Play,
   Plus,
+  Store,
   Clock,
   Bookmark,
   Activity,
@@ -53,6 +54,8 @@ interface CommandPaletteProps {
    * (`ALLOW_CUSTOM_CONNECTIONS`), the same rule `onAskAgent` below follows.
    */
   onAddConnection?: () => void;
+  /** Opens the marketplace. Optional, and the item is not rendered without it. */
+  onSearchMarketplace?: () => void;
   onExecuteQuery: () => void;
   onLoadSavedQuery: (query: string) => void;
   onLoadHistoryQuery: (query: string) => void;
@@ -83,6 +86,7 @@ export function CommandPalette({
   onSelectConnection,
   onTableClick,
   onAddConnection,
+  onSearchMarketplace,
   onExecuteQuery,
   onLoadSavedQuery,
   onLoadHistoryQuery,
@@ -173,7 +177,13 @@ export function CommandPalette({
           {onAddConnection && (
             <CommandItem onSelect={() => runAction(onAddConnection)}>
               <Plus strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-emerald" />
-              <span>New Connection</span>
+              <span>Add Internal Data</span>
+            </CommandItem>
+          )}
+          {onSearchMarketplace && (
+            <CommandItem onSelect={() => runAction(onSearchMarketplace)}>
+              <Store strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
+              <span>Search Marketplace</span>
             </CommandItem>
           )}
           <CommandItem onSelect={() => runAction(onNavigateHealth)}>

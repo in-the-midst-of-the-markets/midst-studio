@@ -363,7 +363,7 @@ export default function Studio() {
    *
    * The palette door was measured item by item, with the real palette rendered over a held apply:
    * Cmd/Ctrl+K opens it, focus moves into its input, and of the ten entries it offered exactly one
-   * moved the active tab. Run Query, Format Query, Save Current Query, New Connection, the ERD and
+   * moved the active tab. Run Query, Format Query, Save Current Query, Add Internal Data, the ERD and
    * the connection row all left the dialog standing and the conflict still rendered. A TABLE row
    * calls this shell's `onTableClick` -> `handleTableClick`, which ends with `setActiveTabId(newId)`
    * exactly as `addTab` does, and that unmounted the pane and lost the answer. Health Dashboard,
@@ -884,6 +884,7 @@ export default function Studio() {
   );
 
   const handleNavigateMonitoring = useCallback(() => router.push("/monitoring"), [router]);
+  const searchMarketplace = useCallback(() => router.push("/marketplace"), [router]);
   const handleFormatQuery = useCallback(() => queryEditorRef.current?.format(), []);
   const handleShowShortcuts = useCallback(() => shortcutsDialogRef.current?.open(), []);
   const openAgentSheet = useCallback(() => setIsAgentSheetOpen(true), []);
@@ -1399,6 +1400,7 @@ export default function Studio() {
                 onReorderConnections={handleReorderConnections}
                 {...connectionGroupProps}
                 onAddConnection={addConnectionAction}
+                onSearchMarketplace={searchMarketplace}
                 governed={conn.governance}
                 connectionAccessUnavailable={conn.connectionAccessUnavailable}
                 onObjectClick={onObjectClick}
@@ -1436,6 +1438,7 @@ export default function Studio() {
               editingEnabled={editingEnabled}
               onSelectConnection={conn.setActiveConnection}
               onAddConnection={addConnectionAction}
+              onSearchMarketplace={searchMarketplace}
               onLogout={handleLogout}
               onSaveQuery={openSaveQuery}
               onClearQuery={handleClearQuery}
@@ -1507,18 +1510,28 @@ export default function Studio() {
               {/* Mobile: Database Tab */}
               {activeMobileTab === "database" && (
                 <div className="md:hidden h-full bg-sunken overflow-auto p-4">
-                  <div className="mb-4 flex items-center justify-between">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="text-xs font-medium text-fg-secondary">Connections</h2>
-                    {addConnectionAction && (
+                    <div className="flex flex-wrap gap-2">
+                      {addConnectionAction && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-hairline-strong hover:bg-fill"
+                          onClick={addConnectionAction}
+                        >
+                          <Plus strokeWidth={1.5} className="w-3 h-3 mr-1" /> Add Internal Data
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs border-hairline-strong hover:bg-fill"
-                        onClick={addConnectionAction}
+                        onClick={searchMarketplace}
                       >
-                        <Plus strokeWidth={1.5} className="w-3 h-3 mr-1" /> Add
+                        Search Marketplace
                       </Button>
-                    )}
+                    </div>
                   </div>
                   <ConnectionsList
                     connections={conn.connections}
@@ -1535,6 +1548,7 @@ export default function Studio() {
                     onReorderConnections={handleReorderConnections}
                     {...connectionGroupProps}
                     onAddConnection={addConnectionAction}
+                    onSearchMarketplace={searchMarketplace}
                     governed={conn.governance}
                     accessUnavailable={conn.connectionAccessUnavailable}
                   />
@@ -1849,6 +1863,7 @@ export default function Studio() {
         onSelectConnection={conn.setActiveConnection}
         onTableClick={onTableClick}
         onAddConnection={addConnectionAction}
+        onSearchMarketplace={searchMarketplace}
         onExecuteQuery={handleMobileExecuteQuery}
         onLoadSavedQuery={handleLoadSavedQuery}
         onLoadHistoryQuery={handleLoadHistoryQuery}

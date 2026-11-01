@@ -470,6 +470,10 @@ describe("routes that reach a provider require a session", () => {
       "the in-process store of the OpenShift users' access tokens; data only, opens nothing",
     "@/lib/password-hash": "scrypt for stored account passwords; no provider",
     "@/lib/logger": "structured logging",
+    "@/lib/marketplace/catalog":
+      "parses MARKETPLACE_OFFERINGS into the catalog the marketplace routes answer; data only, opens nothing",
+    "@/lib/marketplace/checkout":
+      "starts and reads a Stripe Checkout session over fetch to api.stripe.com; opens no database or LLM provider",
     "@/lib/non-finite": "writes NaN and the infinities in held rows as words; pure, imports nothing",
     "@/lib/oidc": "the OIDC discovery and PKCE exchange",
     "@/lib/oidc-identity":

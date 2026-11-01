@@ -40,8 +40,14 @@ interface ConnectionsListProps {
   onToggleGroupCollapsed?: (id: string) => void;
   /** Files a connection under a group; null means Ungrouped. */
   onMoveConnectionToGroup?: (connectionId: string, groupId: string | null) => void;
-  /** Absent means the shell offers no new connection, and the empty list draws no Add Connection button. */
+  /** Absent means the shell offers no new connection, and the empty list draws no Add Internal Data button. */
   onAddConnection?: () => void;
+  /**
+   * Opens the marketplace, where a subscription to third-party data is paid with Stripe.
+   * Absent in the embedded workspace, which has no marketplace route of its own. Present even
+   * when custom connections are refused: a subscription is not a connection of the user's own.
+   */
+  onSearchMarketplace?: () => void;
   /**
    * The server runs under governance (docs/GOVERNANCE.md): the list holds the connections an
    * administrator granted, so an empty one says no access has been granted yet.
@@ -61,6 +67,14 @@ const ACCESS_UNAVAILABLE_MESSAGE =
   "Connection access is temporarily unavailable. The list updates by itself once it is back.";
 
 type NameDialog = { mode: "create"; moveConnectionId?: string } | { mode: "rename"; groupId: string; name: string };
+
+function SearchMarketplaceButton({ onClick, fullWidth }: { onClick: () => void; fullWidth?: boolean }) {
+  return (
+    <Button variant="outline" size="sm" className={fullWidth ? "h-7 w-full text-xs" : "h-7 text-xs"} onClick={onClick}>
+      Search Marketplace
+    </Button>
+  );
+}
 
 /** Section header matching the "Connections" label + divider style already used below. */
 function SectionHeader({
@@ -128,6 +142,7 @@ export const ConnectionsList = React.memo(function ConnectionsList({
   onToggleGroupCollapsed,
   onMoveConnectionToGroup,
   onAddConnection,
+  onSearchMarketplace,
   governed,
   accessUnavailable,
 }: ConnectionsListProps) {
@@ -253,6 +268,11 @@ export const ConnectionsList = React.memo(function ConnectionsList({
 
   return (
     <>
+      {onSearchMarketplace && (connections.length > 0 || emptyMessage === null) && (
+        <div className="px-2 mb-3">
+          <SearchMarketplaceButton onClick={onSearchMarketplace} fullWidth />
+        </div>
+      )}
       {accessUnavailable && (
         <output className="mx-2 mb-4 block rounded-lg border border-border/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           {ACCESS_UNAVAILABLE_MESSAGE}
@@ -278,10 +298,15 @@ export const ConnectionsList = React.memo(function ConnectionsList({
                 ? emptyMessage !== null && (
                     <div className="px-3 py-6 text-center border border-dashed border-border/50 rounded-lg mx-2">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{emptyMessage}</p>
-                      {onAddConnection && (
-                        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onAddConnection}>
-                          Add Connection
-                        </Button>
+                      {(onAddConnection || onSearchMarketplace) && (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          {onAddConnection && (
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onAddConnection}>
+                              Add Internal Data
+                            </Button>
+                          )}
+                          {onSearchMarketplace && <SearchMarketplaceButton onClick={onSearchMarketplace} />}
+                        </div>
                       )}
                     </div>
                   )

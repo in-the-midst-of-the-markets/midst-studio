@@ -769,7 +769,7 @@ The agent runtime and the MCP endpoint only ever open a seed by its id, so nothi
 | Built-in samples | Unmanaged seeds, so the row above applies |
 | A connection the user created, or a duplicate of any connection | Hidden in the editor and refused by the server |
 
-The editor reads the switch once per page load from `GET /api/connections/policy` and withholds every control that creates or repoints a connection of the user's own: New connection, Add Connection, the command palette's New Connection, Edit and Duplicate.
+The editor reads the switch once per page load from `GET /api/connections/policy` and withholds every control that creates or repoints a connection of the user's own: Add Internal Data, the command palette's Add Internal Data, Edit and Duplicate. Search Marketplace stays on those surfaces, because subscribing to third-party data is Stripe Checkout and not a connection of the user's own.
 Delete stays; on an unmanaged seed's copy it dismisses the seed, as it always does, and deleting the open connection selects the first connection listed.
 An open tab's refresh of the managed list (see [In an open tab](#in-an-open-tab)) follows the same rule: when it withdraws the open connection, or none is open, the connection it makes active is the first one listed, never a hidden one.
 The admin pages, the monitoring page and the schema diff list connections under the same rule.
