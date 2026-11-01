@@ -21,6 +21,7 @@ const { GET, POST } = await import("@/app/api/marketplace/checkout/route");
 
 const originalCatalog = process.env.MARKETPLACE_OFFERINGS;
 const originalConnection = process.env.OPEN_SEARCH_CONNECTION_STRING;
+const originalPostgres = process.env.POSTGRES_CONNECTION_STRING;
 const originalSecret = process.env.STRIPE_SECRET_KEY;
 const originalTestSecret = process.env.STRIPE_TEST_SECRET_KEY;
 const originalTrust = process.env.TRUST_PROXY_HEADERS;
@@ -49,6 +50,7 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue({ role: "user", username: "ada" });
   process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
   delete process.env.OPEN_SEARCH_CONNECTION_STRING;
+  delete process.env.POSTGRES_CONNECTION_STRING;
   process.env.STRIPE_SECRET_KEY = " sk_test_marketplace ";
   delete process.env.STRIPE_TEST_SECRET_KEY;
   process.env.TRUST_PROXY_HEADERS = "false";
@@ -62,6 +64,8 @@ afterEach(() => {
   else process.env.MARKETPLACE_OFFERINGS = originalCatalog;
   if (originalConnection === undefined) delete process.env.OPEN_SEARCH_CONNECTION_STRING;
   else process.env.OPEN_SEARCH_CONNECTION_STRING = originalConnection;
+  if (originalPostgres === undefined) delete process.env.POSTGRES_CONNECTION_STRING;
+  else process.env.POSTGRES_CONNECTION_STRING = originalPostgres;
   if (originalSecret === undefined) delete process.env.STRIPE_SECRET_KEY;
   else process.env.STRIPE_SECRET_KEY = originalSecret;
   if (originalTestSecret === undefined) delete process.env.STRIPE_TEST_SECRET_KEY;

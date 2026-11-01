@@ -1993,6 +1993,34 @@ describe("parseConnectionString: Snowflake URLs, decomposed into fields and neve
     expect(result!.notice).toBe("Not applied: authenticator.");
   });
 
+  test("an OpenSearch https URL is OpenSearch, including DigitalOcean's port", () => {
+    expect(parseConnectionString("https://search.example:9200")).toEqual({
+      type: "opensearch",
+      host: "search.example",
+      port: "9200",
+      sslMode: "require",
+    });
+    const managed = parseConnectionString("https://doadmin:secret@db.example:25060");
+    expect(managed).toEqual({
+      type: "opensearch",
+      host: "db.example",
+      port: "25060",
+      user: "doadmin",
+      password: "secret",
+      sslMode: "require",
+    });
+    expect(parseConnectionString("http://opensearch.internal:9201")).toEqual({
+      type: "opensearch",
+      host: "opensearch.internal",
+      port: "9201",
+      sslMode: "disable",
+    });
+    expect(parseConnectionString("https://search.example:9200")!.type).not.toBe("clickhouse");
+    expect(detectConnectionStringType("https://DB.example:25060")).toBe("opensearch");
+    expect(parseConnectionString("http://localhost:9201")!.type).toBe("clickhouse");
+    expect(parseConnectionString("https://ch.example.clickhouse.cloud:9200")!.type).toBe("clickhouse");
+  });
+
   test("every other https:// paste still resolves to ClickHouse", () => {
     const clickhouse = parseConnectionString("https://myacct.clickhouse.cloud:8443");
     expect(clickhouse!.type).toBe("clickhouse");

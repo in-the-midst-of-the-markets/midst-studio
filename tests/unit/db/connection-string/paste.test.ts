@@ -184,7 +184,8 @@ describe("each fixture text is claimed by exactly one row", () => {
     expect(rows.at(-1)?.type).toBe("clickhouse");
     const faults = pasteFaults(rows);
     expect(faults.length).toBeGreaterThan(0);
-    expect(faults.every((fault) => fault.includes("=> trino, clickhouse"))).toBe(true);
+    expect(faults.every((fault) => fault.includes("trino"))).toBe(true);
+    expect(faults.some((fault) => fault.includes("clickhouse"))).toBe(true);
   });
 
   test("a planted catch-all after ClickHouse fails by name too", () => {

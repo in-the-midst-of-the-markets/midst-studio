@@ -833,9 +833,9 @@ abstract class SearchProvider extends SQLBaseProvider {
       // that could really cancel a search is not part of this seam.
       supportsMaintenance: false,
       maintenanceOperations: [],
-      // No URI convention to paste: both products are addressed by host and port
-      // like Druid, and `http://` / `https://` are already claimed by ClickHouse in
-      // the shared connection-string parser.
+      // Neither product reads a stored connectionString. OpenSearch paste fills host, port,
+      // user and password from an OpenSearch URL; Elasticsearch has no paste. A bare http(s)
+      // URL that is not one of those stays ClickHouse's.
       supportsConnectionString: false,
       defaultPort: SEARCH_DEFAULT_PORT,
       // Declared because the port cannot say: both products are 9200 and they

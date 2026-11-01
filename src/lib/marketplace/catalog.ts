@@ -2,8 +2,10 @@
  * The third-party data a signed-in account can subscribe to.
  *
  * The catalog is operator configuration (`MARKETPLACE_OFFERINGS`). Each database has its own monthly price.
- * `OPEN_SEARCH_CONNECTION_STRING`, when set, also lists OpenSearch at five dollars a month unless that id is
- * already in the catalog. The connection string stays on the server and is never an offering field.
+ * `POSTGRES_CONNECTION_STRING`, when set, also lists PostgreSQL at five dollars a month, and
+ * `OPEN_SEARCH_CONNECTION_STRING` lists OpenSearch the same way, unless that id is already in the catalog.
+ * The connection string stays on the server and is never an offering field. A database someone added in the
+ * editor is not one of these: the shop reads only these server variables.
  * A personal database connection is never an entry: those are added in the editor, and Stripe does
  * not grant them.
  */
@@ -86,13 +88,22 @@ export function parseMarketplaceCatalog(raw: string | undefined): MarketplaceCat
   return { ok: true, offerings };
 }
 
-/** OpenSearch at five dollars a month, listed when `OPEN_SEARCH_CONNECTION_STRING` is set. */
-const OPENSEARCH_CONNECTION_OFFERING: MarketplaceOffering = {
-  id: "opensearch",
-  name: "OpenSearch",
-  description: "Search indexes",
-  monthlyCents: 500,
-};
+interface ConnectionOffering {
+  readonly env: "POSTGRES_CONNECTION_STRING" | "OPEN_SEARCH_CONNECTION_STRING";
+  readonly offering: MarketplaceOffering;
+}
+
+/** PostgreSQL and OpenSearch at five dollars a month, each listed when its connection string is set. */
+const CONNECTION_OFFERINGS: readonly ConnectionOffering[] = [
+  {
+    env: "POSTGRES_CONNECTION_STRING",
+    offering: { id: "postgres", name: "PostgreSQL", description: "Tables", monthlyCents: 500 },
+  },
+  {
+    env: "OPEN_SEARCH_CONNECTION_STRING",
+    offering: { id: "opensearch", name: "OpenSearch", description: "Search indexes", monthlyCents: 500 },
+  },
+];
 
 function isConfigured(value: string | undefined): boolean {
   return value !== undefined && value.trim() !== "";
@@ -100,9 +111,13 @@ function isConfigured(value: string | undefined): boolean {
 
 export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): MarketplaceCatalog {
   const parsed = parseMarketplaceCatalog(env.MARKETPLACE_OFFERINGS);
-  if (!parsed.ok || !isConfigured(env.OPEN_SEARCH_CONNECTION_STRING)) return parsed;
-  if (parsed.offerings.some((item) => item.id === OPENSEARCH_CONNECTION_OFFERING.id)) return parsed;
-  return { ok: true, offerings: [...parsed.offerings, OPENSEARCH_CONNECTION_OFFERING] };
+  if (!parsed.ok) return parsed;
+  const listed = new Set(parsed.offerings.map((item) => item.id));
+  const extras = CONNECTION_OFFERINGS.flatMap(({ env: key, offering }) =>
+    isConfigured(env[key]) && !listed.has(offering.id) ? [offering] : [],
+  );
+  if (extras.length === 0) return parsed;
+  return { ok: true, offerings: [...parsed.offerings, ...extras] };
 }
 
 export function publicMarketplaceOfferings(offerings: readonly MarketplaceOffering[]): PublicMarketplaceOffering[] {
