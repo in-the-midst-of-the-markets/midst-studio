@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import {
   MONTHLY_CENTS_MAX,
   MONTHLY_CENTS_MIN,
+  connectionStringForOffering,
   monthlyPriceLabel,
   parseMarketplaceCatalog,
   publicMarketplaceOfferings,
@@ -81,6 +82,19 @@ describe("parseMarketplaceCatalog", () => {
     const parsed = parseMarketplaceCatalog(JSON.stringify([{ ...OFFERING, secret: "no" }]));
 
     expect(parsed).toEqual({ ok: true, offerings: [OFFERING] });
+  });
+
+  test("keeps a connection string on the row and refuses one that is not usable", () => {
+    const withString = { ...OFFERING, connectionString: " postgresql://db.example/app " };
+    expect(parseMarketplaceCatalog(JSON.stringify([withString]))).toEqual({
+      ok: true,
+      offerings: [{ ...OFFERING, connectionString: "postgresql://db.example/app" }],
+    });
+    expect(parseMarketplaceCatalog(JSON.stringify([{ ...OFFERING, connectionString: 1 }]))).toEqual({ ok: false });
+    expect(parseMarketplaceCatalog(JSON.stringify([{ ...OFFERING, connectionString: "  " }]))).toEqual({ ok: false });
+    expect(parseMarketplaceCatalog(JSON.stringify([{ ...OFFERING, connectionString: "x".repeat(4001) }]))).toEqual({
+      ok: false,
+    });
   });
 
   test("accepts a one-character id, a name at the length limit, and the price bounds", () => {
@@ -223,6 +237,21 @@ describe("monthlyPriceLabel", () => {
   });
 });
 
+describe("connectionStringForOffering", () => {
+  test("uses the row's string, then the environment variable for that database, and otherwise nothing", () => {
+    const row = { ...OFFERING, connectionString: "https://search.example:9200" };
+    expect(connectionStringForOffering(row, { OPEN_SEARCH_CONNECTION_STRING: "https://other.example:9200" })).toBe(
+      "https://search.example:9200",
+    );
+    expect(
+      connectionStringForOffering(OFFERING, { OPEN_SEARCH_CONNECTION_STRING: " https://search.example:9200 " }),
+    ).toBe("https://search.example:9200");
+    expect(connectionStringForOffering(OFFERING, { OPEN_SEARCH_CONNECTION_STRING: "  " })).toBeNull();
+    expect(connectionStringForOffering(POSTGRES, {})).toBeNull();
+    expect(connectionStringForOffering({ ...OFFERING, id: "acme-trades" }, {})).toBeNull();
+  });
+});
+
 describe("publicMarketplaceOfferings", () => {
   test("shows each database's own monthly price and not the amount the server charges from", () => {
     const postgres: MarketplaceOffering = {
@@ -236,5 +265,8 @@ describe("publicMarketplaceOfferings", () => {
       { id: "opensearch", name: "OpenSearch", description: "Search indexes", priceLabel: "$5/month" },
       { id: "postgres", name: "PostgreSQL", description: "Tables", priceLabel: "$12/month" },
     ]);
+    expect(
+      JSON.stringify(publicMarketplaceOfferings([{ ...OFFERING, connectionString: "postgresql://db/app" }])),
+    ).not.toContain("postgresql");
   });
 });

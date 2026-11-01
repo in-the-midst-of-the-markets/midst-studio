@@ -9,6 +9,7 @@ import {
   isCheckoutSessionId,
   readStripeCheckout,
 } from "@/lib/marketplace/checkout";
+import { connectionForSubscription, rememberMarketplaceConnection } from "@/lib/marketplace/subscribed-connection";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,8 @@ export async function POST(request: Request) {
  * GET /api/marketplace/checkout?session_id= — whether Stripe reports that Checkout session complete.
  *
  * Completion is shown only when the session names an offering still in this server's catalog.
+ * A completed session also returns that offering's database, and stores it for this account
+ * when server storage is on. The browser saves the same connection into its own copy.
  */
 export async function GET(request: Request) {
   const session = await getSession();
@@ -102,6 +105,15 @@ export async function GET(request: Request) {
   if (!read.ok) {
     return NextResponse.json({ error: "The Checkout session could not be confirmed" }, { status: 502 });
   }
-  const known = catalog.offerings.some((item) => item.id === read.offeringId);
-  return NextResponse.json({ offeringId: read.offeringId, complete: read.complete && known });
+  const offering = catalog.offerings.find((item) => item.id === read.offeringId);
+  if (offering === undefined || !read.complete) {
+    return NextResponse.json({ offeringId: read.offeringId, complete: false });
+  }
+  const connection = connectionForSubscription(offering);
+  if (connection !== null) await rememberMarketplaceConnection(session, connection);
+  return NextResponse.json({
+    offeringId: read.offeringId,
+    complete: true,
+    ...(connection === null ? {} : { connection: { ...connection, createdAt: connection.createdAt.toISOString() } }),
+  });
 }
