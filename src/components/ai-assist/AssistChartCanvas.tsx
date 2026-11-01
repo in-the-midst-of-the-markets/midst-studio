@@ -1,13 +1,53 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BarChart, LineChart, ScatterChart } from "echarts/charts";
-import { GridComponent, LegendComponent, TooltipComponent } from "echarts/components";
+import {
+  BarChart,
+  BoxplotChart,
+  CandlestickChart,
+  FunnelChart,
+  GaugeChart,
+  GraphChart,
+  HeatmapChart,
+  LineChart,
+  RadarChart,
+  SankeyChart,
+  ScatterChart,
+  TreemapChart,
+} from "echarts/charts";
+import {
+  GeoComponent,
+  GridComponent,
+  LegendComponent,
+  RadarComponent,
+  TooltipComponent,
+  VisualMapComponent,
+} from "echarts/components";
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 
-registerECharts([LineChart, BarChart, ScatterChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
+registerECharts([
+  LineChart,
+  BarChart,
+  ScatterChart,
+  RadarChart,
+  BoxplotChart,
+  CandlestickChart,
+  HeatmapChart,
+  GraphChart,
+  TreemapChart,
+  SankeyChart,
+  FunnelChart,
+  GaugeChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  RadarComponent,
+  GeoComponent,
+  VisualMapComponent,
+  CanvasRenderer,
+]);
 
 /**
  * Draws one ECharts option. The SQL editor that produced it is a sibling behind

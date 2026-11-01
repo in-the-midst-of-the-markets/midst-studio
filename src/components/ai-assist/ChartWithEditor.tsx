@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { QueryEditor } from "@/components/QueryEditor";
-import { nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
-import { classifyColumns, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
+import { classifyColumns, ECHART_TYPES, echartType, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
@@ -98,6 +98,8 @@ export function ChartWithEditor({
   const [face, setFace] = useState<"chart" | "query">("chart");
   const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, null));
   const [seen, setSeen] = useState({ result, chart });
+  const [typesOpen, setTypesOpen] = useState(false);
+  const [browsingId, setBrowsingId] = useState<string | null>(null);
   const theme = chartTheme(useEffectiveTheme());
   if (tracked.result !== result || tracked.error !== error) {
     setTracked({ result, error });
@@ -107,6 +109,7 @@ export function ChartWithEditor({
     const previous = seen.chart === chart ? choice : null;
     setSeen({ result, chart });
     setChoice(nextAssistChoice(chart, result, previous));
+    setBrowsingId(null);
   }
 
   useEffect(() => {
@@ -123,6 +126,17 @@ export function ChartWithEditor({
 
   const columns = result !== null && result.rows.length > 0 ? classifyColumns(result.fields, result.rows) : null;
   const slots = choice === null ? null : slotsFor(choice.typeId, choice.variationId);
+  const typeMeta = choice === null ? null : echartType(choice.typeId);
+  const variationMeta =
+    typeMeta === null || choice === null
+      ? null
+      : (typeMeta.variations.find((item) => item.id === choice.variationId) ?? null);
+  const typeButtonLabel =
+    typeMeta === null || variationMeta === null
+      ? "Choose a type"
+      : `Change type, ${typeMeta.label}, ${variationMeta.label}`;
+  const shownTypeId = browsingId ?? choice?.typeId ?? null;
+  const shownType = shownTypeId === null ? null : echartType(shownTypeId);
   const built = useMemo(() => {
     if (result === null || result.rows.length === 0 || choice === null) return null;
     return buildChartOption({
@@ -202,6 +216,77 @@ export function ChartWithEditor({
               </p>
             )}
             {running && <p className="px-3 py-6 text-center text-xs text-fg-muted">Running the query…</p>}
+            {!running && columns !== null && (
+              <div className="border-b border-hairline px-3 py-2">
+                <button
+                  type="button"
+                  aria-expanded={typesOpen}
+                  aria-label={typeButtonLabel}
+                  onClick={() => setTypesOpen((open) => !open)}
+                  className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised"
+                >
+                  {typeMeta === null || variationMeta === null
+                    ? "Choose a type"
+                    : `${typeMeta.label} · ${variationMeta.label}`}
+                </button>
+                {typesOpen && (
+                  <div className="mt-2 flex flex-col gap-2">
+                    <fieldset aria-label="Chart types" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
+                      {ECHART_TYPES.map((item) => {
+                        const pressed = (browsingId ?? choice?.typeId) === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            aria-pressed={pressed}
+                            onClick={() => setBrowsingId((current) => (current === item.id ? current : item.id))}
+                            className={cn(
+                              "rounded border px-2 py-0.5 text-xs",
+                              pressed
+                                ? "border-brand bg-brand/15 text-brand"
+                                : "border-hairline-strong text-fg-secondary hover:bg-raised",
+                            )}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </fieldset>
+                    {shownType !== null && (
+                      <fieldset aria-label="Chart variations" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
+                        {shownType.variations.map((item) => {
+                          const pressed = choice?.typeId === shownType.id && choice.variationId === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              aria-pressed={pressed}
+                              onClick={() => {
+                                const classified = columns;
+                                setChoice((current) => {
+                                  if (current?.typeId === shownType.id && current.variationId === item.id) {
+                                    return current;
+                                  }
+                                  return assistChoiceForVariation(shownType.id, item.id, classified) ?? current;
+                                });
+                              }}
+                              className={cn(
+                                "rounded border px-2 py-0.5 text-xs",
+                                pressed
+                                  ? "border-brand bg-brand/15 text-brand"
+                                  : "border-hairline-strong text-fg-secondary hover:bg-raised",
+                              )}
+                            >
+                              {item.label}
+                            </button>
+                          );
+                        })}
+                      </fieldset>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             {!running && slots !== null && columns !== null && (
               <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2">
                 {slots.map((slot) => {
