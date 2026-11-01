@@ -126,7 +126,12 @@ const CONNECTION_OFFERINGS: readonly ConnectionOffering[] = [
   },
 ];
 
-function isConfigured(value: string | undefined): boolean {
+/**
+ * Whether this environment value is set.
+ * A type predicate so a Node `string | undefined` env read narrows before `trim`.
+ * `next build` typechecks with Node's process env, where an index read may be undefined.
+ */
+function isConfigured(value: string | undefined): value is string {
   return value !== undefined && value.trim() !== "";
 }
 
