@@ -7,6 +7,7 @@ import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import {
+  clearQueryFilters,
   readQueryFilters,
   writeMetricCompare,
   writeMetricFilter,
@@ -237,7 +238,21 @@ export function ChartWithEditor({
           disabled={running}
           onChange={changeFilter}
           onCompare={changeCompare}
+          onClear={() => onRun(clearQueryFilters(sql))}
         />
+      )}
+      {error !== null && (
+        <label className="block border-b border-hairline px-3 py-2">
+          <span className="text-xs text-fg-muted">SQL</span>
+          <textarea
+            aria-label="Query SQL"
+            value={sql}
+            wrap="soft"
+            rows={4}
+            onChange={(event) => onSqlChange(event.target.value)}
+            className="mt-1 w-full resize-y whitespace-pre-wrap break-words rounded border border-hairline-strong bg-canvas p-2 font-mono text-xs text-fg"
+          />
+        </label>
       )}
       <div className="relative min-h-0 flex-1">
         <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
@@ -246,6 +261,7 @@ export function ChartWithEditor({
             documentId={title}
             databaseType={databaseType}
             schemaContext={schemaContext}
+            wordWrap
             onContentChange={onSqlChange}
           />
         </div>

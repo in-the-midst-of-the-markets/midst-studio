@@ -3088,6 +3088,11 @@ describe("QueryEditor", () => {
   // Additional edge cases
   // -----------------------------------------------------------------------
 
+  test("word wrap is sent to the editor", () => {
+    render(React.createElement(QueryEditor, createDefaultProps({ wordWrap: true })));
+    expect(mockUpdateOptions).toHaveBeenCalledWith({ wordWrap: "on" });
+  });
+
   test("LINES toggle calls updateOptions with correct line numbers setting", () => {
     const { queryByText } = render(React.createElement(QueryEditor, createDefaultProps()));
 

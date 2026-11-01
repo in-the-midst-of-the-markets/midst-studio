@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   addQueryFilter,
   applyQueryFilters,
+  clearQueryFilters,
+  columnForFilter,
   metricFilterValue,
   promoteQueryFilters,
   queryFilterShape,
@@ -145,6 +147,88 @@ describe("query filters", () => {
     expect(promoteQueryFilters("SELECT 'it''s' AS s FROM t WHERE b = 'shown'")).toBe(
       "SELECT 'it''s' AS s FROM t WHERE b = {{b:shown}}",
     );
+    expect(promoteQueryFilters("SELECT region AS area FROM t WHERE area = 'east'")).toBe(
+      "SELECT region AS area FROM t WHERE region = {{region:east}}",
+    );
+    expect(promoteQueryFilters("SELECT orders.region AS area FROM orders WHERE area = 'east'")).toBe(
+      "SELECT orders.region AS area FROM orders WHERE orders.region = {{region:east}}",
+    );
+    expect(promoteQueryFilters('SELECT region AS "area" FROM t WHERE "area" = \'east\'')).toBe(
+      'SELECT region AS "area" FROM t WHERE region = {{region:east}}',
+    );
+    expect(promoteQueryFilters("SELECT DISTINCT region AS area FROM t WHERE area = 'west'")).toBe(
+      "SELECT DISTINCT region AS area FROM t WHERE region = {{region:west}}",
+    );
+    expect(promoteQueryFilters("SELECT TOP 5 region AS area FROM t WHERE area >= 2")).toBe(
+      "SELECT TOP 5 region AS area FROM t WHERE region >= {{region:2}}",
+    );
+    expect(promoteQueryFilters("SELECT region AS area, area FROM t WHERE area = 'east'")).toBe(
+      "SELECT region AS area, area FROM t WHERE area = {{area:east}}",
+    );
+    expect(promoteQueryFilters("SELECT lower(region) AS area FROM t WHERE area = 'east'")).toBe(
+      "SELECT lower(region) AS area FROM t WHERE area = 'east'",
+    );
+    expect(promoteQueryFilters("SELECT region AS area FROM t WHERE region = 'east'")).toBe(
+      "SELECT region AS area FROM t WHERE region = {{region:east}}",
+    );
+    expect(promoteQueryFilters("SELECT 'as x' AS label, region AS area FROM t WHERE area = 'e'")).toBe(
+      "SELECT 'as x' AS label, region AS area FROM t WHERE region = {{region:e}}",
+    );
+    expect(promoteQueryFilters("SELECT /* area */ region AS area FROM t WHERE area = 'e'")).toBe(
+      "SELECT /* area */ region AS area FROM t WHERE region = {{region:e}}",
+    );
+    expect(promoteQueryFilters("SELECT region AS area -- renamed\nFROM t WHERE area = 'e'")).toBe(
+      "SELECT region AS area -- renamed\nFROM t WHERE region = {{region:e}}",
+    );
+    expect(promoteQueryFilters("SELECT (SELECT region FROM t) AS area FROM t WHERE area = 'e'")).toBe(
+      "SELECT (SELECT region FROM t) AS area FROM t WHERE area = 'e'",
+    );
+    expect(promoteQueryFilters("SELECT region AS area FROM t /*")).toBe("SELECT region AS area FROM t /*");
+  });
+
+  test("a filter on a renamed column uses the original column", () => {
+    expect(columnForFilter("SELECT region AS area FROM t", "area")).toEqual({
+      name: "region",
+      expression: "region",
+    });
+    expect(columnForFilter("SELECT orders.region AS area FROM orders", "area")).toEqual({
+      name: "region",
+      expression: "orders.region",
+    });
+    expect(columnForFilter("SELECT lower(region) AS area FROM t", "area")).toBeNull();
+    expect(columnForFilter("SELECT region FROM t", "region")).toEqual({ name: "region", expression: "region" });
+    expect(columnForFilter("SELECT 1", "no-name")).toBeNull();
+    expect(columnForFilter("SELECT region AS area, area FROM t", "area")).toEqual({
+      name: "area",
+      expression: "area",
+    });
+    expect(columnForFilter("SELECT region AS `area` FROM t", "area")?.expression).toBe("region");
+    expect(columnForFilter("SELECT region AS [area] FROM t", "area")?.expression).toBe("region");
+    expect(columnForFilter('SELECT region AS "a-b" FROM t', "kept")).toEqual({ name: "kept", expression: "kept" });
+    expect(columnForFilter("SELECT *, region AS area FROM t", "area")?.name).toBe("region");
+    expect(columnForFilter("SELECT , region AS area FROM t", "area")?.name).toBe("region");
+    expect(columnForFilter("SELECT region area FROM t", "area")?.expression).toBe("region");
+    expect(columnForFilter("SELECT orders.region area FROM t", "area")?.expression).toBe("orders.region");
+    expect(columnForFilter("SELECT 'it''s' AS s, region AS area FROM t", "area")?.name).toBe("region");
+    expect(columnForFilter("SELECT /*", "region")).toEqual({ name: "region", expression: "region" });
+    expect(columnForFilter("SELECT 'open", "region")).toEqual({ name: "region", expression: "region" });
+    expect(columnForFilter("SELECT region) FROM t", "region")).toEqual({ name: "region", expression: "region" });
+    expect(promoteQueryFilters("SELECT region AS area FROM t WHERE region = {{region:1}} AND area = 'west'")).toBe(
+      "SELECT region AS area FROM t WHERE region = {{region:1}} AND region = {{region_2:west}}",
+    );
+  });
+
+  test("clears every filter comparison and leaves a placeholder that is not one", () => {
+    expect(clearQueryFilters("SELECT 1 WHERE region = {{region:east}} AND total >= {{total:10}} LIMIT 5")).toBe(
+      "SELECT 1 LIMIT 5",
+    );
+    expect(clearQueryFilters("SELECT {{region:east}}")).toBe("SELECT {{region:east}}");
+    expect(clearQueryFilters("SELECT 1")).toBe("SELECT 1");
+    expect(
+      clearQueryFilters(
+        "SELECT orders.region AS area FROM orders WHERE orders.region = {{region:east}} AND total >= {{total:10}}",
+      ),
+    ).toBe("SELECT orders.region AS area FROM orders");
   });
 
   test("adds a filter beside the other clauses and removes the comparison it created", () => {
@@ -178,6 +262,15 @@ describe("query filters", () => {
     expect(removeQueryFilter("SELECT 1", "region")).toBe("SELECT 1");
     expect(removeQueryFilter("SELECT 1 WHERE myregion = {{region:east}}", "region")).toBe(
       "SELECT 1 WHERE myregion = {{region:east}}",
+    );
+    expect(addQueryFilter("SELECT orders.region AS area FROM orders", "region", "east", [], "=", "orders.region")).toBe(
+      "SELECT orders.region AS area FROM orders WHERE orders.region = {{region:east}}",
+    );
+    expect(
+      removeQueryFilter("SELECT orders.region AS area FROM orders WHERE orders.region = {{region:east}}", "region"),
+    ).toBe("SELECT orders.region AS area FROM orders");
+    expect(removeQueryFilter("SELECT 1 WHERE total = {{total:1}} AND orders.region = {{region:east}}", "region")).toBe(
+      "SELECT 1 WHERE total = {{total:1}}",
     );
   });
 

@@ -40,7 +40,13 @@ import {
   type ClassifiedColumns,
 } from "@/lib/charts/echarts-catalog";
 import { buildChartOption, watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
-import { readQueryFilters, writeMetricCompare, writeMetricFilter, writeQueryFilter } from "@/lib/charts/query-filters";
+import {
+  clearQueryFilters,
+  readQueryFilters,
+  writeMetricCompare,
+  writeMetricFilter,
+  writeQueryFilter,
+} from "@/lib/charts/query-filters";
 import { chartTheme } from "@/lib/charts/palette";
 import {
   loadMaskingConfig,
@@ -214,6 +220,7 @@ export function QueryChart({
             )
           }
           onCompare={(name, compare) => onFilterChange(writeMetricCompare(query, filters, name, compare))}
+          onClear={() => onFilterChange(clearQueryFilters(query))}
         />
       )}
       <fieldset

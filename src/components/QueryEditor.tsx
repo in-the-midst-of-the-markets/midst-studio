@@ -90,6 +90,8 @@ interface QueryEditorProps {
    * the bare name it always had, because a default nobody reported cannot be assumed.
    */
   defaultContainer?: readonly string[];
+  /** Wrap long statements onto the next line. The chart query uses this so a bad clause can be selected. */
+  wordWrap?: boolean;
 }
 
 /**
@@ -106,13 +108,18 @@ function formatTitleNoun(language: QueryEditorProps["language"]): string {
 }
 
 // Static editor options - defined outside component to prevent re-creation on every render
-const getEditorOptions = (showLineNumbers: boolean) => ({
+function editorWordWrap(wrap: boolean): "on" | "off" {
+  return wrap ? "on" : "off";
+}
+
+const getEditorOptions = (showLineNumbers: boolean, wordWrap: boolean) => ({
   minimap: { enabled: false },
   fontSize: 13,
   fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas, monospace',
   lineNumbers: showLineNumbers ? ("on" as const) : ("off" as const),
   roundedSelection: true,
   scrollBeyondLastLine: false,
+  wordWrap: editorWordWrap(wordWrap),
   readOnly: false,
   automaticLayout: true,
   padding: { top: 12 },
@@ -154,6 +161,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
       schemaContext,
       capabilities,
       defaultContainer,
+      wordWrap = false,
     },
     ref,
   ) => {
@@ -268,6 +276,10 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         editorRef.current.updateOptions({ lineNumbers: showLineNumbers ? "on" : "off" });
       }
     }, [showLineNumbers]);
+
+    useEffect(() => {
+      editorRef.current?.updateOptions({ wordWrap: editorWordWrap(wordWrap) });
+    }, [wordWrap]);
 
     const parsedSchema = useMemo((): EditorSchemaObject[] => {
       if (!schemaContext) return [];
@@ -785,7 +797,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
                 run: () => latestHandlersRef.current.format(),
               });
             }}
-            options={getEditorOptions(showLineNumbers)}
+            options={getEditorOptions(showLineNumbers, wordWrap)}
           />
         </div>
       </div>

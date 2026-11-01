@@ -254,6 +254,8 @@ describe("QueryChart", () => {
     expect(onFilterChange).toHaveBeenCalledWith(
       "SELECT region, total FROM sales WHERE region = {{region:west|east,west}}",
     );
+    fireEvent.click(view.getByRole("button", { name: "Clear filters" }));
+    expect(onFilterChange).toHaveBeenLastCalledWith("SELECT region, total FROM sales");
     view.rerender(React.createElement(QueryChart, { result: sales, query: "SELECT 1", onFilterChange }));
     expect(view.queryByRole("combobox", { name: "region" })).toBeNull();
   });
