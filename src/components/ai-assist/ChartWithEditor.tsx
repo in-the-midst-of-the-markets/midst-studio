@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { QueryEditor } from "@/components/QueryEditor";
+import { nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
-import { classifyColumns, seedChartChoice } from "@/lib/charts/echarts-catalog";
+import { classifyColumns, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
@@ -93,10 +94,17 @@ export function ChartWithEditor({
 }: ChartWithEditorProps) {
   const [tracked, setTracked] = useState({ result, error });
   const [face, setFace] = useState<"chart" | "query">("chart");
+  const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, null));
+  const [seen, setSeen] = useState({ result, chart });
   const theme = chartTheme(useEffectiveTheme());
   if (tracked.result !== result || tracked.error !== error) {
     setTracked({ result, error });
     setFace("chart");
+  }
+  if (seen.result !== result || seen.chart !== chart) {
+    const previous = seen.chart === chart ? choice : null;
+    setSeen({ result, chart });
+    setChoice(nextAssistChoice(chart, result, previous));
   }
 
   useEffect(() => {
@@ -111,11 +119,10 @@ export function ChartWithEditor({
     return () => window.removeEventListener("execute-query", onExecute);
   }, [face, onRun, onSqlChange]);
 
+  const columns = result !== null && result.rows.length > 0 ? classifyColumns(result.fields, result.rows) : null;
+  const slots = choice === null ? null : slotsFor(choice.typeId, choice.variationId);
   const built = useMemo(() => {
-    if (result === null || result.rows.length === 0 || chart === null) return null;
-    const columns = classifyColumns(result.fields, result.rows);
-    const choice = seedChartChoice(chart, columns);
-    if (choice.typeId === null || choice.variationId === null) return null;
+    if (result === null || result.rows.length === 0 || choice === null) return null;
     return buildChartOption({
       typeId: choice.typeId,
       variationId: choice.variationId,
@@ -123,7 +130,7 @@ export function ChartWithEditor({
       selection: choice.selection,
       theme,
     });
-  }, [result, chart, theme]);
+  }, [result, choice, theme]);
 
   return (
     <article className="overflow-hidden rounded-lg border border-hairline bg-surface">
@@ -188,11 +195,71 @@ export function ChartWithEditor({
               </p>
             )}
             {running && <p className="px-3 py-6 text-center text-xs text-fg-muted">Running the query…</p>}
-            {!running && built !== null && <AssistChartCanvas option={built.option} notes={built.notes} />}
+            {!running && slots !== null && columns !== null && (
+              <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2">
+                {slots.map((slot) => {
+                  const pool = slot.kind === "metric" ? columns.metrics : columns.dimensions;
+                  const selected = new Set(choice?.selection[slot.id] ?? []);
+                  return (
+                    <fieldset
+                      key={slot.id}
+                      aria-label={slot.label}
+                      className="m-0 flex min-w-0 flex-wrap items-center gap-1 border-0 p-0"
+                    >
+                      <span className="text-xs text-fg-muted">{slot.label}</span>
+                      {pool.map((name) => {
+                        const pressed = selected.has(name);
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            aria-pressed={pressed}
+                            onClick={() =>
+                              setChoice((current) => {
+                                if (current === null) return current;
+                                return {
+                                  ...current,
+                                  selection: toggleSlot(
+                                    current.typeId,
+                                    current.variationId,
+                                    columns,
+                                    current.selection,
+                                    slot.id,
+                                    name,
+                                  ),
+                                };
+                              })
+                            }
+                            className={cn(
+                              "rounded border px-2 py-0.5 text-xs",
+                              pressed
+                                ? "border-brand bg-brand/15 text-brand"
+                                : "border-hairline-strong text-fg-secondary hover:bg-raised",
+                            )}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </fieldset>
+                  );
+                })}
+              </div>
+            )}
+            {!running && built !== null && (
+              <div className="min-h-0 flex-1">
+                <AssistChartCanvas option={built.option} notes={built.notes} />
+              </div>
+            )}
+            {!running && built === null && choice !== null && result !== null && result.rows.length > 0 && (
+              <p className="px-3 py-6 text-center text-xs text-fg-muted">Choose the columns this chart needs.</p>
+            )}
             {!running && built === null && result !== null && result.rows.length === 0 && (
               <p className="px-3 py-6 text-center text-xs text-fg-muted">The query returned no rows.</p>
             )}
-            {!running && built === null && result !== null && result.rows.length > 0 && <ResultTable result={result} />}
+            {!running && built === null && choice === null && result !== null && result.rows.length > 0 && (
+              <ResultTable result={result} />
+            )}
             {!running && error === null && result === null && (
               <p className="px-3 py-6 text-center text-xs text-fg-muted">
                 The SQL editor is behind this chart. Open Query to read it.

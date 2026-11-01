@@ -19,6 +19,7 @@ export interface AssistSettings {
 }
 
 export const COMMON_OPENROUTER_MODELS: readonly AssistModelOption[] = [
+  { id: "z-ai/glm-5.3", name: "GLM 5.3" },
   { id: "openai/gpt-4o", name: "GPT-4o" },
   { id: "openai/gpt-4o-mini", name: "GPT-4o mini" },
   { id: "anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet" },
