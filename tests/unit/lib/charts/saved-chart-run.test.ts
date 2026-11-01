@@ -56,6 +56,16 @@ describe("saved chart run", () => {
       kind: "result",
       result,
     });
+    let sent = "";
+    await loadSavedChart(
+      { query: "SELECT region FROM sales WHERE region = {{region:east|east,west}}", connectionId: "c1" },
+      [connection],
+      async (_path, init) => {
+        sent = String(JSON.parse(String(init?.body)).sql);
+        return ok();
+      },
+    );
+    expect(sent).toBe("SELECT region FROM sales WHERE region = 'east'");
   });
 
   test("builds an option from the shelves, or nothing when they cannot draw", () => {

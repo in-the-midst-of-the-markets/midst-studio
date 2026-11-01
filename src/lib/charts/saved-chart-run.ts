@@ -1,5 +1,6 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
+import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 import type { DatabaseConnection, QueryResult, SavedChartConfig } from "@/lib/types";
 
@@ -26,7 +27,7 @@ export async function loadSavedChart(
   }
   const connection = connections.find((item) => item.id === chart.connectionId);
   if (connection === undefined) return { kind: "error", message: "That connection is no longer available." };
-  const outcome = await runAssistQuery(connection, query, post);
+  const outcome = await runAssistQuery(connection, applyQueryFilters(query), post);
   if (!outcome.ok) return { kind: "error", message: outcome.error };
   return { kind: "result", result: outcome.result };
 }
