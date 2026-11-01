@@ -1387,6 +1387,43 @@ describe("useQueryExecution", () => {
     expect(result.current.bottomPanelMode).toBe("explain");
   });
 
+  // A normal run refreshes the view already open. Charts reads the tab result, so
+  // the selection stays and the next rows redraw there.
+  test("executeQuery leaves the panel on Charts", async () => {
+    mockGlobalFetch({ "/api/db/query": { ok: true, json: mockQueryResult } });
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    act(() => {
+      result.current.setBottomPanelMode("charts");
+    });
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM users");
+    });
+
+    expect(result.current.bottomPanelMode).toBe("charts");
+  });
+
+  test("an Explain run opens Explain from Charts", async () => {
+    mockGlobalFetch({
+      "/api/db/query": {
+        ok: true,
+        json: { rows: [{ "QUERY PLAN": { plan: "Seq Scan" } }], fields: ["QUERY PLAN"], rowCount: 1, executionTime: 5 },
+      },
+    });
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    act(() => {
+      result.current.setBottomPanelMode("charts");
+    });
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM users", undefined, true);
+    });
+
+    expect(result.current.bottomPanelMode).toBe("explain");
+  });
+
   // ── executeQuery uses /api/db/multi-query for multi-statement queries ──────
 
   test("executeQuery uses /api/db/multi-query for multi-statement queries", async () => {
