@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
+import { classifyColumns } from "@/lib/charts/echarts-catalog";
 import type { QueryResult } from "@/lib/types";
 
 const bar: AssistChart = { type: "bar", x: "month", y: ["revenue"], caption: "by month" };
@@ -77,5 +78,23 @@ describe("nextAssistChoice", () => {
     const choice = nextAssistChoice({ ...bar, x: "missing", y: ["nope"] }, revenue, null);
     expect(choice?.typeId).toBe("bar");
     expect(choice?.selection.values).toEqual(["revenue"]);
+  });
+});
+
+describe("assistChoiceForVariation", () => {
+  const columns = classifyColumns(revenue.fields, revenue.rows);
+
+  test("opens a variation on the columns this result has", () => {
+    expect(assistChoiceForVariation("line", "area", columns)).toEqual({
+      typeId: "line",
+      variationId: "area",
+      selection: { category: ["month"], values: ["revenue"] },
+    });
+    expect(assistChoiceForVariation("gauge", "basic", columns)?.selection.value).toEqual(["revenue"]);
+  });
+
+  test("ignores a type or variation that is not in the catalog", () => {
+    expect(assistChoiceForVariation("pie", "basic", columns)).toBeNull();
+    expect(assistChoiceForVariation("line", "missing", columns)).toBeNull();
   });
 });

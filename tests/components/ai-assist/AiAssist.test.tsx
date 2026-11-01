@@ -20,8 +20,28 @@ mock.module("echarts/core", () => ({
   },
   registerMap: () => {},
 }));
-mock.module("echarts/charts", () => ({ LineChart: {}, BarChart: {}, ScatterChart: {} }));
-mock.module("echarts/components", () => ({ GridComponent: {}, TooltipComponent: {}, LegendComponent: {} }));
+mock.module("echarts/charts", () => ({
+  LineChart: {},
+  BarChart: {},
+  ScatterChart: {},
+  RadarChart: {},
+  BoxplotChart: {},
+  CandlestickChart: {},
+  HeatmapChart: {},
+  GraphChart: {},
+  TreemapChart: {},
+  SankeyChart: {},
+  FunnelChart: {},
+  GaugeChart: {},
+}));
+mock.module("echarts/components", () => ({
+  GridComponent: {},
+  TooltipComponent: {},
+  LegendComponent: {},
+  RadarComponent: {},
+  GeoComponent: {},
+  VisualMapComponent: {},
+}));
 mock.module("echarts/renderers", () => ({ CanvasRenderer: {} }));
 mock.module("@/components/QueryEditor", () => ({
   QueryEditor: ({ value, onContentChange }: { value: string; onContentChange?: (value: string) => void }) =>
@@ -314,6 +334,60 @@ describe("ChartWithEditor", () => {
     expect(table.getByText('{"z":1}')).toBeTruthy();
     expect(table.getByText("1 more rows")).toBeTruthy();
     expect(table.getByText("1 more columns")).toBeTruthy();
+  });
+
+  test("switches to another chart type and can chart a plain result", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    const types = within(view.getByRole("group", { name: "Chart types" }));
+    expect(types.getByRole("button", { name: "Bar" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(types.getByRole("button", { name: "Line" }));
+    fireEvent.click(types.getByRole("button", { name: "Line" }));
+    const variations = within(view.getByRole("group", { name: "Chart variations" }));
+    expect(variations.getByRole("button", { name: "Basic" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(variations.getByRole("button", { name: "Area" }));
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(view.getByTestId("assist-chart")).toBeTruthy();
+    fireEvent.click(variations.getByRole("button", { name: "Area" }));
+    fireEvent.click(types.getByRole("button", { name: "Candlestick" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Basic" }),
+    );
+    expect(view.getByText("Choose the columns this chart needs.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Change type, Candlestick, Basic" }));
+    expect(view.queryByRole("group", { name: "Chart types" })).toBeNull();
+    view.unmount();
+
+    const table = render(
+      <ChartWithEditor
+        title="Rows"
+        sql="SELECT 1"
+        result={barResult}
+        error={null}
+        chart={null}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(table.getByRole("button", { name: "Choose a type" }));
+    fireEvent.click(within(table.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Gauge" }));
+    fireEvent.click(
+      within(table.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Basic" }),
+    );
+    expect(table.getByTestId("assist-chart")).toBeTruthy();
+    expect(table.getByRole("button", { name: "Change type, Gauge, Basic" })).toBeTruthy();
   });
 });
 

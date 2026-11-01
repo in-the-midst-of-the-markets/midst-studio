@@ -13,6 +13,8 @@ import {
   pruneSelection,
   seedChartChoice,
   selectionReady,
+  slotsFor,
+  type ClassifiedColumns,
   type SlotSelection,
 } from "@/lib/charts/echarts-catalog";
 import type { QueryResult } from "@/lib/types";
@@ -59,4 +61,18 @@ export function nextAssistChoice(
   }
   if (chart === null && previous === null) return null;
   return fallbackChoice(result);
+}
+
+/**
+ * The shelves a chart type opens on this result.
+ * The page uses this when someone picks a type the model did not suggest.
+ * An unknown type or variation is ignored.
+ */
+export function assistChoiceForVariation(
+  typeId: string,
+  variationId: string,
+  columns: ClassifiedColumns,
+): AssistChartChoice | null {
+  if (slotsFor(typeId, variationId) === null) return null;
+  return { typeId, variationId, selection: defaultSelection(typeId, variationId, columns) };
 }
