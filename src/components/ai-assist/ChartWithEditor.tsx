@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
+import { readQueryFilters, writeQueryFilter } from "@/lib/charts/query-filters";
 import { classifyColumns, ECHART_TYPES, echartType, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
@@ -140,6 +142,10 @@ export function ChartWithEditor({
   }, [face, onRun, onSqlChange]);
 
   const columns = result !== null && result.rows.length > 0 ? classifyColumns(result.fields, result.rows) : null;
+  const filters = readQueryFilters(sql);
+  const changeFilter = (name: string, value: string) => {
+    onRun(writeQueryFilter(sql, name, value));
+  };
   const slots = choice === null ? null : slotsFor(choice.typeId, choice.variationId);
   const typeMeta = choice === null ? null : echartType(choice.typeId);
   const variationMeta =
@@ -226,6 +232,7 @@ export function ChartWithEditor({
         </div>
         {face === "chart" && (
           <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
+            {filters.length > 0 && <QueryFilterBar filters={filters} disabled={running} onChange={changeFilter} />}
             {error !== null && (
               <p role="alert" className="px-3 py-2 text-xs text-danger">
                 {error}

@@ -1402,6 +1402,22 @@ describe("StudioWorkspace", () => {
   // BottomPanel callbacks
   // =========================================================================
 
+  test("a chart filter rewrites the placeholder and runs it again", () => {
+    queryAdapterOverride = { bottomPanelMode: "charts" };
+    tabMgrOverride = {
+      currentTab: {
+        ...baseTab,
+        query: "SELECT revenue FROM orders WHERE region = {{region:east|east,west}}",
+      },
+    };
+    renderWorkspace();
+    const fn = capturedBottomPanelProps.onChartFilter as (name: string, value: string) => void;
+    act(() => fn("region", "west"));
+    const next = "SELECT revenue FROM orders WHERE region = {{region:west|east,west}}";
+    expect(mockUpdateCurrentTab).toHaveBeenCalledWith({ query: next });
+    expect(mockExecuteQuery).toHaveBeenCalledWith(next);
+  });
+
   test("bottom panel onLoadQuery delegates", () => {
     renderWorkspace();
     act(() => (capturedBottomPanelProps.onLoadQuery as (q: string) => void)("SELECT 6"));

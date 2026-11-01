@@ -2597,6 +2597,26 @@ describe("Studio", () => {
     expect(mockUpdateCurrentTab).toHaveBeenCalledWith({ query: "SELECT * FROM products" });
   });
 
+  test("a chart filter rewrites the placeholder and runs it again", () => {
+    queryExecOverride = { bottomPanelMode: "charts" };
+    tabMgrOverride = {
+      currentTab: {
+        id: "tab-1",
+        name: "Query 1",
+        query: "SELECT revenue FROM orders WHERE region = {{region:east|east,west}}",
+        result: null,
+        isExecuting: false,
+        type: "sql",
+      },
+    };
+    render(<Studio />);
+    const fn = capturedBottomPanelProps.onChartFilter as (name: string, value: string) => void;
+    act(() => fn("region", "west"));
+    const next = "SELECT revenue FROM orders WHERE region = {{region:west|east,west}}";
+    expect(mockUpdateCurrentTab).toHaveBeenCalledWith({ query: next });
+    expect(mockExecuteQuery).toHaveBeenCalledWith(next);
+  });
+
   // --- QuerySafetyDialog ---
   test("QuerySafetyDialog onProceed calls forceExecuteQuery", () => {
     queryExecOverride = { safetyCheckQuery: "DROP TABLE users" };

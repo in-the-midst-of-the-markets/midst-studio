@@ -233,6 +233,9 @@ interface BottomPanelProps {
   onDiscardChanges: () => void;
   // Actions
   onLoadQuery: (query: string) => void;
+  /** The editor statement while Charts is open, so its placeholders can be changed there. */
+  chartQuery?: string;
+  onChartFilter?: (name: string, value: string) => void;
   onLoadMore: (() => void) | undefined;
   isLoadingMore: boolean | undefined;
   // The writer's own type, so a format added there cannot silently fail to reach this
@@ -293,6 +296,8 @@ export const BottomPanel = React.memo(function BottomPanel({
   onApplyChanges,
   onDiscardChanges,
   onLoadQuery,
+  chartQuery,
+  onChartFilter,
   onLoadMore,
   isLoadingMore,
   onExportResults,
@@ -671,6 +676,8 @@ export const BottomPanel = React.memo(function BottomPanel({
               <QueryChart
                 result={hydratedChart ?? result}
                 spec={hydratedChartSpec}
+                query={chartQuery}
+                onFilterChange={onChartFilter}
                 maskingEnabled={maskingEnabled}
                 userRole={userRole}
                 maskingConfig={maskingConfig}

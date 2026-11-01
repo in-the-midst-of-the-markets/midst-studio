@@ -190,6 +190,16 @@ describe("AssistChartCanvas", () => {
     expect(chart?.setOption.mock.calls.length).toBeGreaterThan(1);
     expect(view.queryByRole("list")).toBeNull();
   });
+
+  test("keeps the same chart when a parent render does not change the option", () => {
+    const option = { series: [1] };
+    const view = render(<AssistChartCanvas option={option} notes={[]} />);
+    const chart = charts.at(-1);
+    view.rerender(<AssistChartCanvas option={option} notes={["Showing the first 1 points."]} />);
+    expect(charts).toHaveLength(1);
+    expect(chart?.dispose).not.toHaveBeenCalled();
+    expect(view.getByText("Showing the first 1 points.")).toBeTruthy();
+  });
 });
 
 describe("ChartWithEditor", () => {
@@ -397,6 +407,50 @@ describe("ChartWithEditor", () => {
     expect(table.getByRole("button", { name: "Change type, Gauge, Basic" })).toBeTruthy();
   });
 
+  test("edits a filter from the chart and leaves a placeholder inside a string alone", () => {
+    const onRun = mock(() => {});
+    const sql =
+      "SELECT '{{region:east}}' AS label, revenue FROM orders WHERE region = {{region:north|east,west}} AND min_total = {{min:1}}";
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql={sql}
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={onRun}
+      />,
+    );
+    const region = view.getByRole("combobox", { name: "region" }) as HTMLSelectElement;
+    expect(within(region).getByRole("option", { name: "north" })).toBeTruthy();
+    fireEvent.change(region, { target: { value: "west" } });
+    expect(onRun).toHaveBeenCalledWith(sql.replace("{{region:north|east,west}}", "{{region:west|east,west}}"));
+    const minimum = view.getByRole("textbox", { name: "min" });
+    fireEvent.keyDown(minimum, { key: "a" });
+    fireEvent.blur(minimum);
+    expect(onRun).toHaveBeenCalledTimes(1);
+    fireEvent.change(minimum, { target: { value: "5" } });
+    fireEvent.keyDown(minimum, { key: "Enter" });
+    expect(onRun).toHaveBeenLastCalledWith(expect.stringContaining("{{min:5}}"));
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql={sql.replace("{{min:1}}", "{{min:5}}")}
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running
+        onSqlChange={() => {}}
+        onRun={onRun}
+      />,
+    );
+    const updated = view.getByRole("textbox", { name: "min" }) as HTMLInputElement;
+    expect(updated.value).toBe("5");
+    expect(updated.hasAttribute("disabled")).toBe(true);
+  });
+
   test("keeps the chosen type when a new query only clears the caption", () => {
     const props = {
       title: "Revenue",
@@ -541,6 +595,64 @@ describe("AiAssist page", () => {
     );
     expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
     expect(view.queryByText("Revenue by month")).toBeNull();
+  });
+
+  test("runs a chart filter as a literal and keeps the title when the control changes", async () => {
+    saveConnection();
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        return jsonResponse({
+          explanation: "Revenue by region.",
+          queries: [
+            {
+              title: "Revenue",
+              sql: "SELECT month, revenue FROM orders WHERE region = {{region:east|east,west}} AND total >= {{min:1}} LIMIT 200",
+              chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month", color: null },
+            },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view, "Revenue for a region");
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.url.includes("/api/db/query") &&
+            (call.body as { sql?: string } | null)?.sql ===
+              "SELECT month, revenue FROM orders WHERE region = 'east' AND total >= 1 LIMIT 200",
+        ),
+      ).toBe(true),
+    );
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    fireEvent.change(view.getByRole("combobox", { name: "region" }), { target: { value: "west" } });
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            (call.body as { sql?: string } | null)?.sql ===
+            "SELECT month, revenue FROM orders WHERE region = 'west' AND total >= 1 LIMIT 200",
+        ),
+      ).toBe(true),
+    );
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    const callsBeforeMin = calls.length;
+    const minimum = view.getByRole("textbox", { name: "min" });
+    fireEvent.keyDown(minimum, { key: "a" });
+    fireEvent.blur(minimum);
+    fireEvent.change(minimum, { target: { value: "5" } });
+    fireEvent.keyDown(minimum, { key: "Enter" });
+    await waitFor(() => expect(calls.length).toBeGreaterThan(callsBeforeMin));
+    expect(
+      calls.some(
+        (call) =>
+          (call.body as { sql?: string } | null)?.sql ===
+          "SELECT month, revenue FROM orders WHERE region = 'west' AND total >= 5 LIMIT 200",
+      ),
+    ).toBe(true);
   });
 
   test("refuses a write the model returned and still shows the editor with no database", async () => {
@@ -963,7 +1075,7 @@ describe("AiAssist page", () => {
           queries: [
             {
               title: "Revenue again",
-              sql: revenueSql,
+              sql: "SELECT  month, revenue FROM orders\nLIMIT 50",
               chart: { type: "line", x: "month", y: ["revenue"], caption: "replaced", color: "red" },
             },
             {
@@ -993,7 +1105,7 @@ describe("AiAssist page", () => {
     expect(before[2]?.cards?.[0]?.sql).toBe(revenueSql);
     fireEvent.click(view.getAllByRole("button", { name: "Chart" })[0] as HTMLButtonElement);
 
-    await typeAndSend(view, "Make it red");
+    await typeAndSend(view, "Make it red and show spend");
     expect(await view.findByText("The bars are red.")).toBeTruthy();
     expect(view.getByRole("heading", { name: "Saved revenue" })).toBeTruthy();
     expect(view.queryByRole("heading", { name: "Revenue again" })).toBeNull();
@@ -1009,7 +1121,7 @@ describe("AiAssist page", () => {
     view.unmount();
     const again = render(<AiAssist />);
     expect(await again.findByText("Yesterday")).toBeTruthy();
-    expect(await again.findByText("Make it red")).toBeTruthy();
+    expect(await again.findByText("Make it red and show spend")).toBeTruthy();
     expect(again.queryByText("Last week")).toBeNull();
     expect(again.getByRole("heading", { name: "Saved revenue" })).toBeTruthy();
     expect(again.getByRole("heading", { name: "Spend" })).toBeTruthy();
@@ -1023,6 +1135,71 @@ describe("AiAssist page", () => {
     expect(saved?.color).toBe("#e66767");
     const spend = kept.flatMap((item) => item.cards ?? []).find((card) => card.title === "Spend");
     expect(spend?.color).toBe("#199e70");
+  });
+
+  test("recolors a locked chart from the question and does not add another", async () => {
+    saveConnection();
+    const revenueSql = "SELECT month, revenue FROM orders LIMIT 200";
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([
+        {
+          id: "assist-2",
+          role: "assistant",
+          text: "Saved.",
+          at: new Date().toISOString(),
+          cards: [
+            {
+              id: "assist-1",
+              title: "Saved revenue",
+              titledSql: revenueSql,
+              modelSql: revenueSql,
+              locked: false,
+              sql: revenueSql,
+              connectionId: "c1",
+              connectionName: "Orders",
+              chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month", color: null },
+              color: null,
+              result: barResult,
+              error: null,
+            },
+          ],
+        },
+      ]),
+    );
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        return jsonResponse({
+          explanation: "Painted.",
+          queries: [
+            {
+              title: "Spend",
+              connection: "Orders",
+              sql: "SELECT region, sum(cost) AS spend FROM sales",
+              chart: { type: "bar", x: "region", y: ["spend"], caption: "Spend", color: null },
+            },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByRole("heading", { name: "Saved revenue" })).toBeTruthy();
+    const created = charts.length;
+    fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "p" } });
+    fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "pu" } });
+    expect(charts).toHaveLength(created);
+    expect(charts.some((chart) => chart.dispose.mock.calls.length > 0)).toBe(false);
+    await typeAndSend(view, "make it purple");
+    expect(await view.findByText("Painted.")).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "Spend" })).toBeNull();
+    await waitFor(() => {
+      const colours = charts.flatMap((chart) =>
+        chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
+      );
+      expect(colours).toContain("#9546de");
+    });
   });
 
   test("drops an answer that arrives after the page is gone", async () => {

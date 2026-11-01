@@ -16,6 +16,8 @@ import {
 import {
   acceptAssistPlan,
   explanationWithEdits,
+  questionOnlyRecolors,
+  recolorsFromQuestion,
   splitAssistFollowUp,
   type AssistChart,
   type AssistHistoryTurn,
@@ -23,6 +25,7 @@ import {
 } from "@/lib/ai/assist-plan";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
+import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
@@ -156,11 +159,11 @@ function storedOf(turns: readonly Turn[]): AssistTranscriptTurn[] {
 /** The latest chart with that statement takes the new colour. Its SQL, title, and type stay. */
 function paint(turns: readonly Turn[], recolors: readonly AssistRecolor[]): readonly Turn[] {
   if (recolors.length === 0) return turns;
-  const colors = new Map(recolors.map((item) => [item.sql, item.color]));
+  const colors = new Map(recolors.map((item) => [queryIdentity(item.sql), item.color]));
   return turns.map((turn) => ({
     ...turn,
     cards: turn.cards.map((card) => {
-      const color = colors.get(card.titledSql.trim());
+      const color = colors.get(queryIdentity(card.titledSql));
       if (color === undefined) return card;
       return {
         ...card,
@@ -351,13 +354,13 @@ export function AiAssist() {
         ...turn,
         cards: turn.cards.map((card) => {
           if (card.id !== id) return card;
-          const changed = sql.trim() !== card.titledSql.trim();
+          const changed = queryFilterShape(sql) !== queryFilterShape(card.titledSql);
           return {
             ...card,
             sql,
             title: changed ? titleForQuery(sql) : card.title,
             titledSql: sql,
-            locked: sql.trim() !== card.modelSql.trim(),
+            locked: queryFilterShape(sql) !== queryFilterShape(card.modelSql),
             chart: changed && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
             running: true,
             error: null,
@@ -371,11 +374,12 @@ export function AiAssist() {
       updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." }, true);
       return;
     }
-    if (!isReadOnlySql(sql)) {
+    const statement = applyQueryFilters(sql);
+    if (!isReadOnlySql(statement)) {
       updateCard(id, { running: false, error: "AI Assist only runs read-only queries." }, true);
       return;
     }
-    const outcome = await runAssistQuery(target, sql, appFetch);
+    const outcome = await runAssistQuery(target, statement, appFetch);
     updateCard(
       id,
       {
@@ -435,11 +439,13 @@ export function AiAssist() {
         return;
       }
       const plan = acceptAssistPlan(body);
-      const follow = splitAssistFollowUp(
-        plan.queries,
-        turnsRef.current.flatMap((turn) => turn.cards.map((card) => ({ sql: card.titledSql, locked: card.locked }))),
+      const prior = turnsRef.current.flatMap((turn) =>
+        turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
       );
-      const cards: AssistCard[] = follow.queries.map((query) => {
+      const follow = splitAssistFollowUp(plan.queries, prior);
+      const recolors = [...follow.recolors, ...recolorsFromQuestion(question, prior)];
+      const queries = questionOnlyRecolors(question) ? [] : follow.queries;
+      const cards: AssistCard[] = queries.map((query) => {
         const resolved = connectionForAssistQuery(connections, query.connection);
         return {
           id: nextId(),
@@ -459,7 +465,7 @@ export function AiAssist() {
       });
       commit(
         [
-          ...paint(turnsRef.current, follow.recolors),
+          ...paint(turnsRef.current, recolors),
           { id: nextId(), role: "assistant", text: plan.explanation, at: askedAt(), cards },
         ],
         true,
@@ -469,7 +475,7 @@ export function AiAssist() {
           const target =
             card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
           if (target === null) return;
-          const outcome = await runAssistQuery(target, card.sql, appFetch);
+          const outcome = await runAssistQuery(target, applyQueryFilters(card.sql), appFetch);
           updateCard(
             card.id,
             {

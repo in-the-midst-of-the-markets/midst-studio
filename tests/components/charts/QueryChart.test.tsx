@@ -240,4 +240,19 @@ describe("QueryChart", () => {
     expect(pie.getByRole("button", { name: "Line" }).getAttribute("aria-pressed")).toBe("true");
     expect(pie.getByRole("button", { name: "Area" }).getAttribute("aria-pressed")).toBe("true");
   });
+
+  test("shows a filter from the query and reports a new value", () => {
+    const onFilterChange = mock(() => {});
+    const view = render(
+      React.createElement(QueryChart, {
+        result: sales,
+        query: "SELECT region, total FROM sales WHERE region = {{region:east|east,west}}",
+        onFilterChange,
+      }),
+    );
+    fireEvent.change(view.getByRole("combobox", { name: "region" }), { target: { value: "west" } });
+    expect(onFilterChange).toHaveBeenCalledWith("region", "west");
+    view.rerender(React.createElement(QueryChart, { result: sales, query: "SELECT 1", onFilterChange }));
+    expect(view.queryByRole("combobox", { name: "region" })).toBeNull();
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   BarChart,
   BoxplotChart,
@@ -64,7 +64,10 @@ export function AssistChartCanvas({
   const stopRef = useRef<(() => void) | null>(null);
   const optionRef = useRef(option);
 
-  const bind = (element: HTMLDivElement | null) => {
+  // React 19 detaches a ref when its callback identity changes, and that detach
+  // disposes the chart. Typing in the chat re-renders this card, so the callback
+  // stays the same and the option is applied only when it actually changes.
+  const bind = useCallback((element: HTMLDivElement | null) => {
     stopRef.current?.();
     stopRef.current = null;
     chartRef.current?.dispose();
@@ -77,7 +80,7 @@ export function AssistChartCanvas({
     stopRef.current = watchChartSize(element, () => {
       chart.resize();
     });
-  };
+  }, []);
 
   useEffect(() => {
     optionRef.current = option;
