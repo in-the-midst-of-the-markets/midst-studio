@@ -317,4 +317,218 @@ describe("Marketplace", () => {
       checkout.reject(new Error("gone"));
     });
   });
+
+  test("offers cancel while the subscription is active and keeps the database until the period ends", async () => {
+    storage.saveConnection({
+      id: "marketplace-acme-trades",
+      name: "Acme Trades",
+      type: "postgres",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    storage.setActiveConnectionId("marketplace-acme-trades");
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": (request) => {
+        if (request.method === "POST") {
+          return {
+            json: {
+              subscription: {
+                offeringId: "acme-trades",
+                status: "canceling",
+                accessUntil: "2026-03-01T00:00:00.000Z",
+              },
+            },
+          };
+        }
+        return {
+          json: {
+            subscriptions: [{ offeringId: "acme-trades", status: "active", accessUntil: "2027-01-01T00:00:00.000Z" }],
+          },
+        };
+      },
+    });
+
+    render(<Marketplace />);
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel subscription" }));
+
+    expect(
+      await screen.findByText("Cancels on March 1, 2026. This database stays in your connections until then."),
+    ).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Subscribe with Stripe" })).toBeNull();
+    expect(storage.getConnections().map((item) => item.id)).toEqual(["marketplace-acme-trades"]);
+    expect(storage.getActiveConnectionId()).toBe("marketplace-acme-trades");
+  });
+
+  test("shows a scheduled cancellation without another cancel button", async () => {
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": {
+        json: {
+          subscriptions: [{ offeringId: "acme-trades", status: "canceling", accessUntil: null }],
+        },
+      },
+    });
+
+    render(<Marketplace />);
+
+    expect(
+      await screen.findByText("This database stays in your connections until the subscription ends."),
+    ).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel subscription" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Subscribe with Stripe" })).toBeNull();
+  });
+
+  test("removes the database once the subscription has ended", async () => {
+    storage.saveConnection({
+      id: "marketplace-acme-trades",
+      name: "Acme Trades",
+      type: "postgres",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    storage.setActiveConnectionId("marketplace-acme-trades");
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": {
+        json: { subscriptions: [{ offeringId: "acme-trades", status: "ended", accessUntil: null }] },
+      },
+    });
+
+    render(<Marketplace />);
+
+    await waitFor(() => {
+      expect(storage.getConnections()).toEqual([]);
+    });
+    expect(storage.getActiveConnectionId()).toBeNull();
+    expect(screen.getByRole("button", { name: "Subscribe with Stripe" })).not.toBeNull();
+  });
+
+  test("a subscription list that cannot be read leaves Subscribe in place", async () => {
+    storage.saveConnection({
+      id: "marketplace-acme-trades",
+      name: "Acme Trades",
+      type: "postgres",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": { status: 502, json: { error: "Subscriptions could not be read" } },
+    });
+
+    render(<Marketplace />);
+
+    expect(await screen.findByRole("button", { name: "Subscribe with Stripe" })).not.toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(storage.getConnections().map((item) => item.id)).toEqual(["marketplace-acme-trades"]);
+  });
+
+  test("removes the database when cancel finds the subscription already over", async () => {
+    storage.saveConnection({
+      id: "marketplace-acme-trades",
+      name: "Acme Trades",
+      type: "postgres",
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    storage.setActiveConnectionId("marketplace-acme-trades");
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": (request) => {
+        if (request.method === "POST") {
+          return {
+            json: { subscription: { offeringId: "acme-trades", status: "ended", accessUntil: null } },
+          };
+        }
+        return {
+          json: {
+            subscriptions: [{ offeringId: "acme-trades", status: "active", accessUntil: "2027-01-01T00:00:00.000Z" }],
+          },
+        };
+      },
+    });
+
+    render(<Marketplace />);
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel subscription" }));
+
+    expect(await screen.findByRole("button", { name: "Subscribe with Stripe" })).not.toBeNull();
+    expect(storage.getConnections()).toEqual([]);
+    expect(storage.getActiveConnectionId()).toBeNull();
+  });
+
+  test("shows the error cancel returned, and a generic one when the answer is unusable", async () => {
+    const show = async (subscriptions: MockFetchResponse | ((req: Request) => MockFetchResponse)) => {
+      cleanup();
+      localStorage.clear();
+      mockGlobalFetch({
+        "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+        "/api/marketplace/subscriptions": (request) => {
+          if (request.method === "POST") {
+            return typeof subscriptions === "function" ? subscriptions(request) : subscriptions;
+          }
+          return {
+            json: {
+              subscriptions: [{ offeringId: "acme-trades", status: "active", accessUntil: null }],
+            },
+          };
+        },
+      });
+      render(<Marketplace />);
+      fireEvent.click(await screen.findByRole("button", { name: "Cancel subscription" }));
+    };
+
+    await show({ status: 502, json: { error: "Stripe could not cancel the subscription" } });
+    expect(await screen.findByText("Stripe could not cancel the subscription")).not.toBeNull();
+    expect((screen.getByRole("button", { name: "Cancel subscription" }) as HTMLButtonElement).disabled).toBe(false);
+
+    await show({ status: 200, json: {} });
+    expect(await screen.findByText("Stripe could not cancel the subscription.")).not.toBeNull();
+
+    await show({ status: 502, text: "nope" });
+    expect(await screen.findByText("Stripe could not cancel the subscription.")).not.toBeNull();
+
+    await show(() => {
+      throw new Error("offline");
+    });
+    expect(await screen.findByText("Stripe could not cancel the subscription.")).not.toBeNull();
+  });
+
+  test("ignores a second cancel while the first is still running", async () => {
+    const pending = deferred();
+    const fetchMock = mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": (request) => {
+        if (request.method === "POST") return pending.promise;
+        return {
+          json: {
+            subscriptions: [{ offeringId: "acme-trades", status: "active", accessUntil: null }],
+          },
+        };
+      },
+    });
+
+    render(<Marketplace />);
+    const button = await screen.findByRole("button", { name: "Cancel subscription" });
+    fireEvent.click(button);
+    await waitFor(() => {
+      expect((screen.getByRole("button", { name: "Cancel subscription" }) as HTMLButtonElement).disabled).toBe(true);
+    });
+    (screen.getByRole("button", { name: "Cancel subscription" }) as HTMLButtonElement).disabled = false;
+    fireEvent.click(screen.getByRole("button", { name: "Cancel subscription" }));
+
+    const cancels = () =>
+      fetchMock.mock.calls.filter((call) => {
+        const init = call[1] as RequestInit | undefined;
+        return String(call[0]).includes("/api/marketplace/subscriptions") && init?.method === "POST";
+      });
+    expect(cancels()).toHaveLength(1);
+
+    await act(async () => {
+      pending.resolve({
+        json: { subscription: { offeringId: "acme-trades", status: "canceling", accessUntil: null } },
+      });
+    });
+
+    expect(cancels()).toHaveLength(1);
+    expect(
+      await screen.findByText("This database stays in your connections until the subscription ends."),
+    ).not.toBeNull();
+  });
 });

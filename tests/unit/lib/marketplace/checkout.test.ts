@@ -7,6 +7,7 @@ import {
   isCheckoutSessionId,
   readStripeCheckout,
   sessionOutcome,
+  stripeSecret,
 } from "@/lib/marketplace/checkout";
 
 const originalTrust = process.env.TRUST_PROXY_HEADERS;
@@ -23,6 +24,21 @@ afterEach(() => {
   else process.env.TRUST_PROXY_HEADERS = originalTrust;
   if (originalAllowed === undefined) delete process.env.ALLOWED_ORIGINS;
   else process.env.ALLOWED_ORIGINS = originalAllowed;
+});
+
+describe("stripeSecret", () => {
+  function env(values: Record<string, string>): NodeJS.ProcessEnv {
+    return values as NodeJS.ProcessEnv;
+  }
+
+  test("prefers a trimmed test key, then a live key", () => {
+    expect(stripeSecret(env({ STRIPE_TEST_SECRET_KEY: " sk_test_a ", STRIPE_SECRET_KEY: "sk_live_b" }))).toBe(
+      "sk_test_a",
+    );
+    expect(stripeSecret(env({ STRIPE_TEST_SECRET_KEY: "  ", STRIPE_SECRET_KEY: " sk_live_b " }))).toBe("sk_live_b");
+    expect(stripeSecret(env({ STRIPE_SECRET_KEY: "   " }))).toBeNull();
+    expect(stripeSecret(env({}))).toBeNull();
+  });
 });
 
 describe("isCheckoutSessionId", () => {
@@ -78,6 +94,7 @@ describe("checkoutSessionBody", () => {
       successUrl: "https://studio.example/marketplace?checkout=success&session_id={CHECKOUT_SESSION_ID}",
       cancelUrl: "https://studio.example/marketplace?checkout=cancel",
       offeringId: "opensearch",
+      subscriber: "ada",
     });
     const other = checkoutSessionBody({
       productName: "PostgreSQL",
@@ -85,6 +102,7 @@ describe("checkoutSessionBody", () => {
       successUrl: "https://studio.example/marketplace?checkout=success&session_id={CHECKOUT_SESSION_ID}",
       cancelUrl: "https://studio.example/marketplace?checkout=cancel",
       offeringId: "postgres",
+      subscriber: "ada",
     });
 
     expect(body).toContain("mode=subscription");
@@ -96,6 +114,11 @@ describe("checkoutSessionBody", () => {
     expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=OpenSearch");
     expect(body).toContain("line_items%5B0%5D%5Bquantity%5D=1");
     expect(body).toContain("client_reference_id=opensearch");
+    expect(body).toContain("metadata%5Boffering_id%5D=opensearch");
+    expect(body).toContain("metadata%5Bsubscriber%5D=ada");
+    expect(body).toContain("subscription_data%5Bmetadata%5D%5Boffering_id%5D=opensearch");
+    expect(body).toContain("subscription_data%5Bmetadata%5D%5Bsubscriber%5D=ada");
+    expect(other).toContain("subscription_data%5Bmetadata%5D%5Boffering_id%5D=postgres");
     expect(body).toContain("session_id%3D{CHECKOUT_SESSION_ID}");
     expect(body).not.toContain("%7BCHECKOUT_SESSION_ID%7D");
   });
@@ -157,6 +180,7 @@ describe("createStripeCheckout", () => {
     successUrl: "https://studio.example/marketplace?session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://studio.example/marketplace?checkout=cancel",
     offeringId: "acme-trades",
+    subscriber: "ada",
   };
 
   test("posts the subscription and returns the Checkout URL", async () => {
@@ -165,6 +189,7 @@ describe("createStripeCheckout", () => {
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer sk_test_marketplace");
       expect(new Headers(init?.headers).get("content-type")).toBe("application/x-www-form-urlencoded");
       expect(String(init?.body)).toContain("{CHECKOUT_SESSION_ID}");
+      expect(String(init?.body)).toContain("metadata%5Bsubscriber%5D=ada");
       return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" }), { status: 200 });
     });
 

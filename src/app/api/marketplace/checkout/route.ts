@@ -8,20 +8,11 @@ import {
   createStripeCheckout,
   isCheckoutSessionId,
   readStripeCheckout,
+  stripeSecret,
 } from "@/lib/marketplace/checkout";
 import { connectionForSubscription, rememberMarketplaceConnection } from "@/lib/marketplace/subscribed-connection";
 
 export const dynamic = "force-dynamic";
-
-function configuredSecret(name: "STRIPE_TEST_SECRET_KEY" | "STRIPE_SECRET_KEY"): string | null {
-  const secret = process.env[name]?.trim();
-  return secret ? secret : null;
-}
-
-/** The test secret wins when it is set, so a test key is what Checkout uses on this deployment. */
-function stripeSecret(): string | null {
-  return configuredSecret("STRIPE_TEST_SECRET_KEY") ?? configuredSecret("STRIPE_SECRET_KEY");
-}
 
 /**
  * POST /api/marketplace/checkout — start a Stripe subscription Checkout for one catalogued offering.
@@ -70,6 +61,7 @@ export async function POST(request: Request) {
     successUrl,
     cancelUrl,
     offeringId: offering.id,
+    subscriber: session.username,
   });
   if (!created.ok) {
     return NextResponse.json({ error: "Stripe could not start checkout" }, { status: 502 });

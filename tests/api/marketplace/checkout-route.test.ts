@@ -188,6 +188,8 @@ describe("POST /api/marketplace/checkout", () => {
     expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
     expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Brecurring%5D%5Binterval%5D=month");
     expect(opensearchBody).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=OpenSearch");
+    expect(opensearchBody).toContain("metadata%5Bsubscriber%5D=ada");
+    expect(opensearchBody).toContain("subscription_data%5Bmetadata%5D%5Boffering_id%5D=opensearch");
     expect(opensearchBody).not.toContain("unit_amount%5D=1");
     expect(opensearchBody).toContain(
       "https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dsuccess%26session_id%3D{CHECKOUT_SESSION_ID}",

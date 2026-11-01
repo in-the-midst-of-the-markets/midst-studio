@@ -3,6 +3,7 @@ import {
   MONTHLY_CENTS_MAX,
   MONTHLY_CENTS_MIN,
   connectionStringForOffering,
+  isMarketplaceOfferingId,
   monthlyPriceLabel,
   parseMarketplaceCatalog,
   publicMarketplaceOfferings,
@@ -268,5 +269,15 @@ describe("publicMarketplaceOfferings", () => {
     expect(
       JSON.stringify(publicMarketplaceOfferings([{ ...OFFERING, connectionString: "postgresql://db/app" }])),
     ).not.toContain("postgresql");
+  });
+});
+
+describe("isMarketplaceOfferingId", () => {
+  test("accepts a catalog id and refuses anything else", () => {
+    expect(isMarketplaceOfferingId("opensearch")).toBe(true);
+    expect(isMarketplaceOfferingId("a")).toBe(true);
+    expect(isMarketplaceOfferingId("Bad")).toBe(false);
+    expect(isMarketplaceOfferingId("")).toBe(false);
+    expect(isMarketplaceOfferingId("a-")).toBe(false);
   });
 });

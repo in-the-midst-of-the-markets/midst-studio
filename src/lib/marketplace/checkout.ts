@@ -46,12 +46,17 @@ export function checkoutSessionBody(input: {
   successUrl: string;
   cancelUrl: string;
   offeringId: string;
+  subscriber: string;
 }): string {
   const body = new URLSearchParams();
   body.set("mode", "subscription");
   body.set("success_url", input.successUrl);
   body.set("cancel_url", input.cancelUrl);
   body.set("client_reference_id", input.offeringId);
+  body.set("metadata[offering_id]", input.offeringId);
+  body.set("metadata[subscriber]", input.subscriber);
+  body.set("subscription_data[metadata][offering_id]", input.offeringId);
+  body.set("subscription_data[metadata][subscriber]", input.subscriber);
   body.set("line_items[0][quantity]", "1");
   body.set("line_items[0][price_data][currency]", "usd");
   body.set("line_items[0][price_data][unit_amount]", input.unitAmount);
@@ -82,7 +87,15 @@ export function sessionOutcome(payload: unknown): { offeringId: string; complete
   return { offeringId: row.client_reference_id, complete: row.status === "complete" };
 }
 
-async function stripeCall(
+/** The test secret wins when it is set, so a test key is what Checkout uses on this deployment. */
+export function stripeSecret(env: NodeJS.ProcessEnv = process.env): string | null {
+  const testKey = env.STRIPE_TEST_SECRET_KEY?.trim();
+  if (testKey) return testKey;
+  const liveKey = env.STRIPE_SECRET_KEY?.trim();
+  return liveKey ? liveKey : null;
+}
+
+export async function stripeRequest(
   secretKey: string,
   path: string,
   body: string | undefined,
@@ -119,10 +132,11 @@ export async function createStripeCheckout(
     successUrl: string;
     cancelUrl: string;
     offeringId: string;
+    subscriber: string;
   },
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ ok: true; url: string } | { ok: false }> {
-  const result = await stripeCall(input.secretKey, "/v1/checkout/sessions", checkoutSessionBody(input), fetchImpl);
+  const result = await stripeRequest(input.secretKey, "/v1/checkout/sessions", checkoutSessionBody(input), fetchImpl);
   if (!result.ok) return { ok: false };
   const url = checkoutUrl(result.payload);
   if (url === null) return { ok: false };
@@ -135,7 +149,7 @@ export async function readStripeCheckout(
   fetchImpl: typeof fetch = fetch,
 ): Promise<{ ok: true; offeringId: string; complete: boolean } | { ok: false }> {
   if (!isCheckoutSessionId(sessionId)) return { ok: false };
-  const result = await stripeCall(secretKey, `/v1/checkout/sessions/${sessionId}`, undefined, fetchImpl);
+  const result = await stripeRequest(secretKey, `/v1/checkout/sessions/${sessionId}`, undefined, fetchImpl);
   if (!result.ok) return { ok: false };
   const outcome = sessionOutcome(result.payload);
   if (outcome === null) return { ok: false };
