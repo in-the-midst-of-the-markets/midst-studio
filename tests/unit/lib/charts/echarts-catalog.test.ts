@@ -22,10 +22,11 @@ const columns: ClassifiedColumns = {
 };
 
 describe("the type list", () => {
-  test("names the thirteen chart types and nothing else", () => {
+  test("names the chart types and gives each one several options", () => {
     expect(ECHART_TYPES.map((type) => type.label)).toEqual([
       "Line",
       "Bar",
+      "Pie",
       "Scatter",
       "Geo",
       "Candlestick",
@@ -39,8 +40,9 @@ describe("the type list", () => {
       "Gauge",
     ]);
     expect(echartType("line")?.label).toBe("Line");
+    expect(echartType("pie")?.label).toBe("Pie");
     expect(echartType("missing")).toBeNull();
-    for (const type of ECHART_TYPES) expect(type.variations.length).toBeGreaterThan(0);
+    for (const type of ECHART_TYPES) expect(type.variations.length).toBeGreaterThanOrEqual(5);
   });
 
   test("a variation can require an optional shelf and can add one", () => {
@@ -48,7 +50,16 @@ describe("the type list", () => {
     const bubbles = slotsFor("geo", "bubbles");
     expect(points?.find((slot) => slot.id === "value")?.required).toBe(false);
     expect(bubbles?.find((slot) => slot.id === "value")?.required).toBe(true);
+    expect(slotsFor("geo", "heat")?.find((slot) => slot.id === "value")?.required).toBe(true);
     expect(slotsFor("scatter", "bubble")?.map((slot) => slot.id)).toEqual(["x", "y", "series", "size"]);
+    expect(slotsFor("candlestick", "volume")?.map((slot) => slot.id)).toEqual([
+      "time",
+      "open",
+      "close",
+      "low",
+      "high",
+      "volume",
+    ]);
     expect(slotsFor("line", "nope")).toBeNull();
     expect(slotsFor("nope", "basic")).toBeNull();
   });
@@ -125,7 +136,7 @@ describe("shelves", () => {
 describe("a composed answer", () => {
   test("maps the chart types this tab can draw", () => {
     expect(chartChoiceFromSpec(null)).toBeNull();
-    expect(chartChoiceFromSpec({ type: "pie" })).toBeNull();
+    expect(chartChoiceFromSpec({ type: "pie" })).toEqual({ typeId: "pie", variationId: "basic" });
     expect(chartChoiceFromSpec({ type: "stacked-bar" })).toEqual({ typeId: "bar", variationId: "stacked" });
     expect(chartChoiceFromSpec({ type: "area" })).toEqual({ typeId: "line", variationId: "area" });
     expect(chartChoiceFromSpec({ type: "line" })).toEqual({ typeId: "line", variationId: "basic" });
@@ -143,14 +154,26 @@ describe("a composed answer", () => {
     expect(selectionFromSpec("line", { x: "missing", y: ["units"] }, columns)).toBeNull();
     expect(selectionFromSpec("line", { x: "region", y: ["missing"] }, columns)).toBeNull();
     expect(selectionFromSpec("bar", spec, columns)).toEqual({ category: ["total"], values: ["units"] });
+    expect(selectionFromSpec("pie", { x: "region", y: [] }, columns)).toBeNull();
+    expect(selectionFromSpec("pie", { x: "missing", y: ["total"] }, columns)).toBeNull();
+    expect(selectionFromSpec("pie", { x: "region", y: ["region"] }, columns)).toBeNull();
+    expect(selectionFromSpec("pie", { x: "region", y: ["total"] }, columns)).toEqual({
+      name: ["region"],
+      value: ["total"],
+    });
   });
 
   test("opens nothing when the answer does not fit these columns", () => {
     expect(seedChartChoice(null, columns)).toEqual({ typeId: null, variationId: null, selection: {} });
-    expect(seedChartChoice({ type: "pie", x: "region", y: ["total"] }, columns)).toEqual({
+    expect(seedChartChoice({ type: "pie", x: "missing", y: ["total"] }, columns)).toEqual({
       typeId: null,
       variationId: null,
       selection: {},
+    });
+    expect(seedChartChoice({ type: "pie", x: "region", y: ["total"] }, columns)).toEqual({
+      typeId: "pie",
+      variationId: "basic",
+      selection: { name: ["region"], value: ["total"] },
     });
     expect(seedChartChoice({ type: "bar", x: "missing", y: ["total"] }, columns)).toEqual({
       typeId: null,
