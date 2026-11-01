@@ -230,7 +230,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
       */}
       <div className="dark hidden lg:flex lg:w-1/2 xl:w-[55%] relative overflow-hidden">
         <div className="absolute inset-0 bg-surface" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0070f3]/20 via-transparent to-[#421856]/15" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#9546de]/20 via-transparent to-[#421856]/15" />
 
         {/* Dot grid pattern */}
         <div
@@ -284,7 +284,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
             <div className="space-y-4 max-w-xl">
               <h1 className="text-4xl font-bold text-white tracking-tight leading-none">
                 The open-source SQL IDE that
-                <span className="bg-gradient-to-r from-[#0070f3] to-[#421856] bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#9546de] to-[#421856] bg-clip-text text-transparent">
                   {" "}
                   deploys next to your data
                 </span>

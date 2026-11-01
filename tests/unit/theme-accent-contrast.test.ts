@@ -188,8 +188,8 @@ function worstGround(palettes: Map<string, string>, token: string, ownTint: stri
  * literal a component carried before this migration.
  */
 const TEXT_TOKENS: ReadonlyArray<{ token: string; light: string; dark: string; tint: string }> = [
-  { token: "--studio-brand", light: "blue-700", dark: "blue-400", tint: "--studio-brand-tint" },
-  { token: "--studio-brand-bright", light: "blue-800", dark: "blue-300", tint: "--studio-brand-tint" },
+  { token: "--studio-brand", light: "purple-700", dark: "purple-400", tint: "--studio-brand-tint" },
+  { token: "--studio-brand-bright", light: "purple-800", dark: "purple-300", tint: "--studio-brand-tint" },
   { token: "--studio-warning", light: "amber-800", dark: "amber-400", tint: "--studio-warning-tint" },
   { token: "--studio-warning-bright", light: "amber-900", dark: "amber-300", tint: "--studio-warning-tint" },
   { token: "--studio-success", light: "emerald-800", dark: "emerald-400", tint: "--studio-success-tint" },
