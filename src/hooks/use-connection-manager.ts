@@ -4,7 +4,8 @@ import { appFetch, SESSION_REQUIRED_CODE } from "@/lib/config/base-path";
 import { ApiErrorCode } from "@/lib/api/error-codes";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { DatabaseConnection } from "@/lib/types";
-import { detailedObjects, schemaContextOf, type DetailedObject } from "@/lib/db/detailed-object";
+import { detailedObjects, type DetailedObject } from "@/lib/db/detailed-object";
+import { useSchemaContext } from "@/hooks/use-schema-context";
 import { containerDepth, declaresCatalogSessions, relationKindIds } from "@/lib/db/object-kinds";
 import { sessionDefaultContainer } from "@/lib/db/container-walk";
 import type { Container, DatabaseObject, ObjectDetail, ProviderCapabilities } from "@/lib/db/types";
@@ -540,9 +541,10 @@ export function useConnectionManager(storageReady = false) {
    *
    * `schemaContextOf` rather than a bare `JSON.stringify`, for the one field a prompt may not
    * carry: a group's `readRanges`, which can name a key (etcd spec E13). Every other byte is
-   * the same.
+   * the same. Notes the user saved for this connection are folded in by `useSchemaContext`,
+   * and a connection with none keeps those bytes.
    */
-  const schemaContext = useMemo(() => schemaContextOf(schema), [schema]);
+  const schemaContext = useSchemaContext(schema, visibleActive?.id ?? null);
 
   // Initialize connections once storage sync is ready
   useEffect(() => {

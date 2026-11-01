@@ -231,6 +231,22 @@ describe("Sidebar", () => {
     expect(buttons.length).toBeGreaterThan(0);
   });
 
+  test("Notes replaces the object tree until it is closed", () => {
+    const { getByRole, getByTestId, queryByTestId } = render(<Sidebar {...createDefaultProps()} />);
+    expect(getByTestId("object-tree")).toBeDefined();
+
+    fireEvent.click(getByRole("button", { name: "Table notes" }));
+
+    expect(queryByTestId("object-tree")).toBeNull();
+    expect(getByTestId("table-notes")).toBeDefined();
+    expect(getByRole("button", { name: "Table notes" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(getByRole("button", { name: "Table notes" }));
+
+    expect(getByTestId("object-tree")).toBeDefined();
+    expect(queryByTestId("table-notes")).toBeNull();
+  });
+
   test("the object tree only renders when activeConnection exists", () => {
     // With active connection
     const propsWithConn = createDefaultProps({

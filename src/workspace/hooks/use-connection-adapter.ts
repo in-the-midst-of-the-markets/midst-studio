@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo } from "react";
 import type { DatabaseConnection } from "@/lib/types";
-import { schemaContextOf, type DetailedObject } from "@/lib/db/detailed-object";
+import type { DetailedObject } from "@/lib/db/detailed-object";
+import { useSchemaContext } from "@/hooks/use-schema-context";
 import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
 import type { ObjectSource } from "@/components/object-tree";
 import type { ObjectSourceApplier, ObjectSourceReader } from "@/components/object-source";
@@ -450,8 +451,8 @@ export function useConnectionAdapter({
   }, [onObjectsFetch]);
 
   // The same derivation as the standalone shell's, so a host's `readRanges` reaches the
-  // generators and never the AI panels (etcd spec E13).
-  const schemaContext = useMemo(() => schemaContextOf(schema), [schema]);
+  // generators and never the AI panels (etcd spec E13). Saved table notes fold in here too.
+  const schemaContext = useSchemaContext(schema, activeConnection?.id ?? null);
 
   // The embedded shell's stand-in for `useProviderMetadata`: it has no
   // `/api/db/provider-meta` of its own and holds no credentials to describe, so

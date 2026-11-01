@@ -429,6 +429,8 @@ function getCollectionData(collection: string): unknown {
       return storage.getConnectionOrder();
     case "connection_groups":
       return storage.getConnectionGroups();
+    case "data_dictionaries":
+      return storage.getDataDictionaries();
     default:
       return null;
   }

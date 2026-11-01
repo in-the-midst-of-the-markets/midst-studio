@@ -254,14 +254,22 @@ export function QuerySafetyDialog({
           const tables = JSON.parse(schemaContext);
           filteredSchema = tables
             .slice(0, 30)
-            .map((t: { name: string; rowCount?: number; columns?: { name: string; type: string }[] }) => {
-              const cols =
-                t.columns
-                  ?.slice(0, 8)
-                  .map((c) => `${c.name} (${c.type})`)
-                  .join(", ") || "";
-              return `${t.name} (${t.rowCount || 0} rows): ${cols}`;
-            })
+            .map(
+              (t: {
+                name: string;
+                rowCount?: number;
+                description?: string;
+                columns?: { name: string; type: string; description?: string }[];
+              }) => {
+                const cols =
+                  t.columns
+                    ?.slice(0, 8)
+                    .map((c) => `${c.name} (${c.type}${c.description ? `: ${c.description}` : ""})`)
+                    .join(", ") || "";
+                const about = t.description ? ` — ${t.description}` : "";
+                return `${t.name} (${t.rowCount || 0} rows): ${cols}${about}`;
+              },
+            )
             .join("\n");
         } catch {
           filteredSchema = schemaContext.substring(0, 2000);

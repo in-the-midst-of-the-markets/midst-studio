@@ -422,3 +422,85 @@ describe("storage facade: connection order", () => {
     expect(collections).toContain("connection_groups");
   });
 });
+
+describe("storage facade: data dictionaries", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  const dictionary = (connectionId: string, description = "Accounts") => ({
+    connectionId,
+    notes: "jargon",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    tables: [
+      {
+        path: ["public", "users"],
+        description,
+        endorsement: "normal" as const,
+        columns: {},
+        columnTypes: {},
+        relationships: [],
+      },
+    ],
+  });
+
+  test("is empty until a dictionary is saved, and a non-array value is empty too", () => {
+    expect(storage.getDataDictionaries()).toEqual([]);
+    expect(storage.getDataDictionary("conn-1")).toBeNull();
+    localStorage.setItem("libredb_data_dictionaries", "{}");
+    expect(storage.getDataDictionaries()).toEqual([]);
+  });
+
+  test("saveDataDictionary replaces the same connection and dispatches data_dictionaries", () => {
+    let captured: CustomEvent | null = null;
+    const handler = (event: Event) => {
+      captured = event as CustomEvent;
+    };
+    window.addEventListener("libredb-storage-change", handler);
+
+    storage.saveDataDictionary(dictionary("conn-1"));
+    storage.saveDataDictionary(dictionary("conn-2", "Other"));
+    storage.saveDataDictionary(dictionary("conn-1", "Renamed"));
+
+    expect(storage.getDataDictionaries()).toHaveLength(2);
+    expect(storage.getDataDictionary("conn-1")?.tables[0]?.description).toBe("Renamed");
+    expect(storage.getDataDictionary("missing")).toBeNull();
+    expect(captured).not.toBeNull();
+    expect(captured!.detail.collection).toBe("data_dictionaries");
+    window.removeEventListener("libredb-storage-change", handler);
+  });
+
+  test("deleteConnection drops that connection's dictionary and says so", () => {
+    storage.saveConnection(makeConnection());
+    storage.saveDataDictionary(dictionary("conn-1"));
+    storage.saveDataDictionary(dictionary("conn-2", "Keep"));
+    const collections: string[] = [];
+    const handler = (event: Event) => {
+      collections.push((event as CustomEvent).detail.collection);
+    };
+    window.addEventListener("libredb-storage-change", handler);
+
+    storage.deleteConnection("conn-1");
+
+    window.removeEventListener("libredb-storage-change", handler);
+    expect(storage.getDataDictionary("conn-1")).toBeNull();
+    expect(storage.getDataDictionary("conn-2")?.tables[0]?.description).toBe("Keep");
+    expect(collections).toContain("data_dictionaries");
+  });
+
+  test("deleteConnection stays quiet about dictionaries when the connection has none", () => {
+    storage.saveConnection(makeConnection());
+    storage.saveDataDictionary(dictionary("conn-2"));
+    const collections: string[] = [];
+    const handler = (event: Event) => {
+      collections.push((event as CustomEvent).detail.collection);
+    };
+    window.addEventListener("libredb-storage-change", handler);
+
+    storage.deleteConnection("conn-1");
+
+    window.removeEventListener("libredb-storage-change", handler);
+    expect(collections).not.toContain("data_dictionaries");
+    expect(storage.getDataDictionary("conn-2")).not.toBeNull();
+  });
+});

@@ -635,4 +635,21 @@ describe("SchemaExplorer", () => {
     expect(container.querySelector('[data-testid="table-users"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="table-orders"]')).toBeNull();
   });
+
+  test("Table notes opens for the connection and Tables returns to the list", async () => {
+    const user = userEvent.setup();
+    const { getByRole, getByTestId, queryByTestId } = render(
+      <SchemaExplorer {...createDefaultProps({ connectionId: "c1" })} />,
+    );
+
+    await user.click(getByRole("button", { name: "Table notes" }));
+
+    expect(getByTestId("table-notes")).toBeDefined();
+    expect(queryByTestId("table-users")).toBeNull();
+
+    await user.click(getByRole("button", { name: "Tables" }));
+
+    expect(queryByTestId("table-notes")).toBeNull();
+    expect(getByTestId("table-users")).toBeDefined();
+  });
 });

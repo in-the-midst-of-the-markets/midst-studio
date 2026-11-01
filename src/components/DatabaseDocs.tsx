@@ -27,6 +27,7 @@ interface DatabaseDocsProps {
 interface ParsedSchemaTable {
   name: string;
   rowCount?: number;
+  description?: string;
   columns?: { name: string; type: string; isPrimary?: boolean; isNullable?: boolean }[];
 }
 
@@ -73,7 +74,8 @@ export function DatabaseDocs({ schema, schemaContext, databaseType, capabilities
                     `${c.name} (${c.type}${c.isPrimary ? ", PK" : ""}${c.isNullable === false ? ", NOT NULL" : ""})`,
                 )
                 .join(", ") || "";
-            const fullTableText = `Table: ${t.name} (${t.rowCount || 0} rows)\nColumns: ${allCols}`;
+            const about = t.description ? `\nNotes: ${t.description}` : "";
+            const fullTableText = `Table: ${t.name} (${t.rowCount || 0} rows)\nColumns: ${allCols}${about}`;
             const separatorLen = tableEntries.length > 0 ? 2 : 0;
 
             if (currentChars + separatorLen + fullTableText.length <= budget) {

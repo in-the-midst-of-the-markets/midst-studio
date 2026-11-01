@@ -1,4 +1,5 @@
 import type { DatabaseConnection, QueryHistoryItem, SavedQuery, SchemaSnapshot, SavedChartConfig } from "../types";
+import type { DataDictionary } from "../data-dictionary";
 import type { AuditEvent } from "../audit";
 import type { MaskingConfig } from "../data-masking";
 import type { ThresholdConfig } from "../monitoring-thresholds";
@@ -47,6 +48,12 @@ export interface StorageData {
    * group; one in none is "Ungrouped".
    */
   connection_groups: ConnectionGroup[];
+  /**
+   * Notes the user wrote about each connection's tables, kept off `DatabaseConnection`
+   * for the same reason as `favorite_connections`: a managed connection is replaced from
+   * the server on every load, and these notes have to survive that.
+   */
+  data_dictionaries: DataDictionary[];
 }
 
 export interface ConnectionGroup {
@@ -74,6 +81,7 @@ export const STORAGE_COLLECTIONS: StorageCollection[] = [
   "favorite_connections",
   "connection_order",
   "connection_groups",
+  "data_dictionaries",
 ];
 
 /**
