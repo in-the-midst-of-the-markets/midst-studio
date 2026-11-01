@@ -3,6 +3,8 @@ import "../setup-dom";
 import { describe, test, expect, mock } from "bun:test";
 import { renderHook, act } from "@testing-library/react";
 
+import { emptyDictionary } from "@/lib/data-dictionary";
+import { storage } from "@/lib/storage";
 import { useConnectionAdapter } from "@/workspace/hooks/use-connection-adapter";
 import type { WorkspaceConnection, WorkspaceObjectReader } from "@/workspace/types";
 import { relationObjects, type DetailedObject } from "@/lib/db/detailed-object";
@@ -140,6 +142,27 @@ describe("useConnectionAdapter", () => {
 
     // Verify schemaContext derived value
     expect(result.current.schemaContext).toBe(JSON.stringify(schemaData));
+
+    try {
+      act(() => {
+        storage.saveDataDictionary({
+          ...emptyDictionary("c1"),
+          tables: [
+            {
+              path: ["users"],
+              description: "Accounts",
+              endorsement: "normal",
+              columns: {},
+              columnTypes: {},
+              relationships: [],
+            },
+          ],
+        });
+      });
+      expect(result.current.schemaContext).toContain("Accounts");
+    } finally {
+      localStorage.removeItem("libredb_data_dictionaries");
+    }
 
     // Verify loading is done
     expect(result.current.isLoadingSchema).toBe(false);

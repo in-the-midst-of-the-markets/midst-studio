@@ -894,6 +894,7 @@ export function StudioWorkspace({
                 onLoadObjects={conn.loadObjects}
                 objectSource={conn.objectSource}
                 objectReadsColumns={conn.readsColumns}
+                schema={conn.schema}
               />
             </ResizablePanel>
             <ResizableHandle className="w-1 bg-transparent hover:bg-brand-tint/30 transition-colors" />

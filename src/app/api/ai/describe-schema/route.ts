@@ -4,6 +4,7 @@ import { MAX_SCHEMA_CONTEXT_CHARS } from "@/lib/llm/types";
 import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 import { fenceForPrompt } from "@/lib/ai/prompt-fence";
+import { DICTIONARY_HINT } from "@/lib/data-dictionary";
 
 export async function POST(req: NextRequest) {
   const guard = await guardRoute({ route: "POST /api/ai/describe-schema", bucket: "ai", request: req });
@@ -34,7 +35,9 @@ For each table, provide:
 3. **Relationships**: Detected foreign keys and relationships
 4. **Usage Notes**: Common query patterns or important constraints
 
-Format as markdown. Be concise but informative. Database type: ${databaseType || "SQL"}.`
+Format as markdown. Be concise but informative. Database type: ${databaseType || "SQL"}.
+
+${DICTIONARY_HINT}`
         : `You are a database documentation expert. Generate comprehensive database documentation.
 
 Given the full schema, provide:
@@ -44,7 +47,9 @@ Given the full schema, provide:
 4. **Data Flow**: How data typically flows through the system
 5. **Key Observations**: Naming conventions, patterns, potential issues
 
-Format as clean markdown. Be concise. Database type: ${databaseType || "SQL"}.`;
+Format as clean markdown. Be concise. Database type: ${databaseType || "SQL"}.
+
+${DICTIONARY_HINT}`;
 
     const stream = await provider.stream({
       messages: [

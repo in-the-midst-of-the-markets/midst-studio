@@ -815,7 +815,7 @@ CREATE INDEX IF NOT EXISTS passkey_spent_challenges_expiry ON passkey_spent_chal
 | Column | Type | Description |
 |--------|------|-------------|
 | `user_id` | TEXT | User's email from JWT token (e.g., `admin@libredb.org`), or under governance `sub:` followed by the identity provider's subject ([Governance Mode](#governance-mode)) |
-| `collection` | TEXT | Data category: `connections`, `history`, `saved_queries`, `schema_snapshots`, `saved_charts`, `active_connection_id`, `audit_log`, `masking_config`, `threshold_config`, `dismissed_seeds`, `favorite_connections`, `connection_order`, `connection_groups` |
+| `collection` | TEXT | Data category: `connections`, `history`, `saved_queries`, `schema_snapshots`, `saved_charts`, `active_connection_id`, `audit_log`, `masking_config`, `threshold_config`, `dismissed_seeds`, `favorite_connections`, `connection_order`, `connection_groups`, `data_dictionaries` |
 | `data` | TEXT | JSON-serialized collection data |
 | `updated_at` | TEXT / TIMESTAMPTZ | Last modification timestamp |
 
@@ -899,7 +899,7 @@ This part describes the internals of the storage abstraction layer: design goals
 
 ### 3.1 Collections
 
-All application state is organized into **13 collections**, each stored as a JSON blob:
+All application state is organized into **14 collections**, each stored as a JSON blob:
 
 | Collection | Type | Description | Max Items |
 |-----------|------|-------------|-----------|
@@ -916,6 +916,7 @@ All application state is organized into **13 collections**, each stored as a JSO
 | `favorite_connections` | `string[]` | Connection ids the user has starred | — |
 | `connection_order` | `string[]` | Connection ids in the user's custom drag order | — |
 | `connection_groups` | `ConnectionGroup[]` | The user's own sections in the Connections panel, in display order: `{ id, name, collapsed, connectionIds }` | — |
+| `data_dictionaries` | `DataDictionary[]` | Notes the user wrote about each connection's tables, plus any uploaded schema design, so AI explanations see them. Kept off the connection record so a managed connection can be refreshed without dropping the notes | — |
 
 **A snapshot taken before the object model has no kind and no path.** `schema_snapshots` holds what
 the schema list held when the snapshot was taken, and a live reading now always carries an object's
@@ -996,6 +997,7 @@ dismissed_seeds   → libredb_dismissed_seeds
 favorite_connections → libredb_favorite_connections
 connection_order  → libredb_connection_order
 connection_groups → libredb_connection_groups
+data_dictionaries → libredb_data_dictionaries
 ```
 
 ---
@@ -1364,7 +1366,7 @@ When a user first enables server mode (or a new user logs in for the first time)
 2. Reads the signed-in username (GET /api/auth/me), clears a browser copy that belongs to another account, and sets 'libredb_workspace_owner' to the username
 3. Checks localStorage('libredb_server_migrated') flag
 4. If not migrated:
-   a. Reads whichever of the 13 collections exist in localStorage (a fresh browser with none simply sets the flag and skips)
+   a. Reads whichever of the 14 collections exist in localStorage (a fresh browser with none simply sets the flag and skips)
    b. POST /api/storage/migrate with the collected payload
    c. Server calls provider.mergeData() — upserts each collection as a whole blob in one transaction
    d. Sets 'libredb_server_migrated' flag in localStorage

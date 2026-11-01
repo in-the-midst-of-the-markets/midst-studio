@@ -7,6 +7,7 @@ import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
 import { Search, Hash, LoaderCircle, CircleAlert, Database, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TableNotes } from "@/components/sidebar/TableNotes";
 import { AnimatePresence } from "framer-motion";
 import { TableItem } from "./TableItem";
 
@@ -30,6 +31,8 @@ interface SchemaExplorerProps {
   onProfileTable?: (path: readonly string[]) => void;
   onGenerateCode?: (path: readonly string[]) => void;
   onGenerateTestData?: (path: readonly string[]) => void;
+  /** When set, the mobile explorer can open table notes for this connection. */
+  connectionId?: string;
 }
 
 export const SchemaExplorer = React.memo(function SchemaExplorer({
@@ -46,6 +49,7 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
   onProfileTable,
   onGenerateCode,
   onGenerateTestData,
+  connectionId,
 }: SchemaExplorerProps) {
   const labels = metadata?.labels;
   // Create Table is offered only once these have loaded: the form writes every typed name in the
@@ -53,6 +57,14 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
   const capabilities = metadata?.capabilities;
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
+  const [notesOpen, setNotesOpen] = useState(false);
+
+  const notesButton =
+    connectionId === undefined ? null : (
+      <button type="button" onClick={() => setNotesOpen(true)} className="text-[0.6875rem] font-medium text-brand">
+        Table notes
+      </button>
+    );
 
   // Keyed by the ADDRESS: two objects in two containers share a label, so a label-keyed set
   // expanded both rows at once and gave the list one React key for two objects (#789).
@@ -79,6 +91,17 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
     });
   }, [schema, searchQuery]);
 
+  if (connectionId !== undefined && notesOpen) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <button type="button" onClick={() => setNotesOpen(false)} className="px-3 py-2 text-left text-xs text-brand">
+          Tables
+        </button>
+        <TableNotes connectionId={connectionId} schema={schema} />
+      </div>
+    );
+  }
+
   if (isLoadingSchema) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -87,6 +110,7 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
           <Database strokeWidth={1.5} className="w-3.5 h-3.5 absolute inset-0 m-auto text-brand animate-pulse" />
         </div>
         <span className="text-xs font-medium animate-pulse">Scanning Schema...</span>
+        {notesButton}
       </div>
     );
   }
@@ -106,6 +130,7 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
         </div>
         <h3 className="text-foreground text-xs font-medium mb-1">Schema could not be read</h3>
         <p className="text-xs text-muted-foreground leading-relaxed break-words">{schemaError}</p>
+        {notesButton}
       </div>
     );
   }
@@ -120,6 +145,7 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
         <p className="text-xs text-muted-foreground leading-relaxed">
           We couldn&apos;t find any tables or views in this connection.
         </p>
+        {notesButton}
         {capabilities?.createTable !== undefined && (
           <button
             className="mt-3 flex items-center gap-1.5 rounded-md bg-brand-solid hover:bg-brand-solid-hover text-white px-3 py-1.5 text-xs font-medium transition-colors"
@@ -141,6 +167,7 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
           <div className="flex items-center gap-2">
             <Database strokeWidth={1.5} className="w-3.5 h-3.5 text-brand/50" />
             <span className="text-xs font-medium text-muted-foreground">Explorer</span>
+            {notesButton}
           </div>
           <div className="flex items-center gap-1.5">
             {isAdmin && (

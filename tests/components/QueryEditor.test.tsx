@@ -3458,6 +3458,30 @@ describe("QueryEditor completion addresses (#1397)", () => {
     expect(items[0]).toEqual({ label: "t", labelLower: "t", columnNames: "" });
   });
 
+  test("completion skips a table that exists only in an uploaded design, and a designed column", () => {
+    const schema = JSON.stringify([
+      {
+        name: "orders",
+        path: ["public", "orders"],
+        columns: [
+          { name: "id", type: "int" },
+          { name: "draft_col", type: "text", designed: true },
+        ],
+      },
+      { name: "drafts", designed: true, columns: [{ name: "id", type: "int" }] },
+    ]);
+    mockUseMonacoReturn = { Range: class {} };
+    mockRegisterSQLCompletionProvider.mockClear();
+    const { unmount } = render(React.createElement(QueryEditor, createDefaultProps({ schemaContext: schema })));
+    const calls = mockRegisterSQLCompletionProvider.mock.calls as unknown as [unknown, SchemaCompletionCache][];
+    const cache = calls[calls.length - 1][1];
+    unmount();
+    mockUseMonacoReturn = null;
+    expect(cache.tableItems.map((item) => item.label)).toEqual(["orders"]);
+    expect(cache.tableItems[0]?.columnNames).toBe("id");
+    expect(cache.columnMap.get("orders")?.map((item) => item.label)).toEqual(["id"]);
+  });
+
   test("the connection's capabilities quote a segment, and there is no quoting before they load", () => {
     mockUseMonacoReturn = { Range: class {} };
     mockRegisterSQLCompletionProvider.mockClear();

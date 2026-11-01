@@ -11,10 +11,17 @@ export interface EditorSchemaObject {
   /** The object's address; Cypher completion reads a label or relationship type from its last segment. */
   readonly path?: string[];
   readonly rowCount?: number | null;
+  /**
+   * Set on a table that came from an uploaded schema design and is not in the live catalog.
+   * Completion skips it: suggesting it would offer a name the database may not have.
+   */
+  readonly designed?: boolean;
   readonly columns?: ReadonlyArray<{
     readonly name: string;
     readonly type: string;
     readonly isPrimary?: boolean;
+    /** A column the design named and the live table does not have. Completion skips it. */
+    readonly designed?: boolean;
   }>;
 }
 

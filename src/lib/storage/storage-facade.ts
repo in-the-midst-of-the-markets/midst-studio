@@ -5,6 +5,7 @@
  */
 
 import { DatabaseConnection, QueryHistoryItem, SavedQuery, SchemaSnapshot, SavedChartConfig } from "../types";
+import type { DataDictionary } from "../data-dictionary";
 import { type AuditEvent } from "../audit";
 import { DEFAULT_MASKING_CONFIG, type MaskingConfig } from "../data-masking";
 import { DEFAULT_THRESHOLDS, type ThresholdConfig } from "../monitoring-thresholds";
@@ -119,6 +120,13 @@ export const storage = {
     // can reach it once the connection is gone (#1448).
     removeWorkspaceTabs(id);
     remove(activeCatalogKey(id));
+
+    const dictionaries = storage.getDataDictionaries();
+    if (dictionaries.some((dictionary) => dictionary.connectionId === id)) {
+      const nextDictionaries = dictionaries.filter((dictionary) => dictionary.connectionId !== id);
+      writeJSON("data_dictionaries", nextDictionaries);
+      dispatchChange("data_dictionaries", nextDictionaries);
+    }
   },
 
   getFavoriteConnectionIds: (): string[] => {
@@ -152,6 +160,24 @@ export const storage = {
   setConnectionGroups: (groups: ConnectionGroup[]) => {
     writeJSON("connection_groups", groups);
     dispatchChange("connection_groups", groups);
+  },
+
+  getDataDictionaries: (): DataDictionary[] => {
+    const data = readJSON<unknown>("data_dictionaries");
+    return Array.isArray(data) ? (data as DataDictionary[]) : [];
+  },
+
+  getDataDictionary: (connectionId: string): DataDictionary | null => {
+    return storage.getDataDictionaries().find((dictionary) => dictionary.connectionId === connectionId) ?? null;
+  },
+
+  saveDataDictionary: (dictionary: DataDictionary) => {
+    const next = [
+      ...storage.getDataDictionaries().filter((item) => item.connectionId !== dictionary.connectionId),
+      dictionary,
+    ];
+    writeJSON("data_dictionaries", next);
+    dispatchChange("data_dictionaries", next);
   },
 
   // ═══════════════════════════════════════════════════════════════════════════

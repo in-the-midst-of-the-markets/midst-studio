@@ -3,6 +3,7 @@ import { createLLMProvider } from "@/lib/llm";
 import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 import { fenceExplainPlan, fenceForPrompt } from "@/lib/ai/prompt-fence";
+import { DICTIONARY_HINT } from "@/lib/data-dictionary";
 
 function buildExplainSystemPrompt(databaseType: string, schemaContext: string): string {
   // The schema context is database content: fence it so a table or column name chosen
@@ -14,6 +15,8 @@ ROLE: Analyze EXPLAIN plans and provide actionable, plain-language explanations.
 
 SCHEMA CONTEXT:
 ${schemaBlock}
+
+${DICTIONARY_HINT}
 
 OUTPUT FORMAT (always follow this structure):
 

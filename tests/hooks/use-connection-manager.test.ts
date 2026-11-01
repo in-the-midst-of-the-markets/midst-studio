@@ -15,6 +15,7 @@ import { useConnectionManager } from "@/hooks/use-connection-manager";
 import { SEED_CONFIG_UNREADABLE_REASON, type ManagedConnectionPayload } from "@/hooks/use-connection-payload";
 import { useTabManager } from "@/hooks/use-tab-manager";
 import { logger } from "@/lib/logger";
+import { emptyDictionary } from "@/lib/data-dictionary";
 import { storage } from "@/lib/storage";
 import type { DatabaseConnection } from "@/lib/types";
 import { rowWritableObjects } from "@/lib/db/detailed-object";
@@ -531,6 +532,34 @@ describe("useConnectionManager", () => {
     expect(result.current.schema[0]?.columns.map((column) => column.name)).toContain(SAMPLED_MARKER);
     expect(result.current.schemaContext).not.toContain(SAMPLED_MARKER);
     expect(result.current.schemaContext).toBe(JSON.stringify(joined()));
+  });
+
+  test("schemaContext includes a note saved for the active connection", async () => {
+    mockGlobalFetch(catalogRoutes());
+    storage.saveDataDictionary({
+      ...emptyDictionary("conn-1"),
+      tables: [
+        {
+          path: ["public", "users"],
+          description: "Accounts",
+          endorsement: "normal",
+          columns: {},
+          columnTypes: {},
+          relationships: [],
+        },
+      ],
+    });
+
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await act(async () => {
+      result.current.setActiveConnection(makeConnection());
+    });
+    await act(async () => {
+      await result.current.fetchSchema(makeConnection());
+    });
+
+    expect(result.current.schemaContext).toContain("Accounts");
   });
 
   // ── isLoadingSchema during fetch ──────────────────────────────────────────

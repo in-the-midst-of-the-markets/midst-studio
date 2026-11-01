@@ -6,6 +6,7 @@ import { ApiErrorCode } from "@/lib/api/error-codes";
 import { logger } from "@/lib/logger";
 import { QUERY_SAFETY_ROUTE_TIMEOUT_MS } from "@/lib/llm/query-safety";
 import { fenceForPrompt } from "@/lib/ai/prompt-fence";
+import { DICTIONARY_HINT } from "@/lib/data-dictionary";
 
 function buildSafetySystemPrompt(databaseType: string, schemaContext: string): string {
   // Schema context is database content: fence it so a name written into the database
@@ -17,6 +18,8 @@ DATABASE TYPE: ${databaseType || "PostgreSQL"}
 
 SCHEMA CONTEXT:
 ${schemaBlock}
+
+${DICTIONARY_HINT}
 
 ANALYSIS RULES:
 1. Check for destructive operations: DROP, TRUNCATE, DELETE without WHERE, UPDATE without WHERE

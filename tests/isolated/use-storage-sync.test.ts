@@ -24,6 +24,7 @@ const mockStorage = {
   getFavoriteConnectionIds: mock(() => ["fav-1"]),
   getConnectionOrder: mock(() => ["c1"]),
   getConnectionGroups: mock(() => [{ id: "g1", name: "Prod", collapsed: false, connectionIds: ["c1"] }]),
+  getDataDictionaries: mock(() => [] as unknown[]),
 };
 
 const ALL_COLLECTIONS = [
@@ -541,6 +542,39 @@ describe("useStorageSync", () => {
         },
         { timeout: 2000 },
       );
+    });
+
+    test("pushes data_dictionaries to the server on a storage-change event", async () => {
+      localStorage.setItem("libredb_server_migrated", "true");
+      const fetchMock = mockGlobalFetch({
+        "/api/storage/config": { ok: true, status: 200, json: { provider: "postgres", serverMode: true } },
+        ...SIGNED_IN,
+        "/api/storage/migrate": { ok: true, status: 200, json: { ok: true, migrated: [] } },
+        "/api/storage": { ok: true, status: 200, json: {} },
+        "/api/storage/data_dictionaries": { ok: true, status: 200, json: { ok: true } },
+      });
+
+      const { result } = renderHook(() => useStorageSync());
+
+      await waitFor(() => {
+        expect(result.current.isServerMode).toBe(true);
+      });
+
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent("libredb-storage-change", {
+            detail: { collection: "data_dictionaries", data: [] },
+          }),
+        );
+      });
+
+      await waitFor(
+        () => {
+          expect(calledPaths(fetchMock)).toContain("/api/storage/data_dictionaries");
+        },
+        { timeout: 2000 },
+      );
+      expect(mockStorage.getDataDictionaries).toHaveBeenCalled();
     });
 
     /**

@@ -290,6 +290,8 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
 
       const defaultKey = defaultContainer === undefined ? undefined : JSON.stringify(defaultContainer);
       parsedSchema.forEach((table) => {
+        if (table.designed === true) return;
+        const columns = table.columns?.filter((column) => column.designed !== true);
         const tableLower = table.name.toLowerCase();
         const path = table.path;
         const container = path && path.length > 0 ? path.slice(0, -1) : undefined;
@@ -299,7 +301,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           // Absent stays absent: the detail line says "(0 rows)" only for a measured zero (#1397).
           // `== null` so a null count from the JSON is as absent as a missing one.
           ...(table.rowCount == null ? {} : { rowCount: table.rowCount }),
-          columnNames: table.columns?.map((c) => c.name).join(", ") || "",
+          columnNames: columns?.map((c) => c.name).join(", ") || "",
           ...(container === undefined
             ? {}
             : {
@@ -315,7 +317,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         });
 
         const tableColumns: SchemaColumnItem[] = [];
-        table.columns?.forEach((col) => {
+        columns?.forEach((col) => {
           const colItem: SchemaColumnItem = {
             label: col.name,
             labelLower: col.name.toLowerCase(),

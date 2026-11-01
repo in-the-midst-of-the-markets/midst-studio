@@ -1415,6 +1415,7 @@ export default function Studio() {
                 onLoadObjects={conn.loadObjects}
                 objectRefreshToken={objectRefreshToken}
                 connectionPulse={connectionPulse}
+                schema={conn.schema}
                 currentContainer={currentContainer}
                 onContainerActivate={activateCatalogOf}
               />
@@ -1584,6 +1585,7 @@ export default function Studio() {
                           onOpenMaintenance={openMaintenance}
                           databaseType={conn.activeConnection?.type}
                           metadata={metadata}
+                          connectionId={conn.activeConnection.id}
                           onProfileTable={(path) => setProfilerPath(path)}
                           onGenerateCode={(path) => setCodeGenPath(path)}
                           onGenerateTestData={(path) => setTestDataPath(path)}
