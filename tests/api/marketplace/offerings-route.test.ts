@@ -21,6 +21,7 @@ const { GET } = await import("@/app/api/marketplace/offerings/route");
 
 const originalCatalog = process.env.MARKETPLACE_OFFERINGS;
 const originalConnection = process.env.OPEN_SEARCH_CONNECTION_STRING;
+const originalPostgres = process.env.POSTGRES_CONNECTION_STRING;
 
 const OFFERING = {
   id: "opensearch",
@@ -33,6 +34,7 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue({ role: "user", username: "ada" });
   delete process.env.MARKETPLACE_OFFERINGS;
   delete process.env.OPEN_SEARCH_CONNECTION_STRING;
+  delete process.env.POSTGRES_CONNECTION_STRING;
 });
 
 afterEach(() => {
@@ -40,6 +42,8 @@ afterEach(() => {
   else process.env.MARKETPLACE_OFFERINGS = originalCatalog;
   if (originalConnection === undefined) delete process.env.OPEN_SEARCH_CONNECTION_STRING;
   else process.env.OPEN_SEARCH_CONNECTION_STRING = originalConnection;
+  if (originalPostgres === undefined) delete process.env.POSTGRES_CONNECTION_STRING;
+  else process.env.POSTGRES_CONNECTION_STRING = originalPostgres;
 });
 
 describe("GET /api/marketplace/offerings", () => {

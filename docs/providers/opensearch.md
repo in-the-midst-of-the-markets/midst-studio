@@ -19,7 +19,7 @@
 | **Query language** | `sql` (the OpenSearch SQL plugin, bundled with the distribution — no install step). **There is no ES\|QL here at all**, which is why SQL is the shared language ([§3.3](#33-sql-because-there-is-no-esql-here)) |
 | **Default port** | `9200` for both schemes. A TLS deployment serves HTTPS on that **same** port ([§4.3](#43-tls)). The container fixture publishes it on **9201** to avoid colliding with the upstream service |
 | **Connection pooling** | None — each statement is one stateless HTTP request |
-| **Connection string** | **Not supported** — addressed by host and port like Druid, and `http(s)://` is already ClickHouse's in the shared parser ([§4.2](#42-there-is-no-connection-string-and-that-is-deliberate)) |
+| **Connection string** | Paste of an OpenSearch `http(s)://` URL fills host, port, user and password. A stored `connectionString` is not read ([§4.2](#42-a-pasted-opensearch-url-is-not-clickhouse)) |
 | **EXPLAIN** | **None.** `supportsExplain: false` and no `explainFormat`. `EXPLAIN <select>` as a *statement* is refused here; a plan exists only behind a second endpoint this seam does not carry ([§3.10](#310-no-explain-the-statement-form-is-refused)) |
 | **Writes** | **None reach documents.** Every mutation is refused outright; the `DELETE` the grammar names is gone on 3.8.0 and off by default on 2.19.4 ([§5.6](#56-this-grammar-has-delete-and-it-is-off)) |
 | **Agent mode** | Executes read-only statements on 3.8, after the open proves the `DELETE` off ([§5.9](#59-the-agent-read-only-profile-rests-on-the-plugins-refusals)) |
@@ -459,19 +459,15 @@ const connection = {
 };
 ```
 
-### 4.2 There is no connection string, and that is deliberate
+### 4.2 A pasted OpenSearch URL is not ClickHouse
 
-`supportsConnectionString` is `false` and `showConnectionStringToggle` is `false`, so the form has no
-paste tab. Two independent reasons, the same pair Druid records: there is **no URI convention** for
-this HTTP surface (the official client takes a `node` URL, which is not a credential-carrying DSN the
-shared parser could round-trip), and **`http://` / `https://` are already claimed by ClickHouse** in
-its connection string row
+`supportsConnectionString` is `false`: the provider never reads a stored `connectionString`, and the
+form has no URI mode (`showConnectionStringToggle` is `false`). Paste URL still fills the host, port,
+user and password. The row claims an `http://` or `https://` URL whose port is `9200` or `25060`, and
+any port on a host whose name contains `opensearch`. `https://` sets SSL mode `require` and `http://`
+sets `disable`. A ClickHouse host and a Snowflake host stay with those rows. Any other `http://` or
+`https://` URL, including `http://localhost:9201`, remains ClickHouse's catch-all
 ([`src/lib/db/providers/sql/clickhouse/connection-string.ts`](../../src/lib/db/providers/sql/clickhouse/connection-string.ts), #264).
-
-This provider's connection string row therefore has **no `paste`**. The consequence is
-recorded rather than hidden — pasting `http://localhost:9201` selects ClickHouse — and the
-connection-form hook's unparseable-string message deliberately omits both search ids
-(`handlePasteConnectionString` in [`use-connection-form.ts`](../../src/hooks/use-connection-form.ts)).
 
 ### 4.3 TLS
 
@@ -523,7 +519,7 @@ redirect would take the Basic credential and the statement to wherever the serve
 
 ### Connection string
 
-`opensearch` has no connection string scheme, no `readTls`, no `paste` and no seed load check: every field of its row in `CONNECTION_STRING` is `null` ([`opensearch-connection-string.ts`](../../src/lib/db/providers/sql/search/opensearch-connection-string.ts)).
+`opensearch` has no connection string scheme and no `readTls`. Its `paste` claims an `http://` or `https://` URL on port `9200` or `25060`, and a host whose name contains `opensearch`, leaving a ClickHouse or Snowflake host to that row ([`opensearch-connection-string.ts`](../../src/lib/db/providers/sql/search/opensearch-connection-string.ts)). It runs no seed load check.
 
 ### Execution UI
 
@@ -1537,7 +1533,7 @@ refusal are the same value and cannot drift apart
 | `declaresForeignKeys` | **`false`** | The engine has no such constraint in its model, so the empty `foreignKeys` means "impossible here" rather than "none declared, or none visible to this role" — the distinction #414 was about |
 | `supportsMaintenance` | **`false`** | Nothing in `MaintenanceType` is SQL-reachable ([§8](#8-maintenance)) |
 | `maintenanceOperations` | `[]` | Consequence of the above |
-| `supportsConnectionString` | **`false`** | No URI convention, and `http(s)://` is ClickHouse's ([§4.2](#42-there-is-no-connection-string-and-that-is-deliberate)) |
+| `supportsConnectionString` | **`false`** | The provider does not read a stored `connectionString`. Paste fills the fields ([§4.2](#42-a-pasted-opensearch-url-is-not-clickhouse)) |
 | `defaultPort` | `9200` | Both schemes; the fixture publishes 9201 on the host ([§4.1](#41-configuration-fields)) |
 | `identifierQuoting` | **`backtick`** | The difference that fails silently: a double-quoted name here is a string literal, so a generated `WHERE "customer" = 'acme'` answers HTTP 200 with no rows ([§5.4](#54-dialect-traps-a-user-will-hit)) |
 | `statementTerminator` | **`none`** | Declared even though this product accepts `;`: the absence runs here too, and the upstream grammar has no terminator at all, so one answer serves both ([§5.4](#54-dialect-traps-a-user-will-hit)) |
@@ -1887,7 +1883,7 @@ because the provider exposes no `cancelQuery`
 - **`ssl.caCert` / `ssl.clientCert` / `ssl.rejectUnauthorized` are not honoured**, which matters more
   here than for most providers because a default distribution ships a self-signed certificate
   ([§4.3](#43-tls)).
-- **No connection string**, deliberately ([§4.2](#42-there-is-no-connection-string-and-that-is-deliberate)).
+- **Paste fills the fields** for an OpenSearch `http(s)://` URL. A stored `connectionString` is not read ([§4.2](#42-a-pasted-opensearch-url-is-not-clickhouse)).
 - **A type the engine maps but its SQL surface cannot read is still listed as a column.**
   The column stays listed in the schema tree so the view reflects the index mapping faithfully.
   Measured: OpenSearch SQL refuses `flat_object`, `unsigned_long` and `version` with "can't resolve Symbol(...) in type env", so introspection marks them as unprojectable.

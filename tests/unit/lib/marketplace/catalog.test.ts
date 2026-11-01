@@ -18,12 +18,22 @@ const OFFERING: MarketplaceOffering = {
 
 const original = process.env.MARKETPLACE_OFFERINGS;
 const originalConnection = process.env.OPEN_SEARCH_CONNECTION_STRING;
+const originalPostgres = process.env.POSTGRES_CONNECTION_STRING;
+
+const POSTGRES: MarketplaceOffering = {
+  id: "postgres",
+  name: "PostgreSQL",
+  description: "Tables",
+  monthlyCents: 500,
+};
 
 afterEach(() => {
   if (original === undefined) delete process.env.MARKETPLACE_OFFERINGS;
   else process.env.MARKETPLACE_OFFERINGS = original;
   if (originalConnection === undefined) delete process.env.OPEN_SEARCH_CONNECTION_STRING;
   else process.env.OPEN_SEARCH_CONNECTION_STRING = originalConnection;
+  if (originalPostgres === undefined) delete process.env.POSTGRES_CONNECTION_STRING;
+  else process.env.POSTGRES_CONNECTION_STRING = originalPostgres;
 });
 
 describe("parseMarketplaceCatalog", () => {
@@ -94,6 +104,8 @@ describe("readMarketplaceCatalog", () => {
 
   test("reads process.env when no environment is passed", () => {
     process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
+    delete process.env.POSTGRES_CONNECTION_STRING;
+    delete process.env.OPEN_SEARCH_CONNECTION_STRING;
 
     expect(readMarketplaceCatalog()).toEqual({ ok: true, offerings: [OFFERING] });
   });
@@ -103,6 +115,7 @@ describe("readMarketplaceCatalog", () => {
       readMarketplaceCatalog({
         ...process.env,
         MARKETPLACE_OFFERINGS: undefined,
+        POSTGRES_CONNECTION_STRING: undefined,
         OPEN_SEARCH_CONNECTION_STRING: "https://search.example:9200",
       }),
     ).toEqual({
@@ -110,9 +123,29 @@ describe("readMarketplaceCatalog", () => {
       offerings: [OFFERING],
     });
     delete process.env.MARKETPLACE_OFFERINGS;
+    delete process.env.POSTGRES_CONNECTION_STRING;
     process.env.OPEN_SEARCH_CONNECTION_STRING = "https://search.example:9200";
 
     expect(readMarketplaceCatalog()).toEqual({ ok: true, offerings: [OFFERING] });
+  });
+
+  test("lists PostgreSQL from its connection string, and both when both are set", () => {
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: undefined,
+        OPEN_SEARCH_CONNECTION_STRING: undefined,
+        POSTGRES_CONNECTION_STRING: "postgresql://db.example/app",
+      }),
+    ).toEqual({ ok: true, offerings: [POSTGRES] });
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: undefined,
+        POSTGRES_CONNECTION_STRING: "postgresql://db.example/app",
+        OPEN_SEARCH_CONNECTION_STRING: "https://search.example:9200",
+      }),
+    ).toEqual({ ok: true, offerings: [POSTGRES, OFFERING] });
   });
 
   test("a blank connection string does not list OpenSearch", () => {
@@ -120,6 +153,7 @@ describe("readMarketplaceCatalog", () => {
       readMarketplaceCatalog({
         ...process.env,
         MARKETPLACE_OFFERINGS: undefined,
+        POSTGRES_CONNECTION_STRING: undefined,
         OPEN_SEARCH_CONNECTION_STRING: "   ",
       }),
     ).toEqual({ ok: true, offerings: [] });
@@ -127,6 +161,7 @@ describe("readMarketplaceCatalog", () => {
       readMarketplaceCatalog({
         ...process.env,
         MARKETPLACE_OFFERINGS: undefined,
+        POSTGRES_CONNECTION_STRING: undefined,
         OPEN_SEARCH_CONNECTION_STRING: undefined,
       }),
     ).toEqual({ ok: true, offerings: [] });
@@ -139,6 +174,7 @@ describe("readMarketplaceCatalog", () => {
       readMarketplaceCatalog({
         ...process.env,
         MARKETPLACE_OFFERINGS: JSON.stringify([priced]),
+        POSTGRES_CONNECTION_STRING: undefined,
         OPEN_SEARCH_CONNECTION_STRING: "https://user:secret-token@search.example:9200",
       }),
     ).toEqual({ ok: true, offerings: [priced] });
@@ -155,6 +191,7 @@ describe("readMarketplaceCatalog", () => {
     const catalog = readMarketplaceCatalog({
       ...process.env,
       MARKETPLACE_OFFERINGS: JSON.stringify([postgres]),
+      POSTGRES_CONNECTION_STRING: undefined,
       OPEN_SEARCH_CONNECTION_STRING: secret,
     });
 
@@ -170,6 +207,7 @@ describe("readMarketplaceCatalog", () => {
       readMarketplaceCatalog({
         ...process.env,
         MARKETPLACE_OFFERINGS: "{",
+        POSTGRES_CONNECTION_STRING: "postgresql://db.example/app",
         OPEN_SEARCH_CONNECTION_STRING: "https://search.example:9200",
       }),
     ).toEqual({ ok: false });

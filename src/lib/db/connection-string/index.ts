@@ -100,7 +100,8 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
  * The engines whose row reads a pasted connection string, in the order the parser offers a paste to them: the first
  * row that claims the text parses it. This is the one place that order is kept, and it matters in two cases only.
  * ClickHouse's `http://` and `https://` are a catch-all, so it comes last, after Snowflake, which claims an `https://`
- * URL on a Snowflake host as its own. And a bare Snowflake host claims any text with no space, `/`, `:`, `?`, `#` or
+ * URL on a Snowflake host as its own, and after OpenSearch, which claims an `https://` URL on port 9200 or 25060
+ * or on a host whose name contains `opensearch`. And a bare Snowflake host claims any text with no space, `/`, `:`, `?`, `#` or
  * `@` before its suffix, so Databend's `BENDSQL_DSN=` shell line comes before it and SQL Server's `Server=` keyword
  * form after it, as each always has. Each such pair is declared in `CONNECTION_STRING_PASTE_OVERLAPS` below; every
  * other text is claimed by one row alone, which `tests/unit/db/connection-string/paste.test.ts` holds for every text
@@ -119,6 +120,7 @@ export const CONNECTION_STRING_PASTE_ORDER: readonly DatabaseType[] = Object.fre
   "db2",
   "couchbase",
   "libsql",
+  "opensearch",
   "clickhouse",
 ]);
 
@@ -138,6 +140,7 @@ export const CONNECTION_STRING_PASTE_OVERLAPS: readonly PasteOverlap[] = Object.
   { first: "databend", second: "snowflake", text: "BENDSQL_DSN=x.snowflakecomputing.com" },
   { first: "snowflake", second: "mssql", text: "Server=x.snowflakecomputing.com" },
   { first: "snowflake", second: "clickhouse", text: "https://x.snowflakecomputing.com" },
+  { first: "opensearch", second: "clickhouse", text: "https://search.example:9200" },
 ]);
 
 /** One engine's paste reader, with the type it belongs to. */
