@@ -34,7 +34,7 @@ export const FkEdge = memo(function FkEdge({
   });
 
   const heuristic = data?.heuristic === true;
-  const stroke = heuristic ? "#6b7280" : "#3b82f6";
+  const stroke = heuristic ? "#6b7280" : "#9546de";
   const baseOpacity = heuristic ? 0.3 : 0.4;
   const opacity = highlight === "highlighted" ? 1 : highlight === "dimmed" ? 0.12 : baseOpacity;
   const strokeWidth = highlight === "highlighted" ? 2 : heuristic ? 1 : 1.5;

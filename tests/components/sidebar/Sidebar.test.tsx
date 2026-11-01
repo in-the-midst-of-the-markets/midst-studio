@@ -212,11 +212,11 @@ describe("Sidebar", () => {
     }
   });
 
-  test("renders the MIDST wordmark", () => {
+  test("renders the Midst mark", () => {
     const props = createDefaultProps();
     const { getByRole } = render(<Sidebar {...props} />);
 
-    expect(getByRole("img", { name: "MIDST" })).toBeTruthy();
+    expect(getByRole("img", { name: "Midst" })).toBeTruthy();
   });
 
   test('shows "Add Connection" button (Plus icon)', () => {

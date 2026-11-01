@@ -154,12 +154,12 @@ function renderMenuItems({
         {labels?.selectAction || "Select Top 50"}
       </Item>
       <Item onClick={() => callbacks.onGenerateSelect?.(table.path)}>
-        <Funnel strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-hue-blue" />
+        <Funnel strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-brand" />
         {labels?.generateAction || "Generate Query"}
       </Item>
       {callbacks.onGenerateCount !== undefined && offersCountQuery(capabilities) && (
         <Item onClick={() => callbacks.onGenerateCount?.(table.path)}>
-          <Hash strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-hue-blue" />
+          <Hash strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-brand" />
           {"Generate Count Query"}
         </Item>
       )}
@@ -232,7 +232,7 @@ function renderMenuItems({
             )}
             {vacuumControl.offered && (
               <Item onClick={() => callbacks.onOpenMaintenance?.("tables", table.path)}>
-                <Trash2 strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-hue-blue" />
+                <Trash2 strokeWidth={1.5} className="w-3.5 h-3.5 mr-2 text-brand" />
                 {vacuumControl.label ?? labels?.vacuumAction ?? "Vacuum Table"}
               </Item>
             )}

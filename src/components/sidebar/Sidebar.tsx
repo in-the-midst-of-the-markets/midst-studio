@@ -12,7 +12,7 @@ import { KeyBrowser, type KeyPatternRequest } from "@/components/key-browser";
 import { prefixPattern } from "@/components/key-browser/tree";
 import { containerDepth, enumerableKinds } from "@/lib/db/object-kinds";
 import { GitHubRepoLink } from "@/components/github-repo-link";
-import { MidstWordmark } from "@/components/midst-logo";
+import { MidstMark } from "@/components/midst-logo";
 import { getAppVersion } from "@/lib/app-version";
 import { cn } from "@/lib/utils";
 import { ConnectionsList } from "./ConnectionsList";
@@ -386,7 +386,7 @@ export const Sidebar = React.memo(function Sidebar({
   return (
     <div className="flex w-full h-full border-r border-border flex-col bg-background select-none">
       <div className="h-14 px-4 flex items-center justify-between border-b border-border">
-        <MidstWordmark className="h-4" />
+        <MidstMark alt="Midst" className="h-7 w-7" />
         <div className="flex items-center gap-1">
           {/* Not on a Cypher connection: its relationship types are no tables (SR20). */}
           {activeConnection && offersSchemaDiagram(metadata?.capabilities) && (

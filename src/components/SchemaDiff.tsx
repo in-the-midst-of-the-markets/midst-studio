@@ -1121,7 +1121,7 @@ export function SchemaDiff({ schema, connection }: SchemaDiffProps) {
                     .map((c) => (
                       <SelectItem key={`conn:${c.id}`} value={`conn:${c.id}`} className="text-xs">
                         <div className="flex items-center gap-1">
-                          <Database strokeWidth={1.5} className="w-3 h-3 text-hue-blue" /> {c.name}
+                          <Database strokeWidth={1.5} className="w-3 h-3 text-brand" /> {c.name}
                           {c.environment === "production" && (
                             <TriangleAlert strokeWidth={1.5} className="w-3 h-3 text-danger" />
                           )}

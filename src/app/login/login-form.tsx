@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Fingerprint, KeyRound, Lock, Mail, ShieldCheck, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { MidstMark, MidstWordmark } from "@/components/midst-logo";
+import { MidstLockup } from "@/components/midst-logo";
 import { CommunitySection } from "@/components/community-section";
 import { ConnectionSignature } from "@/components/login/connection-signature";
 import { DatabaseShowcase } from "@/components/login/database-showcase";
@@ -241,9 +241,9 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
           }}
         />
 
-        {/* Ambient glow orbs — blue accent family */}
+        {/* Ambient glow orbs, both in the brand purple. */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-brand-tint/[0.07] rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-10 w-64 h-64 bg-hue-cyan-tint/[0.05] rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-10 w-64 h-64 bg-[#421856]/25 rounded-full blur-3xl" />
 
         {/* Right edge separator */}
         <div className="absolute right-0 top-0 bottom-0 w-px bg-fill-strong" />
@@ -267,7 +267,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
         */}
         <div className="relative z-10 flex flex-col px-12 py-6 w-full overflow-y-auto">
           {/* Top: Logo */}
-          <MidstWordmark className="h-9" />
+          <MidstLockup markClassName="h-9 w-9" wordClassName="text-xl text-white" />
 
           {/*
             Thesis, then evidence, then the proof numbers - three tiers of weight instead of
@@ -337,10 +337,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
         <div className="w-full max-w-md space-y-8">
           {/* Mobile branding (visible only on mobile) */}
           <div className="flex flex-col items-center gap-3 lg:hidden">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#101010]">
-              <MidstMark className="h-14 w-14" />
-            </div>
-            <MidstWordmark className="h-8" />
+            <MidstLockup markClassName="h-12 w-12" wordClassName="text-xl" />
             <p className="text-sm text-muted-foreground">Open-source SQL IDE for cloud-native teams</p>
           </div>
 

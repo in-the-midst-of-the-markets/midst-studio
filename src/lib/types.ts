@@ -242,7 +242,7 @@ export const ENVIRONMENT_COLORS: Record<ConnectionEnvironment, string> = {
   production: "#ef4444",
   staging: "#eab308",
   development: "#22c55e",
-  local: "#3b82f6",
+  local: "#9546de",
   other: "#6b7280",
 };
 

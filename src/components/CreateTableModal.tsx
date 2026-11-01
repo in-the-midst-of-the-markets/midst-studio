@@ -384,7 +384,7 @@ function CreateTableForm({
                       <Checkbox
                         checked={col.isNullable}
                         onCheckedChange={(checked) => updateColumn(index, { isNullable: !!checked })}
-                        className="border-edge data-[state=checked]:bg-hue-blue-tint data-[state=checked]:border-hue-blue-tint"
+                        className="border-edge data-[state=checked]:bg-brand-tint data-[state=checked]:border-brand-tint"
                       />
                     </div>
                     {spec.columnConstraints && (

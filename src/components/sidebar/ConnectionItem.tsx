@@ -117,7 +117,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
       {isActive && (
         <div
           className="absolute left-0 w-1 h-4 rounded-r-full transition-all duration-200"
-          style={{ backgroundColor: conn.color || "#3b82f6" }}
+          style={{ backgroundColor: conn.color || "#9546de" }}
         />
       )}
       <div

@@ -78,9 +78,9 @@ describe("LoginPage", () => {
     expect(getByRole("button", { name: "Sign in" })).not.toBeNull();
   });
 
-  test("renders the MIDST wordmark", () => {
-    const { getAllByRole } = renderLogin();
-    expect(getAllByRole("img", { name: "MIDST" }).length).toBeGreaterThanOrEqual(1);
+  test("renders the Midst mark with its name", () => {
+    const { getAllByText } = renderLogin();
+    expect(getAllByText("Midst").length).toBeGreaterThanOrEqual(1);
   });
 
   test("shows error toast when submitting empty form", () => {

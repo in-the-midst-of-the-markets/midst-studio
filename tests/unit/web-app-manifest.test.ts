@@ -29,10 +29,10 @@ function pngDimensions(file: string): { width: number; height: number } {
 describe("web app manifest", () => {
   const manifest = JSON.parse(readFileSync(join(PUBLIC_DIR, "site.webmanifest"), "utf8")) as WebManifest;
 
-  test("describes LibreDB Studio as an installable standalone app", () => {
+  test("describes Midst as an installable standalone app", () => {
     expect(manifest).toMatchObject({
-      name: "LibreDB Studio",
-      short_name: "LibreDB",
+      name: "Midst",
+      short_name: "Midst",
       start_url: ".",
       display: "standalone",
       theme_color: "#101010",

@@ -148,7 +148,7 @@ guards it.
 
 | Variable | Light (`:root`) | Dark (`.dark`) | Usage |
 |----------|-----------------|----------------|-------|
-| `--chart-1` | `#e76e50` | `#3b82f6` | Primary chart color |
+| `--chart-1` | `#e76e50` | `#9546de` | Primary chart color |
 | `--chart-2` | `#2a9d90` | `#22c55e` | Secondary chart color |
 | `--chart-3` | `#274754` | `#f59e0b` | Tertiary chart color |
 | `--chart-4` | `#e8c468` | `#a855f7` | Quaternary chart color |
@@ -273,7 +273,7 @@ Edit `src/app/globals.css`:
 ```css
 .dark {
   /* Change the primary color */
-  --primary: #3b82f6;  /* blue-500 */
+  --primary: #9546de;
   --primary-foreground: #ffffff;
 
   /* Change the accent color */

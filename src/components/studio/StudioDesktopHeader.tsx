@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { GitHubRepoLink } from "@/components/github-repo-link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
+import { MidstLockup } from "@/components/midst-logo";
 
 /** What the pulse indicator reads for each state. Only Online animates: the others are not live. */
 const PULSE_TEXT: Record<ConnectionPulse, string> = {
@@ -136,6 +137,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
         <ThemeToggle className="mr-1" />
         <GitHubRepoLink className="text-fg-tertiary hover:text-fg-bright mr-2" />
         <span className="text-xs text-fg-muted font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+        <MidstLockup markClassName="h-6 w-6" wordClassName="text-sm" />
       </div>
     </header>
   );

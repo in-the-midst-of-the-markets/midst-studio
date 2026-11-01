@@ -44,13 +44,13 @@ const DARK_THEME = {
   base: "vs-dark",
   inherit: true,
   rules: [
-    { token: "keyword", foreground: "569cd6", fontStyle: "bold" },
+    { token: "keyword", foreground: "c27aff", fontStyle: "bold" },
     { token: "function", foreground: "dcdcaa" },
     { token: "string", foreground: "ce9178" },
     { token: "number", foreground: "b5cea8" },
     { token: "comment", foreground: "6a9955" },
     { token: "operator", foreground: "d4d4d4" },
-    { token: "identifier", foreground: "9cdcfe" },
+    { token: "identifier", foreground: "dab2ff" },
   ],
   colors: {
     "editor.background": "#101010",
@@ -70,13 +70,13 @@ const LIGHT_THEME = {
   base: "vs",
   inherit: true,
   rules: [
-    { token: "keyword", foreground: "0000ff", fontStyle: "bold" },
+    { token: "keyword", foreground: "8200db", fontStyle: "bold" },
     { token: "function", foreground: "795e26" },
     { token: "string", foreground: "a31515" },
     { token: "number", foreground: "098658" },
     { token: "comment", foreground: "008000" },
     { token: "operator", foreground: "3f3f46" },
-    { token: "identifier", foreground: "001080" },
+    { token: "identifier", foreground: "6e11b0" },
   ],
   colors: {
     "editor.background": "#f4f4f5",

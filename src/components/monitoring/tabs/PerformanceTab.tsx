@@ -272,7 +272,7 @@ export function PerformanceTab({ data, loading, history = [] }: PerformanceTabPr
             heading="Buffer Pool Trend"
             title="Buffer Pool"
             data={bufferHistory}
-            color="#3b82f6"
+            color="#9546de"
             unit="%"
           />
           <MetricTrendCard heading="Deadlock Trend" title="Deadlocks" data={deadlockHistory} color="#ef4444" />

@@ -589,7 +589,6 @@ const FADED_BOTH = [
   "--studio-danger/70",
   "--studio-danger/80",
   "--studio-hue-amber/70",
-  "--studio-hue-blue/80",
   "--studio-hue-emerald/70",
   "--studio-hue-purple/40",
   "--studio-hue-purple/50",

@@ -337,7 +337,7 @@ describe("BottomPanel", () => {
     const resultsButton = getByText("Results").closest("button");
     expect(resultsButton).not.toBeNull();
     // Active tab should have the active class (the blue identity hue for results)
-    expect(resultsButton!.className).toContain("text-hue-blue");
+    expect(resultsButton!.className).toContain("text-brand");
   });
 
   test("shows empty state placeholder when currentTab.result is null", () => {
@@ -800,7 +800,7 @@ describe("BottomPanel", () => {
       );
       expect(queryByTestId("graphview")).toBeNull();
       expect(getByTestId("resultsgrid")).not.toBeNull();
-      expect(getByText("Results").closest("button")?.className).toContain("text-hue-blue");
+      expect(getByText("Results").closest("button")?.className).toContain("text-brand");
       expect(queryByTestId("export-row-count")).not.toBeNull();
     });
   });

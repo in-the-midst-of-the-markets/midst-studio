@@ -139,7 +139,7 @@ export function CommandPalette({
         {/* Quick Actions */}
         <CommandGroup heading="Actions">
           <CommandItem onSelect={() => runAction(onExecuteQuery)}>
-            <Play strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-blue" />
+            <Play strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
             <span>Run Query</span>
             <CommandShortcut>{shortcutLabel(SHORTCUTS.executeQuery)}</CommandShortcut>
           </CommandItem>
@@ -166,7 +166,7 @@ export function CommandPalette({
               carries the editor's statement in with it (review of #331 T3).
             */
             <CommandItem onSelect={() => runAction(onAskAgent)}>
-              <Bot strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-blue" />
+              <Bot strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
               <span>Ask the agent about this query</span>
             </CommandItem>
           )}
