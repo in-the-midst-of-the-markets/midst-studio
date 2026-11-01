@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { acceptAssistPlan, buildAssistMessages, parseAssistPlan, readAssistRequest } from "@/lib/ai/assist-plan";
+import {
+  acceptAssistPlan,
+  buildAssistMessages,
+  explanationWithEdits,
+  parseAssistPlan,
+  queriesBesideEdits,
+  readAssistRequest,
+  type AssistQueryPlan,
+} from "@/lib/ai/assist-plan";
 
 const select = "SELECT month, revenue FROM orders LIMIT 200";
 
@@ -192,5 +200,36 @@ describe("buildAssistMessages", () => {
     });
     expect(messages[0]?.content).toContain("The connected engine is SQL.");
     expect(messages[0]?.content).toContain("every connected database");
+    expect(messages[0]?.content).toContain("User-edited query (leave it unchanged):");
+  });
+});
+
+describe("queries the user edited", () => {
+  const revenue: AssistQueryPlan = {
+    title: "Revenue",
+    sql: "SELECT month, revenue FROM orders",
+    connection: "Orders",
+    chart: null,
+  };
+  const spend: AssistQueryPlan = {
+    title: "Spend",
+    sql: "SELECT region, sum(cost) AS spend FROM sales",
+    connection: "Orders",
+    chart: null,
+  };
+
+  test("leaves an edited statement out and keeps a different one", () => {
+    expect(queriesBesideEdits([revenue, spend], ["  SELECT month, revenue FROM orders  ", " "])).toEqual([spend]);
+    expect(queriesBesideEdits([revenue], [])).toEqual([revenue]);
+  });
+
+  test("names the edited statement for the next answer and stays within the history limit", () => {
+    expect(explanationWithEdits("Revenue rose.", [])).toBe("Revenue rose.");
+    expect(explanationWithEdits("Revenue rose.", ["  ", "SELECT region, cost FROM sales"])).toBe(
+      "Revenue rose.\nUser-edited query (leave it unchanged): SELECT region, cost FROM sales",
+    );
+    const long = explanationWithEdits("Revenue rose.", ["x".repeat(5000)]);
+    expect(long.startsWith("Revenue rose.\nUser-edited query (leave it unchanged):")).toBe(true);
+    expect(long).toHaveLength(4000);
   });
 });

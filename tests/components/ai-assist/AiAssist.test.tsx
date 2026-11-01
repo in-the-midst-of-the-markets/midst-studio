@@ -614,6 +614,80 @@ describe("AiAssist page", () => {
     });
   });
 
+  test("keeps a chart the user edited and adds a new one on the next question", async () => {
+    saveConnection();
+    let assistPosts = 0;
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        assistPosts += 1;
+        if (assistPosts === 1) {
+          return jsonResponse({
+            explanation: "Revenue rose.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: "SELECT month, revenue FROM orders LIMIT 200",
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month" },
+              },
+            ],
+          });
+        }
+        return jsonResponse({
+          explanation: "Cost is separate.",
+          queries: [
+            {
+              title: "Revenue again",
+              sql: "SELECT region, cost FROM sales",
+              chart: { type: "line", x: "region", y: ["cost"], caption: "replaced" },
+            },
+            { title: "Spend", connection: "Orders", sql: "SELECT region, sum(cost) AS spend FROM sales", chart: null },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view);
+    expect(await view.findByRole("heading", { name: "Revenue" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "SELECT region, cost FROM sales" } });
+    fireEvent.click(view.getByRole("button", { name: "Run" }));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.url.includes("/api/db/query") &&
+            (call.body as { sql?: string } | null)?.sql === "SELECT region, cost FROM sales",
+        ),
+      ).toBe(true),
+    );
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Area", exact: true }),
+    );
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+
+    await typeAndSend(view, "What about cost?");
+    expect(await view.findByText("Cost is separate.")).toBeTruthy();
+    expect(await view.findByRole("heading", { name: "Spend" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "Revenue again" })).toBeNull();
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(view.queryByText("replaced")).toBeNull();
+    expect((view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement).value).toBe(
+      "SELECT region, cost FROM sales",
+    );
+    const history = (posts()[1]?.body as { history?: { question: string; explanation: string }[] } | undefined)
+      ?.history;
+    expect(history?.[0]?.question).toBe("What changed?");
+    expect(history?.[0]?.explanation).toContain(
+      "User-edited query (leave it unchanged): SELECT region, cost FROM sales",
+    );
+  });
+
   test("reports a query failure and an empty answer", async () => {
     saveConnection();
     handler = (url, init) => {

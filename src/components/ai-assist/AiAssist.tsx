@@ -7,7 +7,13 @@ import { AssistModeToggle } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
-import { acceptAssistPlan, type AssistChart, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
+import {
+  acceptAssistPlan,
+  explanationWithEdits,
+  queriesBesideEdits,
+  type AssistChart,
+  type AssistHistoryTurn,
+} from "@/lib/ai/assist-plan";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
 import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
@@ -31,6 +37,9 @@ interface AssistCard {
   readonly title: string;
   /** The statement the current title describes. Editing the editor updates `sql` before Run. */
   readonly titledSql: string;
+  /** The statement the model wrote. A run of different SQL keeps the chart out of later answers. */
+  readonly modelSql: string;
+  readonly locked: boolean;
   readonly sql: string;
   readonly connectionId: string | null;
   readonly connectionName: string;
@@ -60,7 +69,8 @@ function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
     const turn = turns[index];
     const next = turns[index + 1];
     if (turn?.role === "user" && next?.role === "assistant") {
-      pairs.push({ question: turn.text, explanation: next.text });
+      const edited = next.cards.filter((card) => card.locked).map((card) => card.sql);
+      pairs.push({ question: turn.text, explanation: explanationWithEdits(next.text, edited) });
     }
   }
   return pairs.slice(-6);
@@ -212,6 +222,7 @@ export function AiAssist() {
             sql,
             title: changed ? titleForQuery(sql) : card.title,
             titledSql: sql,
+            locked: sql.trim() !== card.modelSql.trim(),
             chart: changed && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
             running: true,
             error: null,
@@ -274,12 +285,15 @@ export function AiAssist() {
         return;
       }
       const plan = acceptAssistPlan(body);
-      const cards: AssistCard[] = plan.queries.map((query) => {
+      const editedSql = turns.flatMap((turn) => turn.cards.filter((card) => card.locked).map((card) => card.sql));
+      const cards: AssistCard[] = queriesBesideEdits(plan.queries, editedSql).map((query) => {
         const resolved = connectionForAssistQuery(connections, query.connection);
         return {
           id: nextId(),
           title: query.title,
           titledSql: query.sql,
+          modelSql: query.sql,
+          locked: false,
           sql: query.sql,
           connectionId: resolved.ok ? resolved.connection.id : null,
           connectionName: resolved.ok ? resolved.connection.name : query.connection,
