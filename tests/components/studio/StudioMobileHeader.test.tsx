@@ -496,27 +496,15 @@ describe("StudioMobileHeader", () => {
     expect(String((mockToastError.mock.calls as unknown[][])[0][0])).toContain("Could not copy");
   });
 
-  test("renders a repository link in the header actions", () => {
-    const { container } = render(<StudioMobileHeader {...defaults} />);
-    const link = container.querySelector('a[aria-label="LibreDB Studio on GitHub"]');
-
-    expect(link).not.toBeNull();
-    expect(link!.getAttribute("href")).toBe("https://github.com/libredb/libredb-studio");
-    expect(link!.getAttribute("target")).toBe("_blank");
-    expect(link!.getAttribute("rel")).toBe("noopener noreferrer");
-  });
-
-  // Asserted through the observable effect rather than `not.toThrow()`: the
-  // handler swallows every storage error, so a throw assertion could not fail.
-  test("following the repository link marks the star prompt handled", () => {
-    localStorage.removeItem("libredb_star_prompt_handled");
-    const { container } = render(<StudioMobileHeader {...defaults} />);
-    const link = container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')!;
-
-    fireEvent.click(link);
-
-    expect(localStorage.getItem("libredb_star_prompt_handled")).not.toBeNull();
-    localStorage.removeItem("libredb_star_prompt_handled");
+  test("offers AI as a button and does not show the repository or a version", () => {
+    process.env.NEXT_PUBLIC_APP_VERSION = "2.5.0";
+    const { container, getAllByRole } = render(<StudioMobileHeader {...defaults} />);
+    expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
+    expect(container.textContent).not.toContain("v2.5.0");
+    const ai = getAllByRole("link", { name: "AI" });
+    expect(ai.some((link) => link.getAttribute("href") === "/assist" && link.className.includes("bg-primary"))).toBe(
+      true,
+    );
   });
 
   test("transactionActive=true shows TXN badge", () => {

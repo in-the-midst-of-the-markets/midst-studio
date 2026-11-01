@@ -13,9 +13,8 @@ import { ObjectTree, type ObjectSource, type TreeRowActionHandlers } from "@/com
 import { KeyBrowser, type KeyPatternRequest } from "@/components/key-browser";
 import { prefixPattern } from "@/components/key-browser/tree";
 import { containerDepth, enumerableKinds } from "@/lib/db/object-kinds";
-import { GitHubRepoLink } from "@/components/github-repo-link";
+import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
-import { getAppVersion } from "@/lib/app-version";
 import { cn } from "@/lib/utils";
 import { ConnectionsList } from "./ConnectionsList";
 import type { ConnectionGroup } from "@/lib/storage/types";
@@ -226,7 +225,6 @@ export const Sidebar = React.memo(function Sidebar({
   onContainerActivate,
   onOpenKey,
 }: SidebarProps) {
-  const appVersion = getAppVersion();
   const notChecked = connectionPulse === "not-checked";
   /**
    * The reading of the connection the READER CHOSE, and the connection they chose it on, or null
@@ -615,16 +613,7 @@ export const Sidebar = React.memo(function Sidebar({
               {notChecked ? "Not checked" : "Connected"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            {/*
-              The sidebar is the one piece of chrome BOTH modes render - the
-              standalone app and the embedded workspace, which supplies its own
-              header - so the invitation to the repository lives here to reach
-              every user rather than only the standalone ones.
-            */}
-            <GitHubRepoLink className="text-muted-foreground/70 hover:text-foreground" />
-            {appVersion && <span className="text-xs font-mono text-muted-foreground/70">v{appVersion}</span>}
-          </div>
+          <OtherModeLink mode="traditional" />
         </div>
       </div>
     </div>

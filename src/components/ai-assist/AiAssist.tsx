@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
-import { AssistModeToggle } from "@/components/ai-assist/AssistModeToggle";
+import { AssistModeToggle, OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
@@ -530,6 +530,9 @@ export function AiAssist() {
       <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
         <AssistModeToggle mode="assist" />
+        <div className="flex justify-end">
+          <OtherModeLink mode="assist" />
+        </div>
       </header>
 
       <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto">
