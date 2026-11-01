@@ -4,10 +4,9 @@ import { mock } from "bun:test";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
 
-// Mock the self-hosted geist fonts (they wrap next/font/local, which only
-// resolves inside a Next build)
-mock.module("geist/font/sans", () => ({
-  GeistSans: { variable: "mock-geist-sans", className: "mock-geist-sans" },
+// next/font/local only resolves inside a Next build. Montserrat is loaded with it.
+mock.module("next/font/local", () => ({
+  default: () => ({ variable: "mock-montserrat", className: "mock-montserrat" }),
 }));
 mock.module("geist/font/mono", () => ({
   GeistMono: { variable: "mock-geist-mono", className: "mock-geist-mono" },
@@ -112,7 +111,7 @@ describe("RootLayout", () => {
       </RootLayout>,
     );
     expect(html).toContain('lang="en"');
-    expect(html).toContain("mock-geist-sans");
+    expect(html).toContain("mock-montserrat");
     expect(html).toContain("antialiased");
   });
 

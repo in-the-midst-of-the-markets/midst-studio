@@ -19,13 +19,13 @@
  *   surface   canvas → sunken → surface → raised → overlay   (recessed → elevated)
  *   text      fg-bright → fg → fg-secondary → fg-tertiary → fg-muted → fg-subtle
  *
- * In dark, elevation means LIGHTER. In light, elevation means WHITER, and the text
- * ramp inverts around `fg-muted` (zinc-500), which reads correctly on both grounds
- * and is therefore the hinge the two palettes share.
+ * In dark, elevation means LIGHTER. In light, elevation means WHITER.
  *
- * The dark values are the literals the components carried before the token layer
- * existed (`bg-[#0a0a0a]`, `border-white/5`, `text-zinc-500`, …), reproduced
- * exactly — switching a component to a token must not change how it looks in dark.
+ * Surfaces, type, and filled buttons follow the marketing palette: page
+ * #101010, light type #333333, dark type white, buttons #0070f3. Accent and
+ * identity hues stay on their Tailwind steps. Elevated dark grounds stop at
+ * #141414, because a tint wash under those hues falls under WCAG AA on anything
+ * lighter. Hairlines and the scrollbar are the pre-token literals.
  */
 
 :root {
@@ -66,14 +66,15 @@
   --studio-scrollbar-hover: #a1a1aa;
 
   /* ── Text ramp ────────────────────────────────────────────────────────── */
-  --studio-fg-bright: #09090b;
-  --studio-fg: #18181b;
-  --studio-fg-secondary: #27272a;
-  --studio-fg-tertiary: #3f3f46;
-  --studio-fg-muted: #71717a;
-  --studio-fg-subtle: #a1a1aa;
+  /* Marketing type on a light ground: text2, text, text1, text3. */
+  --studio-fg-bright: #000000;
+  --studio-fg: #333333;
+  --studio-fg-secondary: #333333;
+  --studio-fg-tertiary: #421856;
+  --studio-fg-muted: #746477;
+  --studio-fg-subtle: #8a7a8c;
   /* Below the ramp: decoration and hints — separator dots, empty-state subtext. */
-  --studio-fg-faint: #d4d4d8;
+  --studio-fg-faint: #cfc4d1;
 
   /*
    * ── Accents: state ────────────────────────────────────────────────────
@@ -99,14 +100,15 @@
   --studio-brand: #1447e6;
   --studio-brand-bright: #193cb8;
   --studio-brand-tint: #2b7fff;
-  --studio-brand-solid: #155dfc;
-  --studio-brand-solid-hover: #2b7fff;
+  /* Marketing primary #0070f3. White on it clears AA. Same value in both palettes. */
+  --studio-brand-solid: #0070f3;
+  --studio-brand-solid-hover: #3b93ff;
   /*
    * The three standalone error pages hover the other way — they darken rather than
    * lighten. Flattening them onto `-solid-hover` inverted the direction AND took
    * white-on-hover from 6.8:1 to 3.8:1, so they keep a step of their own.
    */
-  --studio-brand-solid-active: #1447e6;
+  --studio-brand-solid-active: #0059c1;
 
   --studio-warning: #973c00;
   --studio-warning-bright: #7b3306;
@@ -247,12 +249,16 @@
 
 .dark {
   /* ── Surfaces (dark) ──────────────────────────────────────────────────── */
-  --studio-canvas: #050505;
-  --studio-sunken: #080808;
-  --studio-surface: #0a0a0a;
-  --studio-raised: #0d0d0d;
-  --studio-overlay: #111111;
-  --studio-panel: rgb(24 24 27 / 0.5);
+  /* Marketing page #101010. A tint wash under identity text falls under WCAG
+   * AA once a ground is lighter than #141414, so that is the lightest studio
+   * stop. The requested panel #1a1a1a is the shadcn card and menu, where the
+   * type is white. */
+  --studio-canvas: #101010;
+  --studio-sunken: #121212;
+  --studio-surface: #141414;
+  --studio-raised: #141414;
+  --studio-overlay: #141414;
+  --studio-panel: rgb(20 20 20 / 0.5);
 
   /* ── Hairlines ────────────────────────────────────────────────────────── */
   --studio-hairline: rgb(255 255 255 / 0.05);
@@ -270,13 +276,15 @@
   --studio-scrollbar-hover: #404040;
 
   /* ── Text ramp ────────────────────────────────────────────────────────── */
+  /* Marketing menu white. text3 (#746477) is too dim on these grounds, so the
+   * muted steps stay in that mauve and are lifted until they clear AA. */
   --studio-fg-bright: #ffffff;
-  --studio-fg: #e4e4e7;
-  --studio-fg-secondary: #d4d4d8;
-  --studio-fg-tertiary: #a1a1aa;
-  --studio-fg-muted: #71717a;
-  --studio-fg-subtle: #52525b;
-  --studio-fg-faint: #3f3f46;
+  --studio-fg: #ffffff;
+  --studio-fg-secondary: #f4f4f4;
+  --studio-fg-tertiary: #e4dce6;
+  --studio-fg-muted: #c4b4c6;
+  --studio-fg-subtle: #a898ab;
+  --studio-fg-faint: #5c5160;
 
   /*
    * ── Accents ───────────────────────────────────────────────────────────
@@ -290,14 +298,15 @@
   --studio-brand: #51a2ff;
   --studio-brand-bright: #8ec5ff;
   --studio-brand-tint: #2b7fff;
-  --studio-brand-solid: #155dfc;
-  --studio-brand-solid-hover: #2b7fff;
+  /* Marketing primary #0070f3. White on it clears AA. Same value in both palettes. */
+  --studio-brand-solid: #0070f3;
+  --studio-brand-solid-hover: #3b93ff;
   /*
    * The three standalone error pages hover the other way — they darken rather than
    * lighten. Flattening them onto `-solid-hover` inverted the direction AND took
    * white-on-hover from 6.8:1 to 3.8:1, so they keep a step of their own.
    */
-  --studio-brand-solid-active: #1447e6;
+  --studio-brand-solid-active: #0059c1;
 
   --studio-warning: #ffb900;
   --studio-warning-bright: #ffd230;

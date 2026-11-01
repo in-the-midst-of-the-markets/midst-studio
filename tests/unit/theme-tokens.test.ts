@@ -77,19 +77,17 @@ describe("every token reference resolves to a declaration", () => {
 });
 
 /**
- * Tokenising a component was allowed to change how it looks in LIGHT — that was
- * the point — but never in dark, where the token values were chosen to reproduce
- * the literals the components already carried. These are the values that were
- * argued over one at a time; pinning them is what makes "no-op in dark" checkable
- * rather than a claim in a commit message.
+ * Dark chrome is pinned here so a later edit cannot drift it in prose.
+ * Surfaces and the text ramp are the marketing palette. Hairlines and the
+ * scrollbar stay the pre-token literals.
  */
-describe("the dark palette still reproduces the pre-token literals", () => {
+describe("the dark chrome tokens stay pinned", () => {
   const value = (token: string) => new RegExp(`${token}:\\s*([^;]+);`).exec(block(stripComments(theme), ".dark"))?.[1];
 
   test("the surface ramp", () => {
-    expect(value("--studio-canvas")).toBe("#050505");
-    expect(value("--studio-surface")).toBe("#0a0a0a");
-    expect(value("--studio-panel")).toBe("rgb(24 24 27 / 0.5)");
+    expect(value("--studio-canvas")).toBe("#101010");
+    expect(value("--studio-surface")).toBe("#141414");
+    expect(value("--studio-panel")).toBe("rgb(20 20 20 / 0.5)");
   });
 
   test("the hairlines", () => {
@@ -98,8 +96,8 @@ describe("the dark palette still reproduces the pre-token literals", () => {
   });
 
   test("the text ramp", () => {
-    expect(value("--studio-fg")).toBe("#e4e4e7");
-    expect(value("--studio-fg-muted")).toBe("#71717a");
+    expect(value("--studio-fg")).toBe("#ffffff");
+    expect(value("--studio-fg-muted")).toBe("#c4b4c6");
   });
 
   /**

@@ -212,11 +212,11 @@ describe("Sidebar", () => {
     }
   });
 
-  test("renders LibreDB Studio header", () => {
+  test("renders the MIDST wordmark", () => {
     const props = createDefaultProps();
-    const { queryByText } = render(<Sidebar {...props} />);
+    const { getByRole } = render(<Sidebar {...props} />);
 
-    expect(queryByText("LibreDB Studio")).not.toBeNull();
+    expect(getByRole("img", { name: "MIDST" })).toBeTruthy();
   });
 
   test('shows "Add Connection" button (Plus icon)', () => {

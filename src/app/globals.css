@@ -19,24 +19,24 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0a0a0a;
+  --foreground: #333333;
   --card: #ffffff;
-  --card-foreground: #0a0a0a;
+  --card-foreground: #333333;
   --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
+  --popover-foreground: #333333;
+  --primary: #0070f3;
+  --primary-foreground: #ffffff;
   --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
+  --secondary-foreground: #333333;
   --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
+  --muted-foreground: #746477;
+  --accent: #f6f1f7;
+  --accent-foreground: #421856;
   --destructive: #ef4444;
-  --destructive-foreground: #fafafa;
+  --destructive-foreground: #ffffff;
   --border: #e5e5e5;
   --input: #e5e5e5;
-  --ring: #0a0a0a;
+  --ring: #0070f3;
   --radius: 0.5rem;
   --chart-1: #e76e50;
   --chart-2: #2a9d90;
@@ -46,25 +46,25 @@
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #0a0a0a;
-  --card-foreground: #fafafa;
-  --popover: #0a0a0a;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
+  --background: #101010;
+  --foreground: #ffffff;
+  --card: #1a1a1a;
+  --card-foreground: #ffffff;
+  --popover: #1a1a1a;
+  --popover-foreground: #ffffff;
+  --primary: #0070f3;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #c4b4c6;
+  --accent: #241c26;
+  --accent-foreground: #ffffff;
   --destructive: #7f1d1d;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4d4d8;
+  --destructive-foreground: #ffffff;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #0070f3;
   --chart-1: #3b82f6;
   --chart-2: #22c55e;
   --chart-3: #f59e0b;
@@ -223,11 +223,11 @@
 
   /* Monaco Execution Highlight */
   .executed-query-highlight {
-    background-color: rgba(37, 99, 235, 0.15) !important;
-    border-left: 2px solid #2563eb !important;
+    background-color: rgba(0, 112, 243, 0.15) !important;
+    border-left: 2px solid #0070f3 !important;
   }
   .executed-query-inline-highlight {
-    background-color: rgba(37, 99, 235, 0.1) !important;
+    background-color: rgba(0, 112, 243, 0.1) !important;
     border-radius: 2px;
   }
 }

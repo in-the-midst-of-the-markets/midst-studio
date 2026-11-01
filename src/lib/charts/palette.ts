@@ -60,14 +60,14 @@ const THEMES: Record<EffectiveTheme, ChartTheme> = {
     series: SERIES.dark,
     grid: "#222222",
     axis: "#666666",
-    ink: "#d4d4d8",
-    exportBackground: "#080808",
+    ink: "#ffffff",
+    exportBackground: "#101010",
   },
   light: {
     series: SERIES.light,
     grid: "#e4e4e7",
     axis: "#52525b",
-    ink: "#27272a",
+    ink: "#333333",
     exportBackground: "#fafafa",
   },
 };
@@ -93,18 +93,18 @@ export function chartTheme(mode: EffectiveTheme): ChartTheme {
  */
 const TOOLTIP: Record<EffectiveTheme, React.CSSProperties> = {
   dark: {
-    backgroundColor: "#18181b",
+    backgroundColor: "#1a1a1a",
     border: "1px solid rgb(255 255 255 / 0.1)",
     borderRadius: "8px",
     fontSize: 12,
-    color: "#a1a1aa",
+    color: "#ffffff",
   },
   light: {
     backgroundColor: "#ffffff",
     border: "1px solid rgb(9 9 11 / 0.14)",
     borderRadius: "8px",
     fontSize: 12,
-    color: "#3f3f46",
+    color: "#333333",
   },
 };
 

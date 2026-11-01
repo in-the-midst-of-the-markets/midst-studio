@@ -7,9 +7,9 @@
  * namespace and the last definition wins. A gradient named `logo-gradient` or, worse, a
  * filter named `glow` will silently take over, or be taken over by, somebody else's.
  *
- * `src/components/libredb-logo.tsx` already solves this for the rendered component by
- * suffixing every id with React's `useId()`. A static file cannot do that, so the
- * equivalent is a fixed product prefix. This test holds both halves: the ids are
+ * A rendered component can suffix every id with React's `useId()`. A static file
+ * cannot do that, so the equivalent is a fixed product prefix. This test holds both
+ * halves: the ids are
  * namespaced, and every `url(#...)` still resolves inside its own file, since a rename
  * that misses a reference produces an invisible logo rather than a failure.
  *

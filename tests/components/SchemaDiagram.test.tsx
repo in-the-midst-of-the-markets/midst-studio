@@ -1434,7 +1434,7 @@ describe("SchemaDiagram", () => {
         await exportAndSettle(view, "PNG");
 
         const [, options] = mockSnapdom.mock.calls[0] as unknown as [HTMLElement, Record<string, unknown>];
-        expect(options.backgroundColor).toBe("#050505");
+        expect(options.backgroundColor).toBe("#101010");
       } finally {
         document.documentElement.classList.remove("dark");
         spy.restore();
@@ -1462,7 +1462,7 @@ describe("SchemaDiagram", () => {
         await exportAndSettle(view, "PNG");
 
         const [, options] = mockSnapdom.mock.calls[0] as unknown as [HTMLElement, Record<string, unknown>];
-        expect(options.backgroundColor).toBe("#050505");
+        expect(options.backgroundColor).toBe("#101010");
       } finally {
         document.documentElement.classList.remove("dark");
         spy.restore();
@@ -1521,7 +1521,7 @@ describe("SchemaDiagram", () => {
       const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
       expect(await svgDataUrlToBlob(dataUrl, EXPORT_BACKGROUND.light).text()).toContain('fill="#f4f4f5"');
-      expect(await svgDataUrlToBlob(dataUrl, EXPORT_BACKGROUND.dark).text()).toContain('fill="#050505"');
+      expect(await svgDataUrlToBlob(dataUrl, EXPORT_BACKGROUND.dark).text()).toContain('fill="#101010"');
     });
 
     test("failed PNG export surfaces a destructive toast instead of failing silently", async () => {

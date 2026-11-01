@@ -57,24 +57,24 @@ const STUDIO_SCOPED_CSS = `
 [data-studio-workspace] {
   /* Light theme — monochrome (white/black/gray) */
   --background: #ffffff;
-  --foreground: #09090b;
+  --foreground: #333333;
   --card: #ffffff;
-  --card-foreground: #09090b;
+  --card-foreground: #333333;
   --popover: #ffffff;
-  --popover-foreground: #09090b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --popover-foreground: #333333;
+  --primary: #0070f3;
+  --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
+  --secondary-foreground: #333333;
   --muted: #f4f4f5;
-  --muted-foreground: #52525b;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --muted-foreground: #746477;
+  --accent: #f6f1f7;
+  --accent-foreground: #421856;
   --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
+  --destructive-foreground: #ffffff;
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #71717a;
+  --ring: #0070f3;
   --radius: 0.5rem;
   --chart-1: #18181b;
   --chart-2: #3f3f46;
@@ -83,7 +83,7 @@ const STUDIO_SCOPED_CSS = `
   --chart-5: #a1a1aa;
 
   /* Font — Geist (inherited from host or fallback to system) */
-  font-family: var(--font-geist-sans, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+  font-family: var(--font-geist-sans, "Montserrat", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "rlig" 1, "calt" 1;
@@ -93,25 +93,25 @@ const STUDIO_SCOPED_CSS = `
    Higher specificity than the base rule, so the class alone decides. */
 .dark [data-studio-workspace],
 [data-studio-workspace].dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #09090b;
-  --card-foreground: #fafafa;
-  --popover: #09090b;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #09090b;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
+  --background: #101010;
+  --foreground: #ffffff;
+  --card: #1a1a1a;
+  --card-foreground: #ffffff;
+  --popover: #1a1a1a;
+  --popover-foreground: #ffffff;
+  --primary: #0070f3;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #c4b4c6;
+  --accent: #241c26;
+  --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4d4d8;
+  --destructive-foreground: #ffffff;
+  --border: #2a2a2a;
+  --input: #2a2a2a;
+  --ring: #0070f3;
   --chart-1: #e4e4e7;
   --chart-2: #a1a1aa;
   --chart-3: #71717a;

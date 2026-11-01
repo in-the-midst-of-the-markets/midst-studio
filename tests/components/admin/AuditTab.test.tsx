@@ -362,11 +362,11 @@ describe("AuditTab", () => {
   }
 
   test("the stats chart tooltip keeps its dark card in the dark theme", async () => {
-    expect(await statsTooltipUnder("dark")).toEqual({ bg: "#18181b", color: "#a1a1aa" });
+    expect(await statsTooltipUnder("dark")).toEqual({ bg: "#1a1a1a", color: "#ffffff" });
   });
 
   test("and turns into a white card in the light theme", async () => {
-    expect(await statsTooltipUnder("light")).toEqual({ bg: "#ffffff", color: "#3f3f46" });
+    expect(await statsTooltipUnder("light")).toEqual({ bg: "#ffffff", color: "#333333" });
   });
 
   test("search filter works in operations tab", async () => {
