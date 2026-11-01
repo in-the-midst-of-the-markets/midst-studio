@@ -23,6 +23,8 @@ describe("/marketplace", () => {
     const link = await screen.findByRole("link", { name: /Back to the editor/i });
     expect(link.getAttribute("href")).toBe("/");
     expect(await screen.findByRole("heading", { name: "Marketplace" })).not.toBeNull();
-    expect(screen.getByText("No third-party data is listed yet.")).not.toBeNull();
+    expect(
+      screen.getByText("No databases are listed yet. A connection you add in the editor is not listed here."),
+    ).not.toBeNull();
   });
 });
