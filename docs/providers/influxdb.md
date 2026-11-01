@@ -389,9 +389,9 @@ A measurement written only into another policy reads empty there, until the stat
 
 Times are UTC, written with `Z`.
 The same InfluxDB 3 row reads `...Z` through this type and without a zone through `influxdb3`, so a timestamp copied from one type into a statement of the other needs its `Z` added or removed.
-For the Charts tab, order by time ascending and pick `time` as the x axis.
-A `GROUP BY` tag result draws one line through every series.
-Two Charts defects are filed: the default x axis is the first text column, not `time` (U79), and "Group by hour" reads a `Z` timestamp in local time (U80).
+For the Charts tab, order by time ascending and choose `time` as the dimension.
+A `GROUP BY` tag result is one line per metric until more metrics are added.
+The earlier chart view took its default x axis from the first text column rather than `time` (U79), and its "Group by hour" read a `Z` timestamp in local time (U80). Neither control is on this tab.
 
 ### 5.9 Previews
 
@@ -413,7 +413,7 @@ SELECT * FROM "home".."home" WHERE time > now() - 1h ORDER BY time DESC LIMIT 50
 -- One point per minute: SELECT mean("co") FROM "home".."home" WHERE time > now() - 1h GROUP BY time(1m)
 -- Another retention policy: SELECT * FROM "home"."<rp>"."home" (SHOW RETENTION POLICIES ON "home" lists them)
 -- Tag values: SHOW TAG VALUES ON "home" FROM "home" WITH KEY = "room" (on InfluxDB 3 add WHERE time > 0)
--- For the Charts tab: ORDER BY time ASC, and choose time as the x axis.
+-- For the Charts tab: ORDER BY time ASC, and choose time as the dimension.
 ```
 
 Every name goes through the quoter, so a hostile measurement name such as `we"ird name;x` gives a text that passes the policy as one read.
@@ -674,7 +674,7 @@ readOnly: true
 - The fail-closed lexer refuses some valid reads: the `µ` duration (write `u`), `{` or `[` anywhere outside quotes, and any `$param`.
 - The plaintext consent survives a Host or Port change in the dialog (D204).
 - No MCP statement read, and no dedicated 2.x agent token beside the connection's own credential (B94).
-- The Charts tab defects of section 5.8 (U79, U80).
+- The earlier chart view's defects (U79, U80) are recorded in section 5.8. This tab does not use them.
 
 ## Migration DDL
 

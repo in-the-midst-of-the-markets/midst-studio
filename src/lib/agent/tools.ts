@@ -4179,12 +4179,10 @@ function statementBehind(events: readonly AgentRunEvent[], correlationId: string
 /**
  * Is this column numeric in the rows that were actually delivered?
  *
- * The rule is `DataCharts.analyzeField`'s, to the letter: more than 80% of the
- * non-null values parse as numbers (`src/components/DataCharts.tsx`). That component
- * is what will draw the chart, so a stricter rule here would refuse specs that render
- * correctly and a looser one would admit the flat line of zeros `Number(value) || 0`
- * draws over a column of text. It is restated rather than imported because the
- * component is a client module that pulls a charting library into whatever imports it.
+ * More than 80% of the non-null values parse as numbers. The Charts tab's metric rule
+ * (`isMetricColumn` in `src/lib/charts/echarts-catalog.ts`) is the finite-number form of
+ * this check. It is restated rather than imported because that module's caller is a
+ * client component, and a column of numeric strings has to pass here too.
  */
 function isNumericColumn(rows: readonly Record<string, unknown>[], column: string): boolean {
   const values = rows.map((row) => row[column]).filter((value) => value !== null && value !== undefined);

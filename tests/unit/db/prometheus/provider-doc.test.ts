@@ -16,7 +16,8 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { analyzeData, analyzeField } from "@/components/DataCharts";
+import { classifyColumns, defaultSelection, isChartNumber, isMetricColumn } from "@/lib/charts/echarts-catalog";
+import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
 import { connectionFieldHint, connectionFieldLabel, DB_UI_CONFIG } from "@/lib/db-ui-config";
 import { createDatabaseProvider } from "@/lib/db/factory";
@@ -44,7 +45,8 @@ const ROOT = path.resolve(import.meta.dir, "../../../..");
 const DOC = readFileSync(path.join(ROOT, "docs/providers/prometheus.md"), "utf8");
 const LINES = DOC.split("\n");
 const FIXTURES = readFileSync(path.join(ROOT, "tests/fixtures/prometheus/README.md"), "utf8");
-const CHARTS = readFileSync(path.join(ROOT, "src/components/DataCharts.tsx"), "utf8");
+const OPTION = readFileSync(path.join(ROOT, "src/lib/charts/echarts-option.ts"), "utf8");
+const CATALOG = readFileSync(path.join(ROOT, "src/lib/charts/echarts-catalog.ts"), "utf8");
 
 /** The table row whose first cell is exactly `cell`, or undefined. */
 const rowOf = (cell: string): string | undefined => LINES.find((line) => line.startsWith(`| ${cell} |`));
@@ -285,9 +287,8 @@ describe("the monitoring table quotes what the Tables and Storage tabs are told"
 });
 
 describe("the chart sentences quote what the chart tab draws", () => {
-  // `MAX_SERIES` and the axes the tab opens on live inside the DataCharts component, so the palette
-  // the cap is defined as is read through `chartTheme`, and the component is read for the lines that
-  // define the cap and choose the axes.
+  // The cap is the palette length, read through `chartTheme`, and the option builder is read for
+  // the line that applies it. The doc's one sentence names the shelf, the cap and the note.
   const WORDS = [
     "no",
     "one",
@@ -304,23 +305,41 @@ describe("the chart sentences quote what the chart tab draws", () => {
     "twelve",
   ];
 
-  test("a stepped subquery opens on its first series, and the lines drawn at once are the palette's size", () => {
+  test("a stepped subquery starts on its first metric, and the lines drawn at once are the palette's size", () => {
     const size = chartTheme("light").series.length;
     expect(chartTheme("dark").series.length).toBe(size);
-    expect(CHARTS).toContain("const CHART_COLORS = viz.series;");
-    expect(CHARTS).toContain("const MAX_SERIES = CHART_COLORS.length;");
-    expect(CHARTS).toContain("setYAxis([plottableNumericFields[0]]);");
-    const line = LINES.find((candidate) => candidate.includes("Y-Axis menu"));
-    expect(line).toContain("the tab opens on the first series");
-    expect(line).toContain(
-      `at most ${WORDS[size]}, the palette's size (\`MAX_SERIES\` in \`src/components/DataCharts.tsx\`)`,
-    );
-    expect(line).toContain(`"Showing first ${size} of N series"`);
+    expect(OPTION).toContain("input.seriesCap ?? theme.series.length");
+    expect(CATALOG).toContain("numeric > filled.length * 0.8");
+    const rows = [{ timestamp: "2026-09-23T10:00:00.000Z", a: 1, b: 2 }];
+    const columns = classifyColumns(["timestamp", "a", "b"], rows);
+    expect(defaultSelection("line", "basic", columns)).toEqual({ category: ["timestamp"], values: ["a"] });
+    const gapped = buildChartOption({
+      typeId: "line",
+      variationId: "basic",
+      rows: [{ timestamp: "t", a: null }],
+      selection: { category: ["timestamp"], values: ["a"] },
+    });
+    if (gapped === null) throw new Error("expected a chart");
+    const gappedSeries = gapped.option.series as { data: unknown[] }[];
+    expect(gappedSeries[0]?.data).toEqual([null]);
+    const metrics = Array.from({ length: size + 1 }, (_, index) => `s${index}`);
+    const wide = buildChartOption({
+      typeId: "line",
+      variationId: "basic",
+      rows: [{ timestamp: "t", ...Object.fromEntries(metrics.map((name, index) => [name, index])) }],
+      selection: { category: ["timestamp"], values: metrics },
+    });
+    expect(wide?.notes).toContain(`Showing the first ${size} of ${size + 1} metrics.`);
+    const line = LINES.find((candidate) => candidate.includes("Metrics shelf"));
+    expect(line).toContain("The tab starts with the first metric");
+    expect(line).toContain(`at most ${WORDS[size]}, the palette's size`);
+    expect(line).toContain(`"Showing the first ${size} of N metrics."`);
+    expect(DOC).toContain("the dimension starts as the first result column");
+    expect(DOC).toContain("An answer with no metric column draws no line.");
   });
 });
 
 describe("the NaN and Inf sentences quote how the chart tab types a column", () => {
-  // analyzeField keeps both of its thresholds inline, so each is read off its answers.
   const NON_FINITE = ["NaN", "+Inf", "-Inf"];
 
   /** `numbers` distinct finite values, then `strings` of the engine's non-finite texts. */
@@ -328,75 +347,33 @@ describe("the NaN and Inf sentences quote how the chart tab types a column", () 
     ...Array.from({ length: numbers }, (_, index) => index + 0.5),
     ...Array.from({ length: strings }, (_, index) => NON_FINITE[index % NON_FINITE.length]),
   ];
-  const typeOf = (values: unknown[]): string => analyzeField("c", values).type;
-  /** A column half `NaN`, so never numbers, holding `values` distinct values: its numbers and the one string. */
-  const halfNaN = (values: number): unknown[] => [
-    ...column(values - 1, 0),
-    ...Array.from({ length: values - 1 }, () => "NaN"),
-  ];
-  /** The most distinct values a half-`NaN` column holds and is still typed categorical. */
-  const categoricalLimit = (): number | undefined =>
-    Array.from({ length: 200 }, (_, index) => index + 2)
-      .filter((values) => typeOf(halfNaN(values)) === "categorical")
-      .at(-1);
-  const minute = (index: number): string => new Date(Date.UTC(2026, 8, 23, 10, index)).toISOString();
-  const TIMES = Array.from({ length: 60 }, (_, index) => minute(index));
 
-  test("the share of strings at which a column stops being numbers", () => {
-    // In whole percent of 100 filled cells: the first share typed as something other than numbers.
+  test("the share of non-numbers at which a column stops being a metric", () => {
     const share = Array.from({ length: 101 }, (_, strings) => strings).find(
-      (strings) => typeOf(column(100 - strings, strings)) !== "numeric",
+      (strings) => !isMetricColumn(column(100 - strings, strings)),
     );
     expect(share).toBeDefined();
     if (share === undefined) return;
-    // Control: one string fewer is still numbers, so the share found is the boundary.
-    expect(typeOf(column(101 - share, share - 1))).toBe("numeric");
-    expect(DOC).toContain(`A column whose strings are ${share}% or more of its filled cells is not typed as numbers`);
-    expect(DOC).toContain(`a column ${share}% or more \`NaN\` or \`Inf\` is not drawn as a series`);
+    expect(isMetricColumn(column(101 - share, share - 1))).toBe(true);
+    expect(isChartNumber("+Inf")).toBe(false);
+    expect(isChartNumber("-Inf")).toBe(false);
+    expect(isChartNumber("NaN")).toBe(false);
+    expect(DOC).toContain(`A column whose non-numbers are ${share}% or more of its filled cells is not a metric`);
+    expect(DOC).toContain("`NaN`, `+Inf` and `-Inf` are not numbers");
   });
 
-  test("such a column is categorical up to the distinct values the doc names, and unknown past them", () => {
-    const limit = categoricalLimit();
-    expect(limit).toBeDefined();
-    if (limit === undefined) return;
-    expect(typeOf(halfNaN(limit + 1))).toBe("unknown");
-    expect(DOC).toContain(`It is typed categorical only while it holds at most ${limit} distinct values`);
-    expect(DOC).toContain(`past ${limit}, as in a mostly-\`NaN\` latency ratio`);
-    expect(DOC).toContain(`becomes the default x axis only while it holds at most ${limit} distinct values`);
-  });
-
-  test("only a categorical column takes the default x axis from the timestamps", () => {
-    const limit = categoricalLimit() ?? 0;
-    // One row per cell of the half-`NaN` column, a minute apart, beside a column of numbers.
-    const analysisOf = (values: number) => {
-      const rows = halfNaN(values).map((ratio, index) => ({ timestamp: minute(index), ratio, count: index + 1 }));
-      return analyzeData({ rows, fields: ["timestamp", "ratio", "count"], rowCount: rows.length, executionTime: 1 });
-    };
-    // The tab opens on the first categorical column, else the first date column.
-    expect(CHARTS).toContain("analysis.categoricalFields[0] || analysis.dateFields[0]");
-    expect(analysisOf(limit).categoricalFields).toEqual(["ratio"]);
-    expect(analysisOf(limit + 1).categoricalFields).toEqual([]);
-    expect(analysisOf(limit + 1).dateFields).toEqual(["timestamp"]);
-    expect(DOC).toContain(
-      "only then does the first categorical column in field order replace `timestamp` as the chart's default x axis",
-    );
-    expect(DOC).toContain("it is typed unknown and `timestamp` stays the default");
-  });
-
-  test("an answer with no numeric column draws no chart", () => {
-    const rows = TIMES.map((timestamp) => ({ timestamp, value: "NaN" }));
-    const analysis = analyzeData({ rows, fields: ["timestamp", "value"], rowCount: rows.length, executionTime: 1 });
-    expect(analysis.isVisualizable).toBe(false);
-    expect(analysis.reason).toBe("No numeric fields found for Y-axis");
-    // Control: the same rows with a number in every cell are drawable.
-    const numbers = TIMES.map((timestamp, index) => ({ timestamp, value: index }));
-    const drawable = analyzeData({
-      rows: numbers,
-      fields: ["timestamp", "value"],
-      rowCount: numbers.length,
-      executionTime: 1,
-    });
-    expect(drawable.isVisualizable).toBe(true);
-    expect(DOC).toContain("An answer with no numeric column draws no chart.");
+  test("an answer with no metric column draws no line", () => {
+    const rows = [{ timestamp: "2026-09-23T10:00:00.000Z", value: "NaN" }];
+    const columns = classifyColumns(["timestamp", "value"], rows);
+    expect(columns.metrics).toEqual([]);
+    expect(
+      buildChartOption({
+        typeId: "line",
+        variationId: "basic",
+        rows,
+        selection: defaultSelection("line", "basic", columns),
+      }),
+    ).toBeNull();
+    expect(DOC).toContain("An answer with no metric column draws no line.");
   });
 });

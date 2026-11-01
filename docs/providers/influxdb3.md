@@ -439,7 +439,7 @@ The Explain button is not offered ([D198](../BACKLOG.md)); a typed `EXPLAIN` ret
 ### 5.11 Timestamps and charts
 
 A timestamp through this type carries no zone, and the same row read through InfluxDB (InfluxQL) ends in `Z`, so a timestamp copied from one type into a statement of the other needs its `Z` added or removed.
-For the Charts tab, order by `time` ascending and choose `time` as the x axis: the default x axis is the first tag ([U79](../BACKLOG.md)), and "Group by hour" reads a `Z` time in local time ([U80](../BACKLOG.md)).
+For the Charts tab, order by `time` ascending and choose `time` as the dimension. The earlier chart view's default x axis was the first tag ([U79](../BACKLOG.md)), and its "Group by hour" read a `Z` time in local time ([U80](../BACKLOG.md)); this tab has neither behavior.
 
 ### 5.12 SQL grammar
 

@@ -96,8 +96,8 @@ export type BottomPanelMode =
   Each one is already gated on `mode`, so only one of them can be on screen and most
   sessions never open the others — but a static import puts every one of them, and the
   libraries they pull in, into the bundle that has to arrive before the editor can be
-  typed in. `DataCharts` alone brings recharts; `VisualExplain` and `SchemaDiff` bring
-  their own trees.
+  typed in. `QueryChart` brings ECharts and `DataCharts` brings recharts;
+  `VisualExplain` and `SchemaDiff` bring their own trees.
 
   `React.lazy` rather than `next/dynamic`: this file is reached from BOTH shells, and
   the embeddable one (`src/workspace/StudioWorkspace.tsx`) deliberately imports nothing
@@ -123,6 +123,9 @@ const VisualExplain = React.lazy(
 );
 const DataCharts = React.lazy(
   lazyRetry(() => import("@/components/DataCharts").then((m) => ({ default: m.DataCharts }))),
+);
+const QueryChart = React.lazy(
+  lazyRetry(() => import("@/components/charts/QueryChart").then((m) => ({ default: m.QueryChart }))),
 );
 const SchemaDiff = React.lazy(
   lazyRetry(() => import("@/components/SchemaDiff").then((m) => ({ default: m.SchemaDiff }))),
@@ -157,7 +160,7 @@ function ChartDashboard({
       <div className="h-full flex flex-col items-center justify-center bg-sunken text-fg-muted gap-2">
         <LayoutDashboard strokeWidth={1.5} className="w-10 h-10 opacity-30" />
         <p className="text-xs">No saved charts yet</p>
-        <p className="text-xs text-fg-subtle">Save charts from the Charts tab to display them here</p>
+        <p className="text-xs text-fg-subtle">Charts saved earlier show here with the result you have open</p>
       </div>
     );
   }
@@ -328,10 +331,9 @@ export const BottomPanel = React.memo(function BottomPanel({
     [agentArtifact],
   );
   /*
-    The run's own rows, drawn as the run said to draw them. `DataCharts` validates the
-    specification against the result it was actually given and falls back to its own
-    inference if it cannot be drawn, so a chart here is never a confident picture of
-    columns these rows do not have.
+    The run's own rows, drawn as the run said to draw them. `QueryChart` keeps a
+    specification whose columns are in this result and ignores one that is not, so a
+    chart here is never a picture of columns these rows do not have.
   */
   const hydratedChart = agentArtifact?.surface === "charts" ? agentArtifact.result : null;
   /** Null unless the run's own rows are what the charts view is showing. */
@@ -666,7 +668,7 @@ export const BottomPanel = React.memo(function BottomPanel({
                 }}
               />
             ) : mode === "charts" ? (
-              <DataCharts
+              <QueryChart
                 result={hydratedChart ?? result}
                 spec={hydratedChartSpec}
                 maskingEnabled={maskingEnabled}

@@ -843,10 +843,9 @@ export interface QueryWarning {
  *
  * Every column it names is checked against the artifact's real columns before the
  * event carrying it is written, and against the delivered rows again before it is
- * drawn, because the component that renders it does not fail on a column holding no
- * numbers: `Number(value) || 0` turns one into a confident flat line of zeros. A
- * refused spec costs one turn; an unvalidated one puts this application's frame
- * around a wrong picture.
+ * drawn. The Charts tab leaves a non-finite cell as a gap and ignores a specification
+ * whose columns are not in the result. A refused spec costs one turn; an unvalidated
+ * one puts this application's frame around a wrong picture.
  *
  * What is absent is as load-bearing as what is here:
  *

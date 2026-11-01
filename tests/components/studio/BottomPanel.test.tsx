@@ -103,6 +103,17 @@ mock.module("@/components/DataCharts", () => ({
   },
 }));
 
+let capturedQueryChartProps: Record<string, unknown> = {};
+
+mock.module("@/components/charts/QueryChart", () => ({
+  QueryChart: (props: Record<string, unknown>) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const React = require("react");
+    capturedQueryChartProps = props;
+    return React.createElement("div", { "data-testid": "querychart" }, "QueryChart");
+  },
+}));
+
 let capturedPivotTableProps: Record<string, unknown> = {};
 
 mock.module("@/components/PivotTable", () => ({
@@ -820,10 +831,10 @@ describe("BottomPanel", () => {
     expect(queryByTestId("savedqueries")).not.toBeNull();
   });
 
-  test('Charts tab renders DataCharts when mode="charts"', () => {
+  test('Charts tab renders QueryChart when mode="charts"', () => {
     const props = createDefaultProps({ mode: "charts" });
     const { queryByTestId } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(queryByTestId("datacharts")).not.toBeNull();
+    expect(queryByTestId("querychart")).not.toBeNull();
   });
 
   test('Pivot tab renders PivotTable when mode="pivot"', () => {
@@ -1090,7 +1101,7 @@ describe("BottomPanel", () => {
     expect(onSetMode).toHaveBeenCalledWith("docs");
   });
 
-  test("Dashboard renders saved chart cards with DataCharts when result exists", () => {
+  test("Dashboard renders saved chart cards with DataCharts when result exists", async () => {
     mockGetSavedCharts.mockReturnValue([
       makeSavedChart({ id: "chart-1", name: "Revenue", chartType: "bar", xAxis: "month", yAxis: ["revenue"] }),
     ]);
@@ -1105,15 +1116,15 @@ describe("BottomPanel", () => {
         type: "sql" as const,
       },
     });
-    const { getByText, queryByTestId } = render(
+    const { findByText, findByTestId } = render(
       <BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />,
     );
 
-    expect(getByText("Revenue")).not.toBeNull();
-    expect(getByText("bar")).not.toBeNull();
-    expect(getByText(/X: month/)).not.toBeNull();
-    expect(getByText(/Y: revenue/)).not.toBeNull();
-    expect(queryByTestId("datacharts")).not.toBeNull();
+    expect(await findByText("Revenue")).not.toBeNull();
+    expect(await findByText("bar")).not.toBeNull();
+    expect(await findByText(/X: month/)).not.toBeNull();
+    expect(await findByText(/Y: revenue/)).not.toBeNull();
+    expect(await findByTestId("datacharts")).not.toBeNull();
   });
 
   test("Dashboard shows placeholder on saved chart card when result is null", () => {
@@ -1392,8 +1403,8 @@ describe("BottomPanel", () => {
       // The same provenance the grid carries: these rows came from a run, not from
       // the statement in the editor above them.
       expect(getByTestId("agent-provenance").textContent).toContain("arun_1");
-      expect(capturedDataChartsProps.result).toEqual(ARTIFACT_RESULT);
-      expect(capturedDataChartsProps.spec).toEqual(spec);
+      expect(capturedQueryChartProps.result).toEqual(ARTIFACT_RESULT);
+      expect(capturedQueryChartProps.spec).toEqual(spec);
     });
 
     test("a hydrated result reaches only the surface it was hydrated into", () => {
@@ -1403,9 +1414,9 @@ describe("BottomPanel", () => {
       const { queryByTestId } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
 
       expect(queryByTestId("agent-provenance")).toBeNull();
-      expect(queryByTestId("datacharts")).toBeTruthy();
-      expect(capturedDataChartsProps.result).toEqual(TAB_RESULT);
-      expect(capturedDataChartsProps.spec).toBeNull();
+      expect(queryByTestId("querychart")).toBeTruthy();
+      expect(capturedQueryChartProps.result).toEqual(TAB_RESULT);
+      expect(capturedQueryChartProps.spec).toBeNull();
     });
 
     test("without an artifact nothing about the panel changes", () => {
@@ -1548,10 +1559,10 @@ describe("masking inputs to the pivot, charts and dashboard views (#1939)", () =
   test("the charts view receives the grid's masking inputs", () => {
     const props = maskedPanelProps("charts");
     render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(capturedDataChartsProps.maskingEnabled).toBe(true);
-    expect(capturedDataChartsProps.userRole).toBe("user");
-    expect(capturedDataChartsProps.maskingConfig).toBe(props.maskingConfig);
-    expect(capturedDataChartsProps.maskingExemptColumns).toEqual(EXEMPTION);
+    expect(capturedQueryChartProps.maskingEnabled).toBe(true);
+    expect(capturedQueryChartProps.userRole).toBe("user");
+    expect(capturedQueryChartProps.maskingConfig).toBe(props.maskingConfig);
+    expect(capturedQueryChartProps.maskingExemptColumns).toEqual(EXEMPTION);
   });
 
   test("each saved chart on the dashboard receives the grid's masking inputs", () => {

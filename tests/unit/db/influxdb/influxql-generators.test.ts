@@ -86,7 +86,7 @@ describe("influxqlSelectQuery (SPEC 6.6)", () => {
         '-- One point per minute: SELECT mean("co") FROM "home".."home" WHERE time > now() - 1h GROUP BY time(1m)\n' +
         '-- Another retention policy: SELECT * FROM "home"."<rp>"."home" (SHOW RETENTION POLICIES ON "home" lists them)\n' +
         '-- Tag values: SHOW TAG VALUES ON "home" FROM "home" WITH KEY = "room" (on InfluxDB 3 add WHERE time > 0)\n' +
-        "-- For the Charts tab: ORDER BY time ASC, and choose time as the x axis.",
+        "-- For the Charts tab: ORDER BY time ASC, and choose time as the dimension.",
     );
   });
 
@@ -98,7 +98,7 @@ describe("influxqlSelectQuery (SPEC 6.6)", () => {
         '-- One point per minute: SELECT mean("temp") FROM "home".."home" WHERE time > now() - 1h GROUP BY time(1m)\n' +
         '-- Another retention policy: SELECT * FROM "home"."<rp>"."home" (SHOW RETENTION POLICIES ON "home" lists them)\n' +
         '-- Tag values: SHOW TAG VALUES ON "home" FROM "home" WITH KEY = "room" (on InfluxDB 3 add WHERE time > 0)\n' +
-        "-- For the Charts tab: ORDER BY time ASC, and choose time as the x axis.",
+        "-- For the Charts tab: ORDER BY time ASC, and choose time as the dimension.",
     );
   });
 
