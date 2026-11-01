@@ -163,6 +163,29 @@ export function parseAssistPlan(text: string): AssistPlan {
   return { explanation, queries: kept };
 }
 
+/**
+ * Queries a later answer may add beside charts the user already edited.
+ * A statement they edited and ran is left out, so the answer cannot replace that chart.
+ */
+export function queriesBesideEdits(
+  queries: readonly AssistQueryPlan[],
+  editedSql: readonly string[],
+): AssistQueryPlan[] {
+  const edited = new Set(editedSql.map((sql) => sql.trim()).filter((sql) => sql !== ""));
+  return queries.filter((query) => !edited.has(query.sql.trim()));
+}
+
+/** The earlier-turn text the model reads. Edited statements are named so a later answer can leave them alone. */
+export function explanationWithEdits(explanation: string, editedSql: readonly string[]): string {
+  const notes = editedSql
+    .map((sql) => sql.trim())
+    .filter((sql) => sql !== "")
+    .map((sql) => `User-edited query (leave it unchanged): ${sql}`);
+  if (notes.length === 0) return explanation;
+  const combined = `${explanation}\n${notes.join("\n")}`;
+  return combined.length > QUESTION_CAP ? combined.slice(0, QUESTION_CAP) : combined;
+}
+
 function historyOf(value: unknown): AssistHistoryTurn[] | null {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > HISTORY_CAP) return null;
@@ -251,7 +274,9 @@ The fenced schema lists every connected database. Each entry names the connectio
 Return one JSON object and nothing else:
 {"explanation":"plain sentences about what the numbers show","queries":[{"title":"short name","connection":"connection name from the schema","sql":"one read-only SELECT with LIMIT 200","chart":{"type":"bar","x":"category column","y":["numeric column"],"caption":"what the chart shows"}}]}
 
-queries has at most 3 items. connection is the name of the database that owns the tables in sql. sql is one read-only statement for that connection's engine. chart is null when a chart would not help. chart.type is bar, line, area, scatter, or stacked-bar. For scatter, x and y are both numeric columns.`;
+queries has at most 3 items. connection is the name of the database that owns the tables in sql. sql is one read-only statement for that connection's engine. chart is null when a chart would not help. chart.type is bar, line, area, scatter, or stacked-bar. For scatter, x and y are both numeric columns.
+
+A line in an earlier turn that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not return that statement or a revision of it, and leave that chart as it is. A later question may add a different query and chart.`;
   const user = `Question:\n${prompt.questionBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },

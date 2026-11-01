@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import {
+  assistChoiceForVariation,
+  nextAssistChoice,
+  titleForQuery,
+  type AssistChartChoice,
+} from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import { classifyColumns } from "@/lib/charts/echarts-catalog";
 import type { QueryResult } from "@/lib/types";
@@ -96,5 +101,31 @@ describe("assistChoiceForVariation", () => {
   test("ignores a type or variation that is not in the catalog", () => {
     expect(assistChoiceForVariation("pie", "basic", columns)).toBeNull();
     expect(assistChoiceForVariation("line", "missing", columns)).toBeNull();
+  });
+});
+
+describe("titleForQuery", () => {
+  test("names the metric by the first column", () => {
+    expect(titleForQuery("SELECT month, revenue FROM orders LIMIT 200")).toBe("revenue by month");
+    expect(titleForQuery("-- note\nSELECT region, sum(cost) AS spend FROM sales")).toBe("spend by region");
+    expect(titleForQuery("SELECT month, revenue, sum(cost) total FROM t")).toBe("revenue, total by month");
+    expect(titleForQuery('SELECT * FROM public."Orders"')).toBe("Orders");
+    expect(titleForQuery("SELECT DISTINCT TOP 10 month, orders.revenue FROM t")).toBe("revenue by month");
+    expect(titleForQuery("SELECT /* hidden */ month, revenue FROM t")).toBe("revenue by month");
+    expect(titleForQuery("SELECT month FROM")).toBe("month");
+  });
+
+  test("keeps one selected value, a star, and a statement that is not a query", () => {
+    expect(titleForQuery("select count(*) from orders")).toBe("count(*)");
+    expect(titleForQuery("SELECT *")).toBe("*");
+    expect(titleForQuery("SELECT")).toBe("SELECT");
+    expect(titleForQuery("SELECT FROM orders")).toBe("SELECT FROM orders");
+    expect(titleForQuery("WITH c AS (SELECT secret FROM hidden) SELECT month, revenue FROM c")).toBe(
+      "revenue by month",
+    );
+    expect(titleForQuery("DELETE FROM orders")).toBe("DELETE FROM orders");
+    expect(titleForQuery("   ")).toBe("Query");
+    expect(titleForQuery("SELECT /* unfinished")).toBe("SELECT");
+    expect(titleForQuery(`SELECT ${"revenue".repeat(40)}, month FROM t`)).toHaveLength(120);
   });
 });

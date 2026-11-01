@@ -76,3 +76,115 @@ export function assistChoiceForVariation(
   if (slotsFor(typeId, variationId) === null) return null;
   return { typeId, variationId, selection: defaultSelection(typeId, variationId, columns) };
 }
+
+const QUERY_TITLE_CAP = 120;
+
+function stripSqlComments(sql: string): string {
+  let out = "";
+  for (let index = 0; index < sql.length; index += 1) {
+    const pair = sql.slice(index, index + 2);
+    if (pair === "--") {
+      const end = sql.indexOf("\n", index);
+      index = end === -1 ? sql.length : end;
+      continue;
+    }
+    if (pair === "/*") {
+      const end = sql.indexOf("*/", index + 2);
+      index = end === -1 ? sql.length : end + 1;
+      continue;
+    }
+    out += sql[index] ?? "";
+  }
+  return out;
+}
+
+function keywordAt(text: string, index: number, word: string): boolean {
+  if (!text.toLowerCase().startsWith(word, index)) return false;
+  const before = index === 0 ? " " : (text[index - 1] ?? " ");
+  const after = text[index + word.length] ?? " ";
+  return /[\s(;]/.test(before) && /[\s(]/.test(after);
+}
+
+function outerSelect(text: string): string | null {
+  let depth = 0;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === "(") depth += 1;
+    else if (char === ")" && depth > 0) depth -= 1;
+    else if (depth === 0 && keywordAt(text, index, "select")) return text.slice(index);
+  }
+  return null;
+}
+
+function splitSelectList(list: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = "";
+  for (const char of list) {
+    if (char === "(") depth += 1;
+    if (char === ")" && depth > 0) depth -= 1;
+    if (char === "," && depth === 0) {
+      parts.push(current);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  if (current.trim() !== "") parts.push(current);
+  return parts;
+}
+
+function columnLabel(expression: string): string {
+  let text = expression.trim().replace(/\s+/g, " ");
+  const alias = /^(.*)\s+as\s+(.+)$/i.exec(text);
+  if (alias !== null) text = alias[2]?.trim() ?? text;
+  else {
+    const bare = /^(.*\))\s+([A-Za-z_][\w$]*)$/.exec(text);
+    if (bare !== null) text = bare[2] ?? text;
+  }
+  text = text.replace(/^["`[]|["`\]]$/g, "");
+  const dot = text.lastIndexOf(".");
+  if (dot >= 0 && !text.includes("(")) text = text.slice(dot + 1).replace(/^["`[]|["`\]]$/g, "");
+  return text;
+}
+
+function clipTitle(text: string): string {
+  const trimmed = text.trim();
+  return trimmed.length > QUERY_TITLE_CAP ? trimmed.slice(0, QUERY_TITLE_CAP) : trimmed;
+}
+
+/**
+ * The card heading after someone edits the statement and runs it.
+ * The model's short name described the original statement, so a different
+ * statement takes its name from the columns it selects.
+ */
+export function titleForQuery(sql: string): string {
+  const statement = stripSqlComments(sql).replace(/\s+/g, " ").trim();
+  if (statement === "") return "Query";
+  const select = outerSelect(statement);
+  if (select === null) return clipTitle(statement);
+  let list = select.replace(/^select\s+/i, "");
+  list = list.replace(/^(distinct|all)\s+/i, "").replace(/^top\s+\(?\d+\)?\s+/i, "");
+  let table = "";
+  let depth = 0;
+  for (let index = 0; index < list.length; index += 1) {
+    const char = list[index];
+    if (char === "(") depth += 1;
+    else if (char === ")" && depth > 0) depth -= 1;
+    else if (depth === 0 && keywordAt(list, index, "from")) {
+      const after = list.slice(index + 4).trim();
+      table = /^[^\s,;]+/.exec(after)?.[0]?.replace(/^["`[]|["`\]]$/g, "") ?? "";
+      const dot = table.lastIndexOf(".");
+      if (dot >= 0) table = table.slice(dot + 1).replace(/^["`[]|["`\]]$/g, "");
+      list = list.slice(0, index);
+      break;
+    }
+  }
+  const columns = splitSelectList(list)
+    .map(columnLabel)
+    .filter((label) => label !== "");
+  if (columns.length === 0) return clipTitle(statement);
+  const only = columns[0];
+  if (columns.length === 1) return clipTitle(only === "*" && table !== "" ? table : (only ?? statement));
+  return clipTitle(`${columns.slice(1).join(", ")} by ${columns[0] ?? ""}`);
+}

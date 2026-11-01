@@ -389,6 +389,43 @@ describe("ChartWithEditor", () => {
     expect(table.getByTestId("assist-chart")).toBeTruthy();
     expect(table.getByRole("button", { name: "Change type, Gauge, Basic" })).toBeTruthy();
   });
+
+  test("keeps the chosen type when a new query only clears the caption", () => {
+    const props = {
+      title: "Revenue",
+      sql: "SELECT month, revenue FROM orders",
+      connectionName: "Orders",
+      result: barResult,
+      error: null,
+      chart: barChart,
+      running: false,
+      onSqlChange: () => {},
+      onRun: () => {},
+    };
+    const view = render(<ChartWithEditor {...props} />);
+    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Area", exact: true }),
+    );
+    view.rerender(
+      <ChartWithEditor
+        {...props}
+        title="cost by region"
+        chart={{ ...barChart, caption: "" }}
+        result={{ ...barResult, executionTime: 5 }}
+      />,
+    );
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.queryByText("Revenue by month")).toBeNull();
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    view.rerender(
+      <ChartWithEditor {...props} chart={{ type: "line", x: "month", y: ["revenue"], caption: "trend" }} />,
+    );
+    expect(view.getByRole("button", { name: "Change type, Line, Basic" })).toBeTruthy();
+    view.rerender(<ChartWithEditor {...props} chart={null} />);
+    expect(view.getByRole("button", { name: "Choose a type" })).toBeTruthy();
+  });
 });
 
 describe("AiAssist page", () => {
@@ -397,7 +434,6 @@ describe("AiAssist page", () => {
     expect(await view.findByRole("heading", { name: "How can I help?" })).toBeTruthy();
     expect(view.getByRole("link", { name: "AI Assist" }).getAttribute("aria-current")).toBe("page");
     expect(view.getByRole("link", { name: "Traditional" }).getAttribute("href")).toBe("/");
-    expect(view.getByText("No database")).toBeTruthy();
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
     expect(await view.findByText(/This server has no OpenRouter key/)).toBeTruthy();
   });
@@ -405,7 +441,6 @@ describe("AiAssist page", () => {
   test("uses the active connection, or the only one, and retries a catalog read", async () => {
     saveConnection("missing");
     const view = render(<AiAssist />);
-    expect(await view.findByText("Orders")).toBeTruthy();
     expect(await view.findByText(/catalog is offline/)).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(calls.filter((call) => call.url.includes("provider-meta")).length).toBeGreaterThan(1));
@@ -443,26 +478,39 @@ describe("AiAssist page", () => {
   test("writes a query, draws the chart, and reveals the editor behind it", async () => {
     saveConnection();
     const view = render(<AiAssist />);
-    await view.findByText("Orders");
     await typeAndSend(view);
     expect(await view.findByText("Revenue rose.")).toBeTruthy();
     expect(await view.findByText("Revenue by month")).toBeTruthy();
     expect(await view.findByText("1 rows · 4 ms")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     expect(view.getByLabelText("SQL editor")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    const queriesBeforeRerun = calls.filter((call) => call.url.includes("/api/db/query")).length;
+    fireEvent.click(view.getByRole("button", { name: "Run" }));
+    await waitFor(() =>
+      expect(calls.filter((call) => call.url.includes("/api/db/query")).length).toBeGreaterThan(queriesBeforeRerun),
+    );
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    expect(view.getByText("Revenue by month")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "DELETE FROM orders" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
     expect(await view.findByText("AI Assist only runs read-only queries.")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "DELETE FROM orders" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
-    fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "SELECT 2" } });
+    fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "SELECT region, cost FROM sales" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
     await waitFor(() =>
       expect(
         calls.some(
-          (call) => call.url.includes("/api/db/query") && (call.body as { sql?: string } | null)?.sql === "SELECT 2",
+          (call) =>
+            call.url.includes("/api/db/query") &&
+            (call.body as { sql?: string } | null)?.sql === "SELECT region, cost FROM sales",
         ),
       ).toBe(true),
     );
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.queryByText("Revenue by month")).toBeNull();
   });
 
   test("refuses a write the model returned and still shows the editor with no database", async () => {
@@ -477,7 +525,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    await view.findByText("No database");
+    await view.findByText(/Add a database in Traditional mode/);
     await typeAndSend(view, "Delete everything");
     expect(await view.findByText("That would delete rows.")).toBeTruthy();
     expect(view.queryByText("Wipe")).toBeNull();
@@ -557,7 +605,6 @@ describe("AiAssist page", () => {
   test("sends the earlier turn the next time", async () => {
     saveConnection();
     const view = render(<AiAssist />);
-    await view.findByText("Orders");
     await typeAndSend(view, "First");
     await view.findByText("Revenue rose.");
     await typeAndSend(view, "Second");
@@ -565,6 +612,80 @@ describe("AiAssist page", () => {
     expect(posts()[1]?.body).toMatchObject({
       history: [{ question: "First", explanation: "Revenue rose." }],
     });
+  });
+
+  test("keeps a chart the user edited and adds a new one on the next question", async () => {
+    saveConnection();
+    let assistPosts = 0;
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        assistPosts += 1;
+        if (assistPosts === 1) {
+          return jsonResponse({
+            explanation: "Revenue rose.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: "SELECT month, revenue FROM orders LIMIT 200",
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month" },
+              },
+            ],
+          });
+        }
+        return jsonResponse({
+          explanation: "Cost is separate.",
+          queries: [
+            {
+              title: "Revenue again",
+              sql: "SELECT region, cost FROM sales",
+              chart: { type: "line", x: "region", y: ["cost"], caption: "replaced" },
+            },
+            { title: "Spend", connection: "Orders", sql: "SELECT region, sum(cost) AS spend FROM sales", chart: null },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view);
+    expect(await view.findByRole("heading", { name: "Revenue" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "SELECT region, cost FROM sales" } });
+    fireEvent.click(view.getByRole("button", { name: "Run" }));
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (call) =>
+            call.url.includes("/api/db/query") &&
+            (call.body as { sql?: string } | null)?.sql === "SELECT region, cost FROM sales",
+        ),
+      ).toBe(true),
+    );
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Area", exact: true }),
+    );
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+
+    await typeAndSend(view, "What about cost?");
+    expect(await view.findByText("Cost is separate.")).toBeTruthy();
+    expect(await view.findByRole("heading", { name: "Spend" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "Revenue again" })).toBeNull();
+    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(view.queryByText("replaced")).toBeNull();
+    expect((view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement).value).toBe(
+      "SELECT region, cost FROM sales",
+    );
+    const history = (posts()[1]?.body as { history?: { question: string; explanation: string }[] } | undefined)
+      ?.history;
+    expect(history?.[0]?.question).toBe("What changed?");
+    expect(history?.[0]?.explanation).toContain(
+      "User-edited query (leave it unchanged): SELECT region, cost FROM sales",
+    );
   });
 
   test("reports a query failure and an empty answer", async () => {
@@ -577,7 +698,6 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    await view.findByText("Orders");
     await typeAndSend(view);
     expect(await view.findByText("denied")).toBeTruthy();
     view.unmount();
@@ -688,8 +808,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    expect(await view.findByText("2 databases")).toBeTruthy();
-    expect(view.getByRole("list", { name: "Connected databases" }).textContent).toContain("Logs");
+    expect((await view.findByRole("list", { name: "Connected databases" })).textContent).toContain("Logs");
     expect(await view.findByText("Orders: The catalog is offline.")).toBeTruthy();
     expect(view.getByText("Logs: Could not read the database.")).toBeTruthy();
     await typeAndSend(view, "Compare them");

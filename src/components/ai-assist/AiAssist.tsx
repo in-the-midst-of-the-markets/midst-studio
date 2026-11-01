@@ -7,8 +7,15 @@ import { AssistModeToggle } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
-import { acceptAssistPlan, type AssistChart, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
+import {
+  acceptAssistPlan,
+  explanationWithEdits,
+  queriesBesideEdits,
+  type AssistChart,
+  type AssistHistoryTurn,
+} from "@/lib/ai/assist-plan";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
+import { titleForQuery } from "@/lib/ai/assist-chart";
 import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
@@ -28,6 +35,11 @@ import type { DatabaseConnection, QueryResult } from "@/lib/types";
 interface AssistCard {
   readonly id: string;
   readonly title: string;
+  /** The statement the current title describes. Editing the editor updates `sql` before Run. */
+  readonly titledSql: string;
+  /** The statement the model wrote. A run of different SQL keeps the chart out of later answers. */
+  readonly modelSql: string;
+  readonly locked: boolean;
   readonly sql: string;
   readonly connectionId: string | null;
   readonly connectionName: string;
@@ -57,7 +69,8 @@ function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
     const turn = turns[index];
     const next = turns[index + 1];
     if (turn?.role === "user" && next?.role === "assistant") {
-      pairs.push({ question: turn.text, explanation: next.text });
+      const edited = next.cards.filter((card) => card.locked).map((card) => card.sql);
+      pairs.push({ question: turn.text, explanation: explanationWithEdits(next.text, edited) });
     }
   }
   return pairs.slice(-6);
@@ -83,13 +96,6 @@ function readConnections(): readonly DatabaseConnection[] {
   connectionRaw = raw;
   connectionSnapshot = next;
   return connectionSnapshot;
-}
-
-function connectionLabel(connections: readonly DatabaseConnection[]): string {
-  const only = connections[0];
-  if (only === undefined) return "No database";
-  if (connections.length === 1) return only.name;
-  return `${connections.length} databases`;
 }
 
 function subscribeConnection(): () => void {
@@ -205,7 +211,25 @@ export function AiAssist() {
   };
 
   const runCard = async (id: string, connectionId: string | null, sql: string) => {
-    updateCard(id, { sql, running: true, error: null });
+    setTurns((current) =>
+      current.map((turn) => ({
+        ...turn,
+        cards: turn.cards.map((card) => {
+          if (card.id !== id) return card;
+          const changed = sql.trim() !== card.titledSql.trim();
+          return {
+            ...card,
+            sql,
+            title: changed ? titleForQuery(sql) : card.title,
+            titledSql: sql,
+            locked: sql.trim() !== card.modelSql.trim(),
+            chart: changed && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
+            running: true,
+            error: null,
+          };
+        }),
+      })),
+    );
     const target = connectionId === null ? null : (connections.find((item) => item.id === connectionId) ?? null);
     if (target === null) {
       updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." });
@@ -261,11 +285,15 @@ export function AiAssist() {
         return;
       }
       const plan = acceptAssistPlan(body);
-      const cards: AssistCard[] = plan.queries.map((query) => {
+      const editedSql = turns.flatMap((turn) => turn.cards.filter((card) => card.locked).map((card) => card.sql));
+      const cards: AssistCard[] = queriesBesideEdits(plan.queries, editedSql).map((query) => {
         const resolved = connectionForAssistQuery(connections, query.connection);
         return {
           id: nextId(),
           title: query.title,
+          titledSql: query.sql,
+          modelSql: query.sql,
+          locked: false,
           sql: query.sql,
           connectionId: resolved.ok ? resolved.connection.id : null,
           connectionName: resolved.ok ? resolved.connection.name : query.connection,
@@ -314,9 +342,6 @@ export function AiAssist() {
       <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
         <AssistModeToggle mode="assist" />
-        <p className="justify-self-end truncate text-xs text-fg-muted">
-          {hydrated ? connectionLabel(connections) : "\u00a0"}
-        </p>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
