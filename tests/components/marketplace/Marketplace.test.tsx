@@ -5,6 +5,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { mockGlobalFetch, restoreGlobalFetch, type MockFetchResponse } from "../../helpers/mock-fetch";
 import { Marketplace } from "@/components/marketplace/Marketplace";
+import { storage } from "@/lib/storage";
 
 const TRADES = {
   id: "acme-trades",
@@ -38,6 +39,7 @@ afterEach(() => {
   cleanup();
   restoreGlobalFetch();
   resetMockSearchParams();
+  localStorage.clear();
 });
 
 describe("Marketplace", () => {
@@ -137,6 +139,45 @@ describe("Marketplace", () => {
     render(<Marketplace />);
 
     expect(await screen.findByText("Subscribed to Acme Trades. Stripe has the payment.")).not.toBeNull();
+  });
+
+  test("adds the subscribed database when Stripe finishes", async () => {
+    setMockSearchParams(new URLSearchParams({ checkout: "success", session_id: "cs_test_abc" }));
+    mockGlobalFetch({
+      "/api/marketplace/offerings": {
+        json: { offerings: [{ id: "postgres", name: "PostgreSQL", description: "Tables", priceLabel: "$5/month" }] },
+      },
+      "/api/marketplace/checkout": {
+        json: {
+          complete: true,
+          offeringId: "postgres",
+          connection: {
+            id: "marketplace-postgres",
+            name: "PostgreSQL",
+            type: "postgres",
+            host: "db.example",
+            port: 5432,
+            user: "app",
+            password: "s3cret",
+            database: "trades",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            ssl: { mode: "require" },
+          },
+        },
+      },
+    });
+
+    render(<Marketplace />);
+
+    expect(
+      await screen.findByText("Subscribed to PostgreSQL. That database is now in your connections."),
+    ).not.toBeNull();
+    expect(storage.getConnections()[0]).toMatchObject({
+      id: "marketplace-postgres",
+      host: "db.example",
+      password: "s3cret",
+    });
+    expect(storage.getActiveConnectionId()).toBe("marketplace-postgres");
   });
 
   test("says subscribed when the paid offering is no longer listed", async () => {

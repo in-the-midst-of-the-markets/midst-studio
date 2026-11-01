@@ -4,7 +4,8 @@
  * The catalog is operator configuration (`MARKETPLACE_OFFERINGS`). Each database has its own monthly price.
  * `POSTGRES_CONNECTION_STRING`, when set, also lists PostgreSQL at five dollars a month, and
  * `OPEN_SEARCH_CONNECTION_STRING` lists OpenSearch the same way, unless that id is already in the catalog.
- * The connection string stays on the server and is never an offering field. A database someone added in the
+ * The connection string stays off the public catalog. A completed Checkout is what grants it: the
+ * subscribed database is then saved into that account's connections. A database someone added in the
  * editor is not one of these: the shop reads only these server variables.
  * A personal database connection is never an entry: those are added in the editor, and Stripe does
  * not grant them.
@@ -16,6 +17,11 @@ export interface MarketplaceOffering {
   readonly description: string;
   /** US cents billed every month. 500 is five dollars. Each database sets its own. */
   readonly monthlyCents: number;
+  /**
+   * The database this subscription opens. Server-only: the public catalog never includes it.
+   * Absent for PostgreSQL and OpenSearch, which read their own environment variables.
+   */
+  readonly connectionString?: string;
 }
 
 /** What the browser is allowed to see. The charge stays on the server. */
@@ -48,6 +54,18 @@ function isMonthlyCents(value: unknown): value is number {
   );
 }
 
+const CONNECTION_STRING_MAX = 4000;
+
+/** A catalog row's private connection string, or false when the field is present and not usable. */
+function connectionStringOf(row: Record<string, unknown>): string | undefined | false {
+  if (!Object.hasOwn(row, "connectionString")) return undefined;
+  const value = row.connectionString;
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (trimmed === "" || trimmed.length > CONNECTION_STRING_MAX) return false;
+  return trimmed;
+}
+
 function isOffering(value: unknown): value is MarketplaceOffering {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
@@ -77,12 +95,15 @@ export function parseMarketplaceCatalog(raw: string | undefined): MarketplaceCat
   const seen = new Set<string>();
   for (const item of parsed) {
     if (!isOffering(item) || seen.has(item.id)) return { ok: false };
+    const connectionString = connectionStringOf(item as unknown as Record<string, unknown>);
+    if (connectionString === false) return { ok: false };
     seen.add(item.id);
     offerings.push({
       id: item.id,
       name: item.name,
       description: item.description,
       monthlyCents: item.monthlyCents,
+      ...(connectionString === undefined ? {} : { connectionString }),
     });
   }
   return { ok: true, offerings };
@@ -118,6 +139,21 @@ export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): Ma
   );
   if (extras.length === 0) return parsed;
   return { ok: true, offerings: [...parsed.offerings, ...extras] };
+}
+
+/**
+ * The connection string a completed subscription should open.
+ * A string on the catalog row wins. PostgreSQL and OpenSearch otherwise use their environment variables.
+ */
+export function connectionStringForOffering(
+  offering: MarketplaceOffering,
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  if (offering.connectionString !== undefined) return offering.connectionString;
+  const listed = CONNECTION_OFFERINGS.find((item) => item.offering.id === offering.id);
+  if (listed === undefined) return null;
+  const value = env[listed.env];
+  return isConfigured(value) ? value.trim() : null;
 }
 
 export function publicMarketplaceOfferings(offerings: readonly MarketplaceOffering[]): PublicMarketplaceOffering[] {

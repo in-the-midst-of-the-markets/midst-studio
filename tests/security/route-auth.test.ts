@@ -474,6 +474,8 @@ describe("routes that reach a provider require a session", () => {
       "parses MARKETPLACE_OFFERINGS into the catalog the marketplace routes answer, and lists OpenSearch when OPEN_SEARCH_CONNECTION_STRING is set; data only, opens nothing",
     "@/lib/marketplace/checkout":
       "starts and reads a Stripe Checkout session over fetch to api.stripe.com; opens no database or LLM provider",
+    "@/lib/marketplace/subscribed-connection":
+      "builds the connection a completed Checkout grants from the offering's server-side connection string and writes it into the caller's app storage; parses the string and opens no database or LLM provider",
     "@/lib/non-finite": "writes NaN and the infinities in held rows as words; pure, imports nothing",
     "@/lib/oidc": "the OIDC discovery and PKCE exchange",
     "@/lib/oidc-identity":

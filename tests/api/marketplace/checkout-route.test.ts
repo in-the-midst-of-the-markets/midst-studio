@@ -302,4 +302,50 @@ describe("GET /api/marketplace/checkout", () => {
     const unknown = await GET(get("cs_test_abc"));
     expect(await unknown.json()).toEqual({ offeringId: "other", complete: false });
   });
+
+  test("returns the subscribed database once Stripe reports the session complete", async () => {
+    process.env.MARKETPLACE_OFFERINGS = JSON.stringify([
+      { id: "postgres", name: "PostgreSQL", description: "Tables", monthlyCents: 500 },
+    ]);
+    process.env.POSTGRES_CONNECTION_STRING = "postgresql://app:s3cret@db.example:5432/trades?sslmode=require";
+    globalThis.fetch = mock(
+      async () =>
+        new Response(JSON.stringify({ status: "complete", client_reference_id: "postgres" }), { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    const response = await GET(get("cs_test_paid"));
+    const body = (await response.json()) as {
+      complete: boolean;
+      connection: { host: string; password: string; id: string };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.complete).toBe(true);
+    expect(body.connection).toMatchObject({
+      id: "marketplace-postgres",
+      name: "PostgreSQL",
+      type: "postgres",
+      host: "db.example",
+      port: 5432,
+      user: "app",
+      password: "s3cret",
+      database: "trades",
+      ssl: { mode: "require" },
+    });
+  });
+
+  test("a complete session with no readable connection string still confirms the payment", async () => {
+    process.env.POSTGRES_CONNECTION_STRING = "not a database url";
+    process.env.MARKETPLACE_OFFERINGS = JSON.stringify([
+      { id: "postgres", name: "PostgreSQL", description: "Tables", monthlyCents: 500 },
+    ]);
+    globalThis.fetch = mock(
+      async () =>
+        new Response(JSON.stringify({ status: "complete", client_reference_id: "postgres" }), { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    const response = await GET(get("cs_test_paid"));
+
+    expect(await response.json()).toEqual({ offeringId: "postgres", complete: true });
+  });
 });

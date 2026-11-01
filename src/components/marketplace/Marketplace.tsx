@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/config/base-path";
+import { acceptSubscribedConnection } from "@/lib/marketplace/accept-subscription";
 import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
@@ -13,7 +14,10 @@ type Load =
   | { kind: "failed" }
   | { kind: "ready"; offerings: readonly PublicMarketplaceOffering[] };
 
-type Confirmation = { kind: "idle" } | { kind: "incomplete" } | { kind: "complete"; offeringId: string };
+type Confirmation =
+  | { kind: "idle" }
+  | { kind: "incomplete" }
+  | { kind: "complete"; offeringId: string; added: boolean };
 
 function matches(offering: PublicMarketplaceOffering, query: string): boolean {
   const name = offering.name.toLowerCase();
@@ -63,12 +67,16 @@ export function Marketplace() {
     appFetch(`/api/marketplace/checkout?session_id=${encodeURIComponent(sessionId)}`)
       .then(async (response) => {
         if (!response.ok) throw new Error(`status ${response.status}`);
-        return (await response.json()) as { offeringId?: unknown; complete?: unknown };
+        return (await response.json()) as { offeringId?: unknown; complete?: unknown; connection?: unknown };
       })
       .then((body) => {
         if (!current) return;
         if (body.complete === true && typeof body.offeringId === "string") {
-          setConfirmation({ kind: "complete", offeringId: body.offeringId });
+          setConfirmation({
+            kind: "complete",
+            offeringId: body.offeringId,
+            added: acceptSubscribedConnection(body.connection),
+          });
         } else {
           setConfirmation({ kind: "incomplete" });
         }
@@ -129,7 +137,9 @@ export function Marketplace() {
       )}
       {confirmation.kind === "complete" && (
         <output className="mt-4 block rounded-lg border border-border px-3 py-2 text-sm text-fg-secondary">
-          {subscribedName === undefined ? "Subscribed." : `Subscribed to ${subscribedName}.`} Stripe has the payment.
+          {confirmation.added
+            ? `Subscribed to ${subscribedName ?? "that database"}. That database is now in your connections.`
+            : `${subscribedName === undefined ? "Subscribed." : `Subscribed to ${subscribedName}.`} Stripe has the payment.`}
         </output>
       )}
       {confirmation.kind === "incomplete" && (
