@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
-import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
+import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
@@ -220,6 +220,9 @@ export function ChartWithEditor({
         </div>
       </div>
       {chart?.caption ? <p className="px-3 pt-2 text-xs text-fg-muted">{chart.caption}</p> : null}
+      {filters.length > 0 && (running || columns === null || slots === null) && (
+        <QueryFilterBar filters={filters} disabled={running} onChange={changeFilter} />
+      )}
       <div className="relative min-h-0 flex-1">
         <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
           <QueryEditor
@@ -232,7 +235,6 @@ export function ChartWithEditor({
         </div>
         {face === "chart" && (
           <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
-            {filters.length > 0 && <QueryFilterBar filters={filters} disabled={running} onChange={changeFilter} />}
             {error !== null && (
               <p role="alert" className="px-3 py-2 text-xs text-danger">
                 {error}
@@ -310,7 +312,7 @@ export function ChartWithEditor({
                 )}
               </div>
             )}
-            {!running && slots !== null && columns !== null && (
+            {!running && result !== null && slots !== null && columns !== null && (
               <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2">
                 {slots.map((slot) => {
                   const pool = slot.kind === "metric" ? columns.metrics : columns.dimensions;
@@ -359,6 +361,13 @@ export function ChartWithEditor({
                     </fieldset>
                   );
                 })}
+                <ChartFilterShelf
+                  columns={columns.dimensions}
+                  rows={result.rows}
+                  sql={sql}
+                  disabled={running}
+                  onSql={onRun}
+                />
               </div>
             )}
             {!running && built !== null && (

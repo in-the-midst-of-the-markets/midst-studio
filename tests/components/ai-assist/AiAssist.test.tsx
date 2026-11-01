@@ -249,6 +249,49 @@ describe("ChartWithEditor", () => {
     expect(view.getByTestId("assist-chart")).toBeTruthy();
   });
 
+  test("adds and removes a filter from the button beside Dimension", () => {
+    const ran: string[] = [];
+    const months = Array.from({ length: 25 }, (_, index) => `m${index}`);
+    function Harness() {
+      const [sql, setSql] = useState("SELECT month, revenue FROM orders");
+      return (
+        <ChartWithEditor
+          title="Revenue"
+          sql={sql}
+          result={{
+            rows: months.map((month, index) => ({
+              month,
+              revenue: index,
+              note: index === 0 ? null : index === 1 ? { bad: true } : false,
+              blank: index === 0 ? "  " : "",
+              long: "x".repeat(81),
+              odd: "a|b",
+            })),
+            fields: ["month", "revenue", "note", "blank", "long", "odd"],
+            rowCount: months.length,
+            executionTime: 1,
+          }}
+          error={null}
+          chart={barChart}
+          running={false}
+          onSqlChange={setSql}
+          onRun={(next) => {
+            ran.push(next);
+            setSql(next);
+          }}
+        />
+      );
+    }
+    const view = render(<Harness />);
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    fireEvent.click(filter.getByRole("button", { name: "month" }));
+    expect(ran[0]).toContain("WHERE month = {{month:m0|");
+    expect(ran[0]).toContain("m23");
+    expect(ran[0]).not.toContain("m24");
+    fireEvent.click(filter.getByRole("button", { name: "month" }));
+    expect(ran[1]).toBe("SELECT month, revenue FROM orders");
+  });
+
   test("listens for the editor's run event only while the query is showing", () => {
     const ran: string[] = [];
     const view = render(
@@ -289,7 +332,7 @@ describe("ChartWithEditor", () => {
       />,
     );
     expect(errorView.getByRole("alert").textContent).toBe("denied");
-    expect(errorView.getByText("month")).toBeTruthy();
+    expect(errorView.getAllByText("month").length).toBeGreaterThan(0);
     errorView.unmount();
 
     const emptyView = render(
@@ -449,6 +492,23 @@ describe("ChartWithEditor", () => {
     const updated = view.getByRole("textbox", { name: "min" }) as HTMLInputElement;
     expect(updated.value).toBe("5");
     expect(updated.hasAttribute("disabled")).toBe(true);
+    fireEvent.change(updated, { target: { value: "9" } });
+    fireEvent.keyDown(updated, { key: "Enter" });
+    const runningSql = sql.replace("{{min:1}}", "{{min:5}}");
+    expect(onRun).toHaveBeenLastCalledWith(runningSql.replace("{{min:5}}", "{{min:9}}"));
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql={runningSql.replace("{{min:5}}", "{{min:9}}")}
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running
+        onSqlChange={() => {}}
+        onRun={onRun}
+      />,
+    );
+    expect((view.getByRole("textbox", { name: "min" }) as HTMLInputElement).value).toBe("9");
   });
 
   test("keeps the chosen type when a new query only clears the caption", () => {

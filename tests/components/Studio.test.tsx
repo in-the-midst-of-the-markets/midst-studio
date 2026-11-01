@@ -2610,9 +2610,9 @@ describe("Studio", () => {
       },
     };
     render(<Studio />);
-    const fn = capturedBottomPanelProps.onChartFilter as (name: string, value: string) => void;
-    act(() => fn("region", "west"));
+    const fn = capturedBottomPanelProps.onChartFilter as (sql: string) => void;
     const next = "SELECT revenue FROM orders WHERE region = {{region:west|east,west}}";
+    act(() => fn(next));
     expect(mockUpdateCurrentTab).toHaveBeenCalledWith({ query: next });
     expect(mockExecuteQuery).toHaveBeenCalledWith(next);
   });

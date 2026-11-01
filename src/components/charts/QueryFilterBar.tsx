@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import type { QueryFilter } from "@/lib/charts/query-filters";
+import {
+  addQueryFilter,
+  readQueryFilters,
+  removeQueryFilter,
+  writeQueryFilter,
+  type QueryFilter,
+} from "@/lib/charts/query-filters";
+import { cn } from "@/lib/utils";
 
 interface FilterControlProps {
   readonly filter: QueryFilter;
   readonly disabled: boolean;
+  readonly hideName?: boolean;
   readonly onChange: (name: string, value: string) => void;
 }
 
-function FilterControl({ filter, disabled, onChange }: FilterControlProps) {
+function FilterControl({ filter, disabled, hideName = false, onChange }: FilterControlProps) {
   const [draft, setDraft] = useState(filter.value);
   const [seen, setSeen] = useState(filter.value);
   if (seen !== filter.value) {
@@ -24,7 +32,7 @@ function FilterControl({ filter, disabled, onChange }: FilterControlProps) {
     const choices = filter.options.includes(filter.value) ? filter.options : [filter.value, ...filter.options];
     return (
       <label className="flex items-center gap-1 text-xs text-fg-muted">
-        {filter.name}
+        {hideName ? null : filter.name}
         <select
           aria-label={filter.name}
           disabled={disabled}
@@ -43,7 +51,7 @@ function FilterControl({ filter, disabled, onChange }: FilterControlProps) {
   }
   return (
     <label className="flex items-center gap-1 text-xs text-fg-muted">
-      {filter.name}
+      {hideName ? null : filter.name}
       <input
         aria-label={filter.name}
         disabled={disabled}
@@ -64,16 +72,109 @@ function FilterControl({ filter, disabled, onChange }: FilterControlProps) {
 export interface QueryFilterBarProps {
   readonly filters: readonly QueryFilter[];
   readonly disabled?: boolean;
+  /** Sits in the Dimension and Metric row, so it has no bar of its own. */
+  readonly embedded?: boolean;
+  readonly hideNames?: boolean;
   readonly onChange: (name: string, value: string) => void;
 }
 
 /** The controls for the placeholders in the query behind this chart. */
-export function QueryFilterBar({ filters, disabled = false, onChange }: QueryFilterBarProps) {
+export function QueryFilterBar({
+  filters,
+  disabled = false,
+  embedded = false,
+  hideNames = false,
+  onChange,
+}: QueryFilterBarProps) {
   return (
-    <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2" aria-label="Query filters">
+    <div
+      className={embedded ? "contents" : "flex flex-wrap items-center gap-3 border-b border-hairline px-3 py-2"}
+      aria-label={embedded ? undefined : "Query filters"}
+    >
+      {embedded ? null : <span className="text-xs font-medium text-fg-secondary">Filters</span>}
       {filters.map((filter) => (
-        <FilterControl key={filter.name} filter={filter} disabled={disabled} onChange={onChange} />
+        <FilterControl key={filter.name} filter={filter} disabled={disabled} hideName={hideNames} onChange={onChange} />
       ))}
     </div>
+  );
+}
+
+const CHOICE_CAP = 24;
+
+function choicesFor(column: string, rows: readonly Record<string, unknown>[]): string[] {
+  const choices: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const value = row[column];
+    if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") continue;
+    const text = String(value).trim();
+    if (text === "" || text.length > 80 || /[|}\r\n]/.test(text) || seen.has(text)) continue;
+    seen.add(text);
+    choices.push(text);
+    if (choices.length === CHOICE_CAP) break;
+  }
+  return choices;
+}
+
+export interface ChartFilterShelfProps {
+  readonly columns: readonly string[];
+  readonly rows: readonly Record<string, unknown>[];
+  readonly sql: string;
+  readonly disabled?: boolean;
+  readonly onSql: (sql: string) => void;
+}
+
+/** A Filter control in the same row as Dimension and Metric. Each column toggles a comparison. */
+export function ChartFilterShelf({ columns, rows, sql, disabled = false, onSql }: ChartFilterShelfProps) {
+  const filters = readQueryFilters(sql);
+  const names = columns.filter((name) => /^[A-Za-z_][A-Za-z0-9_]{0,39}$/.test(name));
+  const named = new Set(names);
+  const toggle = (name: string) => {
+    if (filters.some((filter) => filter.name === name)) onSql(removeQueryFilter(sql, name));
+    else {
+      const choices = choicesFor(name, rows);
+      onSql(addQueryFilter(sql, name, choices[0] ?? "", choices));
+    }
+  };
+  return (
+    <fieldset aria-label="Filter" className="m-0 flex min-w-0 flex-wrap items-center gap-1 border-0 p-0">
+      <span className="text-xs text-fg-muted">Filter</span>
+      {names.map((name) => {
+        const filter = filters.find((item) => item.name === name);
+        const pressed = filter !== undefined;
+        return (
+          <span key={name} className="inline-flex items-center gap-1">
+            <button
+              type="button"
+              aria-pressed={pressed}
+              disabled={disabled}
+              onClick={() => toggle(name)}
+              className={cn(
+                "rounded border px-2 py-0.5 text-xs",
+                pressed
+                  ? "border-brand bg-brand/15 text-brand"
+                  : "border-hairline-strong text-fg-secondary hover:bg-raised",
+              )}
+            >
+              {name}
+            </button>
+            {filter !== undefined && (
+              <FilterControl
+                filter={filter}
+                disabled={disabled}
+                hideName
+                onChange={(filterName, value) => onSql(writeQueryFilter(sql, filterName, value))}
+              />
+            )}
+          </span>
+        );
+      })}
+      <QueryFilterBar
+        embedded
+        filters={filters.filter((filter) => !named.has(filter.name))}
+        disabled={disabled}
+        onChange={(name, value) => onSql(writeQueryFilter(sql, name, value))}
+      />
+    </fieldset>
   );
 }

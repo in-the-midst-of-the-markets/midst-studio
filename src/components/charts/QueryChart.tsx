@@ -25,7 +25,7 @@ import {
 } from "echarts/components";
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
+import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
   classifyColumns,
@@ -40,7 +40,7 @@ import {
   type ClassifiedColumns,
 } from "@/lib/charts/echarts-catalog";
 import { buildChartOption, watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
-import { readQueryFilters } from "@/lib/charts/query-filters";
+import { readQueryFilters, writeQueryFilter } from "@/lib/charts/query-filters";
 import { chartTheme } from "@/lib/charts/palette";
 import {
   loadMaskingConfig,
@@ -85,7 +85,8 @@ export interface QueryChartProps {
   spec?: AgentChartSpec | null;
   /** The editor statement. Placeholders in it become controls on this chart. */
   query?: string;
-  onFilterChange?: (name: string, value: string) => void;
+  /** Replaces the editor statement with the next template and runs it. */
+  onFilterChange?: (sql: string) => void;
   maskingEnabled?: boolean;
   userRole?: string;
   maskingConfig?: MaskingConfig;
@@ -198,10 +199,14 @@ export function QueryChart({
   };
 
   const filters = query !== undefined && onFilterChange !== undefined ? readQueryFilters(query) : [];
+  const shelfOpen = slots !== null && hasRows;
   return (
     <div className="flex h-full min-h-0 flex-col bg-sunken">
-      {filters.length > 0 && onFilterChange !== undefined && (
-        <QueryFilterBar filters={filters} onChange={onFilterChange} />
+      {filters.length > 0 && query !== undefined && onFilterChange !== undefined && !shelfOpen && (
+        <QueryFilterBar
+          filters={filters}
+          onChange={(name, value) => onFilterChange(writeQueryFilter(query, name, value))}
+        />
       )}
       <fieldset
         aria-label="Chart types"
@@ -308,6 +313,9 @@ export function QueryChart({
                 </fieldset>
               );
             })}
+            {query !== undefined && onFilterChange !== undefined && (
+              <ChartFilterShelf columns={columns.dimensions} rows={rows ?? []} sql={query} onSql={onFilterChange} />
+            )}
           </div>
           {!ready && (
             <p className="px-3 py-6 text-center text-xs text-fg-muted">Choose the columns this chart needs.</p>

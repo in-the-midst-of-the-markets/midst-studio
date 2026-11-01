@@ -35,7 +35,6 @@ import { httpSourceApplier, ObjectSourceView, type ObjectSourcePatch } from "@/c
 import { ChunkBoundary, ViewLoading } from "@/components/LazyView";
 import { lazyRetry } from "@/lib/lazy";
 import { useStableCallback } from "@/hooks/use-stable-callback";
-import { writeQueryFilter } from "@/lib/charts/query-filters";
 import { useReturnFocus } from "@/hooks/use-return-focus";
 import { editorLanguageForTabType, resolveTabType } from "@/lib/editor/tab-language";
 import {
@@ -1318,13 +1317,11 @@ export default function Studio() {
     [runsTheActiveTab, updateCurrentTab],
   );
 
-  // A chart filter rewrites its placeholder and runs the statement again. The panel
-  // stays where it is, so the chart refreshes in place.
-  const applyChartFilter = useStableCallback((name: string, value: string) => {
+  // A chart filter hands back the next statement. The panel stays where it is, so the chart refreshes in place.
+  const applyChartFilter = useStableCallback((sql: string) => {
     if (!runsTheActiveTab) return;
-    const next = writeQueryFilter(tabMgr.currentTab.query, name, value);
-    updateCurrentTab({ query: next });
-    void queryExec.executeQuery(next);
+    updateCurrentTab({ query: sql });
+    void queryExec.executeQuery(sql);
   });
 
   // Stable: `executeHandedOverStatement` depends on the tabs (X5). The rail calls this from
