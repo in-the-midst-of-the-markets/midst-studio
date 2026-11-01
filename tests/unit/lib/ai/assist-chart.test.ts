@@ -24,13 +24,34 @@ const revenue = result(
 );
 
 describe("nextAssistChoice", () => {
-  test("keeps the model's dimension and metrics", () => {
+  test("opens a month series as a line even when the model said bar", () => {
     const choice = nextAssistChoice(bar, revenue, null);
     expect(choice).toEqual({
-      typeId: "bar",
+      typeId: "line",
       variationId: "basic",
       selection: { category: ["month"], values: ["revenue"] },
     });
+  });
+
+  test("keeps a category comparison as a bar and a chosen bar on screen", () => {
+    const regions = result(
+      ["region", "revenue"],
+      [
+        { region: "East", revenue: 10 },
+        { region: "West", revenue: 4 },
+      ],
+    );
+    expect(nextAssistChoice({ ...bar, x: "region" }, regions, null)).toEqual({
+      typeId: "bar",
+      variationId: "basic",
+      selection: { category: ["region"], values: ["revenue"] },
+    });
+    const previous: AssistChartChoice = {
+      typeId: "bar",
+      variationId: "basic",
+      selection: { category: ["month"], values: ["revenue"] },
+    };
+    expect(nextAssistChoice(bar, revenue, previous)?.typeId).toBe("bar");
   });
 
   test("keeps a chosen dimension when the edited query still returns it", () => {
@@ -79,10 +100,53 @@ describe("nextAssistChoice", () => {
     expect(nextAssistChoice({ ...bar, x: "missing", y: ["nope"] }, textOnly, previous)).toBeNull();
   });
 
-  test("uses a bar when the model's columns are gone and the result still has a metric", () => {
-    const choice = nextAssistChoice({ ...bar, x: "missing", y: ["nope"] }, revenue, null);
-    expect(choice?.typeId).toBe("bar");
-    expect(choice?.selection.values).toEqual(["revenue"]);
+  test("picks a line, a bar, a scatter, or a gauge from the columns that remain", () => {
+    const missed = { ...bar, x: "missing", y: ["nope"] };
+    expect(nextAssistChoice(missed, revenue, null)?.typeId).toBe("line");
+    const regions = result(
+      ["region", "revenue"],
+      [
+        { region: "East", revenue: 10 },
+        { region: "West", revenue: 4 },
+      ],
+    );
+    expect(nextAssistChoice(missed, regions, null)?.typeId).toBe("bar");
+    const points = result(
+      ["price", "quantity"],
+      [
+        { price: 2, quantity: 5 },
+        { price: 4, quantity: 1 },
+      ],
+    );
+    expect(nextAssistChoice(missed, points, null)).toEqual({
+      typeId: "scatter",
+      variationId: "basic",
+      selection: { x: ["price"], y: ["quantity"], series: [] },
+    });
+    expect(nextAssistChoice({ ...bar, x: "price", y: ["quantity"] }, points, null)?.typeId).toBe("scatter");
+    const dated = result(
+      ["when", "revenue"],
+      [
+        { when: "2024-01-02", revenue: 10 },
+        { when: new Date("2024-02-01T00:00:00Z"), revenue: 12 },
+      ],
+    );
+    expect(nextAssistChoice(missed, dated, null)?.typeId).toBe("line");
+    const only = result(["revenue"], [{ revenue: 10 }, { revenue: 12 }]);
+    expect(nextAssistChoice(missed, only, null)?.typeId).toBe("gauge");
+    const blank = result(
+      ["note", "revenue"],
+      [
+        { note: null, revenue: 1 },
+        { note: null, revenue: 2 },
+      ],
+    );
+    expect(nextAssistChoice(missed, blank, null)?.typeId).toBe("bar");
+    expect(nextAssistChoice({ ...bar, type: "stacked-bar", x: "month" }, revenue, null)).toMatchObject({
+      typeId: "bar",
+      variationId: "stacked",
+    });
+    expect(nextAssistChoice({ ...bar, type: "area" }, revenue, null)?.variationId).toBe("area");
   });
 });
 

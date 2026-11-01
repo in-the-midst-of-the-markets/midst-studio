@@ -241,6 +241,8 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("User-edited query (leave it unchanged):");
     expect(messages[0]?.content).toContain("chart.color");
     expect(messages[0]?.content).toContain("{{region:east|east,west,north}}");
+    expect(messages[0]?.content).toContain("rather than defaulting to bar");
+    expect(messages[0]?.content).toContain("A measure over time, including months or dates, is line.");
     expect(messages[0]?.content).toContain("total >= {{total:10}}");
     expect(messages[0]?.content).toContain(">=, <=, or =");
   });
