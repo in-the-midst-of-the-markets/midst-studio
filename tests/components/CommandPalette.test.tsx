@@ -173,15 +173,30 @@ describe("CommandPalette", () => {
     expect(queryByText("products")).not.toBeNull();
   });
 
-  test("offers no New Connection action when the shell offers none", () => {
+  test("offers no Add Internal Data action when the shell offers none", () => {
     const { queryByText, rerender } = render(<CommandPalette {...createDefaultProps()} />);
     fireEvent.keyDown(document, { key: "k", code: "KeyK", metaKey: true });
-    expect(queryByText("New Connection")).not.toBeNull();
+    expect(queryByText("Add Internal Data")).not.toBeNull();
 
     rerender(<CommandPalette {...createDefaultProps({ onAddConnection: undefined })} />);
 
-    expect(queryByText("New Connection")).toBeNull();
+    expect(queryByText("Add Internal Data")).toBeNull();
     expect(queryByText("Run Query")).not.toBeNull();
+  });
+
+  test("offers Search Marketplace only when the shell hands it over", async () => {
+    const onSearchMarketplace = mock(() => {});
+    const { queryByText, rerender } = render(<CommandPalette {...createDefaultProps()} />);
+    fireEvent.keyDown(document, { key: "k", code: "KeyK", metaKey: true });
+    expect(queryByText("Search Marketplace")).toBeNull();
+
+    rerender(<CommandPalette {...createDefaultProps({ onSearchMarketplace })} />);
+    const item = queryByText("Search Marketplace");
+    expect(item).not.toBeNull();
+    // runAction closes the dialog, then calls the action after 100ms.
+    fireEvent.click(item!.closest('[role="option"]')!);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(onSearchMarketplace).toHaveBeenCalledTimes(1);
   });
 
   test('active connection gets "Active" badge', () => {

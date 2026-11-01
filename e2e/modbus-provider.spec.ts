@@ -106,7 +106,7 @@ test.describe("Modbus in the connection dialog", () => {
     await page.getByRole("button", { name: "Sign In" }).click();
     await page.waitForURL("/");
     await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10000 });
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
   });
 
@@ -167,7 +167,7 @@ test.describe("a read of the fixture, as a reader sees it", () => {
     await page.waitForURL("/");
     await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await dialog.getByRole("button", { name: "Modbus", exact: true }).click();

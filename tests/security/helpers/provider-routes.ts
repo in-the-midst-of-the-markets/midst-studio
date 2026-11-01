@@ -84,6 +84,10 @@ export const ROUTES_WITHOUT_A_PROVIDER: Record<string, string> = {
     "answers whether custom connections are allowed, from process.env alone (ALLOW_CUSTOM_CONNECTIONS); no database or LLM provider (GET, no POST export). It requires a session, a bare getSession() answering the session-required 401 like connections/managed, and tests/api/seed/policy-route.test.ts proves an unauthenticated caller learns nothing about the policy",
   health:
     "liveness only: returns a fixed body and touches nothing, so there is no provider to require a session for (GET, no POST export). The connection-scoped check is POST /api/db/health, which is not on this list",
+  "marketplace/checkout":
+    "creates and reads a Stripe Checkout session for a catalogued third-party data subscription, from STRIPE_SECRET_KEY and MARKETPLACE_OFFERINGS; no database or LLM provider (GET and POST). It requires a session, a bare getSession() answering the session-required 401, and tests/api/marketplace/checkout-route.test.ts proves an unauthenticated caller learns nothing",
+  "marketplace/offerings":
+    "answers the third-party data catalog from MARKETPLACE_OFFERINGS; no database or LLM provider (GET, no POST export). It requires a session, a bare getSession() answering the session-required 401, and tests/api/marketplace/offerings-route.test.ts proves an unauthenticated caller learns nothing",
   mcp: "reaches a provider, but is called by an MCP client of the user's own and verifies a scoped bearer token instead of a session (src/lib/mcp/bearer.ts): its 401 body differs from guardRoute's on purpose, and tests/security/mcp-auth.test.ts proves that no refused identity constructs a provider",
   ready:
     "readiness only, public because an orchestrator's probe carries no session: answers from the in-process governance state and never opens a user database or an LLM provider (GET, no POST export). Under governance a probe that finds no usable snapshot asks the governance source for a single-flight load without waiting for it, which is the refresher's own read and never a user database (tests/api/ready.test.ts)",

@@ -129,7 +129,7 @@ A value the parser does not recognise fails closed: after one pair of surroundin
 Switched off, the refusal is made in `resolveConnection`, the one function every database route resolves its connection through, and answers 403 with the code `CUSTOM_CONNECTIONS_DISABLED`, which a client tells apart from the role filter's 403 `AUTH_ERROR`; the admin fleet health check resolves each of its items through it too and reports a refused one as that item's error.
 A seed stays reachable whichever way it is named: by `connectionId`, or as an inline record whose id is `seed:<id>`, which is how an unmanaged seed's editable copy is sent and which the server has always resolved from the seed file, ignoring the copy's own fields.
 The agent runtime and the MCP endpoint never take a connection from the request, so the switch changes nothing there.
-`GET /api/connections/policy` tells the editor, which then hides New connection, Edit and Duplicate and lists seeds only; that is convenience, and the 403 is the control.
+`GET /api/connections/policy` tells the editor, which then hides Add Internal Data, Edit and Duplicate and lists seeds only. Search Marketplace stays, because a Stripe subscription is not a connection of the user's own. That hiding is convenience, and the 403 is the control.
 
 **0.8.** Governance mode (`GOVERNANCE_SOURCE`, [`docs/GOVERNANCE.md`](./GOVERNANCE.md)) makes the governance source the only catalog of connections, and a grant to the session's identity provider subject the only way to one.
 One dispatcher, `src/lib/governance/visible.ts`, answers both the managed list and `resolveConnection`, which every database route and the admin fleet health check resolve their connections through, so a route opens exactly what the list shows.

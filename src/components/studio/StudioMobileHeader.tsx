@@ -60,9 +60,11 @@ interface StudioMobileHeaderProps {
   onSelectConnection: (conn: DatabaseConnection) => void;
   /**
    * Opens the connection dialog. Omitted while the server refuses custom connections
-   * (`ALLOW_CUSTOM_CONNECTIONS`), and neither Add item is then rendered.
+   * (`ALLOW_CUSTOM_CONNECTIONS`), and neither Add Internal Data item is then rendered.
    */
   onAddConnection?: () => void;
+  /** Opens the marketplace. Omitted in a shell that has no marketplace route. */
+  onSearchMarketplace?: () => void;
   onLogout: () => void;
   onSaveQuery: () => void;
   onClearQuery: () => void;
@@ -121,6 +123,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
   editingEnabled,
   onSelectConnection,
   onAddConnection,
+  onSearchMarketplace,
   onLogout,
   onSaveQuery,
   onClearQuery,
@@ -168,11 +171,18 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-64 bg-raised border-hairline-strong">
               {connections.length === 0 ? (
-                onAddConnection && (
-                  <DropdownMenuItem onClick={onAddConnection} className="text-fg-tertiary cursor-pointer">
-                    <Plus strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Add Connection
-                  </DropdownMenuItem>
-                )
+                <>
+                  {onAddConnection && (
+                    <DropdownMenuItem onClick={onAddConnection} className="text-fg-tertiary cursor-pointer">
+                      <Plus strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Add Internal Data
+                    </DropdownMenuItem>
+                  )}
+                  {onSearchMarketplace && (
+                    <DropdownMenuItem onClick={onSearchMarketplace} className="text-fg-tertiary cursor-pointer">
+                      Search Marketplace
+                    </DropdownMenuItem>
+                  )}
+                </>
               ) : (
                 <>
                   {connections.map((c) => (
@@ -193,7 +203,12 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                       onClick={onAddConnection}
                       className="text-fg-muted cursor-pointer border-t border-hairline mt-1"
                     >
-                      <Plus strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Add New
+                      <Plus strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Add Internal Data
+                    </DropdownMenuItem>
+                  )}
+                  {onSearchMarketplace && (
+                    <DropdownMenuItem onClick={onSearchMarketplace} className="text-fg-muted cursor-pointer">
+                      Search Marketplace
                     </DropdownMenuItem>
                   )}
                 </>
