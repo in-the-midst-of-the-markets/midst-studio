@@ -44,6 +44,10 @@ interface ConnectionItemProps {
   onDragEnter?: () => void;
   onDragEnd?: () => void;
   onDrop?: () => void;
+  /** Opens this connection's table notes. Absent where the shell has no notes panel. */
+  onOpenNotes?: (conn: DatabaseConnection) => void;
+  /** True while this connection's notes are the panel on screen. */
+  notesOpen?: boolean;
 }
 
 export const ConnectionItem = React.memo(function ConnectionItem({
@@ -66,6 +70,8 @@ export const ConnectionItem = React.memo(function ConnectionItem({
   onDragEnter,
   onDragEnd,
   onDrop,
+  onOpenNotes,
+  notesOpen = false,
 }: ConnectionItemProps) {
   return (
     <div
@@ -133,6 +139,24 @@ export const ConnectionItem = React.memo(function ConnectionItem({
           <span className="truncate min-w-[4ch] block font-medium text-xs" title={conn.name}>
             {conn.name}
           </span>
+          {onOpenNotes && (
+            <button
+              type="button"
+              aria-pressed={notesOpen}
+              aria-label={`Notes for ${conn.name}`}
+              title="Table notes"
+              className={cn(
+                "shrink-0 rounded px-1 py-0.5 text-[10px] font-medium transition-colors",
+                notesOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenNotes(conn);
+              }}
+            >
+              Notes
+            </button>
+          )}
           {conn.environment && conn.environment !== "other" && (
             <span
               className="text-[0.5rem] font-medium px-1.5 py-0.5 rounded-sm truncate"

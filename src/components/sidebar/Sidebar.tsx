@@ -250,7 +250,16 @@ export const Sidebar = React.memo(function Sidebar({
    * object tree anyway and the tabs are not drawn at all.
    */
   const [chosenView, setChosenView] = React.useState<ChosenSidebarView | null>(null);
-  const [notesOpen, setNotesOpen] = React.useState(false);
+  /** The connection whose notes are open, or null while the object tree is showing. */
+  const [notesFor, setNotesFor] = React.useState<string | null>(null);
+  const openNotes = (conn: DatabaseConnection): void => {
+    setNotesFor((current) => (current === conn.id ? null : conn.id));
+    onSelectConnection(conn);
+  };
+  const selectConnection = (conn: DatabaseConnection): void => {
+    setNotesFor(null);
+    onSelectConnection(conn);
+  };
   /**
    * The connection whose key panel is being kept mounted, or null while none is.
    *
@@ -403,21 +412,6 @@ export const Sidebar = React.memo(function Sidebar({
         <MidstLockup markClassName="h-7 w-7" wordClassName="text-sm" />
         <div className="flex items-center gap-1">
           {/* Not on a Cypher connection: its relationship types are no tables (SR20). */}
-          {activeConnection && (
-            <button
-              type="button"
-              aria-pressed={notesOpen}
-              aria-label="Table notes"
-              title="Table notes"
-              className={cn(
-                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                notesOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-              onClick={() => setNotesOpen((open) => !open)}
-            >
-              Notes
-            </button>
-          )}
           {activeConnection && offersSchemaDiagram(metadata?.capabilities) && (
             <button
               className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
@@ -451,7 +445,9 @@ export const Sidebar = React.memo(function Sidebar({
         <ConnectionsList
           connections={connections}
           activeConnection={activeConnection}
-          onSelectConnection={onSelectConnection}
+          onSelectConnection={selectConnection}
+          onOpenNotes={openNotes}
+          notesConnectionId={notesFor}
           onDeleteConnection={onDeleteConnection}
           onEditConnection={onEditConnection}
           onDuplicateConnection={onDuplicateConnection}
@@ -507,7 +503,7 @@ export const Sidebar = React.memo(function Sidebar({
                       // engine's default never overrides it and it never becomes another engine's
                       // default. Mounting the panel is the render's job, not this handler's.
                       onClick={() => {
-                        setNotesOpen(false);
+                        setNotesFor(null);
                         setChosenView({ connectionId, view: option, enumeratedNothing: enumeratesNothing });
                       }}
                       className={cn(
@@ -529,7 +525,7 @@ export const Sidebar = React.memo(function Sidebar({
               */}
               {keyScan !== undefined && (showingKeys || keysPanelFor === connectionId) && (
                 <div
-                  className={cn("flex-1 min-h-0", (!showingKeys || notesOpen) && "hidden")}
+                  className={cn("flex-1 min-h-0", (!showingKeys || notesFor !== null) && "hidden")}
                   data-testid="key-browser-panel"
                 >
                   <KeyBrowser
@@ -543,12 +539,15 @@ export const Sidebar = React.memo(function Sidebar({
               )}
               {/* Anything other than "this engine declares a walk and the reader chose it" is the object
                   tree: the panel is an addition to the sidebar and never a replacement for it. */}
-              {notesOpen && activeConnection && (
+              {notesFor !== null && activeConnection && (
                 <div className="flex-1 min-h-0">
-                  <TableNotes connectionId={activeConnection.id} schema={schema} />
+                  <TableNotes
+                    connectionId={notesFor}
+                    schema={notesFor === activeConnection.id ? schema : EMPTY_SCHEMA}
+                  />
                 </div>
               )}
-              {!showingKeys && !notesOpen && (
+              {!showingKeys && notesFor === null && (
                 <div className="flex-1 min-h-0">
                   <ObjectTree
                     connection={activeConnection}

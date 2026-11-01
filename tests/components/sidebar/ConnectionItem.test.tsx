@@ -540,6 +540,36 @@ describe("ConnectionItem", () => {
       );
     });
 
+    test("Notes sits beside the connection and does not select the row", () => {
+      const onOpenNotes = mock(() => {});
+      const view = render(
+        <ConnectionItem
+          connection={mockPostgresConnection}
+          isActive={false}
+          onSelect={defaultOnSelect}
+          onDelete={defaultOnDelete}
+          onOpenNotes={onOpenNotes}
+        />,
+      );
+      const notes = view.getByRole("button", { name: "Notes for Test PostgreSQL" });
+      expect(notes.getAttribute("aria-pressed")).toBe("false");
+      fireEvent.click(notes);
+      expect(onOpenNotes).toHaveBeenCalledWith(mockPostgresConnection);
+      expect(defaultOnSelect).not.toHaveBeenCalled();
+
+      view.rerender(
+        <ConnectionItem
+          connection={mockPostgresConnection}
+          isActive
+          onSelect={defaultOnSelect}
+          onDelete={defaultOnDelete}
+          onOpenNotes={onOpenNotes}
+          notesOpen
+        />,
+      );
+      expect(view.getByRole("button", { name: "Notes for Test PostgreSQL" }).getAttribute("aria-pressed")).toBe("true");
+    });
+
     test("a connection that is not read-only carries none", () => {
       const props = { isActive: false, onSelect: defaultOnSelect, onDelete: defaultOnDelete };
       const view = render(<ConnectionItem connection={mockPostgresConnection} {...props} />);

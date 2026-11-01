@@ -33,6 +33,12 @@ interface SchemaExplorerProps {
   onGenerateTestData?: (path: readonly string[]) => void;
   /** When set, the mobile explorer can open table notes for this connection. */
   connectionId?: string;
+  /**
+   * When `onNotesOpenChange` is set, the parent owns whether notes are showing.
+   * A connection row's Notes control uses that to open this panel.
+   */
+  notesOpen?: boolean;
+  onNotesOpenChange?: (open: boolean) => void;
 }
 
 export const SchemaExplorer = React.memo(function SchemaExplorer({
@@ -50,6 +56,8 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
   onGenerateCode,
   onGenerateTestData,
   connectionId,
+  notesOpen: notesOpenProp = false,
+  onNotesOpenChange,
 }: SchemaExplorerProps) {
   const labels = metadata?.labels;
   // Create Table is offered only once these have loaded: the form writes every typed name in the
@@ -57,7 +65,13 @@ export const SchemaExplorer = React.memo(function SchemaExplorer({
   const capabilities = metadata?.capabilities;
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set());
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [internalNotesOpen, setInternalNotesOpen] = useState(false);
+  const notesControlled = onNotesOpenChange !== undefined;
+  const notesOpen = notesControlled ? notesOpenProp : internalNotesOpen;
+  const setNotesOpen = (open: boolean): void => {
+    if (notesControlled) onNotesOpenChange(open);
+    else setInternalNotesOpen(open);
+  };
 
   const notesButton =
     connectionId === undefined ? null : (

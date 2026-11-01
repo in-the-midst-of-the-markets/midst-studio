@@ -3035,6 +3035,19 @@ describe("Studio", () => {
   });
 
   // --- Mobile: schema tab ---
+  test("Notes on a mobile connection opens that connection's notes", () => {
+    connMgrOverride = { activeConnection: pgConn, connections: [pgConn] };
+    render(<Studio />);
+    act(() => (capturedMobileNavProps.onTabChange as (tab: string) => void)("database"));
+    act(() => (capturedConnectionsListProps.onOpenNotes as (conn: typeof pgConn) => void)(pgConn));
+    expect(mockSetActiveConnection).toHaveBeenCalledWith(pgConn);
+    expect(capturedSchemaExplorerProps.notesOpen).toBe(true);
+    expect(capturedSchemaExplorerProps.connectionId).toBe("c1");
+
+    act(() => (capturedSchemaExplorerProps.onNotesOpenChange as (open: boolean) => void)(false));
+    expect(capturedSchemaExplorerProps.notesOpen).toBe(false);
+  });
+
   test("mobile schema tab shows empty state without a connection", () => {
     const { queryByTestId, getByText } = render(<Studio />);
     const onTabChange = capturedMobileNavProps.onTabChange as (tab: string) => void;

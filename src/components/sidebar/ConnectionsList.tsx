@@ -55,6 +55,10 @@ interface ConnectionsListProps {
   governed?: boolean;
   /** Governance could not serve the granted connections at the last read: a banner says so. */
   accessUnavailable?: boolean;
+  /** Puts Notes beside each connection. Absent where the shell has no notes panel. */
+  onOpenNotes?: (conn: DatabaseConnection) => void;
+  /** The connection whose notes are open, so that row's Notes control stays pressed. */
+  notesConnectionId?: string | null;
 }
 
 /**
@@ -145,6 +149,8 @@ export const ConnectionsList = React.memo(function ConnectionsList({
   onSearchMarketplace,
   governed,
   accessUnavailable,
+  onOpenNotes,
+  notesConnectionId = null,
 }: ConnectionsListProps) {
   const ordered = applyConnectionOrder(connections, connectionOrder ?? []);
   const reorderable = onReorderConnections !== undefined;
@@ -213,6 +219,8 @@ export const ConnectionsList = React.memo(function ConnectionsList({
       onDragEnter={() => setDragOver({ sectionKey: section.key, id: conn.id })}
       onDragEnd={clearDragState}
       onDrop={() => handleDrop(section.key, conn.id)}
+      onOpenNotes={onOpenNotes}
+      notesOpen={notesConnectionId === conn.id}
     />
   );
 
