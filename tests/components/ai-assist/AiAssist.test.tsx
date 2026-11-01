@@ -434,13 +434,11 @@ describe("ChartWithEditor", () => {
         onRun={() => {}}
       />,
     );
-    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
     const types = within(view.getByRole("group", { name: "Chart types" }));
-    expect(types.getByRole("button", { name: "Bar" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(types.getByRole("button", { name: "Line" }));
-    fireEvent.click(types.getByRole("button", { name: "Line" }));
+    expect(types.getByRole("button", { name: "Line" }).getAttribute("aria-pressed")).toBe("true");
     const variations = within(view.getByRole("group", { name: "Chart variations" }));
-    expect(variations.getByRole("button", { name: "Basic" }).getAttribute("aria-pressed")).toBe("false");
+    expect(variations.getByRole("button", { name: "Basic" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(variations.getByRole("button", { name: "Area" }));
     expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
     expect(view.getByTestId("assist-chart")).toBeTruthy();
@@ -549,7 +547,7 @@ describe("ChartWithEditor", () => {
       onRun: () => {},
     };
     const view = render(<ChartWithEditor {...props} />);
-    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
     fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
     fireEvent.click(
       within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {
@@ -924,7 +922,7 @@ describe("AiAssist page", () => {
       ).toBe(true),
     );
     expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
-    fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
     fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
     fireEvent.click(
       within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {

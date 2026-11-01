@@ -30,9 +30,66 @@ function readyChoice(typeId: string, variationId: string, selection: SlotSelecti
   return { typeId, variationId, selection };
 }
 
+const TIME_COLUMN = /(?:^|_)(?:date|time|timestamp|month|year|quarter|week)(?:$|_)/i;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}/;
+
+/** A column that reads as a series over time, by its name or by date values. */
+function looksTemporal(name: string, rows: readonly Record<string, unknown>[]): boolean {
+  if (TIME_COLUMN.test(name)) return true;
+  const filled = rows.map((row) => row[name]).filter((value) => value !== null && value !== undefined);
+  if (filled.length === 0) return false;
+  let dates = 0;
+  for (const value of filled) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) dates += 1;
+    else if (typeof value === "string" && ISO_DATE.test(value.trim())) dates += 1;
+  }
+  return dates > filled.length * 0.8;
+}
+
+/**
+ * A chart for a result the model did not place.
+ * A series over time is a line, two measures are a scatter, one measure is a gauge,
+ * and a category comparison is a bar.
+ */
 function fallbackChoice(result: QueryResult): AssistChartChoice | null {
   const columns = classifyColumns(result.fields, result.rows);
+  const categories = columns.dimensions.filter((name) => !columns.metrics.includes(name));
+  if (columns.metrics.length === 0) return null;
+  if (categories.length === 0 && columns.metrics.length >= 2) {
+    return readyChoice("scatter", "basic", defaultSelection("scatter", "basic", columns));
+  }
+  if (categories.length === 0) {
+    return readyChoice("gauge", "basic", defaultSelection("gauge", "basic", columns));
+  }
+  const category = categories[0] ?? "";
+  if (looksTemporal(category, result.rows)) {
+    return readyChoice("line", "basic", defaultSelection("line", "basic", columns));
+  }
   return readyChoice("bar", "basic", defaultSelection("bar", "basic", columns));
+}
+
+/**
+ * A basic bar is the model's usual answer. Open a line or a scatter when the columns
+ * are a series over time or two measures. A stacked bar and any other type stay.
+ */
+function fitBarDefault(
+  choice: AssistChartChoice,
+  rows: readonly Record<string, unknown>[],
+  columns: ClassifiedColumns,
+): AssistChartChoice {
+  if (choice.typeId !== "bar" || choice.variationId !== "basic") return choice;
+  const category = choice.selection.category?.[0];
+  const values = choice.selection.values ?? [];
+  if (category !== undefined && looksTemporal(category, rows)) {
+    const line = readyChoice("line", "basic", { category: [category], values });
+    if (line !== null) return line;
+  }
+  const metric = values[0];
+  if (category !== undefined && metric !== undefined && metric !== category && columns.metrics.includes(category)) {
+    const scatter = readyChoice("scatter", "basic", { x: [category], y: [metric], series: [] });
+    if (scatter !== null) return scatter;
+  }
+  return choice;
 }
 
 /**
@@ -57,7 +114,11 @@ export function nextAssistChoice(
   }
   const seeded = seedChartChoice(chart, columns);
   if (seeded.typeId !== null && seeded.variationId !== null) {
-    return { typeId: seeded.typeId, variationId: seeded.variationId, selection: seeded.selection };
+    return fitBarDefault(
+      { typeId: seeded.typeId, variationId: seeded.variationId, selection: seeded.selection },
+      result.rows,
+      columns,
+    );
   }
   if (chart === null && previous === null) return null;
   return fallbackChoice(result);
