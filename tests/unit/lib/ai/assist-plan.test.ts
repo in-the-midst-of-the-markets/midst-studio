@@ -40,6 +40,7 @@ describe("parseAssistPlan", () => {
     expect(plan.queries[0]).toEqual({
       title: "Revenue",
       sql: select,
+      connection: "",
       chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
     });
     expect(plan.queries[1]?.title).toBe("Query");
@@ -92,6 +93,17 @@ describe("parseAssistPlan", () => {
 
   test("ignores a queries value that is not a list", () => {
     expect(parseAssistPlan('{"explanation":"Hi","queries":{}}').queries).toEqual([]);
+  });
+
+  test("keeps the connection a query names", () => {
+    const named = parseAssistPlan(
+      JSON.stringify({ queries: [{ title: "A", connection: "  Logs  ", sql: select, chart: null }] }),
+    );
+    expect(named.queries[0]?.connection).toBe("Logs");
+    const numbered = parseAssistPlan(JSON.stringify({ queries: [{ connection: 4, sql: select }] }));
+    expect(numbered.queries[0]?.connection).toBe("");
+    const long = parseAssistPlan(JSON.stringify({ queries: [{ connection: "x".repeat(250), sql: select }] }));
+    expect(long.queries[0]?.connection).toHaveLength(200);
   });
 });
 
@@ -179,5 +191,6 @@ describe("buildAssistMessages", () => {
       historyBlock: "h",
     });
     expect(messages[0]?.content).toContain("The connected engine is SQL.");
+    expect(messages[0]?.content).toContain("every connected database");
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { runAssistQuery } from "@/lib/ai/assist-query";
+import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
 import type { DatabaseConnection } from "@/lib/types";
 
 const connection: DatabaseConnection = {
@@ -9,6 +9,44 @@ const connection: DatabaseConnection = {
   host: "localhost",
   createdAt: new Date(0),
 };
+
+describe("connectionForAssistQuery", () => {
+  const orders = { id: "c1", name: "Orders" };
+  const logs = { id: "c2", name: "Logs" };
+
+  test("uses the only connection when a query does not name one", () => {
+    const blank = connectionForAssistQuery([orders], "");
+    const spaced = connectionForAssistQuery([orders], "   ");
+    expect(blank.ok && blank.connection).toEqual(orders);
+    expect(spaced.ok && spaced.connection).toEqual(orders);
+  });
+
+  test("matches a name or an id without regard to case", () => {
+    const byName = connectionForAssistQuery([orders, logs], "logs");
+    const byId = connectionForAssistQuery([orders, logs], "C1");
+    expect(byName.ok && byName.connection).toEqual(logs);
+    expect(byId.ok && byId.connection).toEqual(orders);
+  });
+
+  test("refuses a missing database, a missing name, and a shared name", () => {
+    expect(connectionForAssistQuery([], "Orders")).toEqual({
+      ok: false,
+      error: "Connect a database in Traditional mode to run this query.",
+    });
+    expect(connectionForAssistQuery([orders, logs], "")).toEqual({
+      ok: false,
+      error: "Name the connected database this query should use.",
+    });
+    expect(connectionForAssistQuery([orders, logs], "Warehouse")).toEqual({
+      ok: false,
+      error: "No connected database is named Warehouse.",
+    });
+    expect(connectionForAssistQuery([orders, { id: "c3", name: "Orders" }], "Orders")).toEqual({
+      ok: false,
+      error: "More than one connected database is named Orders.",
+    });
+  });
+});
 
 describe("runAssistQuery", () => {
   test("returns the rows the editor route answered", async () => {

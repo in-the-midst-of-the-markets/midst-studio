@@ -50,15 +50,31 @@ function chatUrl(source: AssistSource): string {
   return source === "fireworks" ? FIREWORKS_CHAT_URL : OPENROUTER_CHAT_URL;
 }
 
+/**
+ * The server's OpenRouter key, read when a request is handled.
+ *
+ * The name is computed so a bundler cannot replace it with whatever the image
+ * build happened to have. DigitalOcean must set this variable for Run Time;
+ * a build-time-only value is not in the running app.
+ */
+function openRouterServerKey(): string {
+  const name = "OPENROUTER_API_KEY";
+  const value = process.env[name];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 /** The key the route will send. OpenRouter falls back to the server environment. */
 export function resolveAssistKey(source: AssistSource, apiKey: string): string | null {
   const trimmed = apiKey.trim();
   if (trimmed !== "") return trimmed;
-  if (source === "openrouter") {
-    const configured = process.env.OPENROUTER_API_KEY?.trim() ?? "";
-    return configured === "" ? null : configured;
-  }
-  return null;
+  if (source !== "openrouter") return null;
+  const configured = openRouterServerKey();
+  return configured === "" ? null : configured;
+}
+
+/** Whether this process can call OpenRouter without a key from the browser. */
+export function assistServerKeyConfigured(): boolean {
+  return openRouterServerKey() !== "";
 }
 
 /** One non-streaming completion. The key is sent as a bearer token and not written here. */

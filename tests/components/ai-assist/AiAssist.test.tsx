@@ -175,6 +175,7 @@ describe("ChartWithEditor", () => {
         <ChartWithEditor
           title="Revenue"
           sql={sql}
+          connectionName="Warehouse"
           databaseType="postgres"
           result={result}
           error={null}
@@ -190,6 +191,7 @@ describe("ChartWithEditor", () => {
     }
     const view = render(<Harness />);
     expect(view.getByText("Revenue by month")).toBeTruthy();
+    expect(view.getByText("Warehouse")).toBeTruthy();
     expect(view.getByText("1 rows · 4 ms")).toBeTruthy();
     expect(view.getByTestId("assist-chart")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
@@ -323,6 +325,7 @@ describe("AiAssist page", () => {
     expect(view.getByRole("link", { name: "Traditional" }).getAttribute("href")).toBe("/");
     expect(view.getByText("No database")).toBeTruthy();
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
+    expect(await view.findByText(/This server has no OpenRouter key/)).toBeTruthy();
   });
 
   test("uses the active connection, or the only one, and retries a catalog read", async () => {
@@ -416,10 +419,11 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     await typeAndSend(view, "How many?");
-    expect(await view.findByText("The SQL editor is behind this chart. Open Query to read it.")).toBeTruthy();
+    expect(await view.findByText("Connect a database in Traditional mode to run this query.")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.click(view.getByRole("button", { name: "Run" }));
-    expect(await view.findByText("Connect a database in Traditional mode to run this query.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(view.getByText("Connect a database in Traditional mode to run this query.")).toBeTruthy();
   });
 
   test("shows the route's error, a fallback, and a network failure", async () => {
@@ -514,6 +518,20 @@ describe("AiAssist page", () => {
     expect(empty.queryByText("Revenue rose.")).toBeNull();
   });
 
+  test("says when the server already has an OpenRouter key", async () => {
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "GET") {
+        return jsonResponse({ models: [], serverKey: true });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByText("Using the server OpenRouter key.")).toBeTruthy();
+    expect(view.queryByText(/This server has no OpenRouter key/)).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    expect(view.getByText(/this server already has one/)).toBeTruthy();
+  });
+
   test("says when the model list cannot be loaded", async () => {
     handler = (url, init) => {
       if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "GET") return jsonResponse({}, 503);
@@ -555,6 +573,81 @@ describe("AiAssist page", () => {
     view.unmount();
     releaseJson?.();
     await Promise.resolve();
+  });
+
+  test("runs each query on the connected database it names", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        { id: "c1", name: "Orders", type: "postgres", host: "localhost", createdAt: "2026-01-01T00:00:00.000Z" },
+        { id: "c2", name: "Logs", type: "mysql", host: "localhost", createdAt: "2026-01-01T00:00:00.000Z" },
+      ]),
+    );
+    let unnamed = false;
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) body = JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/db/provider-meta")) {
+        const posted = body as { connection?: { id?: string } } | null;
+        if (posted?.connection?.id === "c2") throw new Error("boom");
+        return jsonResponse({ error: "The catalog is offline." }, 500);
+      }
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        return jsonResponse(
+          unnamed
+            ? { explanation: "Which database?", queries: [{ title: "Count", sql: "SELECT 4", chart: null }] }
+            : {
+                explanation: "Both databases.",
+                queries: [
+                  { title: "Revenue", connection: "Orders", sql: "SELECT 1", chart: null },
+                  { title: "Events", connection: "c2", sql: "SELECT 2", chart: null },
+                  { title: "Missing", connection: "Nope", sql: "SELECT 3", chart: null },
+                ],
+              },
+        );
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({ rows: [{ n: 1 }], fields: ["n"], rowCount: 1, executionTime: 1 });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByText("2 databases")).toBeTruthy();
+    expect(view.getByRole("list", { name: "Connected databases" }).textContent).toContain("Logs");
+    expect(await view.findByText("Orders: The catalog is offline.")).toBeTruthy();
+    expect(view.getByText("Logs: Could not read the database.")).toBeTruthy();
+    await typeAndSend(view, "Compare them");
+    expect(await view.findByText("Both databases.")).toBeTruthy();
+    expect(view.getByText("No connected database is named Nope.")).toBeTruthy();
+    await waitFor(() => expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(2));
+    const ids = calls
+      .filter((call) => call.url.includes("/api/db/query"))
+      .map((call) => (call.body as { connection?: { id?: string } } | null)?.connection?.id);
+    expect(ids).toEqual(["c1", "c2"]);
+    expect(posts().at(-1)?.body).toMatchObject({ databaseType: "", schemaContext: expect.stringContaining("Orders") });
+    unnamed = true;
+    await typeAndSend(view, "And another");
+    expect(await view.findByText("Name the connected database this query should use.")).toBeTruthy();
+  });
+
+  test("ignores a schema that arrives after the page is gone", async () => {
+    saveConnection();
+    let release: ((response: Response) => void) | undefined;
+    handler = (url, init) => {
+      if (url.includes("provider-meta")) {
+        return new Promise<Response>((resolve) => {
+          release = resolve;
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    view.unmount();
+    release?.(jsonResponse({ error: "late" }, 500));
+    await new Promise((resolve) => setTimeout(resolve, 30));
   });
 
   test("treats a catalog that is not a list as ready and a thrown list as a failure", async () => {

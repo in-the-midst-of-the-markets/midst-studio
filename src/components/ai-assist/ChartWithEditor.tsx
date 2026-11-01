@@ -18,6 +18,7 @@ const PREVIEW_COLUMNS = 6;
 export interface ChartWithEditorProps {
   readonly title: string;
   readonly sql: string;
+  readonly connectionName?: string;
   readonly databaseType?: DatabaseType;
   readonly schemaContext?: string;
   readonly result: QueryResult | null;
@@ -83,6 +84,7 @@ function ResultTable({ result }: { result: QueryResult }) {
 export function ChartWithEditor({
   title,
   sql,
+  connectionName,
   databaseType,
   schemaContext,
   result,
@@ -133,37 +135,42 @@ export function ChartWithEditor({
   }, [result, choice, theme]);
 
   return (
-    <article className="overflow-hidden rounded-lg border border-hairline bg-surface">
+    <article className="flex h-[28rem] flex-col overflow-hidden rounded-lg border border-hairline-strong bg-raised">
       <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2">
         <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{title}</h3>
+        {connectionName !== undefined && connectionName !== "" && (
+          <span className="text-xs text-fg-subtle">{connectionName}</span>
+        )}
         {result !== null && (
           <span className="text-xs text-fg-muted">
             {result.rowCount} rows · {result.executionTime} ms
           </span>
         )}
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-pressed={face === "chart"}
-            onClick={() => setFace("chart")}
-            className={cn(
-              "rounded-md px-2 py-1 text-xs font-medium",
-              face === "chart" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-            )}
-          >
-            Chart
-          </button>
-          <button
-            type="button"
-            aria-pressed={face === "query"}
-            onClick={() => setFace("query")}
-            className={cn(
-              "rounded-md px-2 py-1 text-xs font-medium",
-              face === "query" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-            )}
-          >
-            Query
-          </button>
+          <div className="flex items-center rounded-lg border border-hairline bg-sunken p-0.5">
+            <button
+              type="button"
+              aria-pressed={face === "chart"}
+              onClick={() => setFace("chart")}
+              className={cn(
+                "rounded-md px-2 py-1 text-xs font-medium",
+                face === "chart" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+              )}
+            >
+              Chart
+            </button>
+            <button
+              type="button"
+              aria-pressed={face === "query"}
+              onClick={() => setFace("query")}
+              className={cn(
+                "rounded-md px-2 py-1 text-xs font-medium",
+                face === "query" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+              )}
+            >
+              Query
+            </button>
+          </div>
           {face === "query" && (
             <button
               type="button"
@@ -177,7 +184,7 @@ export function ChartWithEditor({
         </div>
       </div>
       {chart?.caption ? <p className="px-3 pt-2 text-xs text-fg-muted">{chart.caption}</p> : null}
-      <div className="relative h-80">
+      <div className="relative min-h-0 flex-1">
         <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
           <QueryEditor
             value={sql}

@@ -63,7 +63,18 @@ describe("POST /api/ai/assist", () => {
       }) as never,
     );
     expect(response.status).toBe(400);
-    expect(((await response.json()) as { error: string }).error).toBe("Add an API key for this model.");
+    expect(((await response.json()) as { error: string }).error).toBe(
+      "No OpenRouter key is available. Set OPENROUTER_API_KEY on the running app, or paste a key under Model.",
+    );
+
+    const fireworks = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { source: "fireworks", model: "accounts/acme/models/tuned", question: "What changed?" },
+      }) as never,
+    );
+    expect(fireworks.status).toBe(400);
+    expect(((await fireworks.json()) as { error: string }).error).toBe("Add a Fireworks API key under Model.");
   });
 
   test("fences the schema, drops a write, and does not echo the key", async () => {
@@ -180,7 +191,16 @@ describe("GET /api/ai/assist", () => {
       jsonResponse({ data: [{ id: "openai/gpt-4o", name: "GPT-4o" }] })) as unknown as typeof fetch;
     const response = await GET(createMockRequest("/api/ai/assist") as never);
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ models: [{ id: "openai/gpt-4o", name: "GPT-4o" }] });
+    expect(await response.json()).toEqual({
+      models: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+      serverKey: false,
+    });
+
+    process.env.OPENROUTER_API_KEY = "server-secret";
+    const withKey = await GET(createMockRequest("/api/ai/assist") as never);
+    const listed = (await withKey.json()) as { serverKey: boolean; models: unknown };
+    expect(listed.serverKey).toBe(true);
+    expect(JSON.stringify(listed)).not.toContain("server-secret");
 
     globalThis.fetch = (async () => jsonResponse({}, 503)) as unknown as typeof fetch;
     const failed = await GET(createMockRequest("/api/ai/assist") as never);
