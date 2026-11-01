@@ -72,3 +72,26 @@ export async function rememberMarketplaceConnection(
     });
   }
 }
+
+/**
+ * Removes one subscribed connection from this account's server storage.
+ * Local storage has no server provider: the browser removes the connection itself.
+ * The selected connection is cleared only when it is the one being removed.
+ */
+export async function forgetMarketplaceConnection(session: UserPayload, connectionId: string): Promise<void> {
+  try {
+    const provider = await getStorageProvider();
+    if (provider === null) return;
+    const owner = storageOwnerKey(session);
+    const stored = await provider.getCollection(owner, "connections");
+    const current = stored ?? [];
+    const next = current.filter((item) => item.id !== connectionId);
+    if (next.length !== current.length) await provider.setCollection(owner, "connections", next);
+    const active = await provider.getCollection(owner, "active_connection_id");
+    if (active === connectionId) await provider.setCollection(owner, "active_connection_id", null);
+  } catch (error) {
+    logger.warn("The subscribed database could not be removed for this account", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}

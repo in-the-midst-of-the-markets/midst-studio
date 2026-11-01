@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/config/base-path";
 import { acceptSubscribedConnection } from "@/lib/marketplace/accept-subscription";
 import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
+import { dropEndedSubscription, releaseEndedSubscriptions } from "@/lib/marketplace/release-subscription";
+import { cancellationNotice, subscriptionFromBody, type SubscriptionView } from "@/lib/marketplace/subscription-status";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
 
@@ -30,7 +32,7 @@ function matches(offering: PublicMarketplaceOffering, query: string): boolean {
  *
  * The catalog is whatever the operator configured. An empty list is a real empty shop, not sample
  * products. Paying happens on Stripe's Checkout page; this screen only starts that and reads the
- * session Stripe sends back.
+ * session Stripe sends back. Canceling keeps the database until the paid period ends.
  */
 export function Marketplace() {
   const searchParams = useSearchParams();
@@ -40,6 +42,8 @@ export function Marketplace() {
   const [search, setSearch] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [subscriptions, setSubscriptions] = useState<readonly SubscriptionView[]>([]);
   const [confirmation, setConfirmation] = useState<Confirmation>({ kind: "idle" });
 
   useEffect(() => {
@@ -56,6 +60,16 @@ export function Marketplace() {
       .catch(() => {
         if (current) setLoad({ kind: "failed" });
       });
+    return () => {
+      current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let current = true;
+    void releaseEndedSubscriptions().then((views) => {
+      if (current) setSubscriptions(views);
+    });
     return () => {
       current = false;
     };
@@ -123,6 +137,34 @@ export function Marketplace() {
     }
   }
 
+  async function cancel(id: string): Promise<void> {
+    if (pendingId !== null) return;
+    setPendingId(id);
+    setCancelError(null);
+    try {
+      const response = await appFetch("/api/marketplace/subscriptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const body = (await response.json().catch(() => null)) as { subscription?: unknown; error?: unknown } | null;
+      const subscription = subscriptionFromBody(body?.subscription);
+      if (!response.ok || subscription === null) {
+        setCancelError(typeof body?.error === "string" ? body.error : "Stripe could not cancel the subscription.");
+        return;
+      }
+      setSubscriptions((current) => [
+        ...current.filter((row) => row.offeringId !== subscription.offeringId),
+        subscription,
+      ]);
+      if (subscription.status === "ended") dropEndedSubscription(subscription.offeringId);
+    } catch {
+      setCancelError("Stripe could not cancel the subscription.");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
   return (
     <main className="pt-6">
       <h1 className="text-lg font-semibold tracking-tight text-fg">Marketplace</h1>
@@ -150,6 +192,11 @@ export function Marketplace() {
       {subscribeError !== null && (
         <p role="alert" className="mt-4 text-sm text-danger">
           {subscribeError}
+        </p>
+      )}
+      {cancelError !== null && (
+        <p role="alert" className="mt-4 text-sm text-danger">
+          {cancelError}
         </p>
       )}
 
@@ -180,26 +227,47 @@ export function Marketplace() {
             <p className="mt-6 text-sm text-fg-secondary">No data matches that search.</p>
           ) : (
             <ul className="mt-4 divide-y divide-border rounded-lg border border-border">
-              {visible.map((offering) => (
-                <li key={offering.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-fg">{offering.name}</p>
-                    <p className="mt-0.5 text-xs text-fg-secondary">{offering.description}</p>
-                    <p className="mt-1 text-xs text-fg-tertiary">{offering.priceLabel}</p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-8 text-xs"
-                    disabled={pendingId === offering.id}
-                    onClick={() => {
-                      void subscribe(offering.id);
-                    }}
-                  >
-                    Subscribe with Stripe
-                  </Button>
-                </li>
-              ))}
+              {visible.map((offering) => {
+                const held = subscriptions.find((row) => row.offeringId === offering.id);
+                return (
+                  <li key={offering.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-fg">{offering.name}</p>
+                      <p className="mt-0.5 text-xs text-fg-secondary">{offering.description}</p>
+                      <p className="mt-1 text-xs text-fg-tertiary">{offering.priceLabel}</p>
+                      {held?.status === "canceling" && (
+                        <p className="mt-1 text-xs text-fg-secondary">{cancellationNotice(held.accessUntil)}</p>
+                      )}
+                    </div>
+                    {held?.status === "active" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs"
+                        disabled={pendingId === offering.id}
+                        onClick={() => {
+                          void cancel(offering.id);
+                        }}
+                      >
+                        Cancel subscription
+                      </Button>
+                    ) : held?.status === "canceling" ? null : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 text-xs"
+                        disabled={pendingId === offering.id}
+                        onClick={() => {
+                          void subscribe(offering.id);
+                        }}
+                      >
+                        Subscribe with Stripe
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </>

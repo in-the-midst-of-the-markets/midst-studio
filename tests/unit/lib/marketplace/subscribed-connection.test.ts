@@ -10,7 +10,7 @@ mock.module("@/lib/storage/factory", () => ({
   getStorageProvider,
 }));
 
-const { connectionForSubscription, rememberMarketplaceConnection } = await import(
+const { connectionForSubscription, forgetMarketplaceConnection, rememberMarketplaceConnection } = await import(
   "@/lib/marketplace/subscribed-connection"
 );
 
@@ -136,5 +136,78 @@ describe("rememberMarketplaceConnection", () => {
     getStorageProvider.mockRejectedValue(new Error("disk full"));
 
     await expect(rememberMarketplaceConnection(session, connection)).resolves.toBeUndefined();
+  });
+});
+
+describe("forgetMarketplaceConnection", () => {
+  const connection = {
+    id: "marketplace-postgres",
+    name: "PostgreSQL",
+    type: "postgres",
+    host: "db.example",
+    createdAt: new Date("2026-04-01T00:00:00.000Z"),
+  } as DatabaseConnection;
+  const other = {
+    id: "other",
+    name: "Other",
+    type: "postgres",
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  } as DatabaseConnection;
+
+  test("does nothing when server storage is off", async () => {
+    await forgetMarketplaceConnection(session, connection.id);
+
+    expect(collections.size).toBe(0);
+  });
+
+  test("removes the connection and clears it when it is selected", async () => {
+    getStorageProvider.mockResolvedValue(provider());
+    collections.set("connections", [connection, other]);
+    collections.set("active_connection_id", connection.id);
+
+    await forgetMarketplaceConnection(session, connection.id);
+
+    expect(collections.get("connections")).toEqual([other]);
+    expect(collections.get("active_connection_id")).toBeNull();
+  });
+
+  test("leaves a different selected connection in place", async () => {
+    getStorageProvider.mockResolvedValue(provider());
+    collections.set("connections", [connection, other]);
+    collections.set("active_connection_id", other.id);
+
+    await forgetMarketplaceConnection(session, connection.id);
+
+    expect(collections.get("connections")).toEqual([other]);
+    expect(collections.get("active_connection_id")).toBe(other.id);
+  });
+
+  test("clears a selected id that is no longer stored", async () => {
+    getStorageProvider.mockResolvedValue(provider());
+    collections.set("active_connection_id", connection.id);
+
+    await forgetMarketplaceConnection(session, connection.id);
+
+    expect(collections.has("connections")).toBe(false);
+    expect(collections.get("active_connection_id")).toBeNull();
+  });
+
+  test("leaves storage untouched when the connection is not held", async () => {
+    getStorageProvider.mockResolvedValue(provider());
+    collections.set("connections", [other]);
+    collections.set("active_connection_id", other.id);
+
+    await forgetMarketplaceConnection(session, connection.id);
+
+    expect(collections.get("connections")).toEqual([other]);
+    expect(collections.get("active_connection_id")).toBe(other.id);
+  });
+
+  test("keeps the account when storage throws, including a non-error", async () => {
+    getStorageProvider.mockRejectedValue(new Error("disk full"));
+    await expect(forgetMarketplaceConnection(session, connection.id)).resolves.toBeUndefined();
+
+    getStorageProvider.mockRejectedValue("disk full");
+    await expect(forgetMarketplaceConnection(session, connection.id)).resolves.toBeUndefined();
   });
 });

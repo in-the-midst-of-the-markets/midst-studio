@@ -475,7 +475,9 @@ describe("routes that reach a provider require a session", () => {
     "@/lib/marketplace/checkout":
       "starts and reads a Stripe Checkout session over fetch to api.stripe.com; opens no database or LLM provider",
     "@/lib/marketplace/subscribed-connection":
-      "builds the connection a completed Checkout grants from the offering's server-side connection string and writes it into the caller's app storage; parses the string and opens no database or LLM provider",
+      "builds the connection a completed Checkout grants from the offering's server-side connection string, writes it into the caller's app storage, and removes it once the subscription has ended; parses the string and opens no database or LLM provider",
+    "@/lib/marketplace/subscription":
+      "lists and cancels Stripe subscriptions over fetch to api.stripe.com; opens no database or LLM provider",
     "@/lib/non-finite": "writes NaN and the infinities in held rows as words; pure, imports nothing",
     "@/lib/oidc": "the OIDC discovery and PKCE exchange",
     "@/lib/oidc-identity":

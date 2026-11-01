@@ -26,6 +26,7 @@ mock.module("@/components/ui/sonner", () => ({
 const { default: RootLayout, metadata } = await import("@/app/layout");
 const { ThemeProvider } = await import("@/components/theme-provider");
 const { SessionEndedRedirect } = await import("@/components/auth/SessionEndedRedirect");
+const { SubscriptionRelease } = await import("@/components/marketplace/SubscriptionRelease");
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
@@ -137,6 +138,7 @@ describe("RootLayout", () => {
     const element = RootLayout({ children: React.createElement("span") });
     const themed = React.Children.toArray(element.props.children.props.children.props.children) as React.ReactElement[];
     expect(themed.map((child) => child.type)).toContain(SessionEndedRedirect);
+    expect(themed.map((child) => child.type)).toContain(SubscriptionRelease);
   });
 
   test("renders multiple children correctly", () => {

@@ -20,6 +20,7 @@ const Montserrat = localFont({
   display: "swap",
 });
 import { SessionEndedRedirect } from "@/components/auth/SessionEndedRedirect";
+import { SubscriptionRelease } from "@/components/marketplace/SubscriptionRelease";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <SessionEndedRedirect />
+          <SubscriptionRelease />
           {/* No `theme` prop: Toaster reads next-themes itself, so it follows. */}
           <Toaster position="bottom-right" />
         </ThemeProvider>

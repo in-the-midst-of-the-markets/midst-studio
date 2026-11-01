@@ -36,6 +36,11 @@ export type MarketplaceCatalog = { ok: true; offerings: readonly MarketplaceOffe
 
 const OFFERING_ID = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 
+/** Whether this string is an offering id the catalog would accept. */
+export function isMarketplaceOfferingId(value: string): boolean {
+  return OFFERING_ID.test(value);
+}
+
 /** Stripe's smallest US-dollar charge, and the largest unit amount Checkout accepts. */
 export const MONTHLY_CENTS_MIN = 50;
 export const MONTHLY_CENTS_MAX = 99_999_999;
