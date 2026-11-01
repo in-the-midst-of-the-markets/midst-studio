@@ -8,6 +8,7 @@
  */
 
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
+import { applyQueryFilters, queryIdentity } from "@/lib/charts/query-filters";
 
 export const ASSIST_SOURCES = ["openrouter", "fireworks"] as const;
 
@@ -146,7 +147,9 @@ function chartOf(value: unknown): AssistChart | null {
 function queryOf(value: unknown): AssistQueryPlan | null {
   if (value === null || typeof value !== "object") return null;
   const sql = textOf("sql" in value ? value.sql : undefined, SQL_CAP);
-  if (sql === "" || !isReadOnlySql(sql)) return null;
+  // The placeholder is not the statement that runs. A default of "into" must not
+  // look like SELECT INTO once it is only a literal.
+  if (sql === "" || !isReadOnlySql(applyQueryFilters(sql))) return null;
   const title = textOf("title" in value ? value.title : undefined, TITLE_CAP);
   return {
     title: title === "" ? "Query" : title,
@@ -195,10 +198,56 @@ export interface AssistFollowUp {
   readonly queries: readonly AssistQueryPlan[];
 }
 
+const RECOLOR_PHRASE =
+  /\b(?:recolou?r|colou?r|make (?:it|this|them|these|that|the)|change (?:it|this|them|these|that|the))\b/i;
+const NEW_QUERY = /\b(?:select|from|where|group|show|what|how many|compare|break)\b/i;
+
+/** The last named colour or #RRGGBB in a question that is asking to recolor. */
+export function requestedChartColor(question: string): string | null {
+  const trimmed = question.trim();
+  const pattern = /#[0-9a-f]{6}\b|\b(?:purple|blue|red|green|orange|yellow|pink|teal)\b/gi;
+  let color: string | null = null;
+  for (const match of trimmed.matchAll(pattern)) {
+    const next = assistChartColor(match[0]);
+    if (next !== null) color = next;
+  }
+  if (color === null) return null;
+  if (RECOLOR_PHRASE.test(trimmed)) return color;
+  if (trimmed.length <= 40 && !NEW_QUERY.test(trimmed)) return color;
+  return null;
+}
+
+/** A short recolor request should not also add the chart the model invented. */
+export function questionOnlyRecolors(question: string): boolean {
+  const trimmed = question.trim();
+  return requestedChartColor(trimmed) !== null && trimmed.length <= 80 && !NEW_QUERY.test(trimmed);
+}
+
+/**
+ * Charts a colour named in the question should paint.
+ * A title the question names wins. Otherwise all, every, or both paints every chart,
+ * and anything else paints the latest one.
+ */
+export function recolorsFromQuestion(
+  question: string,
+  cards: readonly { readonly sql: string; readonly title: string }[],
+): AssistRecolor[] {
+  const color = requestedChartColor(question);
+  if (color === null || cards.length === 0) return [];
+  const asked = question.toLowerCase();
+  const titled = cards.filter((card) => {
+    const title = card.title.trim().toLowerCase();
+    return title.length > 2 && asked.includes(title);
+  });
+  const chosen = titled.length > 0 ? titled : /\b(?:all|every|both)\b/i.test(question) ? cards : cards.slice(-1);
+  return chosen.map((card) => ({ sql: queryIdentity(card.sql), color }));
+}
+
 /**
  * What a later answer may do to charts already on screen.
- * The same statement with a colour recolors that chart. A statement the user
- * edited is not added again. A different statement becomes a new chart.
+ * The same statement with a colour recolors that chart, even when only the spacing
+ * or a trailing LIMIT differs. A statement the user edited is not added again.
+ * A different statement becomes a new chart.
  */
 export function splitAssistFollowUp(
   queries: readonly AssistQueryPlan[],
@@ -207,11 +256,11 @@ export function splitAssistFollowUp(
   const recolors: AssistRecolor[] = [];
   const kept: AssistQueryPlan[] = [];
   for (const query of queries) {
-    const key = query.sql.trim();
+    const key = queryIdentity(query.sql);
     let match: { readonly sql: string; readonly locked: boolean } | undefined;
     for (let index = existing.length - 1; index >= 0; index -= 1) {
       const card = existing[index];
-      if (card !== undefined && card.sql.trim() === key) {
+      if (card !== undefined && queryIdentity(card.sql) === key) {
         match = card;
         break;
       }
@@ -328,7 +377,9 @@ Return one JSON object and nothing else:
 
 queries has at most 3 items. connection is the name of the database that owns the tables in sql. sql is one read-only statement for that connection's engine. chart is null when a chart would not help. chart.type is bar, line, area, scatter, or stacked-bar. For scatter, x and y are both numeric columns. chart.color is optional. Set it only when the user asks for a colour, as #RRGGBB or one of purple, blue, red, green, orange, yellow, pink, and teal.
 
-A line in an earlier turn that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement. To change its colour, return the same sql with chart.color set. A later question may add a different query and chart.`;
+When the question asks to filter, narrow, or switch a value on the chart, write that value as a placeholder where a literal would go, with no quotes around it: {{region:east|east,west,north}}. The default follows the colon. Category choices follow a pipe and are separated by commas. A numeric bound has a numeric default and no choices, as in {{min:10}}. The studio substitutes a SQL literal before running, and the chart shows a control for each placeholder.
+
+A line in an earlier turn that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour. A later question may add a different query and chart.`;
   const user = `Question:\n${prompt.questionBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },

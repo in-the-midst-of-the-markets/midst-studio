@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useTabManager } from "@/hooks/use-tab-manager";
 import { useTabSummaries } from "@/hooks/use-tab-summaries";
 import { useStableCallback } from "@/hooks/use-stable-callback";
+import { writeQueryFilter } from "@/lib/charts/query-filters";
 import { useConnectionAdapter } from "@/workspace/hooks/use-connection-adapter";
 import { useQueryAdapter } from "@/workspace/hooks/use-query-adapter";
 import { type StudioWorkspaceProps, DEFAULT_WORKSPACE_FEATURES } from "@/workspace/types";
@@ -854,6 +855,12 @@ export function StudioWorkspace({
     },
     [runsTheActiveTab, tabMgr.updateCurrentTab],
   );
+  const applyChartFilter = useStableCallback((name: string, value: string) => {
+    if (!runsTheActiveTab) return;
+    const next = writeQueryFilter(tabMgr.currentTab.query, name, value);
+    tabMgr.updateCurrentTab({ query: next });
+    void queryExec.executeQuery(next);
+  });
 
   const tabBarTabs = useTabSummaries(tabMgr.tabs);
 
@@ -1126,6 +1133,8 @@ export function StudioWorkspace({
                         onApplyChanges={noop}
                         onDiscardChanges={noop}
                         onLoadQuery={handleLoadQuery}
+                        chartQuery={queryExec.bottomPanelMode === "charts" ? tabMgr.currentTab.query : undefined}
+                        onChartFilter={queryExec.bottomPanelMode === "charts" ? applyChartFilter : undefined}
                         onLoadMore={
                           tabMgr.currentTab.result?.pagination?.hasMore ? queryExec.handleLoadMore : undefined
                         }

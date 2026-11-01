@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { queryIdentity } from "@/lib/charts/query-filters";
 import {
   acceptAssistPlan,
   buildAssistMessages,
   explanationWithEdits,
   parseAssistPlan,
   assistChartColor,
+  questionOnlyRecolors,
+  recolorsFromQuestion,
+  requestedChartColor,
   splitAssistFollowUp,
   readAssistRequest,
   type AssistQueryPlan,
@@ -133,6 +137,12 @@ describe("parseAssistPlan", () => {
     });
     expect(plan.queries[1]?.chart?.color).toBeNull();
   });
+
+  test("keeps a filter placeholder whose default would look like SELECT INTO", () => {
+    const sql = "SELECT month FROM orders WHERE note = {{note:into|into,out}}";
+    const plan = parseAssistPlan(JSON.stringify({ queries: [{ title: "Notes", sql }] }));
+    expect(plan.queries[0]?.sql).toBe(sql);
+  });
 });
 
 describe("acceptAssistPlan", () => {
@@ -222,6 +232,7 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("every connected database");
     expect(messages[0]?.content).toContain("User-edited query (leave it unchanged):");
     expect(messages[0]?.content).toContain("chart.color");
+    expect(messages[0]?.content).toContain("{{region:east|east,west,north}}");
   });
 });
 
@@ -275,6 +286,55 @@ describe("queries the user edited", () => {
       queries: [],
     });
     expect(splitAssistFollowUp([colored], [])).toEqual({ recolors: [], queries: [colored] });
+    const east = "SELECT month, revenue FROM orders WHERE region = {{region:east|east,west}}";
+    const west = "SELECT month, revenue FROM orders WHERE region = {{region:west|east,west}}";
+    const filtered = {
+      ...colored,
+      sql: west,
+      chart: colored.chart === null ? null : { ...colored.chart, color: "#e66767" },
+    };
+    expect(splitAssistFollowUp([filtered], [{ sql: east, locked: true }])).toEqual({
+      recolors: [{ sql: queryIdentity(west), color: "#e66767" }],
+      queries: [],
+    });
+    expect(
+      splitAssistFollowUp(
+        [{ ...colored, sql: "SELECT  month, revenue\nFROM orders LIMIT 50" }],
+        [{ sql: `${revenue.sql} LIMIT 200;`, locked: true }],
+      ),
+    ).toEqual({
+      recolors: [{ sql: revenue.sql, color: "#9546de" }],
+      queries: [],
+    });
+  });
+
+  test("reads a colour from the question and paints the chart it names", () => {
+    expect(requestedChartColor("show spend by region in purple")).toBeNull();
+    expect(requestedChartColor("purple")).toBe("#9546de");
+    expect(requestedChartColor("make it purple")).toBe("#9546de");
+    expect(requestedChartColor("change the color to red")).toBe("#e66767");
+    expect(requestedChartColor("change the revenue chart to pink")).toBe("#d55181");
+    expect(requestedChartColor("make them #3987E5")).toBe("#3987e5");
+    expect(requestedChartColor("change it from blue to red")).toBe("#e66767");
+    expect(requestedChartColor(`please redraw this long chart so the bars are purple ${"x".repeat(40)}`)).toBeNull();
+    expect(questionOnlyRecolors("make it purple")).toBe(true);
+    expect(questionOnlyRecolors("make it red and show spend")).toBe(false);
+    expect(questionOnlyRecolors(`change the colour to teal ${"y".repeat(80)}`)).toBe(false);
+    expect(questionOnlyRecolors("show spend by region in purple")).toBe(false);
+    const revenue = { sql: "SELECT month, revenue FROM orders LIMIT 200", title: "Revenue" };
+    const count = { sql: "SELECT 1", title: "Count" };
+    expect(recolorsFromQuestion("hello", [revenue])).toEqual([]);
+    expect(recolorsFromQuestion("make it purple", [])).toEqual([]);
+    expect(recolorsFromQuestion("change the revenue chart to pink", [revenue, count])).toEqual([
+      { sql: "SELECT month, revenue FROM orders", color: "#d55181" },
+    ]);
+    expect(recolorsFromQuestion("make both red", [revenue, count])).toEqual([
+      { sql: "SELECT month, revenue FROM orders", color: "#e66767" },
+      { sql: "SELECT 1", color: "#e66767" },
+    ]);
+    expect(recolorsFromQuestion("purple", [revenue, { sql: "SELECT 2", title: "n" }])).toEqual([
+      { sql: "SELECT 2", color: "#9546de" },
+    ]);
   });
 
   test("names the edited statement for the next answer and stays within the history limit", () => {

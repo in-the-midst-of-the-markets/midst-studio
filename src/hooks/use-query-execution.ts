@@ -25,6 +25,7 @@ import type { ExplainFormat } from "@/lib/db/types";
 import { maybeInviteToStar } from "@/lib/community/star-prompt-toast";
 import { sandboxRefusal } from "@/lib/editor/sandbox-refusal";
 import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
+import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { buildConnectionPayload } from "./use-connection-payload";
 import { transactionGone } from "./use-transaction-control";
 
@@ -407,6 +408,8 @@ export function useQueryExecution({
       if (!queryToExecute) {
         queryToExecute = tabToExec.query;
       }
+      // A chart filter is a placeholder in the editor. The engine receives the literal.
+      if (queryToExecute) queryToExecute = applyQueryFilters(queryToExecute);
 
       if (!activeConnection) {
         toast({ title: "No Connection", description: "Select a connection first.", variant: "destructive" });

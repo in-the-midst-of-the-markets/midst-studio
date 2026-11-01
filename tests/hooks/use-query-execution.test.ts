@@ -206,6 +206,23 @@ describe("useQueryExecution", () => {
     expect(body.connection.id).toBe("qe-pg-1");
   });
 
+  test("executeQuery substitutes a chart filter before the request", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/query": { ok: true, json: mockQueryResult },
+    });
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM users WHERE region = {{region:east|east,west}}");
+    });
+
+    const queryCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("/api/db/query"),
+    );
+    const body = JSON.parse(queryCall?.[1]?.body as string);
+    expect(body.sql).toBe("SELECT * FROM users WHERE region = 'east'");
+  });
+
   // ── the tab's own numbered database (the #1095 review) ─────────────────────
 
   /**

@@ -341,6 +341,17 @@ describe("useQueryAdapter", () => {
     expect(params.onQueryExecute).toHaveBeenCalledWith("conn-1", "SELECT 1");
   });
 
+  test("executeQuery substitutes a chart filter before the host sees it", async () => {
+    const params = makeHookParams();
+    const { result } = renderHook(() => useQueryAdapter(params));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT 1 WHERE region = {{region:east}}");
+    });
+
+    expect(params.onQueryExecute).toHaveBeenCalledWith("conn-1", "SELECT 1 WHERE region = 'east'");
+  });
+
   // ── executeQuery uses tab query when no override provided ──────────────────
 
   test("executeQuery uses tab query when no override provided", async () => {

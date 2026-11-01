@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { newLocalId } from "@/lib/ids";
 import { isDangerousQuery } from "@/components/QuerySafetyDialog";
 import { statementRefusal } from "@/lib/db/destructive-commands";
+import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { maybeInviteToStar } from "@/lib/community/star-prompt-toast";
 
 /**
@@ -192,7 +193,7 @@ export function useQueryAdapter({
       const targetTabId = tabId || activeTabId;
       const tabToExec = tabs.find((t) => t.id === targetTabId) || currentTab;
 
-      const queryToExecute = overrideQuery || tabToExec.query;
+      const queryToExecute = applyQueryFilters(overrideQuery || tabToExec.query);
 
       if (!activeConnection) {
         toast({ title: "No Connection", description: "Select a connection first.", variant: "destructive" });
@@ -391,7 +392,7 @@ export function useQueryAdapter({
 
       const startTime = Date.now();
 
-      onQueryExecute(activeConnection.id, query)
+      onQueryExecute(activeConnection.id, applyQueryFilters(query))
         .then((result) => {
           if (cancelledRef.current || !ownsTab()) return;
 
@@ -541,7 +542,7 @@ export function useQueryAdapter({
     // The ownership check in that commit answers the other half of the same failure: it
     // refuses a page the tab has since disowned, and pinning the statement here keeps the
     // label true for a page that still owns it and does land (#816).
-    const pagedStatement = currentTab.resultQuery ?? currentTab.query;
+    const pagedStatement = applyQueryFilters(currentTab.resultQuery ?? currentTab.query);
 
     onQueryExecute(activeConnection.id, pagedStatement, {
       // The size of the page already on screen, not a constant. A table preview is 50
@@ -663,7 +664,7 @@ export function useQueryAdapter({
       ),
     );
 
-    onQueryExecute(activeConnection.id, query, { unlimited: true })
+    onQueryExecute(activeConnection.id, applyQueryFilters(query), { unlimited: true })
       .then((result) => {
         if (cancelledRef.current || !ownsTab()) return;
 
