@@ -417,6 +417,74 @@ describe("ChartWithEditor", () => {
     expect(ran).toEqual(["SELECT region AS area FROM orders"]);
   });
 
+  test("edits the chart code, keeps it when the rows change, and can use the generated chart", () => {
+    const edited = { title: { text: "Edited" } };
+    function lastOption(): unknown {
+      const calls = charts.at(-1)?.setOption.mock.calls ?? [];
+      return calls.at(-1)?.[0];
+    }
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(code.getAttribute("wrap")).toBe("soft");
+    expect(code.value).toContain('"series"');
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
+    fireEvent.change(code, { target: { value: "{" } });
+    expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(JSON.stringify(lastOption())).toContain('"series"');
+    expect(JSON.stringify(lastOption())).not.toContain("Edited");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify(edited) },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(lastOption()).toEqual(edited);
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={{ ...barResult, rows: [{ month: "Feb", revenue: 99 }] }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(lastOption()).toEqual(edited);
+    fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const restored = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(restored.value).toContain("99");
+    expect(restored.value).not.toContain("Edited");
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
+    fireEvent.change(restored, { target: { value: "[]" } });
+    expect(view.getByRole("alert").textContent).toBe("Chart code must be a JSON object.");
+    fireEvent.change(restored, { target: { value: JSON.stringify(edited) } });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(lastOption()).toEqual(edited);
+    fireEvent.click(within(view.getByRole("group", { name: "Metrics" })).getByRole("button", { name: "revenue" }));
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    fireEvent.click(within(view.getByRole("group", { name: "Metrics" })).getByRole("button", { name: "revenue" }));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    expect((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).not.toContain("Edited");
+  });
+
   test("listens for the editor's run event only while the query is showing", () => {
     const ran: string[] = [];
     const view = render(
@@ -431,7 +499,9 @@ describe("ChartWithEditor", () => {
         onRun={(sql) => ran.push(sql)}
       />,
     );
-    expect(view.getByText("The SQL editor is behind this chart. Open Query to read it.")).toBeTruthy();
+    expect(
+      view.getByText("The SQL editor is behind this chart. Open Query to edit it, or Code to edit the chart."),
+    ).toBeTruthy();
     window.dispatchEvent(new CustomEvent("execute-query", { detail: { query: "SELECT 9" } }));
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     window.dispatchEvent(new CustomEvent("execute-query", { detail: { query: "" } }));
