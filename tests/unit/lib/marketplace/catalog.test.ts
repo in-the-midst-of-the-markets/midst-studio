@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  MONTHLY_CENTS_MAX,
+  MONTHLY_CENTS_MIN,
+  monthlyPriceLabel,
   parseMarketplaceCatalog,
   publicMarketplaceOfferings,
   readMarketplaceCatalog,
@@ -7,11 +10,10 @@ import {
 } from "@/lib/marketplace/catalog";
 
 const OFFERING: MarketplaceOffering = {
-  id: "acme-trades",
-  name: "Acme Trades",
-  description: "Tick history",
-  priceId: "price_abc",
-  priceLabel: "$49/month",
+  id: "opensearch",
+  name: "OpenSearch",
+  description: "Search indexes",
+  monthlyCents: 500,
 };
 
 const original = process.env.MARKETPLACE_OFFERINGS;
@@ -47,12 +49,13 @@ describe("parseMarketplaceCatalog", () => {
     [{ ...OFFERING, name: 1 }],
     [{ ...OFFERING, description: "d".repeat(401) }],
     [{ ...OFFERING, description: 1 }],
-    [{ ...OFFERING, priceId: "prod_abc" }],
-    [{ ...OFFERING, priceId: "price_" }],
-    [{ ...OFFERING, priceId: 1 }],
-    [{ ...OFFERING, priceLabel: "   " }],
-    [{ ...OFFERING, priceLabel: "p".repeat(41) }],
-    [{ ...OFFERING, priceLabel: 1 }],
+    [{ ...OFFERING, monthlyCents: MONTHLY_CENTS_MIN - 1 }],
+    [{ ...OFFERING, monthlyCents: 0 }],
+    [{ ...OFFERING, monthlyCents: -500 }],
+    [{ ...OFFERING, monthlyCents: 1.5 }],
+    [{ ...OFFERING, monthlyCents: "500" }],
+    [{ ...OFFERING, monthlyCents: MONTHLY_CENTS_MAX + 1 }],
+    [{ ...OFFERING, monthlyCents: Number.NaN }],
   ])("refuses an offering that is not sellable (%j)", (item) => {
     expect(parseMarketplaceCatalog(JSON.stringify([item]))).toEqual({ ok: false });
   });
@@ -67,10 +70,14 @@ describe("parseMarketplaceCatalog", () => {
     expect(parsed).toEqual({ ok: true, offerings: [OFFERING] });
   });
 
-  test("accepts a one-character id and a name at the length limit", () => {
-    const offering = { ...OFFERING, id: "a", name: "n".repeat(80), description: "", priceLabel: "$1" };
+  test("accepts a one-character id, a name at the length limit, and the price bounds", () => {
+    const named = { ...OFFERING, id: "a", name: "n".repeat(80), description: "", monthlyCents: 100 };
+    expect(parseMarketplaceCatalog(JSON.stringify([named]))).toEqual({ ok: true, offerings: [named] });
 
-    expect(parseMarketplaceCatalog(JSON.stringify([offering]))).toEqual({ ok: true, offerings: [offering] });
+    for (const monthlyCents of [MONTHLY_CENTS_MIN, MONTHLY_CENTS_MAX]) {
+      const priced = { ...OFFERING, monthlyCents };
+      expect(parseMarketplaceCatalog(JSON.stringify([priced]))).toEqual({ ok: true, offerings: [priced] });
+    }
   });
 });
 
@@ -89,10 +96,27 @@ describe("readMarketplaceCatalog", () => {
   });
 });
 
+describe("monthlyPriceLabel", () => {
+  test("writes whole dollars without cents, and leftover cents with two digits", () => {
+    expect(monthlyPriceLabel(500)).toBe("$5/month");
+    expect(monthlyPriceLabel(1200)).toBe("$12/month");
+    expect(monthlyPriceLabel(50)).toBe("$0.50/month");
+    expect(monthlyPriceLabel(550)).toBe("$5.50/month");
+  });
+});
+
 describe("publicMarketplaceOfferings", () => {
-  test("strips the Stripe price id", () => {
-    expect(publicMarketplaceOfferings([OFFERING])).toEqual([
-      { id: OFFERING.id, name: OFFERING.name, description: OFFERING.description, priceLabel: "$5/month" },
+  test("shows each database's own monthly price and not the amount the server charges from", () => {
+    const postgres: MarketplaceOffering = {
+      id: "postgres",
+      name: "PostgreSQL",
+      description: "Tables",
+      monthlyCents: 1200,
+    };
+
+    expect(publicMarketplaceOfferings([OFFERING, postgres])).toEqual([
+      { id: "opensearch", name: "OpenSearch", description: "Search indexes", priceLabel: "$5/month" },
+      { id: "postgres", name: "PostgreSQL", description: "Tables", priceLabel: "$12/month" },
     ]);
   });
 });

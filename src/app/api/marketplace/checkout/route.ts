@@ -25,7 +25,7 @@ function stripeSecret(): string | null {
 /**
  * POST /api/marketplace/checkout — start a Stripe subscription Checkout for one catalogued offering.
  *
- * The charge is $5 a month, from the offering's name. A price id on the request is ignored.
+ * The charge is that database's own monthly price. An amount on the request is ignored.
  * The return URLs are this request's own origin, so Checkout cannot be pointed at another host.
  */
 export async function POST(request: Request) {
@@ -65,6 +65,7 @@ export async function POST(request: Request) {
   const created = await createStripeCheckout({
     secretKey: secret,
     productName: offering.name,
+    unitAmount: String(offering.monthlyCents),
     successUrl,
     cancelUrl,
     offeringId: offering.id,

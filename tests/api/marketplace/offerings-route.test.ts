@@ -22,11 +22,10 @@ const { GET } = await import("@/app/api/marketplace/offerings/route");
 const originalCatalog = process.env.MARKETPLACE_OFFERINGS;
 
 const OFFERING = {
-  id: "acme-trades",
-  name: "Acme Trades",
-  description: "Tick history",
-  priceId: "price_abc",
-  priceLabel: "$49/month",
+  id: "opensearch",
+  name: "OpenSearch",
+  description: "Search indexes",
+  monthlyCents: 500,
 };
 
 beforeEach(() => {
@@ -57,20 +56,19 @@ describe("GET /api/marketplace/offerings", () => {
     expect(await response.json()).toEqual({ offerings: [] });
   });
 
-  test("returns the catalog without the Stripe price id", async () => {
-    process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
+  test("returns each database's own monthly price", async () => {
+    process.env.MARKETPLACE_OFFERINGS = JSON.stringify([
+      OFFERING,
+      { id: "postgres", name: "PostgreSQL", description: "Tables", monthlyCents: 1200 },
+    ]);
 
     const response = await GET();
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       offerings: [
-        {
-          id: "acme-trades",
-          name: "Acme Trades",
-          description: "Tick history",
-          priceLabel: "$5/month",
-        },
+        { id: "opensearch", name: "OpenSearch", description: "Search indexes", priceLabel: "$5/month" },
+        { id: "postgres", name: "PostgreSQL", description: "Tables", priceLabel: "$12/month" },
       ],
     });
   });
