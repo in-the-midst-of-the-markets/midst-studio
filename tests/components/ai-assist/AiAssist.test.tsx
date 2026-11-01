@@ -573,6 +573,38 @@ describe("ChartWithEditor", () => {
 });
 
 describe("AiAssist page", () => {
+  test("opens the conversation at the latest message", async () => {
+    const element = HTMLElement.prototype;
+    const scrollHeight = Object.getOwnPropertyDescriptor(element, "scrollHeight");
+    const clientHeight = Object.getOwnPropertyDescriptor(element, "clientHeight");
+    Object.defineProperty(element, "scrollHeight", { configurable: true, get: () => 900 });
+    Object.defineProperty(element, "clientHeight", { configurable: true, get: () => 200 });
+    try {
+      const at = new Date().toISOString();
+      localStorage.setItem(
+        ASSIST_TRANSCRIPT_KEY,
+        JSON.stringify([
+          { id: "assist-1", role: "user", text: "Earlier question", at, cards: [] },
+          { id: "assist-2", role: "assistant", text: "The latest answer", at, cards: [] },
+        ]),
+      );
+      saveConnection();
+      const view = render(<AiAssist />);
+      const thread = view.getByRole("region", { name: "Conversation" });
+      expect(await view.findByText("The latest answer")).toBeTruthy();
+      expect(thread.scrollTop).toBe(700);
+      thread.scrollTop = 0;
+      await typeAndSend(view, "What changed?");
+      expect(await view.findByText("Revenue rose.")).toBeTruthy();
+      expect(thread.scrollTop).toBe(700);
+    } finally {
+      if (scrollHeight === undefined) delete (element as { scrollHeight?: unknown }).scrollHeight;
+      else Object.defineProperty(element, "scrollHeight", scrollHeight);
+      if (clientHeight === undefined) delete (element as { clientHeight?: unknown }).clientHeight;
+      else Object.defineProperty(element, "clientHeight", clientHeight);
+    }
+  });
+
   test("asks how it can help and points back at the editor", async () => {
     const view = render(<AssistPage />);
     expect(await view.findByRole("heading", { name: "How can I help?" })).toBeTruthy();

@@ -258,6 +258,7 @@ export function AiAssist() {
   const storedTurns = useSyncExternalStore(subscribeTranscript, readTranscriptSnapshot, () => EMPTY_TURNS);
   const [draftTurns, setDraftTurns] = useState<readonly Turn[] | null>(null);
   const turns = draftTurns ?? storedTurns;
+  const threadRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -286,6 +287,14 @@ export function AiAssist() {
       mounted.current = false;
     };
   }, []);
+
+  // A saved conversation is taller than the pane, so opening AI Assist lands on the
+  // latest message. A new reply grows the thread, and the same position keeps it in view.
+  useEffect(() => {
+    const node = threadRef.current;
+    if (node === null || turns.length === 0) return;
+    node.scrollTop = node.scrollHeight - node.clientHeight;
+  }, [turns.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -523,7 +532,7 @@ export function AiAssist() {
         <AssistModeToggle mode="assist" />
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 md:px-6">
           {hydrated && connections.length === 0 && (
             <p className="text-sm text-fg-muted">
@@ -615,7 +624,7 @@ export function AiAssist() {
             ),
           )}
         </div>
-      </div>
+      </section>
 
       <form
         className="shrink-0 border-t border-hairline bg-surface px-4 py-3"
