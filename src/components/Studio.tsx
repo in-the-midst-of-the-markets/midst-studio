@@ -621,6 +621,7 @@ export default function Studio() {
   const openSaveQuery = useCallback(() => setIsSaveQueryModalOpen(true), []);
   const [savedKey, setSavedKey] = useState(0);
   const [activeMobileTab, setActiveMobileTab] = useState<"database" | "schema" | "editor">("editor");
+  const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
   // The Schema tab is the phone layout's object tree, so opening it uses the connection as loading the tree does.
   const { markActiveUsed } = conn;
   const changeMobileTab = useCallback(
@@ -1539,8 +1540,15 @@ export default function Studio() {
                     activeConnection={conn.activeConnection}
                     onSelectConnection={(c) => {
                       conn.setActiveConnection(c);
+                      setMobileNotesOpen(false);
                       setActiveMobileTab("editor");
                     }}
+                    onOpenNotes={(c) => {
+                      conn.setActiveConnection(c);
+                      setMobileNotesOpen(true);
+                      setActiveMobileTab("schema");
+                    }}
+                    notesConnectionId={mobileNotesOpen ? conn.activeConnection?.id : null}
                     onDeleteConnection={requestDeleteConnection}
                     onDuplicateConnection={duplicateConnectionAction}
                     favoriteConnectionIds={favoriteIds}
@@ -1586,6 +1594,8 @@ export default function Studio() {
                           databaseType={conn.activeConnection?.type}
                           metadata={metadata}
                           connectionId={conn.activeConnection.id}
+                          notesOpen={mobileNotesOpen}
+                          onNotesOpenChange={setMobileNotesOpen}
                           onProfileTable={(path) => setProfilerPath(path)}
                           onGenerateCode={(path) => setCodeGenPath(path)}
                           onGenerateTestData={(path) => setTestDataPath(path)}

@@ -307,6 +307,30 @@ describe("ConnectionsList", () => {
     expect(queryByText("Test MySQL")).not.toBeNull();
   });
 
+  test("Notes beside a connection opens that connection and stays pressed", () => {
+    const onOpenNotes = mock(() => {});
+    const connections = [mockPostgresConnection, mockMySQLConnection];
+    const view = render(
+      <ConnectionsList
+        connections={connections}
+        activeConnection={mockPostgresConnection}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onOpenNotes={onOpenNotes}
+        notesConnectionId={mockPostgresConnection.id}
+      />,
+    );
+
+    const postgres = view.getByRole("button", { name: "Notes for Test PostgreSQL" });
+    const mysql = view.getByRole("button", { name: "Notes for Test MySQL" });
+    expect(postgres.getAttribute("aria-pressed")).toBe("true");
+    expect(mysql.getAttribute("aria-pressed")).toBe("false");
+
+    fireEvent.click(mysql);
+    expect(onOpenNotes).toHaveBeenCalledWith(mockMySQLConnection);
+    expect(defaultOnSelect).not.toHaveBeenCalled();
+  });
+
   test("isActive prop passed correctly based on activeConnection", () => {
     const connections = [mockPostgresConnection, mockMySQLConnection];
 

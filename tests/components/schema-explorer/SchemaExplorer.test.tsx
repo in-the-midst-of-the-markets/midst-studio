@@ -652,4 +652,21 @@ describe("SchemaExplorer", () => {
     expect(queryByTestId("table-notes")).toBeNull();
     expect(getByTestId("table-users")).toBeDefined();
   });
+
+  test("a parent can open notes for the connection that was chosen", async () => {
+    const user = userEvent.setup();
+    const onNotesOpenChange = mock(() => {});
+    const props = createDefaultProps({ connectionId: "c1", notesOpen: false, onNotesOpenChange });
+    const view = render(<SchemaExplorer {...props} />);
+
+    await user.click(view.getByRole("button", { name: "Table notes" }));
+    expect(onNotesOpenChange).toHaveBeenCalledWith(true);
+    expect(view.queryByTestId("table-notes")).toBeNull();
+
+    view.rerender(<SchemaExplorer {...props} notesOpen />);
+    expect(view.getByTestId("table-notes")).toBeDefined();
+
+    await user.click(view.getByRole("button", { name: "Tables" }));
+    expect(onNotesOpenChange).toHaveBeenCalledWith(false);
+  });
 });

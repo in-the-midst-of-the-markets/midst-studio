@@ -231,20 +231,39 @@ describe("Sidebar", () => {
     expect(buttons.length).toBeGreaterThan(0);
   });
 
-  test("Notes replaces the object tree until it is closed", () => {
-    const { getByRole, getByTestId, queryByTestId } = render(<Sidebar {...createDefaultProps()} />);
+  test("Notes on a connection replaces the object tree until it is closed", () => {
+    const onSelectConnection = mock(() => {});
+    const props = createDefaultProps({ onSelectConnection });
+    const { getByTestId, queryByTestId, queryByRole } = render(<Sidebar {...props} />);
     expect(getByTestId("object-tree")).toBeDefined();
+    expect(queryByRole("button", { name: "Table notes" })).toBeNull();
 
-    fireEvent.click(getByRole("button", { name: "Table notes" }));
+    const openNotes = capturedGroupProps.onOpenNotes as (conn: typeof mockPostgresConnection) => void;
+    act(() => openNotes(mockPostgresConnection));
 
+    expect(onSelectConnection).toHaveBeenCalledWith(mockPostgresConnection);
     expect(queryByTestId("object-tree")).toBeNull();
     expect(getByTestId("table-notes")).toBeDefined();
-    expect(getByRole("button", { name: "Table notes" }).getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.click(getByRole("button", { name: "Table notes" }));
+    act(() => openNotes(mockMySQLConnection));
+    expect(onSelectConnection).toHaveBeenCalledWith(mockMySQLConnection);
+    expect(getByTestId("table-notes")).toBeDefined();
 
+    act(() => openNotes(mockMySQLConnection));
     expect(getByTestId("object-tree")).toBeDefined();
     expect(queryByTestId("table-notes")).toBeNull();
+  });
+
+  test("choosing a connection closes its notes", () => {
+    const { getByTestId, queryByTestId } = render(<Sidebar {...createDefaultProps()} />);
+    const openNotes = capturedGroupProps.onOpenNotes as (conn: typeof mockPostgresConnection) => void;
+    act(() => openNotes(mockPostgresConnection));
+    expect(getByTestId("table-notes")).toBeDefined();
+
+    const select = capturedGroupProps.onSelectConnection as (conn: typeof mockPostgresConnection) => void;
+    act(() => select(mockPostgresConnection));
+    expect(queryByTestId("table-notes")).toBeNull();
+    expect(getByTestId("object-tree")).toBeDefined();
   });
 
   test("the object tree only renders when activeConnection exists", () => {
