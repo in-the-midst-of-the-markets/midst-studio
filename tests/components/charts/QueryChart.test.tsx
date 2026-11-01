@@ -251,8 +251,28 @@ describe("QueryChart", () => {
       }),
     );
     fireEvent.change(view.getByRole("combobox", { name: "region" }), { target: { value: "west" } });
-    expect(onFilterChange).toHaveBeenCalledWith("region", "west");
+    expect(onFilterChange).toHaveBeenCalledWith(
+      "SELECT region, total FROM sales WHERE region = {{region:west|east,west}}",
+    );
     view.rerender(React.createElement(QueryChart, { result: sales, query: "SELECT 1", onFilterChange }));
     expect(view.queryByRole("combobox", { name: "region" })).toBeNull();
+  });
+
+  test("adds a filter from the button beside Dimension", () => {
+    const onFilterChange = mock(() => {});
+    const view = render(
+      React.createElement(QueryChart, {
+        result: sales,
+        query: "SELECT region, total FROM sales",
+        onFilterChange,
+      }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    fireEvent.click(filter.getByRole("button", { name: "region" }));
+    expect(onFilterChange).toHaveBeenCalledWith(
+      "SELECT region, total FROM sales WHERE region = {{region:east|east,west}}",
+    );
   });
 });

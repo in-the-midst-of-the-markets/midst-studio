@@ -235,7 +235,7 @@ interface BottomPanelProps {
   onLoadQuery: (query: string) => void;
   /** The editor statement while Charts is open, so its placeholders can be changed there. */
   chartQuery?: string;
-  onChartFilter?: (name: string, value: string) => void;
+  onChartFilter?: (sql: string) => void;
   onLoadMore: (() => void) | undefined;
   isLoadingMore: boolean | undefined;
   // The writer's own type, so a format added there cannot silently fail to reach this

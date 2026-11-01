@@ -142,6 +142,14 @@ describe("parseAssistPlan", () => {
     const sql = "SELECT month FROM orders WHERE note = {{note:into|into,out}}";
     const plan = parseAssistPlan(JSON.stringify({ queries: [{ title: "Notes", sql }] }));
     expect(plan.queries[0]?.sql).toBe(sql);
+    const literal = parseAssistPlan(
+      JSON.stringify({
+        queries: [{ sql: "SELECT month, revenue FROM orders WHERE region = 'east' AND total >= 10 LIMIT 200" }],
+      }),
+    );
+    expect(literal.queries[0]?.sql).toBe(
+      "SELECT month, revenue FROM orders WHERE region = {{region:east}} AND total >= {{total:10}} LIMIT 200",
+    );
   });
 });
 

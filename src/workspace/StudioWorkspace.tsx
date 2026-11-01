@@ -19,7 +19,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useTabManager } from "@/hooks/use-tab-manager";
 import { useTabSummaries } from "@/hooks/use-tab-summaries";
 import { useStableCallback } from "@/hooks/use-stable-callback";
-import { writeQueryFilter } from "@/lib/charts/query-filters";
 import { useConnectionAdapter } from "@/workspace/hooks/use-connection-adapter";
 import { useQueryAdapter } from "@/workspace/hooks/use-query-adapter";
 import { type StudioWorkspaceProps, DEFAULT_WORKSPACE_FEATURES } from "@/workspace/types";
@@ -855,11 +854,10 @@ export function StudioWorkspace({
     },
     [runsTheActiveTab, tabMgr.updateCurrentTab],
   );
-  const applyChartFilter = useStableCallback((name: string, value: string) => {
+  const applyChartFilter = useStableCallback((sql: string) => {
     if (!runsTheActiveTab) return;
-    const next = writeQueryFilter(tabMgr.currentTab.query, name, value);
-    tabMgr.updateCurrentTab({ query: next });
-    void queryExec.executeQuery(next);
+    tabMgr.updateCurrentTab({ query: sql });
+    void queryExec.executeQuery(sql);
   });
 
   const tabBarTabs = useTabSummaries(tabMgr.tabs);
