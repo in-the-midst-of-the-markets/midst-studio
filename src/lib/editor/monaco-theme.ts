@@ -33,13 +33,13 @@ export function defineStudioThemes(monacoInstance: typeof Monaco): void {
     base: "vs-dark",
     inherit: true,
     rules: [
-      { token: "keyword", foreground: "569cd6", fontStyle: "bold" },
+      { token: "keyword", foreground: "c27aff", fontStyle: "bold" },
       { token: "function", foreground: "dcdcaa" },
       { token: "string", foreground: "ce9178" },
       { token: "number", foreground: "b5cea8" },
       { token: "comment", foreground: "6a9955" },
       { token: "operator", foreground: "d4d4d4" },
-      { token: "identifier", foreground: "9cdcfe" },
+      { token: "identifier", foreground: "dab2ff" },
     ],
     colors: {
       "editor.background": "#101010",
@@ -58,8 +58,9 @@ export function defineStudioThemes(monacoInstance: typeof Monaco): void {
   /*
    * Monaco paints its own canvas and knows nothing about the CSS token layer,
    * so the editor is the one surface that needs the palette written twice.
-   * Same syntax hues either side, because they are chosen for contrast against the
-   * CODE rather than against the chrome, with only the ground and the guides moved.
+   * Keyword and identifier follow the brand purple, on the darker steps in light
+   * so they stay readable. The other token hues stay, and only the ground and the
+   * guides move with the chrome.
    * `editor.background` mirrors `--studio-canvas` in both themes so the pane
    * sits flush with the shell it lives in.
    */
@@ -67,13 +68,13 @@ export function defineStudioThemes(monacoInstance: typeof Monaco): void {
     base: "vs",
     inherit: true,
     rules: [
-      { token: "keyword", foreground: "0000ff", fontStyle: "bold" },
+      { token: "keyword", foreground: "8200db", fontStyle: "bold" },
       { token: "function", foreground: "795e26" },
       { token: "string", foreground: "a31515" },
       { token: "number", foreground: "098658" },
       { token: "comment", foreground: "008000" },
       { token: "operator", foreground: "3f3f46" },
-      { token: "identifier", foreground: "001080" },
+      { token: "identifier", foreground: "6e11b0" },
     ],
     colors: {
       "editor.background": "#f4f4f5",

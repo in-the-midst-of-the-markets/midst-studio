@@ -60,16 +60,14 @@ const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTa
         {column.isPrimary ? (
           <Key strokeWidth={1.5} className="w-2.5 h-2.5 text-hue-yellow" />
         ) : isFk ? (
-          <Link2 strokeWidth={1.5} className="w-2.5 h-2.5 text-hue-blue" />
+          <Link2 strokeWidth={1.5} className="w-2.5 h-2.5 text-brand" />
         ) : isNumericType(column.baseType ?? column.type) ? (
           <Hash strokeWidth={1.5} className="w-2.5 h-2.5 text-fg-muted" />
         ) : (
           <Type strokeWidth={1.5} className="w-2.5 h-2.5 text-fg-muted" />
         )}
         <span
-          className={
-            column.isPrimary ? "text-hue-yellow/90 font-medium" : isFk ? "text-hue-blue/80" : "text-fg-tertiary"
-          }
+          className={column.isPrimary ? "text-hue-yellow/90 font-medium" : isFk ? "text-brand/80" : "text-fg-tertiary"}
         >
           {column.name}
         </span>
@@ -127,7 +125,7 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
           isConnectable={false}
           style={{ opacity: 0, right: -5 }}
         />
-        <Database strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-blue" />
+        <Database strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
         {/* The LABEL is what a person reads on the card, and the dotted ADDRESS is the
             tooltip: two objects in two containers carry one label, and the card that says
             only `customers` cannot say which (#789). */}

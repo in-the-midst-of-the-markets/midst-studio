@@ -624,7 +624,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
               size="sm"
               // `text-white` is the label ON a blue button, not the top of the
               // text ramp: it must stay white in the light theme too.
-              className="h-7 text-xs font-medium text-white bg-brand-solid hover:bg-brand-solid-hover hover:text-white gap-2 shadow-[0_0_10px_rgba(37,99,235,0.3)] animate-in fade-in zoom-in duration-200"
+              className="h-7 text-xs font-medium text-white bg-brand-solid hover:bg-brand-solid-hover hover:text-white gap-2 shadow-[0_0_10px_rgba(149,70,222,0.3)] animate-in fade-in zoom-in duration-200"
               onClick={handleExecute}
             >
               <Play strokeWidth={1.5} className="w-3 h-3 fill-current" /> Run Selected

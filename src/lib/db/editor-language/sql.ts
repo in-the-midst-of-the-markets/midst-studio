@@ -21,7 +21,8 @@ const formatSql = (text: string, grammar?: SqlGrammar): string =>
 
 /**
  * SQL, the language every SQL-dialect engine's tab renders in: Monaco ships it, the shared SQL layer completes it
- * from the schema context on the connected engine's grammar, and its accent is blue.
+ * from the schema context on the connected engine's grammar. Its accent stays the blue identity
+ * hue, the same one PostgreSQL carries, so the sixteen languages stay tellable apart.
  */
 export const SQL_EDITOR_LANGUAGE = Object.freeze<EditorLanguageContribution>({
   monacoId: "sql",

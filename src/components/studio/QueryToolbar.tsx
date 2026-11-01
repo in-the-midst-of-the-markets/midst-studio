@@ -142,9 +142,9 @@ export const QueryToolbar = React.memo(function QueryToolbar({
       {/* Desktop Query Toolbar */}
       <div className="hidden md:flex items-center justify-between px-4 py-1.5 bg-surface border-b border-hairline">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-hue-blue-tint/5 border border-hue-blue-tint/10">
-            <Terminal strokeWidth={1.5} className="w-3 h-3 text-hue-blue" />
-            <span className="text-xs font-medium text-hue-blue">Query</span>
+          <div className="flex items-center gap-2 px-2 py-0.5 rounded bg-brand-tint/5 border border-brand-tint/10">
+            <Terminal strokeWidth={1.5} className="w-3 h-3 text-brand" />
+            <span className="text-xs font-medium text-brand">Query</span>
           </div>
           {/* The separator is chrome for Save; with Save withheld it would be a rule
               standing alone, the same reason the control group drops its border (#427). */}

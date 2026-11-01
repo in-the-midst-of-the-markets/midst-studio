@@ -141,9 +141,9 @@ const RISK_CONFIG = {
     label: "Safe",
   },
   low: {
-    color: "text-hue-blue",
-    bg: "bg-hue-blue-tint/10",
-    border: "border-hue-blue-tint/20",
+    color: "text-brand",
+    bg: "bg-brand-tint/10",
+    border: "border-brand-tint/20",
     icon: ShieldCheck,
     label: "Low Risk",
   },

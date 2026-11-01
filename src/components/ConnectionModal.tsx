@@ -289,7 +289,7 @@ export function ConnectionModal({
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: "100%" }}
-          className="h-full bg-brand-tint shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+          className="h-full bg-brand-tint shadow-[0_0_15px_rgba(149,70,222,0.5)]"
         />
       </div>
 
@@ -509,7 +509,7 @@ export function ConnectionModal({
                 className={cn(
                   "flex flex-col items-center justify-center p-3 md:p-4 rounded-xl border transition-all duration-200 gap-2 group",
                   type === db.value
-                    ? "bg-brand-solid/10 border-brand-tint/50 shadow-[0_0_20px_rgba(59,130,246,0.1)]"
+                    ? "bg-brand-solid/10 border-brand-tint/50 shadow-[0_0_20px_rgba(149,70,222,0.1)]"
                     : "bg-panel border-hairline hover:border-hairline-strong hover:bg-raised",
                   isEditMode && type !== db.value && "opacity-30 cursor-not-allowed",
                 )}

@@ -237,7 +237,7 @@ const NodeIcon = ({ type }: { type: string }) => {
   if (type.includes("Seq Scan")) return <Search strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-amber" />;
   if (type.includes("Index Scan") || type.includes("Index Only"))
     return <Target strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-emerald" />;
-  if (type.includes("Scan")) return <Search strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-blue" />;
+  if (type.includes("Scan")) return <Search strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />;
   if (type.includes("Join")) return <Layers strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-purple" />;
   if (type.includes("Sort")) return <ArrowDown strokeWidth={1.5} className="w-3.5 h-3.5 text-hue-amber" />;
   if (type.includes("Limit")) return <LayoutGrid strokeWidth={1.5} className="w-3.5 h-3.5 text-fg-tertiary" />;
@@ -687,7 +687,7 @@ function AIExplainTab({
   if (!hasRun) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/10 flex items-center justify-center mb-4">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand/20 to-brand-tint/10 flex items-center justify-center mb-4">
           <Sparkles strokeWidth={1.5} className="w-7 h-7 text-hue-purple" />
         </div>
         <h3 className="text-xs font-medium text-fg mb-1">AI Query Analysis</h3>

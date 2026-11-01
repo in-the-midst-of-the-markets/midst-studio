@@ -10,7 +10,7 @@ test.describe("Login Flow", () => {
   });
 
   test("shows login page with email and password fields", async ({ page }) => {
-    await expect(page.getByRole("img", { name: "MIDST" }).first()).toBeVisible();
+    await expect(page.getByText("Midst").first()).toBeVisible();
     await expect(page.locator('input[type="email"]').first()).toBeVisible();
     await expect(page.locator('input[type="password"]').first()).toBeVisible();
     await expect(page.locator('button:has-text("Sign in")').first()).toBeVisible();

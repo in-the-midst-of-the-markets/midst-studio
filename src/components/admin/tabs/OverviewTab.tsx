@@ -88,7 +88,7 @@ const feedItemVariants: Variants = {
 
 const GAUGE_COLORS = {
   excellent: "#10b981",
-  good: "#3b82f6",
+  good: "#9546de",
   warning: "#f59e0b",
   critical: "#ef4444",
 };
@@ -599,7 +599,7 @@ function HeroStatusBanner({
 
             {/* Counter Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <CounterCard icon={Link2} label="Connections" value={animatedConns} suffix="" color="text-hue-blue" />
+              <CounterCard icon={Link2} label="Connections" value={animatedConns} suffix="" color="text-brand" />
               <CounterCard
                 icon={Zap}
                 label="Total Queries"
@@ -1131,9 +1131,9 @@ function QuickActionsSection() {
       description: "VACUUM, ANALYZE, and optimize your databases",
       icon: Wrench,
       href: "/admin/operations",
-      gradient: "from-blue-500/20 to-cyan-500/20",
-      iconColor: "text-hue-blue",
-      borderColor: "hover:border-hue-blue-tint/30",
+      gradient: "from-brand/20 to-brand-tint/20",
+      iconColor: "text-brand",
+      borderColor: "hover:border-brand-tint/30",
     },
     {
       label: "Security & Masking",
@@ -1167,7 +1167,7 @@ function QuickActionsSection() {
             key={action.label}
             href={withBasePath(action.href)}
             whileHover={{ scale: 1.02, y: -4 }}
-            className={`group relative rounded-xl border border-hairline ${action.borderColor} bg-panel p-5 transition-all duration-200 cursor-pointer block overflow-hidden hover:shadow-[0_0_30px_rgba(59,130,246,0.06)]`}
+            className={`group relative rounded-xl border border-hairline ${action.borderColor} bg-panel p-5 transition-all duration-200 cursor-pointer block overflow-hidden hover:shadow-[0_0_30px_rgba(149,70,222,0.06)]`}
           >
             {/* Background gradient on hover */}
             <div
@@ -1259,9 +1259,9 @@ function EmptyState() {
             className="relative p-5 rounded-2xl border border-hairline-strong bg-panel"
             animate={{
               boxShadow: [
-                "0 0 20px rgba(59,130,246,0.1)",
-                "0 0 40px rgba(59,130,246,0.2)",
-                "0 0 20px rgba(59,130,246,0.1)",
+                "0 0 20px rgba(149,70,222,0.1)",
+                "0 0 40px rgba(149,70,222,0.2)",
+                "0 0 20px rgba(149,70,222,0.1)",
               ],
             }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -1301,7 +1301,7 @@ function EmptyState() {
         <motion.div variants={itemVariants}>
           <Button
             asChild
-            className="bg-brand-solid hover:bg-brand-solid-hover text-white px-6 py-2.5 shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:shadow-[0_0_40px_rgba(59,130,246,0.4)] transition-all"
+            className="bg-brand-solid hover:bg-brand-solid-hover text-white px-6 py-2.5 shadow-[0_0_30px_rgba(149,70,222,0.3)] hover:shadow-[0_0_40px_rgba(149,70,222,0.4)] transition-all"
           >
             <Link href="/">Connect Your First Database</Link>
           </Button>

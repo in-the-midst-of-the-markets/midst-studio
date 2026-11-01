@@ -29,14 +29,14 @@ describe("formatCellValue parity", () => {
   test("object compact-stringifies on a single line", () => {
     expect(formatCellValue({ a: 1, b: "x" })).toEqual({
       display: '{"a":1,"b":"x"}',
-      className: "text-hue-blue/80 italic font-light",
+      className: "text-brand/80 italic font-light",
     });
   });
 
   test("array compact-stringifies on a single line", () => {
     expect(formatCellValue([1, 2, 3])).toEqual({
       display: "[1,2,3]",
-      className: "text-hue-blue/80 italic font-light",
+      className: "text-brand/80 italic font-light",
     });
   });
 

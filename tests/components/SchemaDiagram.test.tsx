@@ -1638,7 +1638,7 @@ describe("SchemaDiagram", () => {
       const { container } = renderEdge(store, false);
       const path = container.querySelector('[data-testid="mock-base-edge"]') as HTMLElement;
       expect(path).not.toBeNull();
-      expect(path.style.stroke).toBe("#3b82f6");
+      expect(path.style.stroke).toBe("#9546de");
       expect(path.style.strokeDasharray).toBe("");
       expect(within(container).queryByText("1:N")).toBeNull();
     });

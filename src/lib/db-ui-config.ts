@@ -97,7 +97,7 @@ function branded<F extends object>(form: F, icon: DBIcon, color: string): F & { 
 export const DB_UI_CONFIG: {
   [T in DatabaseType]: Omit<DatabaseUIConfig, "fieldPlacement"> & FieldPlacementDeclaration<T>;
 } = {
-  postgres: branded(CONNECTION_FORM.postgres, PostgreSQLIcon, "text-hue-blue"),
+  postgres: branded(CONNECTION_FORM.postgres, PostgreSQLIcon, "text-hue-blue bg-hue-blue-tint/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

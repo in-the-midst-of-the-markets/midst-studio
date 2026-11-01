@@ -37,10 +37,10 @@ describe("LoginPage (OIDC mode)", () => {
     expect(queryByText("User")).toBeNull();
   });
 
-  test("renders the MIDST wordmark", () => {
-    // Desktop hero and the mobile header each carry the wordmark.
-    const { getAllByRole } = render(<LoginForm authProvider="oidc" passkey={null} />);
-    expect(getAllByRole("img", { name: "MIDST" }).length).toBeGreaterThan(0);
+  test("renders the Midst mark with its name", () => {
+    // Desktop hero and the mobile header each carry the mark and the word.
+    const { getAllByText } = render(<LoginForm authProvider="oidc" passkey={null} />);
+    expect(getAllByText("Midst").length).toBeGreaterThan(0);
   });
 
   test("shows error message when error param is present", () => {

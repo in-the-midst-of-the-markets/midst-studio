@@ -66,7 +66,7 @@ function inferFakerType(colName: string, colType: string): { generator: string; 
     return { generator: "paragraph", example: "Lorem ipsum dolor sit amet..." };
   if (name.includes("avatar") || name.includes("image") || name.includes("photo") || name.includes("picture"))
     return { generator: "imageUrl", example: "https://picsum.photos/200" };
-  if (name.includes("color") || name.includes("colour")) return { generator: "color", example: "#3b82f6" };
+  if (name.includes("color") || name.includes("colour")) return { generator: "color", example: "#9546de" };
   if (name.includes("ip")) return { generator: "ip", example: "192.168.1.1" };
   if (name.includes("username") || name === "login") return { generator: "username", example: "johndoe42" };
   if (name.includes("password") || name.includes("hash") || name.includes("token") || name.includes("secret"))
@@ -606,9 +606,7 @@ export function TestDataGenerator({
 
         {/* Preview */}
         <div className="flex-1 overflow-auto relative">
-          <pre className="p-5 text-xs font-mono text-hue-blue-alt whitespace-pre-wrap leading-relaxed">
-            {generatedQuery}
-          </pre>
+          <pre className="p-5 text-xs font-mono text-brand whitespace-pre-wrap leading-relaxed">{generatedQuery}</pre>
         </div>
 
         {/* Actions */}

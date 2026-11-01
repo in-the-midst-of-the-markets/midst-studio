@@ -585,7 +585,7 @@ function AuditStats() {
                     width={30}
                   />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="count" name="Queries" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" name="Queries" fill="#9546de" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -402,7 +402,7 @@ export const BottomPanel = React.memo(function BottomPanel({
       key: "results",
       label: "Results",
       icon: <LayoutGrid strokeWidth={1.5} className="w-3 h-3" />,
-      activeClass: "text-hue-blue border-hue-blue-tint bg-fill",
+      activeClass: "text-brand border-brand-tint bg-fill",
     },
     {
       key: "graph",
@@ -535,7 +535,7 @@ export const BottomPanel = React.memo(function BottomPanel({
                 {exportArtifact !== null && (
                   // Stated before the formats, because it changes what the file IS:
                   // these are a run's rows, and the name will say so.
-                  <div data-testid="export-provenance" className="px-2 pb-1.5 text-xs text-hue-blue-alt/90">
+                  <div data-testid="export-provenance" className="px-2 pb-1.5 text-xs text-brand">
                     Saved as agent run <span className="font-mono text-[0.625rem]">{exportArtifact.runId}</span>&apos;s
                     own file.
                   </div>
@@ -587,9 +587,9 @@ export const BottomPanel = React.memo(function BottomPanel({
       {hydratedHere && agentArtifact !== null && (
         <div
           data-testid="agent-provenance"
-          className="flex items-center justify-between gap-2 px-3 py-1 border-b border-hue-blue-tint/20 bg-hue-blue-tint/5"
+          className="flex items-center justify-between gap-2 px-3 py-1 border-b border-brand-tint/20 bg-brand-tint/5"
         >
-          <span className="text-xs text-hue-blue-alt/90">
+          <span className="text-xs text-brand">
             Stored by agent run <span className="font-mono text-[0.625rem]">{agentArtifact.runId}</span> via{" "}
             <span className="font-mono text-[0.625rem]">{agentArtifact.operationId}</span>{" "}
             {/* The audit correlation id: what joins these rows to the audit line for

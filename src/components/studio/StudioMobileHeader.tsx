@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { GitHubRepoLink } from "@/components/github-repo-link";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MidstLockup } from "@/components/midst-logo";
 import { writeToClipboard } from "@/components/copy-button";
 import { toast } from "sonner";
 
@@ -276,6 +277,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+          <MidstLockup markClassName="h-6 w-6" wordClassName="text-sm" />
         </div>
       </div>
 

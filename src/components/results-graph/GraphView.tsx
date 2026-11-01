@@ -298,7 +298,7 @@ export function GraphView({
             aria-label={graphAriaLabel(graph)}
             tabIndex={0}
             onKeyDown={onKeyDown}
-            className="h-full w-full bg-sunken focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hue-blue"
+            className="h-full w-full bg-sunken focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
           />
           {/* oxlint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
           {!ready && <ViewLoading label="Drawing the graph" className="absolute inset-0" />}
@@ -311,7 +311,7 @@ export function GraphView({
         <section
           aria-label="Graph legend and details"
           tabIndex={0}
-          className="shrink-0 max-h-[40%] md:max-h-none md:w-72 overflow-auto border-t md:border-t-0 md:border-l border-hairline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-hue-blue"
+          className="shrink-0 max-h-[40%] md:max-h-none md:w-72 overflow-auto border-t md:border-t-0 md:border-l border-hairline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand"
         >
           {/* oxlint-enable jsx-a11y/no-noninteractive-tabindex */}
           {selected && <Inspector selected={selected} graph={graph} onClose={clearSelection} />}

@@ -147,11 +147,11 @@ describe("renderCompact", () => {
   test("jsonRenderer compact-stringifies objects and arrays on a single line", () => {
     expect(jsonRenderer.renderCompact({ a: 1 })).toEqual({
       display: '{"a":1}',
-      className: "text-hue-blue/80 italic font-light",
+      className: "text-brand/80 italic font-light",
     });
     expect(jsonRenderer.renderCompact([1, 2])).toEqual({
       display: "[1,2]",
-      className: "text-hue-blue/80 italic font-light",
+      className: "text-brand/80 italic font-light",
     });
   });
 

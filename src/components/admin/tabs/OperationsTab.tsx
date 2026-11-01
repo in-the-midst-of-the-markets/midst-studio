@@ -80,8 +80,8 @@ import { CatalogSelect } from "@/components/catalog-select";
  */
 const TABLE_ACTIONS: { type: MaintenanceType; label: string; Icon: LucideIcon; hover: string }[] = [
   { type: "analyze", label: "Analyze", Icon: Search, hover: "hover:text-hue-yellow" },
-  { type: "vacuum", label: "Vacuum", Icon: HardDrive, hover: "hover:text-hue-blue" },
-  { type: "optimize", label: "Optimize", Icon: Wrench, hover: "hover:text-hue-blue" },
+  { type: "vacuum", label: "Vacuum", Icon: HardDrive, hover: "hover:text-brand" },
+  { type: "optimize", label: "Optimize", Icon: Wrench, hover: "hover:text-brand" },
   { type: "reindex", label: "Reindex", Icon: RefreshCw, hover: "hover:text-hue-purple" },
   { type: "check", label: "Check", Icon: ShieldCheck, hover: "hover:text-hue-green" },
 ];
@@ -779,13 +779,13 @@ export function OperationsTab() {
             {globalVacuum && (
               <div className="p-4 rounded-xl border border-hairline bg-fill-subtle hover:bg-fill transition-colors">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-hue-blue-tint/10 border border-hue-blue-tint/20 flex items-center justify-center">
-                    <HardDrive className="w-4 h-4 text-hue-blue" />
+                  <div className="w-8 h-8 rounded-lg bg-brand-tint/10 border border-brand-tint/20 flex items-center justify-center">
+                    <HardDrive className="w-4 h-4 text-brand" />
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs border-hairline-strong hover:bg-hue-blue-tint/10 hover:text-hue-blue"
+                    className="h-7 text-xs border-hairline-strong hover:bg-brand-tint/10 hover:text-brand"
                     onClick={() => handleRunMaintenance(vacuumOperation)}
                     disabled={!!actionLoading || !selectedConnection}
                   >
