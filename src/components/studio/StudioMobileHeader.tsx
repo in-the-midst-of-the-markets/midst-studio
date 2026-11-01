@@ -151,6 +151,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
       {/* Row 1: DB Selector + Connection Info + User */}
       <div className="h-12 flex items-center justify-between px-3">
         <div className="flex items-center gap-2 flex-1 min-w-0">
+          <MidstLockup className="shrink-0" markClassName="h-6 w-6" wordClassName="text-sm" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -277,7 +278,6 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <MidstLockup markClassName="h-6 w-6" wordClassName="text-sm" />
         </div>
       </div>
 

@@ -150,6 +150,12 @@ describe("StudioMobileHeader", () => {
     mockOnImport.mockClear();
   });
 
+  test("shows the Midst lockup at the start of the header", () => {
+    const { container } = render(<StudioMobileHeader {...defaults} />);
+    const left = container.querySelector("header > div > div");
+    expect(left?.firstElementChild?.textContent).toBe("Midst");
+  });
+
   test("renders DB selector and Online badge", () => {
     const { queryAllByText, container } = render(<StudioMobileHeader {...defaults} />);
     expect(queryAllByText("prod-db").length).toBeGreaterThan(0);

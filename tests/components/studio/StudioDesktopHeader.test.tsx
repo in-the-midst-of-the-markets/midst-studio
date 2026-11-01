@@ -100,6 +100,11 @@ describe("StudioDesktopHeader", () => {
     cleanup();
   });
 
+  test("leaves the product name to the sidebar", () => {
+    const { queryByText } = render(<StudioDesktopHeader {...defaultProps} />);
+    expect(queryByText("Midst")).toBeNull();
+  });
+
   // ── Connection Info (Left Section) ──
 
   describe("connection info", () => {

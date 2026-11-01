@@ -31,7 +31,7 @@ describe("web app manifest", () => {
 
   test("describes Midst as an installable standalone app", () => {
     expect(manifest).toMatchObject({
-      name: "Midst",
+      name: "in the Midst of the markets",
       short_name: "Midst",
       start_url: ".",
       display: "standalone",

@@ -212,11 +212,13 @@ describe("Sidebar", () => {
     }
   });
 
-  test("renders the Midst mark", () => {
+  test("renders the Midst mark with its name at the top of the sidebar", () => {
     const props = createDefaultProps();
-    const { getByRole } = render(<Sidebar {...props} />);
+    const { getByText, container } = render(<Sidebar {...props} />);
 
-    expect(getByRole("img", { name: "Midst" })).toBeTruthy();
+    const header = container.querySelector(".h-14");
+    expect(header?.textContent).toContain("Midst");
+    expect(getByText("Midst")).toBeTruthy();
   });
 
   test('shows "Add Connection" button (Plus icon)', () => {

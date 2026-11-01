@@ -36,7 +36,7 @@ describe("RootLayout", () => {
   });
 
   test("exports correct metadata title", () => {
-    expect(metadata.title).toBe("Midst");
+    expect(metadata.title).toBe("in the Midst of the markets");
   });
 
   test("shares a branded static image with matching Open Graph and Twitter metadata", () => {

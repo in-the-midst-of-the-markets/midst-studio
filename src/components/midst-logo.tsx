@@ -11,7 +11,7 @@ interface MidstMarkProps {
  * The product mark. Same artwork as the browser tab icon: a purple rounded
  * square with a white M. It carries its own ground, so it reads on light and dark chrome.
  */
-export function MidstMark({ className, alt = "" }: MidstMarkProps) {
+function MidstMark({ className, alt = "" }: MidstMarkProps) {
   return <img src={withBasePath("/midst-logo.png")} alt={alt} className={cn("object-contain", className)} />;
 }
 
@@ -22,8 +22,8 @@ interface MidstLockupProps {
 }
 
 /**
- * The mark with the word beside it. The top-right of the app, and the sign-in
- * brand, use this. Other marks stay the icon alone.
+ * The mark with the word beside it. The top-left of the app, and the sign-in
+ * brand, use this.
  */
 export function MidstLockup({ className, markClassName, wordClassName }: MidstLockupProps) {
   return (
