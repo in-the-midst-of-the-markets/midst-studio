@@ -56,8 +56,10 @@ interface StudioOverlaysProps {
   onConfirmDelete: () => void;
   onSelectConnection: (connection: DatabaseConnection) => void;
   onTableClick: (path: readonly string[]) => void;
-  /** Absent while the server refuses custom connections; the palette then offers no New Connection. */
+  /** Absent while the server refuses custom connections; the palette then offers no Add Internal Data. */
   onAddConnection?: () => void;
+  /** Absent in a shell with no marketplace route; the palette then offers no Search Marketplace. */
+  onSearchMarketplace?: () => void;
   onExecuteQuery: () => void;
   onLoadSavedQuery: (query: string) => void;
   onLoadHistoryQuery: (query: string) => void;
@@ -95,6 +97,7 @@ export function StudioOverlays({
   onSelectConnection,
   onTableClick,
   onAddConnection,
+  onSearchMarketplace,
   onExecuteQuery,
   onLoadSavedQuery,
   onLoadHistoryQuery,
@@ -183,6 +186,7 @@ export function StudioOverlays({
         onSelectConnection={onSelectConnection}
         onTableClick={onTableClick}
         onAddConnection={onAddConnection}
+        onSearchMarketplace={onSearchMarketplace}
         onExecuteQuery={onExecuteQuery}
         onLoadSavedQuery={onLoadSavedQuery}
         onLoadHistoryQuery={onLoadHistoryQuery}

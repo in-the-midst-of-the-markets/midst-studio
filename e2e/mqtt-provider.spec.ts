@@ -25,7 +25,7 @@ test.describe("MQTT in the connection dialog", () => {
 
     // By name, not by position: the header draws Show ERD Diagram before it once the sample's capabilities load,
     // and `.first()` clicked that instead whenever they had loaded before the click.
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
   });
 

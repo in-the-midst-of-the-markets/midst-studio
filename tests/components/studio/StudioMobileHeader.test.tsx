@@ -396,30 +396,50 @@ describe("StudioMobileHeader", () => {
     expect(mockOnImport).toHaveBeenCalledTimes(1);
   });
 
-  test("shows Add Connection item when connections list is empty and click calls onAddConnection", () => {
+  test("shows Add Internal Data when the connections list is empty and click calls onAddConnection", () => {
     const onAddConnection = mock(() => {});
     const { queryByText } = render(
       <StudioMobileHeader {...defaults} connections={[]} activeConnection={null} onAddConnection={onAddConnection} />,
     );
-    const item = queryByText("Add Connection");
+    const item = queryByText("Add Internal Data");
     expect(item).not.toBeNull();
-    // The "Add New" variant only renders when connections exist
-    expect(queryByText("Add New")).toBeNull();
     fireEvent.click(item!.closest('[role="menuitem"]')!);
     expect(onAddConnection).toHaveBeenCalledTimes(1);
   });
 
-  test("draws neither Add item when the shell offers no add handler", () => {
+  test("draws no Add Internal Data item when the shell offers no add handler", () => {
     const listed = render(<StudioMobileHeader {...defaults} />);
-    expect(listed.queryByText("Add New")).not.toBeNull();
+    expect(listed.queryByText("Add Internal Data")).not.toBeNull();
 
     listed.rerender(<StudioMobileHeader {...defaults} onAddConnection={undefined} />);
-    expect(listed.queryByText("Add New")).toBeNull();
+    expect(listed.queryByText("Add Internal Data")).toBeNull();
 
     listed.rerender(
       <StudioMobileHeader {...defaults} connections={[]} activeConnection={null} onAddConnection={undefined} />,
     );
-    expect(listed.queryByText("Add Connection")).toBeNull();
+    expect(listed.queryByText("Add Internal Data")).toBeNull();
+  });
+
+  test("Search Marketplace calls onSearchMarketplace from an empty list and from a populated one", () => {
+    const onSearchMarketplace = mock(() => {});
+    const listed = render(
+      <StudioMobileHeader
+        {...defaults}
+        connections={[]}
+        activeConnection={null}
+        onAddConnection={undefined}
+        onSearchMarketplace={onSearchMarketplace}
+      />,
+    );
+    fireEvent.click(listed.getByText("Search Marketplace").closest('[role="menuitem"]')!);
+    expect(onSearchMarketplace).toHaveBeenCalledTimes(1);
+
+    listed.rerender(<StudioMobileHeader {...defaults} onSearchMarketplace={onSearchMarketplace} />);
+    fireEvent.click(listed.getByText("Search Marketplace").closest('[role="menuitem"]')!);
+    expect(onSearchMarketplace).toHaveBeenCalledTimes(2);
+
+    listed.rerender(<StudioMobileHeader {...defaults} />);
+    expect(listed.queryByText("Search Marketplace")).toBeNull();
   });
 
   test("Copy Query click writes the editor query to the clipboard", () => {

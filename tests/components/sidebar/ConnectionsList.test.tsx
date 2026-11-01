@@ -132,11 +132,11 @@ describe("ConnectionsList", () => {
     );
 
     expect(queryByText("No database connections established yet.")).not.toBeNull();
-    // Empty state has an "Add Connection" button
-    expect(queryByText("Add Connection")).not.toBeNull();
+    // Empty state has an "Add Internal Data" button
+    expect(queryByText("Add Internal Data")).not.toBeNull();
   });
 
-  test("an empty list draws no Add Connection button when the shell offers none", () => {
+  test("an empty list draws no Add Internal Data button when the shell offers none", () => {
     const { queryByText } = render(
       <ConnectionsList
         connections={[]}
@@ -147,7 +147,80 @@ describe("ConnectionsList", () => {
     );
 
     expect(queryByText("No database connections established yet.")).not.toBeNull();
-    expect(queryByText("Add Connection")).toBeNull();
+    expect(queryByText("Add Internal Data")).toBeNull();
+    expect(queryByText("Search Marketplace")).toBeNull();
+  });
+
+  test("an empty list offers Search Marketplace beside Add Internal Data", () => {
+    const onSearchMarketplace = mock(() => {});
+    const { getByRole } = render(
+      <ConnectionsList
+        connections={[]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onAddConnection={defaultOnAdd}
+        onSearchMarketplace={onSearchMarketplace}
+      />,
+    );
+
+    const button = getByRole("button", { name: "Search Marketplace" });
+    expect(button.className.includes("w-full")).toBe(false);
+    fireEvent.click(button);
+    expect(onSearchMarketplace).toHaveBeenCalledTimes(1);
+    expect(getByRole("button", { name: "Add Internal Data" })).not.toBeNull();
+  });
+
+  test("an empty list can offer Search Marketplace without Add Internal Data", () => {
+    const { getByRole, queryByRole } = render(
+      <ConnectionsList
+        connections={[]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onSearchMarketplace={() => {}}
+      />,
+    );
+
+    expect(queryByRole("button", { name: "Add Internal Data" })).toBeNull();
+    expect(getByRole("button", { name: "Search Marketplace" }).className.includes("w-full")).toBe(false);
+  });
+
+  test("a populated list offers Search Marketplace across the width", () => {
+    const onSearchMarketplace = mock(() => {});
+    const { getByRole, queryByText } = render(
+      <ConnectionsList
+        connections={[mockPostgresConnection]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onSearchMarketplace={onSearchMarketplace}
+      />,
+    );
+
+    const button = getByRole("button", { name: "Search Marketplace" });
+    expect(button.className.includes("w-full")).toBe(true);
+    fireEvent.click(button);
+    expect(onSearchMarketplace).toHaveBeenCalledTimes(1);
+    expect(queryByText("No database connections established yet.")).toBeNull();
+  });
+
+  test("an outage still offers Search Marketplace", () => {
+    const { getByRole, queryByText } = render(
+      <ConnectionsList
+        connections={[]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        governed
+        accessUnavailable
+        onSearchMarketplace={() => {}}
+      />,
+    );
+
+    expect(getByRole("button", { name: "Search Marketplace" }).className.includes("w-full")).toBe(true);
+    expect(queryByText("No databases have been granted to you yet. Ask an administrator for access.")).toBeNull();
+    expect(queryByText("No database connections established yet.")).toBeNull();
   });
 
   test("an empty governed list shows the no-grants message", () => {
@@ -163,7 +236,7 @@ describe("ConnectionsList", () => {
 
     expect(queryByText("No databases have been granted to you yet. Ask an administrator for access.")).not.toBeNull();
     expect(queryByText("No database connections established yet.")).toBeNull();
-    expect(queryByText("Add Connection")).toBeNull();
+    expect(queryByText("Add Internal Data")).toBeNull();
   });
 
   test("the unavailable state shows the temporary unavailability banner", () => {
@@ -270,7 +343,7 @@ describe("ConnectionsList", () => {
       />,
     );
 
-    const addButton = getByText("Add Connection");
+    const addButton = getByText("Add Internal Data");
     fireEvent.click(addButton);
 
     expect(defaultOnAdd).toHaveBeenCalledTimes(1);

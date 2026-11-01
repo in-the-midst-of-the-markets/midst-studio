@@ -79,7 +79,7 @@ async function signIn(page: Page): Promise<void> {
 test.describe("NETCONF in the connection dialog", () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
     await page.locator('[role="dialog"]').getByRole("button", { name: "NETCONF", exact: true }).click();
   });
@@ -153,7 +153,7 @@ test.describe("a read of the fixture, as a reader sees it", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await dialog.getByRole("button", { name: "NETCONF", exact: true }).click();
@@ -267,7 +267,7 @@ test.describe("the Keys panel, as a reader reaches it", () => {
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 5000 });
     await dialog.getByRole("button", { name: "NETCONF", exact: true }).click();

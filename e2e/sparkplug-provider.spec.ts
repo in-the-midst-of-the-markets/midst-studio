@@ -66,7 +66,7 @@ test.describe("Sparkplug B in the connection dialog", () => {
     await page.waitForURL("/");
     await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.locator('button[aria-label="Add Internal Data"]').click();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
   });
 

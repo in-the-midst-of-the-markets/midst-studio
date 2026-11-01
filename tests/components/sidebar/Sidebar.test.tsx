@@ -221,7 +221,7 @@ describe("Sidebar", () => {
     expect(getByText("Midst")).toBeTruthy();
   });
 
-  test('shows "Add Connection" button (Plus icon)', () => {
+  test('shows "Add Internal Data" button (Plus icon)', () => {
     const onAddConnection = mock(() => {});
     const props = createDefaultProps({ onAddConnection });
     const { getAllByRole } = render(<Sidebar {...props} />);
@@ -645,7 +645,7 @@ describe("Sidebar", () => {
     const props = createDefaultProps();
     const { getByRole } = render(<Sidebar {...props} />);
 
-    const button = getByRole("button", { name: "New connection" });
+    const button = getByRole("button", { name: "Add Internal Data" });
     fireEvent.click(button);
 
     expect(props.onAddConnection).toHaveBeenCalledTimes(1);
@@ -656,8 +656,21 @@ describe("Sidebar", () => {
   test("draws no new-connection control when the shell offers none", () => {
     const { queryByRole } = render(<Sidebar {...createDefaultProps({ onAddConnection: undefined })} />);
 
-    expect(queryByRole("button", { name: "New connection" })).toBeNull();
+    expect(queryByRole("button", { name: "Add Internal Data" })).toBeNull();
     expect(capturedGroupProps.onAddConnection).toBeUndefined();
+  });
+
+  test("hands Search Marketplace to the connection list", () => {
+    const onSearchMarketplace = mock(() => {});
+    render(<Sidebar {...createDefaultProps({ onSearchMarketplace })} />);
+
+    expect(capturedGroupProps.onSearchMarketplace).toBe(onSearchMarketplace);
+  });
+
+  test("omits Search Marketplace when the shell does not hand it over", () => {
+    render(<Sidebar {...createDefaultProps()} />);
+
+    expect(capturedGroupProps.onSearchMarketplace).toBeUndefined();
   });
 
   /**

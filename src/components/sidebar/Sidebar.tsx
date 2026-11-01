@@ -85,10 +85,15 @@ interface SidebarProps {
   onMoveConnectionToGroup?: (connectionId: string, groupId: string | null) => void;
   /**
    * Opens the connection dialog. Absent means the shell offers no new connection, and neither
-   * the header's New connection nor the empty list's Add Connection is drawn: the standalone shell
-   * withholds it while the server refuses custom connections (`ALLOW_CUSTOM_CONNECTIONS`).
+   * the header's Add Internal Data nor the empty list's Add Internal Data is drawn: the standalone
+   * shell withholds it while the server refuses custom connections (`ALLOW_CUSTOM_CONNECTIONS`).
    */
   onAddConnection?: () => void;
+  /**
+   * Opens the marketplace. Absent in the embedded workspace. Not withheld with custom connections:
+   * subscribing to third-party data is a Stripe checkout, not a connection of the user's own.
+   */
+  onSearchMarketplace?: () => void;
   /** Under governance: the list holds the granted connections, and an empty one says none are granted yet. */
   governed?: boolean;
   /** Under governance: the granted connections could not be served at the last read. */
@@ -194,6 +199,7 @@ export const Sidebar = React.memo(function Sidebar({
   onToggleGroupCollapsed,
   onMoveConnectionToGroup,
   onAddConnection,
+  onSearchMarketplace,
   governed,
   connectionAccessUnavailable,
   onObjectClick,
@@ -401,8 +407,8 @@ export const Sidebar = React.memo(function Sidebar({
           {onAddConnection && (
             <button
               className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="New connection"
-              title="New connection"
+              aria-label="Add Internal Data"
+              title="Add Internal Data"
               onClick={onAddConnection}
             >
               <Plus strokeWidth={1.5} className="w-3.5 h-3.5" />
@@ -437,6 +443,7 @@ export const Sidebar = React.memo(function Sidebar({
           onToggleGroupCollapsed={onToggleGroupCollapsed}
           onMoveConnectionToGroup={onMoveConnectionToGroup}
           onAddConnection={onAddConnection}
+          onSearchMarketplace={onSearchMarketplace}
           governed={governed}
           accessUnavailable={connectionAccessUnavailable}
         />
