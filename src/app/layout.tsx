@@ -1,14 +1,24 @@
 import { withBasePath } from "@/lib/config/base-path";
 import { GeistMono } from "geist/font/mono";
-// Self-hosted Geist (the `geist` package wraps next/font/local around the woff2
-// files it ships). next/font/google would fetch fonts.googleapis.com at BUILD
-// time, so `next build` failed in offline or egress-restricted environments;
-// the rendered output is identical since Next self-hosts either way. The CSS
-// variable names must stay --font-geist-sans/mono: globals.css maps them to
-// --font-sans/--font-mono.
-import { GeistSans } from "geist/font/sans";
+// Montserrat is the marketing face (weights 300, 400, 500, 700, 800). The files
+// are vendored under src/fonts so the build never fetches fonts.googleapis.com.
+// The CSS variable name stays --font-geist-sans: globals.css maps that name to
+// --font-sans, and the editor keeps Geist Mono on --font-geist-mono.
+import localFont from "next/font/local";
 import type { Metadata } from "next";
 import "./globals.css";
+
+const Montserrat = localFont({
+  src: [
+    { path: "../fonts/montserrat/montserrat-latin-300-normal.woff2", weight: "300", style: "normal" },
+    { path: "../fonts/montserrat/montserrat-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "../fonts/montserrat/montserrat-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/montserrat/montserrat-latin-700-normal.woff2", weight: "700", style: "normal" },
+    { path: "../fonts/montserrat/montserrat-latin-800-normal.woff2", weight: "800", style: "normal" },
+  ],
+  variable: "--font-geist-sans",
+  display: "swap",
+});
 import { SessionEndedRedirect } from "@/components/auth/SessionEndedRedirect";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -43,10 +53,10 @@ export const metadata: Metadata = {
   manifest: withBasePath("/site.webmanifest"),
   icons: {
     icon: [
-      { url: withBasePath("/favicon.ico?v=3"), sizes: "any" },
-      { url: withBasePath("/logo.svg?v=3"), type: "image/svg+xml" },
+      { url: withBasePath("/favicon.ico?v=4"), sizes: "any" },
+      { url: withBasePath("/midst-mark.png"), type: "image/png" },
     ],
-    shortcut: withBasePath("/favicon.ico?v=3"),
+    shortcut: withBasePath("/favicon.ico?v=4"),
     apple: [{ url: withBasePath("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" }],
   },
 };
@@ -67,7 +77,7 @@ export default function RootLayout({
         one theme. It is now owned by ThemeProvider, which writes it onto <html>
         (`attribute="class"`) and restores the user's choice before paint.
       */}
-      <body suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable} antialiased font-sans`}>
+      <body suppressHydrationWarning className={`${Montserrat.variable} ${GeistMono.variable} antialiased font-sans`}>
         <ThemeProvider>
           {children}
           <SessionEndedRedirect />

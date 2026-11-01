@@ -10,7 +10,7 @@ test.describe("Login Flow", () => {
   });
 
   test("shows login page with email and password fields", async ({ page }) => {
-    await expect(page.locator("text=LibreDB Studio").first()).toBeVisible();
+    await expect(page.getByRole("img", { name: "MIDST" }).first()).toBeVisible();
     await expect(page.locator('input[type="email"]').first()).toBeVisible();
     await expect(page.locator('input[type="password"]').first()).toBeVisible();
     await expect(page.locator('button:has-text("Sign in")').first()).toBeVisible();
@@ -244,7 +244,7 @@ test.describe("Login showcase", () => {
   // globals.css mapped --font-sans inside a plain @theme block, which Tailwind emits at :root,
   // where next/font's body-scoped --font-geist-sans does not exist; the reference resolved to
   // nothing, both faces sat at "unloaded", and body rendered Tailwind's preflight system stack.
-  test("hero renders in Geist, not the system font", async ({ page }) => {
+  test("hero renders in Montserrat, not the system font", async ({ page }) => {
     const fonts = await page.evaluate(async () => {
       await document.fonts.ready;
       const status: Record<string, string> = {};
@@ -259,9 +259,10 @@ test.describe("Login showcase", () => {
         heading: getComputedStyle(heading).fontFamily,
       };
     });
-    expect(fonts.status.GeistSans).toBe("loaded");
+    const used = fonts.body.split(",")[0]?.replace(/["']/g, "").trim() ?? "";
+    expect(fonts.status[used]).toBe("loaded");
+    expect(used).not.toMatch(/ui-sans-serif|GeistSans/);
     expect(fonts.status.GeistMono).toBe("loaded");
-    expect(fonts.body).toMatch(/^GeistSans\b/);
-    expect(fonts.heading).toMatch(/^GeistSans\b/);
+    expect(fonts.heading.split(",")[0]?.replace(/["']/g, "").trim()).toBe(used);
   });
 });

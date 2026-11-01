@@ -63,7 +63,7 @@ describe("chart palette", () => {
    * same side as the theme it was captured in.
    */
   test("the export ground matches the mode it was captured in", () => {
-    expect(dark.exportBackground).toBe("#080808");
+    expect(dark.exportBackground).toBe("#101010");
     expect(light.exportBackground).toBe("#fafafa");
   });
 });
@@ -81,13 +81,13 @@ describe("chart tooltip style", () => {
   });
 
   test("dark keeps the surface the charts already had", () => {
-    expect(chartTooltipStyle("dark").backgroundColor).toBe("#18181b");
-    expect(chartTooltipStyle("dark").color).toBe("#a1a1aa");
+    expect(chartTooltipStyle("dark").backgroundColor).toBe("#1a1a1a");
+    expect(chartTooltipStyle("dark").color).toBe("#ffffff");
   });
 
   test("light is a white card with ink on it", () => {
     expect(chartTooltipStyle("light").backgroundColor).toBe("#ffffff");
-    expect(chartTooltipStyle("light").color).toBe("#3f3f46");
+    expect(chartTooltipStyle("light").color).toBe("#333333");
   });
 
   /** Call sites spread it to vary one detail; the rest must survive that. */

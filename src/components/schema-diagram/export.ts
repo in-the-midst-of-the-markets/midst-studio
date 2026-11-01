@@ -17,7 +17,7 @@ export const MAX_CANVAS_AREA = 268_435_456;
  * these values match `--studio-canvas`, which is what the diagram sits on.
  */
 export const EXPORT_BACKGROUND = {
-  dark: "#050505",
+  dark: "#101010",
   light: "#f4f4f5",
 } as const;
 const EXPORT_PADDING = 32;

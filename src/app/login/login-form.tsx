@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Fingerprint, KeyRound, Lock, Mail, ShieldCheck, Shield } from "lucide-react";
 import { toast } from "sonner";
-import LibreDBLogo from "@/components/libredb-logo";
+import { MidstMark, MidstWordmark } from "@/components/midst-logo";
 import { CommunitySection } from "@/components/community-section";
 import { ConnectionSignature } from "@/components/login/connection-signature";
 import { DatabaseShowcase } from "@/components/login/database-showcase";
@@ -230,7 +230,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
       */}
       <div className="dark hidden lg:flex lg:w-1/2 xl:w-[55%] relative overflow-hidden">
         <div className="absolute inset-0 bg-surface" />
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-cyan-950/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0070f3]/20 via-transparent to-[#421856]/15" />
 
         {/* Dot grid pattern */}
         <div
@@ -267,19 +267,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
         */}
         <div className="relative z-10 flex flex-col px-12 py-6 w-full overflow-y-auto">
           {/* Top: Logo */}
-          <a
-            href="https://libredb.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 group w-fit"
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-fill-strong border border-hairline-strong group-hover:bg-fill-strong group-hover:border-hairline-strong transition-all duration-200">
-              <LibreDBLogo className="h-9 w-9 text-brand" />
-            </div>
-            <span className="text-xl font-semibold text-white tracking-tight group-hover:text-brand transition-colors duration-200">
-              LibreDB Studio
-            </span>
-          </a>
+          <MidstWordmark className="h-9" />
 
           {/*
             Thesis, then evidence, then the proof numbers - three tiers of weight instead of
@@ -296,7 +284,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
             <div className="space-y-4 max-w-xl">
               <h1 className="text-4xl font-bold text-white tracking-tight leading-none">
                 The open-source SQL IDE that
-                <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-[#0070f3] to-[#421856] bg-clip-text text-transparent">
                   {" "}
                   deploys next to your data
                 </span>
@@ -348,26 +336,13 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
       <div className="flex w-full lg:w-1/2 xl:w-[45%] items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile branding (visible only on mobile) */}
-          <a
-            href="https://libredb.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="LibreDB Studio website"
-            className="flex flex-col items-center gap-4 lg:hidden group"
-          >
-            <div className="relative">
-              <div className="absolute -inset-2 rounded-full bg-brand-tint/20 blur-lg" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-raised border border-hairline-strong shadow-lg shadow-blue-500/10 group-hover:border-brand-tint/20 transition-all duration-200">
-                <LibreDBLogo className="h-12 w-12 text-brand" />
-              </div>
+          <div className="flex flex-col items-center gap-3 lg:hidden">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#101010]">
+              <MidstMark className="h-14 w-14" />
             </div>
-            <div className="text-center space-y-1">
-              <h2 className="text-2xl font-bold tracking-tight group-hover:text-brand transition-colors duration-200">
-                LibreDB Studio
-              </h2>
-              <p className="text-sm text-muted-foreground">Open-source SQL IDE for cloud-native teams</p>
-            </div>
-          </a>
+            <MidstWordmark className="h-8" />
+            <p className="text-sm text-muted-foreground">Open-source SQL IDE for cloud-native teams</p>
+          </div>
 
           <Card className="border-muted-foreground/10 shadow-2xl transition-all duration-300 hover:shadow-primary/5">
             {/* Desktop header inside card */}
@@ -377,7 +352,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
                 <span className="lg:hidden">Sign in</span>
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                <span className="hidden lg:inline">Sign in to your LibreDB Studio account</span>
+                <span className="hidden lg:inline">Sign in to your account</span>
                 <span className="lg:hidden">Enter your credentials to continue</span>
               </CardDescription>
             </CardHeader>
@@ -581,7 +556,7 @@ export default function LoginForm({ authProvider, passkey }: LoginFormProps) {
 
             <CardFooter className="pt-0 pb-6 flex flex-col items-center gap-2">
               <p className="text-xs text-muted-foreground font-medium text-center max-w-[240px]">
-                Enterprise-grade security powered by LibreDB Studio Engine
+                Enterprise-grade security for the databases you already run
               </p>
               <span className="text-[10px] text-muted-foreground/60 font-mono">
                 v{process.env.NEXT_PUBLIC_APP_VERSION}

@@ -35,8 +35,8 @@ describe("web app manifest", () => {
       short_name: "LibreDB",
       start_url: ".",
       display: "standalone",
-      theme_color: "#09090b",
-      background_color: "#09090b",
+      theme_color: "#101010",
+      background_color: "#101010",
     });
   });
 

@@ -1234,7 +1234,7 @@ describe("DataCharts", () => {
     document.documentElement.classList.add("dark");
     try {
       const options = await exportPngOptions();
-      expect(options.backgroundColor).toBe("#080808");
+      expect(options.backgroundColor).toBe("#101010");
       expect(options.scale).toBe(2);
       expect(options.embedFonts).toBe(false);
     } finally {

@@ -10,14 +10,14 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#09090b",
-          color: "#fafafa",
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          backgroundColor: "#101010",
+          color: "#ffffff",
+          fontFamily: "Montserrat, system-ui, -apple-system, sans-serif",
         }}
       >
         <div style={{ textAlign: "center", maxWidth: 480, padding: 24 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Something went wrong</h1>
-          <p style={{ color: "#a1a1aa", marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Something went wrong</h1>
+          <p style={{ color: "#c4b4c6", marginBottom: 24 }}>
             An unexpected error occurred. Please try refreshing the page.
           </p>
           {error.digest && <p style={{ color: "#52525b", fontSize: 12, marginBottom: 16 }}>Error ID: {error.digest}</p>}
@@ -25,7 +25,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             onClick={reset}
             style={{
               padding: "10px 24px",
-              backgroundColor: "#3b82f6",
+              backgroundColor: "#0070f3",
               color: "#fff",
               border: "none",
               borderRadius: 8,
