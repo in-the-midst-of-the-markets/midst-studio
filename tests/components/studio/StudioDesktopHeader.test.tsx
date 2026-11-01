@@ -365,13 +365,11 @@ describe("StudioDesktopHeader", () => {
     const { container, getAllByRole } = render(<StudioDesktopHeader {...defaultProps} />);
     expect(container.textContent).not.toContain("v2.5.0");
     expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
+    expect(container.querySelector('nav[aria-label="Editor mode"]')).toBeNull();
     const ai = getAllByRole("link", { name: "AI" });
-    expect(ai.some((link) => link.getAttribute("href") === "/assist" && link.className.includes("bg-primary"))).toBe(
-      true,
-    );
-    expect(getAllByRole("link", { name: "IDE" }).some((link) => link.getAttribute("aria-current") === "page")).toBe(
-      true,
-    );
+    expect(ai).toHaveLength(1);
+    expect(ai[0]?.getAttribute("href")).toBe("/assist");
+    expect(ai[0]?.className.includes("bg-primary")).toBe(true);
   });
 
   // ── Combinations / Edge Cases ──
@@ -421,11 +419,11 @@ describe("StudioDesktopHeader", () => {
       expect(header?.className).toContain("z-30");
     });
 
-    test("header is hidden on mobile (hidden md:grid)", () => {
+    test("header is hidden on mobile", () => {
       const { container } = render(<StudioDesktopHeader {...defaultProps} />);
       const header = container.querySelector("header");
       expect(header?.className).toContain("hidden");
-      expect(header?.className).toContain("md:grid");
+      expect(header?.className).toContain("md:flex");
     });
   });
 

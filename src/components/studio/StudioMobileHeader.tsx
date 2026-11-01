@@ -4,7 +4,7 @@ import React, { type RefObject } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { QueryEditorRef } from "@/components/QueryEditor";
-import { AssistModeToggle, OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
+import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -290,10 +290,6 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
             </DropdownMenu>
           )}
         </div>
-      </div>
-
-      <div className="flex justify-center border-t border-hairline py-1.5">
-        <AssistModeToggle mode="traditional" />
       </div>
 
       {/* Row 2: Actions + RUN (only show when on editor tab) */}

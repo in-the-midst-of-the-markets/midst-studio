@@ -501,10 +501,11 @@ describe("StudioMobileHeader", () => {
     const { container, getAllByRole } = render(<StudioMobileHeader {...defaults} />);
     expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
     expect(container.textContent).not.toContain("v2.5.0");
+    expect(container.querySelector('nav[aria-label="Editor mode"]')).toBeNull();
     const ai = getAllByRole("link", { name: "AI" });
-    expect(ai.some((link) => link.getAttribute("href") === "/assist" && link.className.includes("bg-primary"))).toBe(
-      true,
-    );
+    expect(ai).toHaveLength(1);
+    expect(ai[0]?.getAttribute("href")).toBe("/assist");
+    expect(ai[0]?.className.includes("bg-primary")).toBe(true);
   });
 
   test("transactionActive=true shows TXN badge", () => {

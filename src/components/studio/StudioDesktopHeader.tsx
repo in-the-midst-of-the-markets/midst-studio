@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AssistModeToggle, OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
+import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
 
 /** What the pulse indicator reads for each state. Only Online animates: the others are not live. */
@@ -43,7 +43,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
   const router = useRouter();
 
   return (
-    <header className="hidden md:grid h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-hairline px-4 bg-surface/80 backdrop-blur-xl sticky top-0 z-30">
+    <header className="hidden md:flex h-14 items-center justify-between gap-3 border-b border-hairline px-4 bg-surface/80 backdrop-blur-xl sticky top-0 z-30">
       <div className="flex items-center gap-3">
         <div className="p-1.5 rounded-lg bg-brand-tint/10 border border-brand-tint/20">
           <Database strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
@@ -74,8 +74,6 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
           )}
         </div>
       </div>
-
-      <AssistModeToggle mode="traditional" />
 
       <div className="flex items-center justify-end gap-2">
         {connectionPulse && (

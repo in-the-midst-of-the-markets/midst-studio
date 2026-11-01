@@ -608,10 +608,10 @@ describe("AiAssist page", () => {
   test("asks how it can help and points back at the editor", async () => {
     const view = render(<AssistPage />);
     expect(await view.findByRole("heading", { name: "How can I help?" })).toBeTruthy();
-    expect(view.getByRole("link", { name: "AI", current: "page" }).getAttribute("href")).toBe("/assist");
-    const ide = view.getAllByRole("link", { name: "IDE" });
-    expect(ide.some((link) => link.getAttribute("href") === "/")).toBe(true);
-    expect(ide.some((link) => link.className.includes("bg-primary"))).toBe(true);
+    expect(view.queryByRole("navigation", { name: "Editor mode" })).toBeNull();
+    const ide = view.getByRole("link", { name: "IDE" });
+    expect(ide.getAttribute("href")).toBe("/");
+    expect(ide.className.includes("bg-primary")).toBe(true);
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
     expect(await view.findByText(/This server has no OpenRouter key/)).toBeTruthy();
   });
