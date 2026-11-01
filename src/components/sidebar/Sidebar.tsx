@@ -13,7 +13,6 @@ import { ObjectTree, type ObjectSource, type TreeRowActionHandlers } from "@/com
 import { KeyBrowser, type KeyPatternRequest } from "@/components/key-browser";
 import { prefixPattern } from "@/components/key-browser/tree";
 import { containerDepth, enumerableKinds } from "@/lib/db/object-kinds";
-import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { cn } from "@/lib/utils";
 import { ConnectionsList } from "./ConnectionsList";
@@ -613,7 +612,6 @@ export const Sidebar = React.memo(function Sidebar({
               {notChecked ? "Not checked" : "Connected"}
             </span>
           </div>
-          <OtherModeLink mode="traditional" />
         </div>
       </div>
     </div>
