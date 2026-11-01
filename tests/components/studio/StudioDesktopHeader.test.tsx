@@ -370,6 +370,9 @@ describe("StudioDesktopHeader", () => {
     expect(ai).toHaveLength(1);
     expect(ai[0]?.getAttribute("href")).toBe("/assist");
     expect(ai[0]?.className.includes("bg-primary")).toBe(true);
+    const dash = getAllByRole("link", { name: "Dash" });
+    expect(dash).toHaveLength(1);
+    expect(dash[0]?.getAttribute("href")).toBe("/create");
   });
 
   // ── Combinations / Edge Cases ──

@@ -4,7 +4,7 @@ import React, { type RefObject } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { QueryEditorRef } from "@/components/QueryEditor";
-import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
+import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -234,7 +234,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
           >
             <Gauge strokeWidth={1.5} className="w-3.5 h-3.5" />
           </Button>
-          <OtherModeLink mode="traditional" />
+          <ModeLinks page="ide" />
           {connectionPulse && (
             <div
               className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-fill"

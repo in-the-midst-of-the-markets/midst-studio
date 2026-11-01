@@ -413,8 +413,12 @@ function getCollectionData(collection: string): unknown {
       return storage.getSchemaSnapshots();
     case "saved_charts":
       return storage.getSavedCharts();
+    case "saved_dashboards":
+      return storage.getSavedDashboards();
     case "active_connection_id":
       return storage.getActiveConnectionId();
+    case "active_dashboard_id":
+      return storage.getActiveDashboardId();
     case "audit_log":
       return storage.getAuditLog();
     case "masking_config":
@@ -438,10 +442,13 @@ function getCollectionData(collection: string): unknown {
 
 /**
  * Whether the pull writes a collection the server answered: one it holds a value for, and
- * `active_connection_id` also when that value is null (the account has no active connection).
+ * an id the account may have cleared (`active_connection_id`, `active_dashboard_id`) also when
+ * that value is null.
  */
 function isPulled(collection: string, value: unknown): boolean {
-  return collection === "active_connection_id" ? value !== undefined : Boolean(value);
+  return collection === "active_connection_id" || collection === "active_dashboard_id"
+    ? value !== undefined
+    : Boolean(value);
 }
 
 /** Write server data directly to localStorage via storage key */

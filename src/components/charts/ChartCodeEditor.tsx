@@ -76,7 +76,7 @@ export function ChartCodeEditor({ value, error, edited, onChange, onReset }: Cha
   return (
     <div className="flex h-full min-h-48 flex-col gap-2 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-fg-muted">Chart code</span>
+        <span className="text-xs text-fg-muted">Chart code. The chart title is title.text.</span>
         {edited && (
           <button type="button" onClick={onReset} className="text-xs font-medium text-fg-secondary underline">
             Use generated chart

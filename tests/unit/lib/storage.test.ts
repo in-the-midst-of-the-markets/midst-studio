@@ -7,7 +7,14 @@ if (typeof globalThis.window === "undefined") {
 }
 
 import { storage } from "@/lib/storage";
-import type { DatabaseConnection, QueryHistoryItem, SavedQuery, SchemaSnapshot, SavedChartConfig } from "@/lib/types";
+import type {
+  DatabaseConnection,
+  QueryHistoryItem,
+  SavedQuery,
+  SchemaSnapshot,
+  SavedChartConfig,
+  SavedDashboard,
+} from "@/lib/types";
 
 // ============================================================================
 // Helpers — localStorage is cleared by afterEach in tests/setup.ts
@@ -368,5 +375,71 @@ describe("storage: broken JSON", () => {
   test("getSavedCharts returns empty array on invalid JSON", () => {
     localStorage.setItem("libredb_saved_charts", "corrupt");
     expect(storage.getSavedCharts()).toEqual([]);
+  });
+
+  test("getSavedDashboards returns empty array on invalid JSON", () => {
+    localStorage.setItem("libredb_saved_dashboards", "corrupt");
+    expect(storage.getSavedDashboards()).toEqual([]);
+  });
+});
+
+describe("storage: dashboards", () => {
+  const dashboard = (id: string, chartIds: string[] = []): SavedDashboard => ({
+    id,
+    name: id,
+    charts: chartIds.map((chartId) => ({ chartId, width: 480, height: 320 })),
+    createdAt: new Date("2025-01-01"),
+    updatedAt: new Date("2025-01-01"),
+  });
+
+  test("saves, replaces, and deletes a dashboard", () => {
+    expect(storage.getSavedDashboards()).toEqual([]);
+    storage.saveDashboard(dashboard("one"));
+    storage.saveDashboard(dashboard("two"));
+    storage.saveDashboard({ ...dashboard("one"), name: "Renamed" });
+    const saved = storage.getSavedDashboards();
+    expect(saved).toHaveLength(2);
+    expect(saved.find((item) => item.id === "one")?.name).toBe("Renamed");
+    expect(saved[0]?.createdAt).toBeInstanceOf(Date);
+    expect(saved[0]?.updatedAt).toBeInstanceOf(Date);
+    storage.deleteDashboard("one");
+    expect(storage.getSavedDashboards().map((item) => item.id)).toEqual(["two"]);
+  });
+
+  test("remembers and clears the active dashboard", () => {
+    storage.setActiveDashboardId("dash-1");
+    expect(storage.getActiveDashboardId()).toBe("dash-1");
+    storage.setActiveDashboardId(null);
+    expect(storage.getActiveDashboardId()).toBeNull();
+  });
+
+  test("deleteChart drops the chart from dashboards that placed it", () => {
+    storage.saveChart(makeChart({ id: "a" }));
+    storage.saveChart(makeChart({ id: "b" }));
+    storage.saveDashboard(dashboard("board", ["a", "b"]));
+    const collections: string[] = [];
+    const handler = (event: Event) => {
+      collections.push((event as CustomEvent).detail.collection);
+    };
+    window.addEventListener("libredb-storage-change", handler);
+    storage.deleteChart("a");
+    window.removeEventListener("libredb-storage-change", handler);
+    expect(storage.getSavedCharts().map((item) => item.id)).toEqual(["b"]);
+    expect(storage.getSavedDashboards()[0]?.charts.map((frame) => frame.chartId)).toEqual(["b"]);
+    expect(collections).toEqual(["saved_charts", "saved_dashboards"]);
+  });
+
+  test("deleteChart leaves dashboards alone when they do not use the chart", () => {
+    storage.saveChart(makeChart({ id: "a" }));
+    storage.saveDashboard(dashboard("board", ["b"]));
+    const collections: string[] = [];
+    const handler = (event: Event) => {
+      collections.push((event as CustomEvent).detail.collection);
+    };
+    window.addEventListener("libredb-storage-change", handler);
+    storage.deleteChart("a");
+    window.removeEventListener("libredb-storage-change", handler);
+    expect(storage.getSavedDashboards()[0]?.charts.map((frame) => frame.chartId)).toEqual(["b"]);
+    expect(collections).toEqual(["saved_charts"]);
   });
 });

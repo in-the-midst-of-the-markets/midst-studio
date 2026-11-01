@@ -20,6 +20,8 @@ export type {
   SavedQuery,
   SchemaSnapshot,
   SavedChartConfig,
+  SavedDashboard,
+  DashboardChartFrame,
   AggregationType,
   DateGrouping,
 } from "../lib/types";

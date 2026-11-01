@@ -12,7 +12,9 @@ const mockStorage = {
   getSavedQueries: mock(() => []),
   getSchemaSnapshots: mock(() => []),
   getSavedCharts: mock(() => []),
+  getSavedDashboards: mock(() => []),
   getActiveConnectionId: mock((): string | null => null),
+  getActiveDashboardId: mock((): string | null => null),
   getAuditLog: mock(() => []),
   getMaskingConfig: mock(() => ({
     enabled: true,
@@ -33,7 +35,9 @@ const ALL_COLLECTIONS = [
   "saved_queries",
   "schema_snapshots",
   "saved_charts",
+  "saved_dashboards",
   "active_connection_id",
+  "active_dashboard_id",
   "audit_log",
   "masking_config",
   "threshold_config",
@@ -304,7 +308,9 @@ describe("useStorageSync", () => {
       expect(mockStorage.getSavedQueries).toHaveBeenCalled();
       expect(mockStorage.getSchemaSnapshots).toHaveBeenCalled();
       expect(mockStorage.getSavedCharts).toHaveBeenCalled();
+      expect(mockStorage.getSavedDashboards).toHaveBeenCalled();
       expect(mockStorage.getActiveConnectionId).toHaveBeenCalled();
+      expect(mockStorage.getActiveDashboardId).toHaveBeenCalled();
       expect(mockStorage.getAuditLog).toHaveBeenCalled();
       expect(mockStorage.getMaskingConfig).toHaveBeenCalled();
       expect(mockStorage.getThresholdConfig).toHaveBeenCalled();
@@ -486,6 +492,22 @@ describe("useStorageSync", () => {
       expect(localStorage.getItem("libredb_workspace_owner")).toBe("admin@libredb.org");
     });
 
+    test("removes active_dashboard_id from localStorage when server returns null", async () => {
+      localStorage.setItem("libredb_server_migrated", "true");
+      localStorage.setItem("libredb_active_dashboard_id", "stale");
+      setupServerMode({
+        "/api/storage": { ok: true, status: 200, json: { active_dashboard_id: null } },
+      });
+
+      const { result } = renderHook(() => useStorageSync());
+
+      await waitFor(() => {
+        expect(result.current.lastSyncedAt).not.toBeNull();
+      });
+
+      expect(localStorage.getItem("libredb_active_dashboard_id")).toBeNull();
+    });
+
     test("removes active_connection_id from localStorage when server returns null", async () => {
       localStorage.setItem("libredb_server_migrated", "true");
       localStorage.setItem("libredb_active_connection_id", "stale");
@@ -542,6 +564,36 @@ describe("useStorageSync", () => {
         },
         { timeout: 2000 },
       );
+    });
+
+    test("pushes saved_dashboards to the server on a storage-change event", async () => {
+      localStorage.setItem("libredb_server_migrated", "true");
+      const fetchMock = mockGlobalFetch({
+        "/api/storage/config": { ok: true, status: 200, json: { provider: "postgres", serverMode: true } },
+        ...SIGNED_IN,
+        "/api/storage/migrate": { ok: true, status: 200, json: { ok: true, migrated: [] } },
+        "/api/storage": { ok: true, status: 200, json: {} },
+        "/api/storage/saved_dashboards": { ok: true, status: 200, json: { ok: true } },
+      });
+
+      const { result } = renderHook(() => useStorageSync());
+
+      await waitFor(() => {
+        expect(result.current.isServerMode).toBe(true);
+      });
+
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent("libredb-storage-change", {
+            detail: { collection: "saved_dashboards", data: [] },
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockStorage.getSavedDashboards).toHaveBeenCalled();
+      });
+      expect(calledPaths(fetchMock)).toContain("/api/storage/saved_dashboards");
     });
 
     test("pushes data_dictionaries to the server on a storage-change event", async () => {

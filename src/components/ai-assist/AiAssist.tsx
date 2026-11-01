@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
-import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
+import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
@@ -552,7 +552,7 @@ export function AiAssist() {
     <div className="flex h-dvh min-h-0 flex-col bg-sunken text-fg">
       <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
-        <OtherModeLink mode="assist" />
+        <ModeLinks page="assist" />
       </header>
 
       <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto">
@@ -626,6 +626,7 @@ export function AiAssist() {
                           key={card.id}
                           title={card.title}
                           sql={card.sql}
+                          connectionId={card.connectionId ?? undefined}
                           connectionName={card.connectionName}
                           databaseType={target?.type}
                           schemaContext={

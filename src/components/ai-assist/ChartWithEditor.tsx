@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
+import { SaveChartButton } from "@/components/charts/SaveChartButton";
+import { chartTitleText } from "@/lib/charts/chart-title";
+import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
@@ -28,6 +31,8 @@ const PREVIEW_COLUMNS = 6;
 export interface ChartWithEditorProps {
   readonly title: string;
   readonly sql: string;
+  /** The connection the saved chart reruns `sql` on. */
+  readonly connectionId?: string;
   readonly connectionName?: string;
   readonly databaseType?: DatabaseType;
   readonly schemaContext?: string;
@@ -109,6 +114,7 @@ function ResultTable({ result }: { result: QueryResult }) {
 export function ChartWithEditor({
   title,
   sql,
+  connectionId,
   connectionName,
   databaseType,
   schemaContext,
@@ -180,19 +186,22 @@ export function ChartWithEditor({
       selection: choice.selection,
       theme,
       color,
+      title,
     });
-  }, [result, choice, theme, color]);
+  }, [result, choice, theme, color, title]);
   const code = useChartCode(
     built?.option ?? null,
     choice?.typeId ?? null,
     choice?.variationId ?? null,
     choice?.selection ?? null,
   );
+  const codeTitle = chartTitleText(code.option);
+  const heading = codeTitle !== "" ? codeTitle : title;
 
   return (
     <article className="flex h-[28rem] flex-col overflow-hidden rounded-lg border border-hairline-strong bg-raised">
       <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2">
-        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{title}</h3>
+        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{heading}</h3>
         {connectionName !== undefined && connectionName !== "" && (
           <span className="text-xs text-fg-subtle">{connectionName}</span>
         )}
@@ -237,6 +246,18 @@ export function ChartWithEditor({
               Query
             </button>
           </div>
+          {built !== null && choice !== null && (
+            <SaveChartButton
+              draft={chartSaveDraft({
+                title: chartTitleText(code.option ?? built.option),
+                query: sql,
+                connectionId,
+                typeId: choice.typeId,
+                variationId: choice.variationId,
+                selection: choice.selection,
+              })}
+            />
+          )}
           {face === "query" && (
             <button
               type="button"

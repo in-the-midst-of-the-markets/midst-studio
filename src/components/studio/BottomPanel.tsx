@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { withBasePath } from "@/lib/config/base-path";
 import { storage } from "@/lib/storage";
 import { offersSqlExport } from "@/lib/db/types";
 
@@ -161,12 +162,18 @@ function ChartDashboard({
         <LayoutDashboard strokeWidth={1.5} className="w-10 h-10 opacity-30" />
         <p className="text-xs">No saved charts yet</p>
         <p className="text-xs text-fg-subtle">Charts saved earlier show here with the result you have open</p>
+        <a href={withBasePath("/create")} className="text-xs font-medium text-brand underline">
+          Create a dashboard
+        </a>
       </div>
     );
   }
 
   return (
     <div className="h-full overflow-auto bg-sunken p-4">
+      <a href={withBasePath("/create")} className="mb-3 inline-block text-xs font-medium text-brand underline">
+        Create a dashboard
+      </a>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {savedCharts.map((chart) => (
           <div key={chart.id} className="bg-raised border border-hairline-strong rounded-lg p-3">
@@ -677,6 +684,7 @@ export const BottomPanel = React.memo(function BottomPanel({
                 result={hydratedChart ?? result}
                 spec={hydratedChartSpec}
                 query={chartQuery}
+                connectionId={activeConnection?.id}
                 onFilterChange={onChartFilter}
                 maskingEnabled={maskingEnabled}
                 userRole={userRole}

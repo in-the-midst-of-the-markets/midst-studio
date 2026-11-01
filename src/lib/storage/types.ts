@@ -1,4 +1,11 @@
-import type { DatabaseConnection, QueryHistoryItem, SavedQuery, SchemaSnapshot, SavedChartConfig } from "../types";
+import type {
+  DatabaseConnection,
+  QueryHistoryItem,
+  SavedQuery,
+  SchemaSnapshot,
+  SavedChartConfig,
+  SavedDashboard,
+} from "../types";
 import type { DataDictionary } from "../data-dictionary";
 import type { AuditEvent } from "../audit";
 import type { MaskingConfig } from "../data-masking";
@@ -14,7 +21,11 @@ export interface StorageData {
   saved_queries: SavedQuery[];
   schema_snapshots: SchemaSnapshot[];
   saved_charts: SavedChartConfig[];
+  /** Dashboards the user compiled from saved charts. */
+  saved_dashboards: SavedDashboard[];
   active_connection_id: string | null;
+  /** The dashboard the Create page opens. Null when the user has not chosen one. */
+  active_dashboard_id: string | null;
   audit_log: AuditEvent[];
   masking_config: MaskingConfig;
   threshold_config: ThresholdConfig[];
@@ -73,7 +84,9 @@ export const STORAGE_COLLECTIONS: StorageCollection[] = [
   "saved_queries",
   "schema_snapshots",
   "saved_charts",
+  "saved_dashboards",
   "active_connection_id",
+  "active_dashboard_id",
   "audit_log",
   "masking_config",
   "threshold_config",

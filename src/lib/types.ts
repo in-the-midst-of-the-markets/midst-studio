@@ -1204,4 +1204,32 @@ export interface SavedChartConfig {
   createdAt: Date;
   aggregation?: AggregationType;
   dateGrouping?: DateGrouping;
+  /**
+   * Seconds between automatic reruns of `query`. Absent means the chart keeps its last result.
+   * A stored value is never below 60: that is the shortest schedule the product runs.
+   */
+  refreshSeconds?: number;
+  /** ECharts shelves, so a refresh can rebuild the chart from the new rows. */
+  typeId?: string;
+  variationId?: string;
+  /** Column shelves keyed by slot id. */
+  selection?: Record<string, string[]>;
+  /** The title in the chart code (`title.text`). Absent leaves the chart untitled. */
+  title?: string;
+}
+
+/** One saved chart placed on a dashboard, at the size the user dragged it to. */
+export interface DashboardChartFrame {
+  chartId: string;
+  width: number;
+  height: number;
+}
+
+/** A named arrangement of saved charts. The user can keep more than one and switch. */
+export interface SavedDashboard {
+  id: string;
+  name: string;
+  charts: DashboardChartFrame[];
+  createdAt: Date;
+  updatedAt: Date;
 }

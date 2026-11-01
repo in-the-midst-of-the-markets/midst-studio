@@ -102,6 +102,27 @@ describe("line and bar", () => {
     expect(stackedArea?.areaStyle).toEqual({});
   });
 
+  test("a title is title.text and makes room under the legend", () => {
+    const chart = draw({
+      typeId: "bar",
+      variationId: "basic",
+      rows,
+      selection: { category: ["region"], values: ["total"] },
+      title: "Revenue",
+    });
+    expect(part<{ text: string }>(chart, "title").text).toBe("Revenue");
+    expect(part<{ top: number }>(chart, "legend").top).toBe(28);
+    expect(part<{ top: number }>(chart, "grid").top).toBeGreaterThanOrEqual(64);
+    const untitled = draw({
+      typeId: "bar",
+      variationId: "basic",
+      rows,
+      selection: { category: ["region"], values: ["total"] },
+    });
+    expect(part<{ text: string }>(untitled, "title").text).toBe("");
+    expect(part<{ top: number }>(untitled, "legend").top).toBe(4);
+  });
+
   test("bar variations stack and turn the category axis sideways", () => {
     const selection = { category: ["region"], values: ["total"] };
     const chart = (variationId: string) => draw({ typeId: "bar", variationId, rows, selection });

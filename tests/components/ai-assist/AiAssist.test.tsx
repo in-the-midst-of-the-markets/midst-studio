@@ -451,6 +451,7 @@ describe("ChartWithEditor", () => {
     });
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
     expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
     expect(lastOption()).toEqual(edited);
     view.rerender(
       <ChartWithEditor
@@ -468,6 +469,7 @@ describe("ChartWithEditor", () => {
     expect(lastOption()).toEqual(edited);
     fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
     expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Code" }));
     const restored = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
     expect(restored.value).toContain("99");
@@ -483,6 +485,26 @@ describe("ChartWithEditor", () => {
     fireEvent.click(within(view.getByRole("group", { name: "Metrics" })).getByRole("button", { name: "revenue" }));
     fireEvent.click(view.getByRole("button", { name: "Code" }));
     expect((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).not.toContain("Edited");
+  });
+
+  test("an empty chart-code title keeps the card title", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify({ title: { text: "" } }) },
+    });
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
   });
 
   test("listens for the editor's run event only while the query is showing", () => {
@@ -805,6 +827,8 @@ describe("AiAssist page", () => {
     const ide = view.getByRole("link", { name: "IDE" });
     expect(ide.getAttribute("href")).toBe("/");
     expect(ide.className.includes("bg-primary")).toBe(true);
+    expect(view.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
+    expect(view.queryByRole("link", { name: "AI" })).toBeNull();
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
     expect(await view.findByText(/This server has no OpenRouter key/)).toBeTruthy();
   });
