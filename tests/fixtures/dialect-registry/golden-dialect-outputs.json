@@ -332,7 +332,7 @@
   "offersCodeGeneration": false,
   "offersCountQuery": false,
   "tableQuery": "-- Newest points of the last hour, LIMIT 50 per series. No row means no point is newer: widen 1h below.\nSELECT * FROM \"c0\"..\"Order\\\"Items\" WHERE time > now() - 1h ORDER BY time DESC LIMIT 50",
-  "selectQuery": "-- Newest points of the last hour, LIMIT 50 per series. No row means no point is newer: widen 1h below.\nSELECT * FROM \"c0\"..\"Order\\\"Items\" WHERE time > now() - 1h ORDER BY time DESC LIMIT 50\n-- A wider window: WHERE time > now() - 1d\n-- One point per minute: SELECT mean(\"value\") FROM \"c0\"..\"Order\\\"Items\" WHERE time > now() - 1h GROUP BY time(1m)\n-- Another retention policy: SELECT * FROM \"c0\".\"<rp>\".\"Order\\\"Items\" (SHOW RETENTION POLICIES ON \"c0\" lists them)\n-- Tag values: SHOW TAG VALUES ON \"c0\" FROM \"Order\\\"Items\" WITH KEY = \"tag\" (on InfluxDB 3 add WHERE time > 0)\n-- For the Charts tab: ORDER BY time ASC, and choose time as the x axis.",
+  "selectQuery": "-- Newest points of the last hour, LIMIT 50 per series. No row means no point is newer: widen 1h below.\nSELECT * FROM \"c0\"..\"Order\\\"Items\" WHERE time > now() - 1h ORDER BY time DESC LIMIT 50\n-- A wider window: WHERE time > now() - 1d\n-- One point per minute: SELECT mean(\"value\") FROM \"c0\"..\"Order\\\"Items\" WHERE time > now() - 1h GROUP BY time(1m)\n-- Another retention policy: SELECT * FROM \"c0\".\"<rp>\".\"Order\\\"Items\" (SHOW RETENTION POLICIES ON \"c0\" lists them)\n-- Tag values: SHOW TAG VALUES ON \"c0\" FROM \"Order\\\"Items\" WITH KEY = \"tag\" (on InfluxDB 3 add WHERE time > 0)\n-- For the Charts tab: ORDER BY time ASC, and choose time as the dimension.",
   "countQuery": null
  },
  "influxdb3": {

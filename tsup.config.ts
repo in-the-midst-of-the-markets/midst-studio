@@ -63,6 +63,7 @@ export default defineConfig({
     // UI libs that consumers provide
     "elkjs",
     "recharts",
+    "echarts",
     "framer-motion",
     // Exact-pinned image-capture engine (html-to-image variants choke on
     // Tailwind 4 computed styles); external like every other UI lib - it is

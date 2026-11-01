@@ -1690,11 +1690,11 @@ rather than implemented in the renderer, and the contract now redirects a model 
 series to name several `y` columns. Inviting only what the renderer can draw is the same rule as
 never stating a rule a model's tool set cannot satisfy, one level down.
 
-**Why the spec is validated rather than trusted:** `DataCharts` renders a value it cannot parse as
-`Number(value) || 0`. A chart over the wrong column does not fail and does not render blank — it
-renders a confident flat line of zeros, inside this application's own frame. So every spec is checked
-before the event is written, and each check has its own refusal that restates the half of the contract
-it enforces, because a refusal is read by a model that is demonstrably confused:
+**Why the spec is validated rather than trusted:** the Charts tab draws a non-finite cell as a gap and
+ignores a specification whose columns are not in the result. A chart over the wrong column must not
+be recorded as the answer. So every spec is checked before the event is written, and each check has
+its own refusal that restates the half of the contract it enforces, because a refusal is read by a
+model that is demonstrably confused:
 
 | Refusal | What it means |
 | --- | --- |
@@ -1703,8 +1703,8 @@ it enforces, because a refusal is read by a model that is demonstrably confused:
 | `ANSWER_STATEMENT_UNKNOWN` | The result is this run's own data read and no statement the model drafted produced it (a catalog read), so there is no statement to hand over. |
 | `ANSWER_RESULT_RELEASED` | The rows are no longer held, so a chart cannot be checked against them. |
 | `CHART_COLUMN_NOT_IN_RESULT` | A column named is not a column of that result. The refusal **lists the real column names, fenced** — they are engine-supplied text like any other. |
-| `CHART_COLUMN_NOT_NUMERIC` | A `y` column does not hold numbers, by the same >80 %-of-non-null rule `DataCharts` applies. |
-| `CHART_TOO_FEW_ROWS` | Fewer than two rows; the component renders an empty state below two. |
+| `CHART_COLUMN_NOT_NUMERIC` | A `y` column does not hold numbers, by the >80 %-of-non-null rule. |
+| `CHART_TOO_FEW_ROWS` | Fewer than two rows. The agent refuses a chart of a single row. |
 | `CHART_SHAPE_MISMATCH` | A pie with more than one `y`, or a scatter whose `x` is not numeric. |
 
 The numeric check reads the **live** artifact store, which is why it can read rows at all: that store
@@ -2727,10 +2727,9 @@ like.** A plan opens the explain view because `sql.explain.estimate` produced it
 charts view because the run composed its answer as a chart and said in `answer-composed` how to draw
 it. A result whose answer said table is shown as a table however chartable its columns are. The
 specification the model emitted is validated against the artifact's columns before it is recorded, and
-validated again in the browser against the rows actually delivered — two guards, because
-`DataCharts` turns a column it cannot read into `0` rather than into an error, and a chart of the
-wrong column draws a confident flat line rather than failing. A specification that does not survive the
-second check is dropped and the view's own inference draws the chart instead. A hydrated result can be
+validated again in the browser against the rows actually delivered — two guards, because a chart of
+the wrong column must not be drawn. A specification that does not survive the second check is
+ignored, and the Charts tab waits for a type. A hydrated result can be
 exported: the menu is retargeted rather than hidden, the file is named after the run that produced
 the rows, and the SQL forms are not attributed to the tab's own table. A run's stored results are
 still released when the run ends, so a report can outlive the rows its citations point at.

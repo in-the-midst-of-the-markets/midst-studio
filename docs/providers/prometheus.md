@@ -283,12 +283,8 @@ A handshake or verification failure is a `ConnectionError` carrying the Node err
 Finite sample values become JavaScript numbers; Prometheus writes the shortest round-tripping float, so nothing is lost.
 `NaN`, `+Inf` and `-Inf` stay the engine's strings, because JSON transport would turn a `NaN` number into `null`, and in the wide matrix shape `null` already means "no sample at this instant".
 The grid shows them as the engine wrote them, by maintainer decision (#1085, section 5.3): a `null` in their place would claim the series had no sample there.
-The chart tab reads them otherwise: it types a column as numbers when more than 80% of its filled cells are numbers (`analyzeField` in `src/components/DataCharts.tsx`) and draws each cell of such a column that is not a number at 0, so a `NaN` or `Inf` among numbers is drawn at 0, and so is a `null`, an instant with no sample ([§5.2](#52-result-shaping)).
-A column whose strings are 20% or more of its filled cells is not typed as numbers and is not offered as a series.
-It is typed categorical only while it holds at most 50 distinct values, each number and each of `NaN`, `+Inf` and `-Inf` counted once, and only then does the first categorical column in field order replace `timestamp` as the chart's default x axis; past 50, as in a mostly-`NaN` latency ratio over `[6h:1m]`, it is typed unknown and `timestamp` stays the default.
-An answer with no numeric column draws no chart.
-Filtering the non-finite values in PromQL (`x > -Inf < +Inf`, or `x == x` for `NaN`) takes them out of the answer, which keeps a single series a line with no row at those instants, while in a matrix of several series each filtered cell holds `null` and is drawn at 0 as well.
-The chart is unchanged by #1085, and `docs/BACKLOG.md` U44 records its zeros.
+The Charts tab (`isMetricColumn` in `src/lib/charts/echarts-catalog.ts`) types a column as a metric when more than 80% of its filled cells are finite numbers. `NaN`, `+Inf` and `-Inf` are not numbers, and neither is a blank. A column whose non-numbers are 20% or more of its filled cells is not a metric and is not offered on a metric shelf. Every result column is a dimension, and the dimension starts as the first result column. A missing sample is a gap in a line or a bar, not a point at 0 (`buildChartOption` in `src/lib/charts/echarts-option.ts`). An answer with no metric column draws no line.
+Filtering the non-finite values in PromQL (`x > -Inf < +Inf`, or `x == x` for `NaN`) takes them out of the answer, which keeps a single series a line with no row at those instants. A `null` in a wide matrix stays a gap. `docs/BACKLOG.md` U44 records the previous chart, which drew those cells at 0.
 
 ### 3.8 Measurements
 
@@ -435,14 +431,14 @@ A wide matrix names each series column by the labels that distinguish it from th
 A series a bound leaves alone is named by the labels that tell it from every series of the answer, so the grid still says which one it shows; only an answer that held one series names its column `value`.
 When that name, written in every row, would take the grid past `RESULT_BYTE_BUDGET` while `value` would not, the series is kept under `value` instead, and a notice names it once, in the same notation, with the budget.
 The rows are the sorted union of every series' timestamps, and a series with no sample at one holds `null` there, so a raw range selector gives sparse rows and a stepped subquery aligned ones.
-The wide shape is what lets the existing chart tab draw each series as its own line with no change to the chart.
-For a stepped subquery whose series have a sample at every step, it charts as lines over the timestamps without false zeros: the tab opens on the first series, more are added from the Y-Axis menu, one line each, and at most eight, the palette's size (`MAX_SERIES` in `src/components/DataCharts.tsx`), are drawn at once, past which it says "Showing first 8 of N series".
-The chart tab draws a `null` at 0, though ([§3.7](#37-nan-and-inf-stay-strings-and-what-the-chart-does-with-them)), so a raw range over targets scraped at their own offsets, whose rows each hold few of its series' samples, charts the rest at 0 on each row, and a series that starts or stops inside a subquery's window drops to 0 where it has no sample.
-Measured through the provider's shaper and the chart's own mapping, `up[5m]` from the compose server shaped into 29 rows of 4 series with 87 of its 116 cells `null`, each drawn at 0, which for `up` reads as a target that was down; `docs/BACKLOG.md` U44 records it.
+The wide shape is what lets the Charts tab draw each series as its own line.
+For a stepped subquery, choose Line and then Basic, with `timestamp` as the dimension and the series columns as the metrics. The tab starts with the first metric; more are added from the Metrics shelf, one line each, and at most eight, the palette's size (`chartTheme` in `src/lib/charts/palette.ts`, applied in `src/lib/charts/echarts-option.ts`), are drawn at once, past which it says "Showing the first 8 of N metrics."
+A `null` stays a gap ([§3.7](#37-nan-and-inf-stay-strings-and-what-the-chart-does-with-them)), so a raw range over targets scraped at their own offsets does not chart missing samples at 0, and a series that starts or stops inside a subquery's window leaves a gap where it has no sample.
+`up[5m]` from the compose server shaped into 29 rows of 4 series with 87 of its 116 cells `null`. On the Charts tab those cells are gaps. `docs/BACKLOG.md` U44 records the previous chart, which drew each of them at 0.
 
 ### 5.3 Value encoding
 
-- Timestamps are float seconds on the wire and ISO-8601 UTC strings with millisecond precision in the grid, which the chart tab recognises as dates.
+- Timestamps are float seconds on the wire and ISO-8601 UTC strings with millisecond precision in the grid. On the Charts tab a timestamp is a dimension.
 - Finite values are numbers; `NaN`, `+Inf` and `-Inf` are strings ([§3.7](#37-nan-and-inf-stay-strings-and-what-the-chart-does-with-them)).
 - A native histogram stays `{count, sum, buckets}`, rendered by the grid's JSON cell.
 - A `string` result's value stays its text, `"42"` included.
@@ -754,7 +750,7 @@ See [`docs/API_DOCS.md`](../API_DOCS.md) for the full request and response contr
 - **On a server past `METRIC_LIST_CAP` metric names or `DESCRIBE_SERIES_CAP` series in the hour, plan mode grounds metrics only**, because the grounding walk stops at the metric folder's truncated batch (M7, `docs/BACKLOG.md` B84).
 - **A listed metric whose series went quiet before the hour is left out of the bulk column read**, and the inventory carries it with no columns ([§6.1](#metric-columns), `docs/BACKLOG.md` D107).
 - **The overview's metric count is unavailable only when a full list of `TSDB_LABEL_SCAN_LIMIT` label names omits the `__name__` entry** (M2), and a listed entry is the full count at any length of that list.
-- **The chart tab draws a missing sample, and a `NaN` or `Inf` among numbers, at 0**, so a raw range over targets scraped at their own offsets charts false zeros, while a stepped subquery charts correctly as long as every series has a sample at every step; a column 20% or more `NaN` or `Inf` is not drawn as a series, and becomes the default x axis only while it holds at most 50 distinct values ([§3.7](#37-nan-and-inf-stay-strings-and-what-the-chart-does-with-them), [§5.2](#52-result-shaping), `docs/BACKLOG.md` U44).
+- **The Charts tab leaves a missing sample, and a `NaN` or `Inf` among numbers, as a gap**, so a raw range does not chart false zeros. A column whose non-numbers are 20% or more of its filled cells is not a metric. The dimension starts as the first result column ([§3.7](#37-nan-and-inf-stay-strings-and-what-the-chart-does-with-them), [§5.2](#52-result-shaping)). `docs/BACKLOG.md` U44 records the previous chart, which drew those cells at 0.
 - **Queries compete with the server's own rule evaluation** ([§3.4](#34-the-servers-query-slots-are-shared)).
 
 ---

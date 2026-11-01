@@ -359,7 +359,7 @@ One row per record, with the fields `partition`, `offset`, `timestamp`, `key`, `
 
 - Across partitions, rows are ordered by `timestamp`, then `partition`, then `offset`; within one partition that is log order only while timestamps rise with offsets, as under `LogAppendTime` or one producer's clock.
 - `offset` is a decimal string, because offsets are 64-bit and a JavaScript number loses precision past 2^53; `partition` is a number.
-- `timestamp` is an ISO-8601 UTC string with millisecond precision, the form the chart tab recognises as a date.
+- `timestamp` is an ISO-8601 UTC string with millisecond precision. On the Charts tab it is a dimension.
   It is the record's Kafka timestamp: the producer's CreateTime, or on a topic whose `message.timestamp.type` is `LogAppendTime`, the broker's append time, which the broker writes only into the batch's `maxTimestamp`, so the provider reads it from there as the Java client does.
   A record whose timestamp is the protocol's no-timestamp value, -1, has a null timestamp, never the instant one millisecond before the epoch.
   A timestamp outside the range a JavaScript `Date` holds is refused with a `QueryError` naming the partition, the offset and the timestamp.

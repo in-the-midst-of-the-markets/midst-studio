@@ -69,7 +69,7 @@ export function influxqlSelectQuery(path: readonly string[], columns: readonly C
     `-- Another retention policy: SELECT * FROM ${quotedDatabase}."<rp>".${quotedMeasurement} (SHOW RETENTION POLICIES ON ${quotedDatabase} lists them)`,
     // K16: 3.12.0 Core answers SHOW TAG VALUES over a default time window, so a tag of older data needs the clause.
     `-- Tag values: SHOW TAG VALUES ON ${quotedDatabase} FROM ${quotedMeasurement} WITH KEY = ${tag} (on InfluxDB 3 add WHERE time > 0)`,
-    "-- For the Charts tab: ORDER BY time ASC, and choose time as the x axis.",
+    "-- For the Charts tab: ORDER BY time ASC, and choose time as the dimension.",
   ].join("\n");
 }
 
