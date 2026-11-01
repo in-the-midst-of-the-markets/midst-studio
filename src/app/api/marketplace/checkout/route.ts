@@ -12,16 +12,21 @@ import {
 
 export const dynamic = "force-dynamic";
 
-function stripeSecret(): string | null {
-  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+function configuredSecret(name: "STRIPE_TEST_SECRET_KEY" | "STRIPE_SECRET_KEY"): string | null {
+  const secret = process.env[name]?.trim();
   return secret ? secret : null;
+}
+
+/** The test secret wins when it is set, so a test key is what Checkout uses on this deployment. */
+function stripeSecret(): string | null {
+  return configuredSecret("STRIPE_TEST_SECRET_KEY") ?? configuredSecret("STRIPE_SECRET_KEY");
 }
 
 /**
  * POST /api/marketplace/checkout — start a Stripe subscription Checkout for one catalogued offering.
  *
- * The price id comes from the catalog, never from the request. The return URLs are this request's
- * own origin, so Checkout cannot be pointed at another host.
+ * The charge is $5 a month, from the offering's name. A price id on the request is ignored.
+ * The return URLs are this request's own origin, so Checkout cannot be pointed at another host.
  */
 export async function POST(request: Request) {
   const session = await getSession();
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
   const cancelUrl = `${origin}${getBasePath()}/marketplace?checkout=cancel`;
   const created = await createStripeCheckout({
     secretKey: secret,
-    priceId: offering.priceId,
+    productName: offering.name,
     successUrl,
     cancelUrl,
     offeringId: offering.id,

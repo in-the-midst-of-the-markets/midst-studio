@@ -27,6 +27,17 @@ export type MarketplaceCatalog = { ok: true; offerings: readonly MarketplaceOffe
 const OFFERING_ID = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 const STRIPE_PRICE_ID = /^price_[A-Za-z0-9]+$/;
 
+/**
+ * What Checkout charges for every offering, and what the list shows.
+ * Five US dollars, billed each month. A catalog price id is not the charge.
+ */
+export const MARKETPLACE_SUBSCRIPTION = {
+  currency: "usd",
+  unitAmount: "500",
+  interval: "month",
+  label: "$5/month",
+} as const;
+
 function isOffering(value: unknown): value is MarketplaceOffering {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
@@ -77,5 +88,10 @@ export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): Ma
 }
 
 export function publicMarketplaceOfferings(offerings: readonly MarketplaceOffering[]): PublicMarketplaceOffering[] {
-  return offerings.map(({ id, name, description, priceLabel }) => ({ id, name, description, priceLabel }));
+  return offerings.map(({ id, name, description }) => ({
+    id,
+    name,
+    description,
+    priceLabel: MARKETPLACE_SUBSCRIPTION.label,
+  }));
 }

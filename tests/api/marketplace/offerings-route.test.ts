@@ -69,7 +69,7 @@ describe("GET /api/marketplace/offerings", () => {
           id: "acme-trades",
           name: "Acme Trades",
           description: "Tick history",
-          priceLabel: "$49/month",
+          priceLabel: "$5/month",
         },
       ],
     });

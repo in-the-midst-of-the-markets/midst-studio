@@ -6,6 +6,7 @@
  */
 
 import { checkOrigin } from "@/lib/api/origin-check";
+import { MARKETPLACE_SUBSCRIPTION } from "@/lib/marketplace/catalog";
 
 const STRIPE_API = "https://api.stripe.com";
 const CHECKOUT_HOST = "checkout.stripe.com";
@@ -36,9 +37,12 @@ export function checkoutReturnOrigin(headers: Headers): string | null {
   return parsed.origin;
 }
 
-/** Form body for `POST /v1/checkout/sessions`. The session-id template is left unescaped for Stripe. */
+/**
+ * Form body for `POST /v1/checkout/sessions`. The session-id template is left unescaped for Stripe.
+ * The line is a $5 monthly subscription, built here, so a catalog price id cannot change the charge.
+ */
 export function checkoutSessionBody(input: {
-  priceId: string;
+  productName: string;
   successUrl: string;
   cancelUrl: string;
   offeringId: string;
@@ -48,8 +52,11 @@ export function checkoutSessionBody(input: {
   body.set("success_url", input.successUrl);
   body.set("cancel_url", input.cancelUrl);
   body.set("client_reference_id", input.offeringId);
-  body.set("line_items[0][price]", input.priceId);
   body.set("line_items[0][quantity]", "1");
+  body.set("line_items[0][price_data][currency]", MARKETPLACE_SUBSCRIPTION.currency);
+  body.set("line_items[0][price_data][unit_amount]", MARKETPLACE_SUBSCRIPTION.unitAmount);
+  body.set("line_items[0][price_data][recurring][interval]", MARKETPLACE_SUBSCRIPTION.interval);
+  body.set("line_items[0][price_data][product_data][name]", input.productName);
   return body.toString().replaceAll("%7BCHECKOUT_SESSION_ID%7D", "{CHECKOUT_SESSION_ID}");
 }
 
@@ -107,7 +114,7 @@ async function stripeCall(
 export async function createStripeCheckout(
   input: {
     secretKey: string;
-    priceId: string;
+    productName: string;
     successUrl: string;
     cancelUrl: string;
     offeringId: string;

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/config/base-path";
-import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
+import { MARKETPLACE_SUBSCRIPTION, type PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
 
@@ -118,7 +118,9 @@ export function Marketplace() {
   return (
     <main className="pt-6">
       <h1 className="text-lg font-semibold tracking-tight text-fg">Marketplace</h1>
-      <p className="mt-1 text-sm text-fg-secondary">Subscribe to third-party data. Payment is collected by Stripe.</p>
+      <p className="mt-1 text-sm text-fg-secondary">
+        Subscribe to third-party data for {MARKETPLACE_SUBSCRIPTION.label}. Payment is collected by Stripe.
+      </p>
 
       {checkout === "cancel" && (
         <output className="mt-4 block rounded-lg border border-border px-3 py-2 text-sm text-fg-secondary">

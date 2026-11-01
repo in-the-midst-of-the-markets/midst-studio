@@ -92,7 +92,7 @@ describe("readMarketplaceCatalog", () => {
 describe("publicMarketplaceOfferings", () => {
   test("strips the Stripe price id", () => {
     expect(publicMarketplaceOfferings([OFFERING])).toEqual([
-      { id: OFFERING.id, name: OFFERING.name, description: OFFERING.description, priceLabel: OFFERING.priceLabel },
+      { id: OFFERING.id, name: OFFERING.name, description: OFFERING.description, priceLabel: "$5/month" },
     ]);
   });
 });

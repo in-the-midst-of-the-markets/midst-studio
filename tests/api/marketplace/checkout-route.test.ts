@@ -21,6 +21,7 @@ const { GET, POST } = await import("@/app/api/marketplace/checkout/route");
 
 const originalCatalog = process.env.MARKETPLACE_OFFERINGS;
 const originalSecret = process.env.STRIPE_SECRET_KEY;
+const originalTestSecret = process.env.STRIPE_TEST_SECRET_KEY;
 const originalTrust = process.env.TRUST_PROXY_HEADERS;
 const originalBasePath = process.env.NEXT_PUBLIC_BASE_PATH;
 const originalFetch = globalThis.fetch;
@@ -48,6 +49,7 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue({ role: "user", username: "ada" });
   process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
   process.env.STRIPE_SECRET_KEY = " sk_test_marketplace ";
+  delete process.env.STRIPE_TEST_SECRET_KEY;
   process.env.TRUST_PROXY_HEADERS = "false";
   delete process.env.NEXT_PUBLIC_BASE_PATH;
   globalThis.fetch = originalFetch;
@@ -59,6 +61,8 @@ afterEach(() => {
   else process.env.MARKETPLACE_OFFERINGS = originalCatalog;
   if (originalSecret === undefined) delete process.env.STRIPE_SECRET_KEY;
   else process.env.STRIPE_SECRET_KEY = originalSecret;
+  if (originalTestSecret === undefined) delete process.env.STRIPE_TEST_SECRET_KEY;
+  else process.env.STRIPE_TEST_SECRET_KEY = originalTestSecret;
   if (originalTrust === undefined) delete process.env.TRUST_PROXY_HEADERS;
   else process.env.TRUST_PROXY_HEADERS = originalTrust;
   if (originalBasePath === undefined) delete process.env.NEXT_PUBLIC_BASE_PATH;
@@ -106,6 +110,34 @@ describe("POST /api/marketplace/checkout", () => {
     expect(await response.json()).toEqual({ error: "That data is not in the marketplace" });
   });
 
+  test("uses the test secret when it is set", async () => {
+    process.env.STRIPE_TEST_SECRET_KEY = " sk_test_preferred ";
+    process.env.STRIPE_SECRET_KEY = "sk_test_other";
+    const fetchImpl = mock(async (_url: string, init?: RequestInit) => {
+      expect(new Headers(init?.headers).get("authorization")).toBe("Bearer sk_test_preferred");
+      return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" }), { status: 200 });
+    });
+    globalThis.fetch = fetchImpl as unknown as typeof fetch;
+
+    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" });
+  });
+
+  test("a blank test secret falls through to STRIPE_SECRET_KEY", async () => {
+    process.env.STRIPE_TEST_SECRET_KEY = "   ";
+    const fetchImpl = mock(async (_url: string, init?: RequestInit) => {
+      expect(new Headers(init?.headers).get("authorization")).toBe("Bearer sk_test_marketplace");
+      return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" }), { status: 200 });
+    });
+    globalThis.fetch = fetchImpl as unknown as typeof fetch;
+
+    const response = await POST(post(JSON.stringify({ id: "acme-trades" })));
+
+    expect(response.status).toBe(200);
+  });
+
   test.each([undefined, "   "])("answers 503 when Stripe is not configured (%j)", async (secret) => {
     if (secret === undefined) delete process.env.STRIPE_SECRET_KEY;
     else process.env.STRIPE_SECRET_KEY = secret;
@@ -123,12 +155,16 @@ describe("POST /api/marketplace/checkout", () => {
     expect(await response.json()).toEqual({ error: "Checkout has to start from the marketplace page" });
   });
 
-  test("returns the Checkout URL and sends the catalog price, not the request's", async () => {
+  test("returns the Checkout URL and charges $5 a month, not a price id from the request", async () => {
     process.env.NEXT_PUBLIC_BASE_PATH = "/studio";
     const fetchImpl = mock(async (_url: string, init?: RequestInit) => {
       expect(new Headers(init?.headers).get("authorization")).toBe("Bearer sk_test_marketplace");
       const body = String(init?.body);
-      expect(body).toContain("line_items%5B0%5D%5Bprice%5D=price_abc");
+      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
+      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Brecurring%5D%5Binterval%5D=month");
+      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=Acme+Trades");
+      expect(body).not.toContain("price_from_the_browser");
+      expect(body).not.toContain("price_abc");
       expect(body).toContain(
         "https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dsuccess%26session_id%3D{CHECKOUT_SESSION_ID}",
       );

@@ -73,14 +73,18 @@ describe("checkoutReturnOrigin", () => {
 describe("checkoutSessionBody", () => {
   test("asks for a subscription and leaves the session-id template for Stripe", () => {
     const body = checkoutSessionBody({
-      priceId: "price_abc",
+      productName: "Acme Trades",
       successUrl: "https://studio.example/marketplace?checkout=success&session_id={CHECKOUT_SESSION_ID}",
       cancelUrl: "https://studio.example/marketplace?checkout=cancel",
       offeringId: "acme-trades",
     });
 
     expect(body).toContain("mode=subscription");
-    expect(body).toContain("line_items%5B0%5D%5Bprice%5D=price_abc");
+    expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bcurrency%5D=usd");
+    expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
+    expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Brecurring%5D%5Binterval%5D=month");
+    expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=Acme+Trades");
+    expect(body).not.toContain("price_abc");
     expect(body).toContain("line_items%5B0%5D%5Bquantity%5D=1");
     expect(body).toContain("client_reference_id=acme-trades");
     expect(body).toContain("session_id%3D{CHECKOUT_SESSION_ID}");
@@ -139,7 +143,7 @@ describe("sessionOutcome", () => {
 describe("createStripeCheckout", () => {
   const input = {
     secretKey: "sk_test_marketplace",
-    priceId: "price_abc",
+    productName: "Acme Trades",
     successUrl: "https://studio.example/marketplace?session_id={CHECKOUT_SESSION_ID}",
     cancelUrl: "https://studio.example/marketplace?checkout=cancel",
     offeringId: "acme-trades",
