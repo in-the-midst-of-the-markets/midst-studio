@@ -195,6 +195,50 @@ describe("DashboardStudio", () => {
     await waitFor(() => expect(calls).toBeGreaterThan(before));
   });
 
+  test("edits a chart's filters and can unsave it", async () => {
+    storage.saveConnection(connection);
+    const query = "SELECT region, total FROM sales WHERE region = {{region:east|east,west}} AND total >= {{total:1}}";
+    storage.saveChart(chart({ query }));
+    storage.saveChart(chart({ id: "plain", name: "Plain", query: undefined, connectionId: undefined }));
+    storage.saveDashboard(board("sales", ["revenue", "plain"]));
+    storage.setActiveDashboardId("sales");
+    const posted: string[] = [];
+    mockGlobalFetch({
+      "/api/db/query": async (req) => {
+        const body = (await req.json()) as { sql?: string };
+        posted.push(body.sql ?? "");
+        return { json: rows };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    expect(await view.findByLabelText("region")).toBeTruthy();
+    await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'east'") && !sql.includes("{"))).toBe(true));
+    expect(await view.findByLabelText("total comparison")).toBeTruthy();
+    fireEvent.change(view.getByLabelText("region"), { target: { value: "west" } });
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toContain("west"),
+    );
+    await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'west'") && !sql.includes("{"))).toBe(true));
+    fireEvent.change(view.getByLabelText("total comparison"), { target: { value: "<=" } });
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toContain("total <= {{total:1}}"),
+    );
+    fireEvent.change(view.getByLabelText("total"), { target: { value: "5" } });
+    fireEvent.blur(view.getByLabelText("total"));
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toContain("{{total:5}}"),
+    );
+    await waitFor(() => expect(posted.some((sql) => sql.includes("total <= 5") && !sql.includes("{"))).toBe(true));
+    fireEvent.click(view.getByRole("button", { name: "Clear filters" }));
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).not.toContain("{"),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Unsave Revenue" }));
+    expect(view.queryByTestId("dashboard-chart-revenue")).toBeNull();
+    expect(storage.getSavedCharts().some((item) => item.id === "revenue")).toBe(false);
+    expect(storage.getSavedDashboards()[0]?.charts.some((frame) => frame.chartId === "revenue")).toBe(false);
+  });
+
   test("a new dashboard with no saved charts says so", () => {
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "New dashboard" }));

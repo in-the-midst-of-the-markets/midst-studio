@@ -10,6 +10,31 @@ export interface SaveChartButtonProps {
   readonly draft: Omit<SaveChartDraft, "refreshText">;
 }
 
+function SaveChartStatus({
+  storedId,
+  notice,
+  onUnsave,
+}: {
+  readonly storedId: string | null;
+  readonly notice: string | null;
+  readonly onUnsave: (id: string) => void;
+}) {
+  return (
+    <>
+      {storedId !== null && (
+        <button type="button" onClick={() => onUnsave(storedId)} className="text-xs font-medium text-danger underline">
+          Unsave
+        </button>
+      )}
+      {notice !== null && (
+        <span role="status" className="text-xs text-fg-muted">
+          {notice}
+        </span>
+      )}
+    </>
+  );
+}
+
 /**
  * Saves the chart on screen, including its query and an optional refresh.
  * The refresh reruns that query. The shortest schedule is 60 seconds.
@@ -20,7 +45,9 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
   const [refreshText, setRefreshText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const canSchedule = draft.query !== undefined && draft.query.trim() !== "";
+  const stored = findSavedChart(storage.getSavedCharts(), draft);
 
   const openDialog = () => {
     setName(draft.name);
@@ -28,6 +55,14 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
     setError(null);
     setNote(null);
     setOpen(true);
+  };
+
+  const unsave = (id: string) => {
+    storage.deleteChart(id);
+    setNotice("Unsaved.");
+    setError(null);
+    setNote(null);
+    setOpen(false);
   };
 
   const save = () => {
@@ -50,10 +85,11 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
       return;
     }
     storage.saveChart(chart);
+    setNotice("Saved.");
+    setError(null);
     if (refresh.raised) {
       setRefreshText(String(refresh.seconds));
       setNote(`Raised to ${MIN_CHART_REFRESH_SECONDS} seconds, the shortest refresh.`);
-      setError(null);
       return;
     }
     setOpen(false);
@@ -61,9 +97,12 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
 
   if (!open) {
     return (
-      <button type="button" onClick={openDialog} className="text-xs font-medium text-fg-secondary underline">
-        Save chart
-      </button>
+      <span className="inline-flex flex-wrap items-center gap-2">
+        <button type="button" onClick={openDialog} className="text-xs font-medium text-fg-secondary underline">
+          Save chart
+        </button>
+        <SaveChartStatus storedId={stored?.id ?? null} notice={notice} onUnsave={unsave} />
+      </span>
     );
   }
 
@@ -93,6 +132,7 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
       <button type="button" onClick={() => setOpen(false)} className="text-xs font-medium text-fg-muted underline">
         Cancel
       </button>
+      <SaveChartStatus storedId={stored?.id ?? null} notice={notice} onUnsave={unsave} />
       {error !== null && (
         <p role="alert" className="text-xs text-danger">
           {error}
