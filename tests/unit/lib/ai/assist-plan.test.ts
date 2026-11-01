@@ -4,7 +4,8 @@ import {
   buildAssistMessages,
   explanationWithEdits,
   parseAssistPlan,
-  queriesBesideEdits,
+  assistChartColor,
+  splitAssistFollowUp,
   readAssistRequest,
   type AssistQueryPlan,
 } from "@/lib/ai/assist-plan";
@@ -49,7 +50,7 @@ describe("parseAssistPlan", () => {
       title: "Revenue",
       sql: select,
       connection: "",
-      chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
+      chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month", color: null },
     });
     expect(plan.queries[1]?.title).toBe("Query");
     expect(plan.queries[1]?.chart).toBeNull();
@@ -112,6 +113,25 @@ describe("parseAssistPlan", () => {
     expect(numbered.queries[0]?.connection).toBe("");
     const long = parseAssistPlan(JSON.stringify({ queries: [{ connection: "x".repeat(250), sql: select }] }));
     expect(long.queries[0]?.connection).toHaveLength(200);
+  });
+
+  test("keeps a colour the model named and drops one it invented", () => {
+    const plan = parseAssistPlan(
+      JSON.stringify({
+        queries: [
+          { title: "A", sql: select, chart: { type: "bar", x: "month", y: [" revenue "], color: " Purple " } },
+          { title: "B", sql: "SELECT 2", chart: { type: "line", x: "month", y: ["revenue"], color: "rainbow" } },
+        ],
+      }),
+    );
+    expect(plan.queries[0]?.chart).toEqual({
+      type: "bar",
+      x: "month",
+      y: ["revenue"],
+      caption: "",
+      color: "#9546de",
+    });
+    expect(plan.queries[1]?.chart?.color).toBeNull();
   });
 });
 
@@ -201,6 +221,17 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("The connected engine is SQL.");
     expect(messages[0]?.content).toContain("every connected database");
     expect(messages[0]?.content).toContain("User-edited query (leave it unchanged):");
+    expect(messages[0]?.content).toContain("chart.color");
+  });
+});
+
+describe("assistChartColor", () => {
+  test("accepts a hex colour and a named colour, and drops anything else", () => {
+    expect(assistChartColor(" #9546DE ")).toBe("#9546de");
+    expect(assistChartColor("Purple")).toBe("#9546de");
+    expect(assistChartColor("rainbow")).toBeNull();
+    expect(assistChartColor("#fff")).toBeNull();
+    expect(assistChartColor(1)).toBeNull();
   });
 });
 
@@ -218,9 +249,32 @@ describe("queries the user edited", () => {
     chart: null,
   };
 
-  test("leaves an edited statement out and keeps a different one", () => {
-    expect(queriesBesideEdits([revenue, spend], ["  SELECT month, revenue FROM orders  ", " "])).toEqual([spend]);
-    expect(queriesBesideEdits([revenue], [])).toEqual([revenue]);
+  test("leaves an edited statement out, recolors a matching one, and keeps a different one", () => {
+    expect(
+      splitAssistFollowUp([revenue, spend], [{ sql: "  SELECT month, revenue FROM orders  ", locked: true }]),
+    ).toEqual({
+      recolors: [],
+      queries: [spend],
+    });
+    expect(splitAssistFollowUp([revenue], [])).toEqual({ recolors: [], queries: [revenue] });
+    expect(
+      splitAssistFollowUp(
+        [revenue],
+        [
+          { sql: revenue.sql, locked: true },
+          { sql: revenue.sql, locked: false },
+        ],
+      ),
+    ).toEqual({ recolors: [], queries: [revenue] });
+    const colored: AssistQueryPlan = {
+      ...revenue,
+      chart: { type: "bar", x: "month", y: ["revenue"], caption: "", color: "#9546de" },
+    };
+    expect(splitAssistFollowUp([colored], [{ sql: `  ${revenue.sql}  `, locked: true }])).toEqual({
+      recolors: [{ sql: revenue.sql, color: "#9546de" }],
+      queries: [],
+    });
+    expect(splitAssistFollowUp([colored], [])).toEqual({ recolors: [], queries: [colored] });
   });
 
   test("names the edited statement for the next answer and stays within the history limit", () => {

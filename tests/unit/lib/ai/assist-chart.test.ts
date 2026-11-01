@@ -9,7 +9,7 @@ import type { AssistChart } from "@/lib/ai/assist-plan";
 import { classifyColumns } from "@/lib/charts/echarts-catalog";
 import type { QueryResult } from "@/lib/types";
 
-const bar: AssistChart = { type: "bar", x: "month", y: ["revenue"], caption: "by month" };
+const bar: AssistChart = { type: "bar", x: "month", y: ["revenue"], caption: "by month", color: null };
 
 function result(fields: string[], rows: Record<string, unknown>[]): QueryResult {
   return { fields, rows, rowCount: rows.length, executionTime: 1 };

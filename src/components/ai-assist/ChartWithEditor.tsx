@@ -24,6 +24,8 @@ export interface ChartWithEditorProps {
   readonly result: QueryResult | null;
   readonly error: string | null;
   readonly chart: AssistChart | null;
+  /** The series colour for this chart, when the model or a later answer set one. */
+  readonly color?: string | null;
   readonly running: boolean;
   readonly onSqlChange: (sql: string) => void;
   readonly onRun: (sql: string) => void;
@@ -102,6 +104,7 @@ export function ChartWithEditor({
   result,
   error,
   chart,
+  color = null,
   running,
   onSqlChange,
   onRun,
@@ -157,8 +160,9 @@ export function ChartWithEditor({
       rows: result.rows,
       selection: choice.selection,
       theme,
+      color,
     });
-  }, [result, choice, theme]);
+  }, [result, choice, theme, color]);
 
   return (
     <article className="flex h-[28rem] flex-col overflow-hidden rounded-lg border border-hairline-strong bg-raised">

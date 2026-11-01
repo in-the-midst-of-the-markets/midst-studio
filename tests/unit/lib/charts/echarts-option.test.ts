@@ -136,6 +136,24 @@ describe("line and bar", () => {
     });
     expect(chart?.option.color).toEqual([...chartTheme("dark").series]);
   });
+
+  test("puts a requested colour first and drops that colour from the rest of the palette", () => {
+    const rows = [{ region: "east", total: 1 }];
+    const selection = { category: ["region"], values: ["total"] };
+    const painted = buildChartOption({
+      typeId: "line",
+      variationId: "basic",
+      rows,
+      selection,
+      color: "#E66767",
+    });
+    const palette = chartTheme("dark").series.filter((item) => item.toLowerCase() !== "#e66767");
+    expect(painted?.option.color).toEqual(["#E66767", ...palette]);
+    const blank = buildChartOption({ typeId: "line", variationId: "basic", rows, selection, color: "" });
+    expect(blank?.option.color).toEqual([...chartTheme("dark").series]);
+    const absent = buildChartOption({ typeId: "line", variationId: "basic", rows, selection, color: null });
+    expect(absent?.option.color).toEqual([...chartTheme("dark").series]);
+  });
 });
 
 describe("scatter and geo", () => {

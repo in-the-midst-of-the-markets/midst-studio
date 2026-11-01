@@ -2,6 +2,7 @@ import "../../setup-dom";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import type { QueryResult } from "@/lib/types";
 
@@ -141,7 +142,13 @@ const barResult: QueryResult = {
   rowCount: 1,
   executionTime: 4,
 };
-const barChart: AssistChart = { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month" };
+const barChart: AssistChart = {
+  type: "bar",
+  x: "month",
+  y: ["revenue"],
+  caption: "Revenue by month",
+  color: null,
+};
 
 beforeEach(() => {
   calls.length = 0;
@@ -265,7 +272,7 @@ describe("ChartWithEditor", () => {
         sql="SELECT 1"
         result={barResult}
         error="denied"
-        chart={{ type: "bar", x: "missing", y: ["nope"], caption: "" }}
+        chart={{ type: "bar", x: "missing", y: ["nope"], caption: "", color: null }}
         running={false}
         onSqlChange={() => {}}
         onRun={() => {}}
@@ -406,7 +413,9 @@ describe("ChartWithEditor", () => {
     fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
     fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
     fireEvent.click(
-      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Area", exact: true }),
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {
+        name: (accessibleName) => accessibleName === "Area",
+      }),
     );
     view.rerender(
       <ChartWithEditor
@@ -420,11 +429,32 @@ describe("ChartWithEditor", () => {
     expect(view.queryByText("Revenue by month")).toBeNull();
     expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
     view.rerender(
-      <ChartWithEditor {...props} chart={{ type: "line", x: "month", y: ["revenue"], caption: "trend" }} />,
+      <ChartWithEditor
+        {...props}
+        chart={{ type: "line", x: "month", y: ["revenue"], caption: "trend", color: null }}
+      />,
     );
     expect(view.getByRole("button", { name: "Change type, Line, Basic" })).toBeTruthy();
     view.rerender(<ChartWithEditor {...props} chart={null} />);
     expect(view.getByRole("button", { name: "Choose a type" })).toBeTruthy();
+  });
+
+  test("paints a chart in the colour it was given", () => {
+    render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT 1"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        color="#9546de"
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    const option = charts.at(-1)?.setOption.mock.calls.at(-1)?.[0] as { color?: string[] };
+    expect(option.color?.[0]).toBe("#9546de");
   });
 });
 
@@ -666,7 +696,9 @@ describe("AiAssist page", () => {
     fireEvent.click(view.getByRole("button", { name: "Change type, Bar, Basic" }));
     fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
     fireEvent.click(
-      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", { name: "Area", exact: true }),
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {
+        name: (accessibleName) => accessibleName === "Area",
+      }),
     );
     expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
 
@@ -701,6 +733,7 @@ describe("AiAssist page", () => {
     await typeAndSend(view);
     expect(await view.findByText("denied")).toBeTruthy();
     view.unmount();
+    localStorage.removeItem(ASSIST_TRANSCRIPT_KEY);
 
     handler = (url, init) => {
       if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") return jsonResponse(null);
@@ -861,6 +894,157 @@ describe("AiAssist page", () => {
     const broken = render(<AiAssist />);
     fireEvent.click(await broken.findByRole("button", { name: "Model" }));
     expect(await broken.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
+  });
+
+  test("keeps seven days of the conversation and recolors a chart without rewriting it", async () => {
+    saveConnection();
+    const week = 7 * 24 * 60 * 60 * 1000;
+    const revenueSql = "SELECT month, revenue FROM orders LIMIT 200";
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([
+        {
+          id: "assist-9",
+          role: "user",
+          text: "Last week",
+          at: new Date(Date.now() - week - 1000).toISOString(),
+          cards: [],
+        },
+        {
+          id: "note",
+          role: "user",
+          text: "Yesterday",
+          at: new Date(Date.now() - 60_000).toISOString(),
+          cards: [],
+        },
+        {
+          id: "assist-8",
+          role: "assistant",
+          text: "Saved.",
+          at: new Date(Date.now() - 60_000).toISOString(),
+          cards: [
+            {
+              id: "assist-7",
+              title: "Saved revenue",
+              titledSql: revenueSql,
+              modelSql: revenueSql,
+              locked: true,
+              sql: revenueSql,
+              connectionId: "c1",
+              connectionName: "Orders",
+              chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month", color: null },
+              color: "#9546de",
+              result: barResult,
+              error: null,
+            },
+            {
+              id: "assist-6",
+              title: "Count",
+              titledSql: "SELECT 1",
+              modelSql: "SELECT 1",
+              locked: false,
+              sql: "SELECT 1",
+              connectionId: "c1",
+              connectionName: "Orders",
+              chart: null,
+              color: null,
+              result: { rows: [], fields: ["n"], rowCount: 0, executionTime: 1 },
+              error: null,
+            },
+          ],
+        },
+      ]),
+    );
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        return jsonResponse({
+          explanation: "The bars are red.",
+          queries: [
+            {
+              title: "Revenue again",
+              sql: revenueSql,
+              chart: { type: "line", x: "month", y: ["revenue"], caption: "replaced", color: "red" },
+            },
+            {
+              title: "Spend",
+              connection: "Orders",
+              sql: "SELECT region, sum(cost) AS spend FROM sales",
+              chart: { type: "bar", x: "region", y: ["spend"], caption: "Spend", color: "green" },
+            },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByText("Yesterday")).toBeTruthy();
+    expect(view.queryByText("Last week")).toBeNull();
+    expect(view.getByRole("heading", { name: "Saved revenue" })).toBeTruthy();
+    const restored = charts.at(-1)?.setOption.mock.calls.at(-1)?.[0] as { color?: string[] };
+    expect(restored.color?.[0]).toBe("#9546de");
+    fireEvent.click(view.getAllByRole("button", { name: "Query" })[0] as HTMLButtonElement);
+    fireEvent.change(view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement, {
+      target: { value: "SELECT 9" },
+    });
+    const before = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { sql?: string }[];
+    }[];
+    expect(before[2]?.cards?.[0]?.sql).toBe(revenueSql);
+    fireEvent.click(view.getAllByRole("button", { name: "Chart" })[0] as HTMLButtonElement);
+
+    await typeAndSend(view, "Make it red");
+    expect(await view.findByText("The bars are red.")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Saved revenue" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "Revenue again" })).toBeNull();
+    expect(view.getByRole("heading", { name: "Spend" })).toBeTruthy();
+    expect((view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement).value).toBe("SELECT 9");
+    await waitFor(() => {
+      const colours = charts.flatMap((chart) =>
+        chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
+      );
+      expect(colours).toContain("#e66767");
+    });
+
+    view.unmount();
+    const again = render(<AiAssist />);
+    expect(await again.findByText("Yesterday")).toBeTruthy();
+    expect(await again.findByText("Make it red")).toBeTruthy();
+    expect(again.queryByText("Last week")).toBeNull();
+    expect(again.getByRole("heading", { name: "Saved revenue" })).toBeTruthy();
+    expect(again.getByRole("heading", { name: "Spend" })).toBeTruthy();
+    const kept = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      text?: string;
+      cards?: { title?: string; sql?: string; color?: string }[];
+    }[];
+    expect(kept.some((item) => item.text === "Last week")).toBe(false);
+    const saved = kept.flatMap((item) => item.cards ?? []).find((card) => card.title === "Saved revenue");
+    expect(saved?.sql).toBe(revenueSql);
+    expect(saved?.color).toBe("#e66767");
+    const spend = kept.flatMap((item) => item.cards ?? []).find((card) => card.title === "Spend");
+    expect(spend?.color).toBe("#199e70");
+  });
+
+  test("drops an answer that arrives after the page is gone", async () => {
+    let release: ((response: Response) => void) | undefined;
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        return new Promise<Response>((resolve) => {
+          release = resolve;
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view, "Stay with me");
+    expect(await view.findByText("Stay with me")).toBeTruthy();
+    view.unmount();
+    release?.(jsonResponse({ explanation: "Too late.", queries: [] }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const kept = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as { text?: string }[];
+    expect(kept.some((item) => item.text === "Stay with me")).toBe(true);
+    expect(kept.some((item) => item.text === "Too late.")).toBe(false);
   });
 });
 
