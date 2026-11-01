@@ -34,6 +34,33 @@ function resultOf(body: unknown): QueryResult | null {
   };
 }
 
+/**
+ * The saved connection a planned statement should run on.
+ *
+ * An empty name uses the only connection. A name or id must match exactly one
+ * saved connection. The match is the connection the studio already stored.
+ */
+export function connectionForAssistQuery<T extends { readonly id: string; readonly name: string }>(
+  connections: readonly T[],
+  requested: string,
+): { ok: true; connection: T } | { ok: false; error: string } {
+  const only = connections[0];
+  if (only === undefined) {
+    return { ok: false, error: "Connect a database in Traditional mode to run this query." };
+  }
+  const name = requested.trim();
+  if (name === "") {
+    if (connections.length === 1) return { ok: true, connection: only };
+    return { ok: false, error: "Name the connected database this query should use." };
+  }
+  const lower = name.toLowerCase();
+  const matches = connections.filter((item) => item.id.toLowerCase() === lower || item.name.toLowerCase() === lower);
+  const match = matches[0];
+  if (match !== undefined && matches.length === 1) return { ok: true, connection: match };
+  if (matches.length === 0) return { ok: false, error: `No connected database is named ${name}.` };
+  return { ok: false, error: `More than one connected database is named ${name}.` };
+}
+
 /** The editor query route's answer, or the message to show on the chart card. */
 export async function runAssistQuery(
   connection: DatabaseConnection,
