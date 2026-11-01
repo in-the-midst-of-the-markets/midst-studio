@@ -22,7 +22,7 @@
  * In dark, elevation means LIGHTER. In light, elevation means WHITER.
  *
  * Surfaces, type, and filled buttons follow the marketing palette: page
- * #101010, light type #333333, dark type white, buttons #0070f3. Accent and
+ * #101010, light type #333333, dark type white, buttons #9546de. Accent and
  * identity hues stay on their Tailwind steps. Elevated dark grounds stop at
  * #141414, because a tint wash under those hues falls under WCAG AA on anything
  * lighter. Hairlines and the scrollbar are the pre-token literals.
@@ -97,18 +97,18 @@
    * Every value here was selected by measurement, not by eye, and
    * `tests/unit/theme-accent-contrast.test.ts` re-measures it on every run.
    */
-  --studio-brand: #1447e6;
-  --studio-brand-bright: #193cb8;
-  --studio-brand-tint: #2b7fff;
-  /* Marketing primary #0070f3. White on it clears AA. Same value in both palettes. */
-  --studio-brand-solid: #0070f3;
-  --studio-brand-solid-hover: #3b93ff;
+  --studio-brand: #8200db;
+  --studio-brand-bright: #6e11b0;
+  --studio-brand-tint: #ad46ff;
+  /* Logo purple #9546de. White on it clears AA. Same value in both palettes. */
+  --studio-brand-solid: #9546de;
+  --studio-brand-solid-hover: #a25ce2;
   /*
    * The three standalone error pages hover the other way — they darken rather than
    * lighten. Flattening them onto `-solid-hover` inverted the direction AND took
    * white-on-hover from 6.8:1 to 3.8:1, so they keep a step of their own.
    */
-  --studio-brand-solid-active: #0059c1;
+  --studio-brand-solid-active: #833ec3;
 
   --studio-warning: #973c00;
   --studio-warning-bright: #7b3306;
@@ -288,25 +288,24 @@
 
   /*
    * ── Accents ───────────────────────────────────────────────────────────
-   * Every value below is the literal the components carried before #402 — the -400
-   * step for a base, -300 for `-bright` and `-alt` — reproduced exactly. Switching
-   * a component onto an accent token must not change how it looks in dark, and
-   * `tests/unit/theme-accent-contrast.test.ts` resolves these against the installed
-   * Tailwind palette rather than against transcribed hexes, so a Tailwind upgrade
-   * that restyles `blue-400` reports itself as the dark-mode change it is.
+   * Brand is the logo purple. Every other role below stays on the Tailwind step
+   * the components carried before #402 — the -400 step for a base, -300 for
+   * `-bright` and `-alt`. `tests/unit/theme-accent-contrast.test.ts` resolves
+   * these against the installed Tailwind palette rather than against transcribed
+   * hexes, so a Tailwind upgrade that restyles a step reports itself.
    */
-  --studio-brand: #51a2ff;
-  --studio-brand-bright: #8ec5ff;
-  --studio-brand-tint: #2b7fff;
-  /* Marketing primary #0070f3. White on it clears AA. Same value in both palettes. */
-  --studio-brand-solid: #0070f3;
-  --studio-brand-solid-hover: #3b93ff;
+  --studio-brand: #c27aff;
+  --studio-brand-bright: #dab2ff;
+  --studio-brand-tint: #ad46ff;
+  /* Logo purple #9546de. White on it clears AA. Same value in both palettes. */
+  --studio-brand-solid: #9546de;
+  --studio-brand-solid-hover: #a25ce2;
   /*
    * The three standalone error pages hover the other way — they darken rather than
    * lighten. Flattening them onto `-solid-hover` inverted the direction AND took
    * white-on-hover from 6.8:1 to 3.8:1, so they keep a step of their own.
    */
-  --studio-brand-solid-active: #0059c1;
+  --studio-brand-solid-active: #833ec3;
 
   --studio-warning: #ffb900;
   --studio-warning-bright: #ffd230;

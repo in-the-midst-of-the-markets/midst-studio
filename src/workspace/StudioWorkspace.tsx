@@ -62,7 +62,7 @@ const STUDIO_SCOPED_CSS = `
   --card-foreground: #333333;
   --popover: #ffffff;
   --popover-foreground: #333333;
-  --primary: #0070f3;
+  --primary: #9546de;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f5;
   --secondary-foreground: #333333;
@@ -74,7 +74,7 @@ const STUDIO_SCOPED_CSS = `
   --destructive-foreground: #ffffff;
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #0070f3;
+  --ring: #9546de;
   --radius: 0.5rem;
   --chart-1: #18181b;
   --chart-2: #3f3f46;
@@ -99,7 +99,7 @@ const STUDIO_SCOPED_CSS = `
   --card-foreground: #ffffff;
   --popover: #1a1a1a;
   --popover-foreground: #ffffff;
-  --primary: #0070f3;
+  --primary: #9546de;
   --primary-foreground: #ffffff;
   --secondary: #1a1a1a;
   --secondary-foreground: #ffffff;
@@ -111,7 +111,7 @@ const STUDIO_SCOPED_CSS = `
   --destructive-foreground: #ffffff;
   --border: #2a2a2a;
   --input: #2a2a2a;
-  --ring: #0070f3;
+  --ring: #9546de;
   --chart-1: #e4e4e7;
   --chart-2: #a1a1aa;
   --chart-3: #71717a;

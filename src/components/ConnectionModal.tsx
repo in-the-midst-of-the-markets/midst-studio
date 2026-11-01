@@ -1204,7 +1204,7 @@ export function ConnectionModal({
                   mongoConnectionMode === "connectionString" &&
                   !connectionString.trim())
               }
-              className="w-full md:w-auto min-w-0 md:min-w-[140px] bg-brand-solid hover:bg-brand-solid-hover text-white font-medium text-xs h-10 shadow-lg shadow-blue-900/20 group relative overflow-hidden"
+              className="w-full md:w-auto min-w-0 md:min-w-[140px] bg-brand-solid hover:bg-brand-solid-hover text-white font-medium text-xs h-10 shadow-lg shadow-purple-900/20 group relative overflow-hidden"
             >
               {/*
                 The label follows isTesting in the same render, never through an exit animation: AnimatePresence
