@@ -292,6 +292,31 @@ describe("ChartWithEditor", () => {
     expect(ran[1]).toBe("SELECT month, revenue FROM orders");
   });
 
+  test("edits a metric filter as a number comparison", () => {
+    const onRun = mock(() => {});
+    const sql = "SELECT month, revenue FROM orders WHERE revenue > {{revenue:10}}";
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql={sql}
+        result={barResult}
+        error={null}
+        chart={null}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={onRun}
+      />,
+    );
+    const comparison = view.getByRole("combobox", { name: "revenue comparison" }) as HTMLSelectElement;
+    expect(comparison.value).toBe("=");
+    fireEvent.change(comparison, { target: { value: ">=" } });
+    expect(onRun).toHaveBeenCalledWith("SELECT month, revenue FROM orders WHERE revenue >= {{revenue:10}}");
+    const input = view.getByRole("spinbutton", { name: "revenue" }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "3" } });
+    fireEvent.blur(input);
+    expect(onRun).toHaveBeenLastCalledWith("SELECT month, revenue FROM orders WHERE revenue > {{revenue:3}}");
+  });
+
   test("listens for the editor's run event only while the query is showing", () => {
     const ran: string[] = [];
     const view = render(

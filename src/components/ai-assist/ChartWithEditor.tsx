@@ -6,7 +6,13 @@ import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilte
 import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
-import { readQueryFilters, writeQueryFilter } from "@/lib/charts/query-filters";
+import {
+  readQueryFilters,
+  writeMetricCompare,
+  writeMetricFilter,
+  writeQueryFilter,
+  type FilterCompare,
+} from "@/lib/charts/query-filters";
 import { classifyColumns, ECHART_TYPES, echartType, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
@@ -143,8 +149,12 @@ export function ChartWithEditor({
 
   const columns = result !== null && result.rows.length > 0 ? classifyColumns(result.fields, result.rows) : null;
   const filters = readQueryFilters(sql);
+  const metricNames = columns?.metrics ?? [];
   const changeFilter = (name: string, value: string) => {
-    onRun(writeQueryFilter(sql, name, value));
+    onRun(metricNames.includes(name) ? writeMetricFilter(sql, name, value) : writeQueryFilter(sql, name, value));
+  };
+  const changeCompare = (name: string, compare: FilterCompare) => {
+    onRun(writeMetricCompare(sql, filters, name, compare));
   };
   const slots = choice === null ? null : slotsFor(choice.typeId, choice.variationId);
   const typeMeta = choice === null ? null : echartType(choice.typeId);
@@ -221,7 +231,13 @@ export function ChartWithEditor({
       </div>
       {chart?.caption ? <p className="px-3 pt-2 text-xs text-fg-muted">{chart.caption}</p> : null}
       {filters.length > 0 && (running || columns === null || slots === null) && (
-        <QueryFilterBar filters={filters} disabled={running} onChange={changeFilter} />
+        <QueryFilterBar
+          filters={filters}
+          metrics={metricNames}
+          disabled={running}
+          onChange={changeFilter}
+          onCompare={changeCompare}
+        />
       )}
       <div className="relative min-h-0 flex-1">
         <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
@@ -363,6 +379,7 @@ export function ChartWithEditor({
                 })}
                 <ChartFilterShelf
                   columns={columns.dimensions}
+                  metrics={columns.metrics}
                   rows={result.rows}
                   sql={sql}
                   disabled={running}

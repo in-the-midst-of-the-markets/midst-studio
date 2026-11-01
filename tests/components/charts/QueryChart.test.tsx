@@ -271,8 +271,72 @@ describe("QueryChart", () => {
     fireEvent.click(view.getByRole("button", { name: "Basic" }));
     const filter = within(view.getByRole("group", { name: "Filter" }));
     fireEvent.click(filter.getByRole("button", { name: "region" }));
-    expect(onFilterChange).toHaveBeenCalledWith(
-      "SELECT region, total FROM sales WHERE region = {{region:east|east,west}}",
+    const added = "SELECT region, total FROM sales WHERE region = {{region:east|east,west}}";
+    expect(onFilterChange).toHaveBeenCalledWith(added);
+    view.rerender(React.createElement(QueryChart, { result: sales, query: added, onFilterChange }));
+    fireEvent.change(within(view.getByRole("group", { name: "Filter" })).getByRole("combobox", { name: "region" }), {
+      target: { value: "west" },
+    });
+    expect(onFilterChange).toHaveBeenLastCalledWith(
+      "SELECT region, total FROM sales WHERE region = {{region:west|east,west}}",
     );
+  });
+
+  test("a metric filter is a number and a comparison", () => {
+    const onFilterChange = mock(() => {});
+    const view = render(
+      React.createElement(QueryChart, {
+        result: sales,
+        query: "SELECT region, total FROM sales",
+        onFilterChange,
+      }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    fireEvent.click(filter.getByRole("button", { name: "total" }));
+    const added = "SELECT region, total FROM sales WHERE total = {{total:1}}";
+    expect(onFilterChange).toHaveBeenCalledWith(added);
+    view.rerender(React.createElement(QueryChart, { result: sales, query: added, onFilterChange }));
+    const comparison = view.getByRole("combobox", { name: "total comparison" });
+    fireEvent.change(comparison, { target: { value: "nope" } });
+    expect(onFilterChange).toHaveBeenCalledTimes(1);
+    fireEvent.change(comparison, { target: { value: ">=" } });
+    const compared = "SELECT region, total FROM sales WHERE total >= {{total:1}}";
+    expect(onFilterChange).toHaveBeenLastCalledWith(compared);
+    view.rerender(React.createElement(QueryChart, { result: sales, query: compared, onFilterChange }));
+    const input = view.getByRole("spinbutton", { name: "total" }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "1" } });
+    fireEvent.blur(input);
+    fireEvent.keyDown(input, { key: "a" });
+    expect(onFilterChange).toHaveBeenCalledTimes(2);
+    fireEvent.change(input, { target: { value: "" } });
+    fireEvent.blur(input);
+    expect(input.value).toBe("1");
+    fireEvent.change(input, { target: { value: "4" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onFilterChange).toHaveBeenLastCalledWith("SELECT region, total FROM sales WHERE total >= {{total:4}}");
+    view.rerender(
+      React.createElement(QueryChart, {
+        result: sales,
+        query: "SELECT region, total FROM sales WHERE total >= {{total:9|1,2}}",
+        onFilterChange,
+      }),
+    );
+    expect((view.getByRole("spinbutton", { name: "total" }) as HTMLInputElement).value).toBe("9");
+    expect((view.getByRole("combobox", { name: "total comparison" }) as HTMLSelectElement).value).toBe(">=");
+  });
+
+  test("a metric filter stays a number comparison before a chart variation is chosen", () => {
+    const onFilterChange = mock(() => {});
+    const query = "SELECT region, total FROM sales WHERE total <= {{total:2|2,9}}";
+    const view = render(React.createElement(QueryChart, { result: sales, query, onFilterChange }));
+    const input = view.getByRole("spinbutton", { name: "total" }) as HTMLInputElement;
+    expect((view.getByRole("combobox", { name: "total comparison" }) as HTMLSelectElement).value).toBe("<=");
+    fireEvent.change(view.getByRole("combobox", { name: "total comparison" }), { target: { value: "=" } });
+    expect(onFilterChange).toHaveBeenCalledWith("SELECT region, total FROM sales WHERE total = {{total:2}}");
+    fireEvent.change(input, { target: { value: "6" } });
+    fireEvent.blur(input);
+    expect(onFilterChange).toHaveBeenLastCalledWith("SELECT region, total FROM sales WHERE total <= {{total:6}}");
   });
 });

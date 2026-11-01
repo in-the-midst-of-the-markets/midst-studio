@@ -2,11 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
   addQueryFilter,
   applyQueryFilters,
+  metricFilterValue,
   promoteQueryFilters,
   queryFilterShape,
   queryIdentity,
   readQueryFilters,
   removeQueryFilter,
+  writeMetricCompare,
+  writeMetricFilter,
   writeQueryFilter,
 } from "@/lib/charts/query-filters";
 
@@ -25,10 +28,20 @@ describe("query filters", () => {
       "/* unfinished",
     ].join("\n");
     expect(readQueryFilters(sql)).toEqual([
-      { name: "region", value: "east", options: ["east", "west"] },
-      { name: "note", value: "into", options: [] },
-      { name: "min", value: "10", options: [] },
-      { name: "code", value: "01", options: [] },
+      { name: "region", value: "east", options: ["east", "west"], compare: "=" },
+      { name: "note", value: "into", options: [], compare: "=" },
+      { name: "min", value: "10", options: [], compare: ">=" },
+      { name: "code", value: "01", options: [], compare: "=" },
+    ]);
+    expect(
+      readQueryFilters("{{a:1}} WHERE b <= {{b:2}} AND c > {{c:3}} AND d != {{d:4}} AND e <> {{e:5}} AND f < {{f:6}}"),
+    ).toEqual([
+      { name: "a", value: "1", options: [], compare: "=" },
+      { name: "b", value: "2", options: [], compare: "<=" },
+      { name: "c", value: "3", options: [], compare: "=" },
+      { name: "d", value: "4", options: [], compare: "=" },
+      { name: "e", value: "5", options: [], compare: "=" },
+      { name: "f", value: "6", options: [], compare: "=" },
     ]);
     expect(readQueryFilters("SELECT {{not-a name}}")).toEqual([]);
     expect(readQueryFilters("SELECT {{region")).toEqual([]);
@@ -154,6 +167,9 @@ describe("query filters", () => {
     const options = Array.from({ length: 25 }, (_, index) => `c${index}`);
     expect(addQueryFilter("SELECT 1", "bucket", "c0", options)).toContain("c23");
     expect(addQueryFilter("SELECT 1", "bucket", "c0", options)).not.toContain("c24");
+    expect(addQueryFilter("SELECT month FROM orders LIMIT 200", "total", "10", [], ">=")).toBe(
+      "SELECT month FROM orders WHERE total >= {{total:10}} LIMIT 200",
+    );
     const withBoth = "SELECT 1 WHERE region = {{region:east}} AND total >= {{total:10}} LIMIT 5";
     expect(removeQueryFilter(withBoth, "region")).toBe("SELECT 1 WHERE total >= {{total:10}} LIMIT 5");
     expect(removeQueryFilter(withBoth, "total")).toBe("SELECT 1 WHERE region = {{region:east}} LIMIT 5");
@@ -162,6 +178,40 @@ describe("query filters", () => {
     expect(removeQueryFilter("SELECT 1", "region")).toBe("SELECT 1");
     expect(removeQueryFilter("SELECT 1 WHERE myregion = {{region:east}}", "region")).toBe(
       "SELECT 1 WHERE myregion = {{region:east}}",
+    );
+  });
+
+  test("starts a metric filter from the first number in the column", () => {
+    expect(metricFilterValue([{ total: -2.5 }], "total")).toBe("-2.5");
+    expect(metricFilterValue([{ total: 1e21 }, { total: Number.POSITIVE_INFINITY }, { total: "8" }], "total")).toBe(
+      "8",
+    );
+    expect(metricFilterValue([{ total: "no" }, { total: true }, { total: " 4 " }], "total")).toBe("4");
+    expect(metricFilterValue([{ total: null }], "total")).toBe("0");
+    expect(metricFilterValue([], "total")).toBe("0");
+  });
+
+  test("writes a metric as a number and can change its comparison", () => {
+    expect(writeMetricFilter("SELECT total = {{total:1|1,2}}", "total", " 4 ")).toBe("SELECT total = {{total:4}}");
+    expect(writeMetricFilter("SELECT total>= {{total:1}} AND total>= {{total:1}}", "total", "8|0", "<=")).toBe(
+      "SELECT total<= {{total:80}} AND total<= {{total:80}}",
+    );
+    expect(writeMetricFilter("SELECT total > {{total:1}} AND region = {{region:east}}", "total", "3", ">=")).toBe(
+      "SELECT total >= {{total:3}} AND region = {{region:east}}",
+    );
+    expect(writeMetricFilter("SELECT total != {{total:1}}", "total", "3", "=")).toBe("SELECT total = {{total:3}}");
+    expect(writeMetricFilter("SELECT {{total:1|1,2}}", "total", "4", ">=")).toBe("SELECT {{total:4}}");
+    expect(writeMetricFilter("SELECT 1", "total", "4", ">=")).toBe("SELECT 1");
+    expect(writeMetricFilter("SELECT total = {{total:1}}", "total", "1.2.3")).toBe("SELECT total = {{total:1}}");
+    expect(writeMetricFilter("SELECT total = {{total:1}}", "total", "")).toBe("SELECT total = {{total:1}}");
+    expect(writeMetricFilter("SELECT total <> {{total:1}}", "total", "2", "<=")).toBe("SELECT total <= {{total:2}}");
+    expect(writeMetricFilter("SELECT total < {{total:1}}", "total", "2", "=")).toBe("SELECT total = {{total:2}}");
+    const filters = readQueryFilters("SELECT total >= {{total:9}}");
+    expect(writeMetricCompare("SELECT total >= {{total:9}}", filters, "total", "<=")).toBe(
+      "SELECT total <= {{total:9}}",
+    );
+    expect(writeMetricCompare("SELECT total >= {{total:9}}", filters, "missing", "=")).toBe(
+      "SELECT total >= {{total:9}}",
     );
   });
 });

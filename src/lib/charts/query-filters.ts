@@ -6,10 +6,15 @@
  * so a value cannot change the statement around it. The same name shares one control.
  */
 
+/** The comparisons a metric filter offers. Anything else in the statement stays until the user picks one of these. */
+export type FilterCompare = ">=" | "<=" | "=";
+
 export interface QueryFilter {
   readonly name: string;
   readonly value: string;
   readonly options: readonly string[];
+  /** The comparison written immediately before this placeholder. A metric filter can change it. */
+  readonly compare: FilterCompare;
 }
 
 const VALUE_CAP = 200;
@@ -88,6 +93,26 @@ function sqlLiteral(value: string, options: readonly string[]): string {
   return `'${value.split("'").join("''")}'`;
 }
 
+/** A number a metric filter can store and send as an unquoted SQL literal. */
+export function isNumericFilterValue(value: string): boolean {
+  return /^-?(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value);
+}
+
+function compareAt(sql: string, placeholderStart: number): { start: number; op: string } | null {
+  let cursor = placeholderStart;
+  while (cursor > 0 && /\s/.test(sql[cursor - 1] ?? "")) cursor -= 1;
+  const two = sql.slice(cursor - 2, cursor);
+  if (two === ">=" || two === "<=" || two === "!=" || two === "<>") return { start: cursor - 2, op: two };
+  const one = sql[cursor - 1];
+  if (one === "=" || one === ">" || one === "<") return { start: cursor - 1, op: one };
+  return null;
+}
+
+function filterCompare(op: string | undefined): FilterCompare {
+  if (op === ">=" || op === "<=" || op === "=") return op;
+  return "=";
+}
+
 /** One control per name, in the order the placeholders appear. */
 export function readQueryFilters(sql: string): QueryFilter[] {
   const filters: QueryFilter[] = [];
@@ -95,9 +120,28 @@ export function readQueryFilters(sql: string): QueryFilter[] {
   for (const token of tokensIn(sql)) {
     if (seen.has(token.name)) continue;
     seen.add(token.name);
-    filters.push({ name: token.name, value: token.value, options: token.options });
+    filters.push({
+      name: token.name,
+      value: token.value,
+      options: token.options,
+      compare: filterCompare(compareAt(sql, token.start)?.op),
+    });
   }
   return filters;
+}
+
+/** The number a new metric filter starts from: the first numeric cell, or zero. */
+export function metricFilterValue(rows: readonly Record<string, unknown>[], column: string): string {
+  for (const row of rows) {
+    const value = row[column];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      const text = String(value);
+      if (isNumericFilterValue(text)) return text;
+    } else if (typeof value === "string" && isNumericFilterValue(value.trim())) {
+      return value.trim();
+    }
+  }
+  return "0";
 }
 
 /** The statement a run sends. Text with no placeholders is returned unchanged. */
@@ -422,7 +466,7 @@ function whereSpot(sql: string): WhereSpot {
   return { kind: "where", index: clauseEnd ?? sql.length };
 }
 
-function filterToken(name: string, value: string, options: readonly string[]): string {
+function filterToken(name: string, value: string, options: readonly string[], compare: FilterCompare): string {
   const clean = value
     .replace(/[|}\r\n]/g, "")
     .trim()
@@ -439,13 +483,19 @@ function filterToken(name: string, value: string, options: readonly string[]): s
   }
   const choices = listed.length > 0 ? `|${listed.join(",")}` : "";
   const body = clean === "" && choices === "" ? name : `${name}:${clean}${choices}`;
-  return `${name} = {{${body}}}`;
+  return `${name} ${compare} {{${body}}}`;
 }
 
 /** Adds one comparison the chart can edit. A name that is already a filter is left as it is. */
-export function addQueryFilter(sql: string, name: string, value: string, options: readonly string[] = []): string {
+export function addQueryFilter(
+  sql: string,
+  name: string,
+  value: string,
+  options: readonly string[] = [],
+  compare: FilterCompare = "=",
+): string {
   if (filterName(name) === null || tokensIn(sql).some((token) => token.name === name)) return sql;
-  const predicate = filterToken(name, value, options);
+  const predicate = filterToken(name, value, options, compare);
   const spot = whereSpot(sql);
   const left = sql.slice(0, spot.index).trimEnd();
   const rest = sql.slice(spot.index).trimStart();
@@ -532,4 +582,43 @@ export function writeQueryFilter(sql: string, name: string, value: string): stri
     next = `${next.slice(0, token.start)}{{${body}}}${next.slice(token.end)}`;
   }
   return wrote ? next : sql;
+}
+
+/**
+ * Writes a metric filter. The value stays an unquoted number, and choices are removed.
+ * Pass a comparison to replace the operator in front of the placeholder.
+ */
+export function writeMetricFilter(sql: string, name: string, value: string, compare?: FilterCompare): string {
+  const clean = value
+    .replace(/[|}\r\n]/g, "")
+    .trim()
+    .slice(0, VALUE_CAP);
+  if (!isNumericFilterValue(clean)) return sql;
+  const tokens = tokensIn(sql);
+  let next = sql;
+  let wrote = false;
+  for (const token of [...tokens].reverse()) {
+    if (token.name !== name) continue;
+    wrote = true;
+    const body = `${token.name}:${clean}`;
+    const found = compare === undefined ? null : compareAt(next, token.start);
+    if (found === null) {
+      next = `${next.slice(0, token.start)}{{${body}}}${next.slice(token.end)}`;
+    } else {
+      const gap = next.slice(found.start + found.op.length, token.start);
+      next = `${next.slice(0, found.start)}${compare}${gap}{{${body}}}${next.slice(token.end)}`;
+    }
+  }
+  return wrote ? next : sql;
+}
+
+/** Replaces the comparison in front of one metric filter, keeping its current number. */
+export function writeMetricCompare(
+  sql: string,
+  filters: readonly QueryFilter[],
+  name: string,
+  compare: FilterCompare,
+): string {
+  const current = filters.find((item) => item.name === name);
+  return writeMetricFilter(sql, name, current === undefined ? "" : current.value, compare);
 }
