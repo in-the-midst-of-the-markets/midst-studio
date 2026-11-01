@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MIN_CHART_REFRESH_SECONDS, readRefreshText } from "@/lib/charts/chart-refresh";
-import { buildSavedChart, type SaveChartDraft } from "@/lib/charts/save-chart";
+import { buildSavedChart, findSavedChart, type SaveChartDraft } from "@/lib/charts/save-chart";
 import { storage } from "@/lib/storage";
 
 export interface SaveChartButtonProps {
@@ -37,9 +37,15 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
       setNote(null);
       return;
     }
-    const chart = buildSavedChart({ ...draft, name, refreshText: canSchedule ? refreshText : "" });
+    const next = { ...draft, name, refreshText: canSchedule ? refreshText : "" };
+    const chart = buildSavedChart(next);
     if (chart === null) {
       setError("Name the chart before saving.");
+      setNote(null);
+      return;
+    }
+    if (findSavedChart(storage.getSavedCharts(), next) !== null) {
+      setError("This chart is already saved.");
       setNote(null);
       return;
     }

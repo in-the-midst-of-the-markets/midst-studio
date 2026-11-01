@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { axesFromSelection, buildSavedChart, chartSaveDraft } from "@/lib/charts/save-chart";
+import { axesFromSelection, buildSavedChart, chartSaveDraft, findSavedChart } from "@/lib/charts/save-chart";
 
 const draft = {
   name: "Revenue",
@@ -75,5 +75,39 @@ describe("save chart", () => {
     expect(saved?.refreshSeconds).toBeUndefined();
     expect(saved?.typeId).toBeUndefined();
     expect(buildSavedChart({ ...draft, connectionId: undefined }).id).toBeTypeOf("string");
+  });
+
+  test("the same query, connection, and shelves are the chart already saved", () => {
+    const saved = buildSavedChart(draft, "chart-1");
+    if (saved === null) throw new Error("expected a chart");
+    expect(findSavedChart([saved], draft)?.id).toBe("chart-1");
+    expect(findSavedChart([saved], { ...draft, name: "Other", query: "  SELECT 1  " })?.id).toBe("chart-1");
+    expect(
+      findSavedChart([saved], {
+        ...draft,
+        selection: { values: ["total"], category: ["region"] },
+      })?.id,
+    ).toBe("chart-1");
+    expect(findSavedChart([saved], { ...draft, query: "SELECT 2" })).toBeNull();
+    expect(findSavedChart([saved], { ...draft, variationId: "stacked" })).toBeNull();
+    expect(findSavedChart([], draft)).toBeNull();
+    const bare = {
+      ...saved,
+      connectionId: undefined,
+      typeId: undefined,
+      variationId: undefined,
+      selection: undefined,
+      query: undefined,
+    };
+    expect(
+      findSavedChart([bare], {
+        ...draft,
+        connectionId: "",
+        typeId: undefined,
+        variationId: undefined,
+        selection: undefined,
+        query: "  ",
+      })?.id,
+    ).toBe("chart-1");
   });
 });
