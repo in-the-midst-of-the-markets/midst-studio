@@ -45,6 +45,35 @@ export function chartSaveDraft(input: {
   };
 }
 
+interface ChartIdentity {
+  query?: string;
+  connectionId?: string;
+  typeId?: string;
+  variationId?: string;
+  selection?: Record<string, readonly string[]>;
+}
+
+/** The parts that make one saved chart the same as another. A new name is not a new chart. */
+function chartIdentity(chart: ChartIdentity): string {
+  const selection = chart.selection ?? {};
+  const shelves = Object.entries(selection)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, values]) => `${key}=${values.join("\0")}`);
+  return [
+    chart.connectionId ?? "",
+    chart.typeId ?? "",
+    chart.variationId ?? "",
+    shelves.join("\n"),
+    (chart.query ?? "").trim(),
+  ].join("\u0001");
+}
+
+/** The saved chart this draft would repeat, or null when nothing stored matches it. */
+export function findSavedChart<T extends ChartIdentity>(charts: readonly T[], draft: ChartIdentity): T | null {
+  const key = chartIdentity(draft);
+  return charts.find((chart) => chartIdentity(chart) === key) ?? null;
+}
+
 /**
  * The stored chart, or null when the name is blank or the refresh field is not a schedule.
  * A query is required for a schedule: without one there is nothing to rerun.

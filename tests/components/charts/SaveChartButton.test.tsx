@@ -39,9 +39,8 @@ describe("SaveChartButton", () => {
     expect(view.getByText("Raised to 60 seconds, the shortest refresh.")).toBeTruthy();
     expect(storage.getSavedCharts()[0]?.refreshSeconds).toBe(60);
     fireEvent.click(view.getByRole("button", { name: "Save" }));
-    expect(view.getByRole("button", { name: "Save chart" })).toBeTruthy();
-    expect(storage.getSavedCharts()).toHaveLength(2);
-    fireEvent.click(view.getByRole("button", { name: "Save chart" }));
+    expect(view.getByRole("alert").textContent).toBe("This chart is already saved.");
+    expect(storage.getSavedCharts()).toHaveLength(1);
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     expect(view.queryByRole("textbox", { name: "Chart name" })).toBeNull();
   });
