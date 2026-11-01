@@ -209,7 +209,7 @@ describe("every AI route enforces the shared budget", () => {
     The exact set is what asserts both. Found by review on #349.
   */
   test("the filesystem enumeration finds exactly today's AI routes", () => {
-    expect(AI_ROUTES.map(([routeKey]) => routeKey)).toEqual(["describe-schema", "explain", "query-safety"]);
+    expect(AI_ROUTES.map(([routeKey]) => routeKey)).toEqual(["assist", "describe-schema", "explain", "query-safety"]);
   });
 
   test("each discovered route is rejected once the shared ai bucket is already spent", async () => {

@@ -2,8 +2,8 @@
  * The prompt-side fence for the standalone AI surfaces.
  *
  * The agent runtime already wraps every database-derived block before it reaches a
- * prompt (`src/lib/agent/untrusted-content.ts`). The three standalone AI routes —
- * `describe-schema`, `explain` and `query-safety` — did not, so a table name, a
+ * prompt (`src/lib/agent/untrusted-content.ts`). The standalone AI routes —
+ * `describe-schema`, `explain`, `query-safety` and `assist` — did not, so a table name, a
  * column comment or an engine plan written by whoever can write to the database
  * reached the model as if the server had said it. This module is that shared fence,
  * reusing the agent's `fenceUntrustedContent` so the two paths cannot disagree about
@@ -15,10 +15,11 @@
 
 import { fenceUntrustedContent } from "@/lib/agent/untrusted-content";
 
-/** The three standalone AI surfaces that reach a model with user/database content. */
-export type AiSurface = "describe-schema" | "explain" | "query-safety";
+/** The standalone AI surfaces that reach a model with user or database content. */
+export type AiSurface = "assist" | "describe-schema" | "explain" | "query-safety";
 
 const SURFACE_LABEL: Record<AiSurface, string> = {
+  assist: "question / schema / history",
   "describe-schema": "schema context",
   explain: "query / plan / schema",
   "query-safety": "query / schema",

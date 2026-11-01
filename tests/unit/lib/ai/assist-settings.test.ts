@@ -1,0 +1,105 @@
+import "../../../setup-dom";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+  DEFAULT_ASSIST_SETTINGS,
+  normalizeModels,
+  readAssistSettings,
+  subscribeAssistSettings,
+  writeAssistSettings,
+} from "@/lib/ai/assist-settings";
+
+afterEach(() => {
+  localStorage.clear();
+});
+
+describe("normalizeModels", () => {
+  test("keeps entries that have an id and fills a missing name", () => {
+    expect(
+      normalizeModels([
+        { id: " openai/gpt-4o ", name: " GPT-4o " },
+        { id: "plain" },
+        { id: "   " },
+        { id: 1 },
+        null,
+        { name: "no id" },
+        { id: "named-blank", name: "  " },
+      ]),
+    ).toEqual([
+      { id: "openai/gpt-4o", name: "GPT-4o" },
+      { id: "plain", name: "plain" },
+      { id: "named-blank", name: "named-blank" },
+    ]);
+    expect(normalizeModels("no")).toEqual([]);
+  });
+});
+
+describe("assist settings storage", () => {
+  test("returns the default when nothing is stored", () => {
+    expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
+  });
+
+  test("reads a saved Fireworks choice and ignores a bad record", () => {
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({
+        source: "fireworks",
+        openRouterModel: "",
+        fireworksModel: "accounts/acme/models/tuned",
+        openRouterKey: "ork",
+        fireworksKey: "fwk",
+      }),
+    );
+    expect(readAssistSettings()).toMatchObject({
+      source: "fireworks",
+      openRouterModel: DEFAULT_ASSIST_SETTINGS.openRouterModel,
+      fireworksModel: "accounts/acme/models/tuned",
+      openRouterKey: "ork",
+      fireworksKey: "fwk",
+    });
+
+    localStorage.setItem("libredb_ai_assist", "not json");
+    expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
+    localStorage.setItem("libredb_ai_assist", "null");
+    expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
+    localStorage.setItem("libredb_ai_assist", "[]");
+    expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ source: "elsewhere", openRouterModel: 4 }));
+    expect(readAssistSettings().source).toBe("openrouter");
+    expect(readAssistSettings().openRouterModel).toBe(DEFAULT_ASSIST_SETTINGS.openRouterModel);
+  });
+
+  test("caps oversized strings", () => {
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ openRouterModel: "m".repeat(250), fireworksKey: "k".repeat(600) }),
+    );
+    const settings = readAssistSettings();
+    expect(settings.openRouterModel).toHaveLength(200);
+    expect(settings.fireworksKey).toHaveLength(500);
+  });
+
+  test("writes the choice and ignores a storage failure", () => {
+    writeAssistSettings({ ...DEFAULT_ASSIST_SETTINGS, fireworksModel: "accounts/acme/models/tuned" });
+    expect(readAssistSettings().fireworksModel).toBe("accounts/acme/models/tuned");
+
+    const original = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = () => {
+      throw new Error("full");
+    };
+    expect(() => writeAssistSettings(DEFAULT_ASSIST_SETTINGS)).not.toThrow();
+    localStorage.setItem = original;
+  });
+
+  test("keeps one snapshot and tells a subscriber when the choice changes", () => {
+    let calls = 0;
+    const stop = subscribeAssistSettings(() => {
+      calls += 1;
+    });
+    writeAssistSettings({ ...DEFAULT_ASSIST_SETTINGS, fireworksModel: "accounts/acme/models/tuned" });
+    expect(calls).toBe(1);
+    expect(readAssistSettings()).toBe(readAssistSettings());
+    stop();
+    writeAssistSettings(DEFAULT_ASSIST_SETTINGS);
+    expect(calls).toBe(1);
+  });
+});

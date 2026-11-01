@@ -144,6 +144,8 @@ export const PROVIDER_ROUTES_WITHOUT_A_CONNECTION_BODY: Readonly<Record<string, 
     "takes only a connectionId, which it resolves as a seed id, never an inline connection; under governance it answers as with the agent switched off (tests/security/governance-holds.test.ts)",
   "agent/runs/[runId]/handover":
     "resolves only the connectionId the run recorded, under the run's own actor, and reads no connection from the request; under governance it answers as with the agent switched off (tests/security/governance-holds.test.ts)",
+  "ai/assist":
+    "reaches only an LLM: the question, schema and earlier turns arrive as text, and no connection is resolved",
   "ai/describe-schema": "reaches only an LLM: the schema it describes arrives as text, and no connection is resolved",
   "ai/explain": "reaches only an LLM: the statement and the plan arrive as text, and no connection is resolved",
   "ai/query-safety": "reaches only an LLM: the statement arrives as text, and no connection is resolved",

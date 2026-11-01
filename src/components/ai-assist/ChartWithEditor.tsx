@@ -1,0 +1,206 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { QueryEditor } from "@/components/QueryEditor";
+import type { AssistChart } from "@/lib/ai/assist-plan";
+import { classifyColumns, seedChartChoice } from "@/lib/charts/echarts-catalog";
+import { buildChartOption } from "@/lib/charts/echarts-option";
+import { chartTheme } from "@/lib/charts/palette";
+import { useEffectiveTheme } from "@/hooks/use-effective-theme";
+import type { DatabaseType, QueryResult } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+const PREVIEW_ROWS = 8;
+const PREVIEW_COLUMNS = 6;
+
+export interface ChartWithEditorProps {
+  readonly title: string;
+  readonly sql: string;
+  readonly databaseType?: DatabaseType;
+  readonly schemaContext?: string;
+  readonly result: QueryResult | null;
+  readonly error: string | null;
+  readonly chart: AssistChart | null;
+  readonly running: boolean;
+  readonly onSqlChange: (sql: string) => void;
+  readonly onRun: (sql: string) => void;
+}
+
+function cellText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value) ?? "";
+    } catch {
+      return "";
+    }
+  }
+  return String(value);
+}
+
+function ResultTable({ result }: { result: QueryResult }) {
+  const fields = result.fields.slice(0, PREVIEW_COLUMNS);
+  const rows = result.rows.slice(0, PREVIEW_ROWS);
+  const hiddenRows = result.rows.length - rows.length;
+  const hiddenFields = result.fields.length - fields.length;
+  return (
+    <div className="h-full overflow-auto p-3">
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr>
+            {fields.map((field) => (
+              <th key={field} className="border-b border-hairline px-2 py-1 font-medium text-fg-muted">
+                {field}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={fields.map((field) => cellText(row[field])).join("\u001f")}>
+              {fields.map((field) => (
+                <td key={field} className="border-b border-hairline px-2 py-1 text-fg">
+                  {cellText(row[field])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {hiddenRows > 0 && <p className="px-2 py-1 text-xs text-fg-muted">{hiddenRows} more rows</p>}
+      {hiddenFields > 0 && <p className="px-2 py-1 text-xs text-fg-muted">{hiddenFields} more columns</p>}
+    </div>
+  );
+}
+
+/**
+ * A chart the assistant drew, with the SQL editor behind it.
+ * Query hides the chart and leaves the editor, which was mounted underneath the whole time.
+ */
+export function ChartWithEditor({
+  title,
+  sql,
+  databaseType,
+  schemaContext,
+  result,
+  error,
+  chart,
+  running,
+  onSqlChange,
+  onRun,
+}: ChartWithEditorProps) {
+  const [tracked, setTracked] = useState({ result, error });
+  const [face, setFace] = useState<"chart" | "query">("chart");
+  const theme = chartTheme(useEffectiveTheme());
+  if (tracked.result !== result || tracked.error !== error) {
+    setTracked({ result, error });
+    setFace("chart");
+  }
+
+  useEffect(() => {
+    if (face !== "query") return;
+    const onExecute = (event: Event) => {
+      const query = (event as CustomEvent<{ query?: unknown }>).detail?.query;
+      if (typeof query !== "string" || query.trim() === "") return;
+      onSqlChange(query);
+      onRun(query);
+    };
+    window.addEventListener("execute-query", onExecute);
+    return () => window.removeEventListener("execute-query", onExecute);
+  }, [face, onRun, onSqlChange]);
+
+  const built = useMemo(() => {
+    if (result === null || result.rows.length === 0 || chart === null) return null;
+    const columns = classifyColumns(result.fields, result.rows);
+    const choice = seedChartChoice(chart, columns);
+    if (choice.typeId === null || choice.variationId === null) return null;
+    return buildChartOption({
+      typeId: choice.typeId,
+      variationId: choice.variationId,
+      rows: result.rows,
+      selection: choice.selection,
+      theme,
+    });
+  }, [result, chart, theme]);
+
+  return (
+    <article className="overflow-hidden rounded-lg border border-hairline bg-surface">
+      <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2">
+        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{title}</h3>
+        {result !== null && (
+          <span className="text-xs text-fg-muted">
+            {result.rowCount} rows · {result.executionTime} ms
+          </span>
+        )}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-pressed={face === "chart"}
+            onClick={() => setFace("chart")}
+            className={cn(
+              "rounded-md px-2 py-1 text-xs font-medium",
+              face === "chart" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+            )}
+          >
+            Chart
+          </button>
+          <button
+            type="button"
+            aria-pressed={face === "query"}
+            onClick={() => setFace("query")}
+            className={cn(
+              "rounded-md px-2 py-1 text-xs font-medium",
+              face === "query" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+            )}
+          >
+            Query
+          </button>
+          {face === "query" && (
+            <button
+              type="button"
+              onClick={() => onRun(sql)}
+              disabled={running}
+              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+            >
+              Run
+            </button>
+          )}
+        </div>
+      </div>
+      {chart?.caption ? <p className="px-3 pt-2 text-xs text-fg-muted">{chart.caption}</p> : null}
+      <div className="relative h-80">
+        <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
+          <QueryEditor
+            value={sql}
+            documentId={title}
+            databaseType={databaseType}
+            schemaContext={schemaContext}
+            onContentChange={onSqlChange}
+          />
+        </div>
+        {face === "chart" && (
+          <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
+            {error !== null && (
+              <p role="alert" className="px-3 py-2 text-xs text-danger">
+                {error}
+              </p>
+            )}
+            {running && <p className="px-3 py-6 text-center text-xs text-fg-muted">Running the query…</p>}
+            {!running && built !== null && <AssistChartCanvas option={built.option} notes={built.notes} />}
+            {!running && built === null && result !== null && result.rows.length === 0 && (
+              <p className="px-3 py-6 text-center text-xs text-fg-muted">The query returned no rows.</p>
+            )}
+            {!running && built === null && result !== null && result.rows.length > 0 && <ResultTable result={result} />}
+            {!running && error === null && result === null && (
+              <p className="px-3 py-6 text-center text-xs text-fg-muted">
+                The SQL editor is behind this chart. Open Query to read it.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}

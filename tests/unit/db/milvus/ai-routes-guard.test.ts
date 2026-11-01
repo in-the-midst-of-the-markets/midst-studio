@@ -29,6 +29,7 @@ const MILVUS: DatabaseConnection = {
 
 /** The fields each AI route destructures from its request body; `query` is the statement text. */
 const ROUTE_FIELDS: Record<string, readonly string[]> = {
+  assist: ["apiKey", "databaseType", "history", "model", "question", "schemaContext", "source"],
   "describe-schema": ["databaseType", "mode", "schemaContext"],
   explain: ["databaseType", "explainPlan", "query", "schemaContext"],
   "query-safety": ["databaseType", "query", "schemaContext"],
@@ -61,7 +62,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("no Milvus statement text reaches an AI route (E18)", () => {
-  test("the AI routes are the three this guard knows", () => {
+  test("the AI routes are the ones this guard knows", () => {
     const routes = readdirSync(AI_ROUTES, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)

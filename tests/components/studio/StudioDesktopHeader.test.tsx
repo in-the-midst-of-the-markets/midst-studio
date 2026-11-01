@@ -452,11 +452,11 @@ describe("StudioDesktopHeader", () => {
       expect(header?.className).toContain("z-30");
     });
 
-    test("header is hidden on mobile (hidden md:flex)", () => {
+    test("header is hidden on mobile (hidden md:grid)", () => {
       const { container } = render(<StudioDesktopHeader {...defaultProps} />);
       const header = container.querySelector("header");
       expect(header?.className).toContain("hidden");
-      expect(header?.className).toContain("md:flex");
+      expect(header?.className).toContain("md:grid");
     });
   });
 
