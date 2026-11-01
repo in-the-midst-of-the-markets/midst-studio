@@ -4,7 +4,7 @@ import React, { type RefObject } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { QueryEditorRef } from "@/components/QueryEditor";
-import { AssistModeToggle } from "@/components/ai-assist/AssistModeToggle";
+import { AssistModeToggle, OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { GitHubRepoLink } from "@/components/github-repo-link";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { MidstLockup } from "@/components/midst-logo";
@@ -235,8 +234,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
           >
             <Gauge strokeWidth={1.5} className="w-3.5 h-3.5" />
           </Button>
-          {/* Sized as the icon buttons beside it (h-8 w-8), not as the desktop's inline icon. */}
-          <GitHubRepoLink className="h-8 w-8 shrink-0 text-fg-tertiary hover:text-fg-bright" />
+          <OtherModeLink mode="traditional" />
           {connectionPulse && (
             <div
               className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-fill"
@@ -288,9 +286,6 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                 <DropdownMenuItem onClick={onLogout} className="text-danger cursor-pointer">
                   <LogOut strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Logout
                 </DropdownMenuItem>
-                <div className="border-t border-hairline mt-1 pt-1 px-2 pb-1">
-                  <span className="text-xs text-fg-muted font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
-                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           )}

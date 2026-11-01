@@ -360,49 +360,18 @@ describe("StudioDesktopHeader", () => {
     });
   });
 
-  // ── Version Badge ──
-
-  describe("version badge", () => {
-    test("renders version from env variable", () => {
-      process.env.NEXT_PUBLIC_APP_VERSION = "2.5.0";
-      const { container } = render(<StudioDesktopHeader {...defaultProps} />);
-      expect(container.textContent).toContain("v2.5.0");
-    });
-
-    test("renders empty version gracefully when env not set", () => {
-      delete process.env.NEXT_PUBLIC_APP_VERSION;
-      const { container } = render(<StudioDesktopHeader {...defaultProps} />);
-      expect(container.textContent).toContain("v");
-    });
-  });
-
-  // ── GitHub Link ──
-
-  describe("github link", () => {
-    test("renders a repository link beside the version badge", () => {
-      const { container } = render(<StudioDesktopHeader {...defaultProps} />);
-      const link = container.querySelector('a[aria-label="LibreDB Studio on GitHub"]');
-
-      expect(link).not.toBeNull();
-      expect(link!.getAttribute("href")).toBe("https://github.com/libredb/libredb-studio");
-      expect(link!.getAttribute("target")).toBe("_blank");
-      expect(link!.getAttribute("rel")).toBe("noopener noreferrer");
-    });
-
-    // Someone who has already been to the repository must not be asked again by
-    // the tenth-query toast. Asserted through the observable effect: a
-    // `not.toThrow()` here could not fail, because the handler swallows every
-    // storage error internally.
-    test("following the link marks the star prompt handled", () => {
-      localStorage.removeItem("libredb_star_prompt_handled");
-      const { container } = render(<StudioDesktopHeader {...defaultProps} />);
-      const link = container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')!;
-
-      fireEvent.click(link);
-
-      expect(localStorage.getItem("libredb_star_prompt_handled")).not.toBeNull();
-      localStorage.removeItem("libredb_star_prompt_handled");
-    });
+  test("offers AI as a button and does not show the repository or a version", () => {
+    process.env.NEXT_PUBLIC_APP_VERSION = "2.5.0";
+    const { container, getAllByRole } = render(<StudioDesktopHeader {...defaultProps} />);
+    expect(container.textContent).not.toContain("v2.5.0");
+    expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
+    const ai = getAllByRole("link", { name: "AI" });
+    expect(ai.some((link) => link.getAttribute("href") === "/assist" && link.className.includes("bg-primary"))).toBe(
+      true,
+    );
+    expect(getAllByRole("link", { name: "IDE" }).some((link) => link.getAttribute("aria-current") === "page")).toBe(
+      true,
+    );
   });
 
   // ── Combinations / Edge Cases ──
