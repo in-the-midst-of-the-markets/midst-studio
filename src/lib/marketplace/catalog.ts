@@ -2,6 +2,8 @@
  * The third-party data a signed-in account can subscribe to.
  *
  * The catalog is operator configuration (`MARKETPLACE_OFFERINGS`). Each database has its own monthly price.
+ * `OPEN_SEARCH_CONNECTION_STRING`, when set, also lists OpenSearch at five dollars a month unless that id is
+ * already in the catalog. The connection string stays on the server and is never an offering field.
  * A personal database connection is never an entry: those are added in the editor, and Stripe does
  * not grant them.
  */
@@ -84,8 +86,23 @@ export function parseMarketplaceCatalog(raw: string | undefined): MarketplaceCat
   return { ok: true, offerings };
 }
 
+/** OpenSearch at five dollars a month, listed when `OPEN_SEARCH_CONNECTION_STRING` is set. */
+const OPENSEARCH_CONNECTION_OFFERING: MarketplaceOffering = {
+  id: "opensearch",
+  name: "OpenSearch",
+  description: "Search indexes",
+  monthlyCents: 500,
+};
+
+function isConfigured(value: string | undefined): boolean {
+  return value !== undefined && value.trim() !== "";
+}
+
 export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): MarketplaceCatalog {
-  return parseMarketplaceCatalog(env.MARKETPLACE_OFFERINGS);
+  const parsed = parseMarketplaceCatalog(env.MARKETPLACE_OFFERINGS);
+  if (!parsed.ok || !isConfigured(env.OPEN_SEARCH_CONNECTION_STRING)) return parsed;
+  if (parsed.offerings.some((item) => item.id === OPENSEARCH_CONNECTION_OFFERING.id)) return parsed;
+  return { ok: true, offerings: [...parsed.offerings, OPENSEARCH_CONNECTION_OFFERING] };
 }
 
 export function publicMarketplaceOfferings(offerings: readonly MarketplaceOffering[]): PublicMarketplaceOffering[] {

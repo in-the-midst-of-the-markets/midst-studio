@@ -17,10 +17,13 @@ const OFFERING: MarketplaceOffering = {
 };
 
 const original = process.env.MARKETPLACE_OFFERINGS;
+const originalConnection = process.env.OPEN_SEARCH_CONNECTION_STRING;
 
 afterEach(() => {
   if (original === undefined) delete process.env.MARKETPLACE_OFFERINGS;
   else process.env.MARKETPLACE_OFFERINGS = original;
+  if (originalConnection === undefined) delete process.env.OPEN_SEARCH_CONNECTION_STRING;
+  else process.env.OPEN_SEARCH_CONNECTION_STRING = originalConnection;
 });
 
 describe("parseMarketplaceCatalog", () => {
@@ -93,6 +96,83 @@ describe("readMarketplaceCatalog", () => {
     process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
 
     expect(readMarketplaceCatalog()).toEqual({ ok: true, offerings: [OFFERING] });
+  });
+
+  test("lists OpenSearch when its connection string is set and the catalog JSON is empty", () => {
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: undefined,
+        OPEN_SEARCH_CONNECTION_STRING: "https://search.example:9200",
+      }),
+    ).toEqual({
+      ok: true,
+      offerings: [OFFERING],
+    });
+    delete process.env.MARKETPLACE_OFFERINGS;
+    process.env.OPEN_SEARCH_CONNECTION_STRING = "https://search.example:9200";
+
+    expect(readMarketplaceCatalog()).toEqual({ ok: true, offerings: [OFFERING] });
+  });
+
+  test("a blank connection string does not list OpenSearch", () => {
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: undefined,
+        OPEN_SEARCH_CONNECTION_STRING: "   ",
+      }),
+    ).toEqual({ ok: true, offerings: [] });
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: undefined,
+        OPEN_SEARCH_CONNECTION_STRING: undefined,
+      }),
+    ).toEqual({ ok: true, offerings: [] });
+  });
+
+  test("keeps a catalogued OpenSearch row instead of adding another", () => {
+    const priced = { ...OFFERING, monthlyCents: 800, description: "Operator copy" };
+
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: JSON.stringify([priced]),
+        OPEN_SEARCH_CONNECTION_STRING: "https://user:secret-token@search.example:9200",
+      }),
+    ).toEqual({ ok: true, offerings: [priced] });
+  });
+
+  test("appends OpenSearch after other offerings and leaves the connection string out", () => {
+    const postgres: MarketplaceOffering = {
+      id: "postgres",
+      name: "PostgreSQL",
+      description: "Tables",
+      monthlyCents: 1200,
+    };
+    const secret = "https://user:secret-token@search.example:9200";
+    const catalog = readMarketplaceCatalog({
+      ...process.env,
+      MARKETPLACE_OFFERINGS: JSON.stringify([postgres]),
+      OPEN_SEARCH_CONNECTION_STRING: secret,
+    });
+
+    expect(catalog).toEqual({ ok: true, offerings: [postgres, OFFERING] });
+    expect(JSON.stringify(catalog)).not.toContain("secret-token");
+    if (catalog.ok) {
+      expect(JSON.stringify(publicMarketplaceOfferings(catalog.offerings))).not.toContain("secret-token");
+    }
+  });
+
+  test("a malformed catalog stays a configuration error when the connection string is set", () => {
+    expect(
+      readMarketplaceCatalog({
+        ...process.env,
+        MARKETPLACE_OFFERINGS: "{",
+        OPEN_SEARCH_CONNECTION_STRING: "https://search.example:9200",
+      }),
+    ).toEqual({ ok: false });
   });
 });
 
