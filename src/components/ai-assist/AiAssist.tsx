@@ -92,8 +92,12 @@ function subscribeHydration(): () => void {
   return () => {};
 }
 
+function hydratedNow(): boolean {
+  return typeof window !== "undefined";
+}
+
 function useHydrated(): boolean {
-  return useSyncExternalStore(subscribeHydration, () => true, () => false);
+  return useSyncExternalStore(subscribeHydration, hydratedNow, hydratedNow);
 }
 
 /**

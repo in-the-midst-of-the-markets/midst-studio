@@ -36,6 +36,7 @@ describe("normalizeModels", () => {
 describe("assist settings storage", () => {
   test("returns the default when nothing is stored", () => {
     expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
+    expect(DEFAULT_ASSIST_SETTINGS.openRouterModel).toBe("z-ai/glm-5.3");
   });
 
   test("reads a saved Fireworks choice and ignores a bad record", () => {

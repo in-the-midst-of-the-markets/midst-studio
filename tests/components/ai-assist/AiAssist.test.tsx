@@ -1,7 +1,7 @@
 import "../../setup-dom";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import type { QueryResult } from "@/lib/types";
 
@@ -199,6 +199,15 @@ describe("ChartWithEditor", () => {
     await waitFor(() => expect(ran).toEqual(["SELECT 2"]));
     expect(view.getByText("1 rows · 9 ms")).toBeTruthy();
     expect(view.getByRole("button", { name: "Chart" }).getAttribute("aria-pressed")).toBe("true");
+    const dimension = within(view.getByRole("group", { name: "Dimension" }));
+    const metrics = within(view.getByRole("group", { name: "Metrics" }));
+    expect(dimension.getByRole("button", { name: "month" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(dimension.getByRole("button", { name: "revenue" }));
+    expect(dimension.getByRole("button", { name: "revenue" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(metrics.getByRole("button", { name: "revenue" }));
+    expect(view.getByText("Choose the columns this chart needs.")).toBeTruthy();
+    fireEvent.click(metrics.getByRole("button", { name: "revenue" }));
+    expect(view.getByTestId("assist-chart")).toBeTruthy();
   });
 
   test("listens for the editor's run event only while the query is showing", () => {
@@ -555,7 +564,8 @@ describe("AiAssist page", () => {
     };
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
-    expect(view.getByRole("option", { name: "GPT-4o" })).toBeTruthy();
+    expect((view.getByLabelText("OpenRouter model") as HTMLSelectElement).value).toBe("z-ai/glm-5.3");
+    expect(view.getByRole("option", { name: "GLM 5.3" })).toBeTruthy();
     view.unmount();
 
     handler = (url) => {
