@@ -119,7 +119,7 @@ function choiceSignature(columns: ClassifiedColumns, spec: AgentChartSpec | null
 /**
  * The Charts tab.
  *
- * The thirteen ECharts types are the first choice. A type then lists its variations,
+ * The ECharts types are the first choice. A type then lists its variations,
  * and the variation lists the result's columns. One chart is drawn, for the variation
  * that is selected.
  */

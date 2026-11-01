@@ -92,7 +92,7 @@ const sales = resultOf(
 describe("QueryChart", () => {
   test("shows the type names and no chart until a variation is chosen", () => {
     const view = render(React.createElement(QueryChart, { result: sales }));
-    expect(within(view.getByRole("group", { name: "Chart types" })).getAllByRole("button")).toHaveLength(13);
+    expect(within(view.getByRole("group", { name: "Chart types" })).getAllByRole("button")).toHaveLength(14);
     expect(view.queryByRole("group", { name: "Chart variations" })).toBeNull();
     expect(view.queryByTestId("query-chart")).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Bar" }));
@@ -103,6 +103,9 @@ describe("QueryChart", () => {
       "Stacked",
       "Horizontal",
       "Stacked horizontal",
+      "Rounded",
+      "Background",
+      "100% stacked",
     ]);
     expect(view.queryByTestId("query-chart")).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Basic" }));
@@ -208,7 +211,7 @@ describe("QueryChart", () => {
     expect(wide.getByText("Showing the first 8 of 9 metrics.")).not.toBeNull();
   });
 
-  test("an agent answer selects its type and variation, and a pie does not", () => {
+  test("an agent answer selects its type and variation, including a pie", () => {
     const spec = { type: "stacked-bar" as const, x: "region", y: ["total"] as [string], caption: "Totals." };
     const view = render(React.createElement(QueryChart, { result: sales, spec }));
     expect(view.getByRole("button", { name: "Bar" }).getAttribute("aria-pressed")).toBe("true");
@@ -221,10 +224,12 @@ describe("QueryChart", () => {
     const pie = render(
       React.createElement(QueryChart, {
         result: sales,
-        spec: { type: "pie", x: "region", y: ["total"], caption: "No pie." },
+        spec: { type: "pie", x: "region", y: ["total"], caption: "Share." },
       }),
     );
-    expect(pie.queryByRole("group", { name: "Chart variations" })).toBeNull();
+    expect(pie.getByRole("button", { name: "Pie" }).getAttribute("aria-pressed")).toBe("true");
+    expect(pie.getByRole("button", { name: "Basic" }).getAttribute("aria-pressed")).toBe("true");
+    expect((charts.at(-1)?.option as { series: { type: string }[] }).series[0]?.type).toBe("pie");
     pie.rerender(
       React.createElement(QueryChart, {
         result: resultOf(

@@ -52,6 +52,8 @@ const many = (id: string, label: string, preset: number | "all"): ChartSlot => (
   preset,
 });
 
+const volumeSlot = one("volume", "Volume", "metric");
+
 /** The types the tab shows. Order is the order of the type grid. */
 export const ECHART_TYPES: readonly EChartType[] = [
   {
@@ -63,8 +65,11 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "smooth", label: "Smooth" },
       { id: "step", label: "Step" },
       { id: "area", label: "Area" },
+      { id: "smooth-area", label: "Smooth area" },
       { id: "stacked", label: "Stacked" },
       { id: "stacked-area", label: "Stacked area" },
+      { id: "dashed", label: "Dashed" },
+      { id: "marker", label: "Marker" },
     ],
   },
   {
@@ -76,6 +81,22 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "stacked", label: "Stacked" },
       { id: "horizontal", label: "Horizontal" },
       { id: "stacked-horizontal", label: "Stacked horizontal" },
+      { id: "rounded", label: "Rounded" },
+      { id: "background", label: "Background" },
+      { id: "percent", label: "100% stacked" },
+    ],
+  },
+  {
+    id: "pie",
+    label: "Pie",
+    slots: [one("name", "Dimension", "dimension"), one("value", "Metric", "metric")],
+    variations: [
+      { id: "basic", label: "Basic" },
+      { id: "donut", label: "Donut" },
+      { id: "rose", label: "Rose" },
+      { id: "nightingale", label: "Nightingale" },
+      { id: "half", label: "Half" },
+      { id: "labeled", label: "Labeled" },
     ],
   },
   {
@@ -85,6 +106,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "basic", label: "Basic" },
       { id: "bubble", label: "Bubble", slots: [one("size", "Size", "metric")] },
+      { id: "ripple", label: "Ripple" },
+      { id: "connected", label: "Connected" },
+      { id: "diamond", label: "Diamond" },
     ],
   },
   {
@@ -98,6 +122,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "points", label: "Points" },
       { id: "bubbles", label: "Bubbles", require: ["value"] },
+      { id: "ripple", label: "Ripple" },
+      { id: "heat", label: "Heat", require: ["value"] },
+      { id: "labeled", label: "Labeled" },
     ],
   },
   {
@@ -113,6 +140,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "basic", label: "Basic" },
       { id: "average", label: "Moving average" },
+      { id: "volume", label: "Volume", slots: [volumeSlot] },
+      { id: "average-volume", label: "Average and volume", slots: [volumeSlot] },
+      { id: "themed", label: "Themed" },
     ],
   },
   {
@@ -122,6 +152,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "basic", label: "Outline" },
       { id: "filled", label: "Filled" },
+      { id: "circular", label: "Circular" },
+      { id: "circular-filled", label: "Circular filled" },
+      { id: "symbols", label: "Symbols" },
     ],
   },
   {
@@ -131,6 +164,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "vertical", label: "Vertical" },
       { id: "horizontal", label: "Horizontal" },
+      { id: "outliers", label: "Outliers" },
+      { id: "outliers-horizontal", label: "Outliers horizontal" },
+      { id: "points", label: "Points" },
     ],
   },
   {
@@ -140,6 +176,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "grid", label: "Grid" },
       { id: "labeled", label: "Labeled" },
+      { id: "pieces", label: "Pieces" },
+      { id: "labeled-pieces", label: "Labeled pieces" },
+      { id: "diverging", label: "Diverging" },
     ],
   },
   {
@@ -153,6 +192,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "force", label: "Force" },
       { id: "circular", label: "Circular" },
+      { id: "curved", label: "Curved" },
+      { id: "arrows", label: "Arrows" },
+      { id: "labeled", label: "Edge labels" },
     ],
   },
   {
@@ -166,6 +208,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "basic", label: "Tiles" },
       { id: "values", label: "With values" },
+      { id: "depth", label: "One level" },
+      { id: "plain", label: "No breadcrumb" },
+      { id: "padded", label: "Padded" },
     ],
   },
   {
@@ -179,6 +224,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "horizontal", label: "Horizontal" },
       { id: "vertical", label: "Vertical" },
+      { id: "gradient", label: "Gradient" },
+      { id: "values", label: "With values" },
+      { id: "left", label: "Left aligned" },
     ],
   },
   {
@@ -188,6 +236,9 @@ export const ECHART_TYPES: readonly EChartType[] = [
     variations: [
       { id: "funnel", label: "Funnel" },
       { id: "pyramid", label: "Pyramid" },
+      { id: "left", label: "Left" },
+      { id: "right", label: "Right" },
+      { id: "percent", label: "Percent" },
     ],
   },
   {
@@ -198,6 +249,8 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "basic", label: "Basic" },
       { id: "progress", label: "Progress" },
       { id: "grade", label: "Grade" },
+      { id: "ring", label: "Ring" },
+      { id: "stage", label: "Stage" },
     ],
   },
 ];
@@ -336,6 +389,7 @@ const SPEC_CHOICES: Record<string, { typeId: string; variationId: string }> = {
   "stacked-bar": { typeId: "bar", variationId: "stacked" },
   line: { typeId: "line", variationId: "basic" },
   area: { typeId: "line", variationId: "area" },
+  pie: { typeId: "pie", variationId: "basic" },
   scatter: { typeId: "scatter", variationId: "basic" },
 };
 
@@ -349,7 +403,8 @@ export function chartChoiceFromSpec(
 
 /**
  * Shelves for a composed answer, when every column it names is still in this result.
- * A pie has no type here. A line or bar uses `x` as the dimension and `y` as the metrics.
+ * A pie uses `x` as the slice names and the first `y` as the size.
+ * A line or bar uses `x` as the dimension and `y` as the metrics.
  */
 export function selectionFromSpec(
   typeId: string,
@@ -360,6 +415,11 @@ export function selectionFromSpec(
     const y = spec.y[0];
     if (y === undefined || !columns.metrics.includes(spec.x) || !columns.metrics.includes(y)) return null;
     return { x: [spec.x], y: [y], series: [] };
+  }
+  if (typeId === "pie") {
+    const y = spec.y[0];
+    if (y === undefined || !columns.dimensions.includes(spec.x) || !columns.metrics.includes(y)) return null;
+    return { name: [spec.x], value: [y] };
   }
   if (typeId !== "line" && typeId !== "bar") return null;
   if (!columns.dimensions.includes(spec.x)) return null;

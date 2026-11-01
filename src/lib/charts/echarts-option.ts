@@ -183,6 +183,15 @@ export function pointSize(value: unknown): number {
   return Math.max(6, Math.min(48, Math.sqrt(magnitude) * 4));
 }
 
+/** One metric's share of the metrics drawn for that category, as a percent. */
+function percentShare(group: Group, metrics: readonly string[], metric: string): number | null {
+  let total = 0;
+  for (const name of metrics) total += sumOf(group.rows, name) ?? 0;
+  const mine = sumOf(group.rows, metric);
+  if (mine === null || total === 0) return null;
+  return (mine / total) * 100;
+}
+
 function categorySeries(input: ChartBuildInput, mark: "line" | "bar"): BuiltChart | null {
   const dimension = first(input.selection, "category");
   const metrics = many(input.selection, "values");
@@ -195,25 +204,35 @@ function categorySeries(input: ChartBuildInput, mark: "line" | "bar"): BuiltChar
   const shownMetrics = metrics.slice(0, cap);
   const categories = shownGroups.map((group) => group.label);
   const variation = input.variationId;
+  const percent = mark === "bar" && variation === "percent";
   const horizontal = mark === "bar" && (variation === "horizontal" || variation === "stacked-horizontal");
+  const stacked =
+    variation === "stacked" || variation === "stacked-area" || variation === "stacked-horizontal" || percent;
   const series = shownMetrics.map((metric) => {
-    const data = shownGroups.map((group) => sumOf(group.rows, metric));
+    const data = percent
+      ? shownGroups.map((group) => percentShare(group, shownMetrics, metric))
+      : shownGroups.map((group) => sumOf(group.rows, metric));
     if (mark === "line") {
+      const area = variation === "area" || variation === "stacked-area" || variation === "smooth-area";
       return {
         name: metric,
         type: "line" as const,
         data,
-        ...(variation === "smooth" ? { smooth: true } : {}),
+        ...(variation === "smooth" || variation === "smooth-area" ? { smooth: true } : {}),
         ...(variation === "step" ? { step: "end" as const } : {}),
-        ...(variation === "area" || variation === "stacked-area" ? { areaStyle: {} } : {}),
-        ...(variation === "stacked" || variation === "stacked-area" ? { stack: "total" } : {}),
+        ...(area ? { areaStyle: {} } : {}),
+        ...(variation === "dashed" ? { lineStyle: { type: "dashed" as const } } : {}),
+        ...(variation === "marker" ? { showSymbol: true, symbolSize: 8 } : {}),
+        ...(stacked ? { stack: "total" } : {}),
       };
     }
     return {
       name: metric,
       type: "bar" as const,
       data,
-      ...(variation === "stacked" || variation === "stacked-horizontal" ? { stack: "total" } : {}),
+      ...(stacked ? { stack: "total" } : {}),
+      ...(variation === "rounded" ? { itemStyle: { borderRadius: [4, 4, 0, 0] } } : {}),
+      ...(variation === "background" ? { showBackground: true } : {}),
     };
   });
   const notes = [
@@ -247,7 +266,7 @@ function scatter(input: ChartBuildInput): BuiltChart | null {
     else bucket.data.push(point);
   }
   const all = [...buckets.values()];
-  const shown: { name: string; type: "scatter"; data: number[][]; symbolSize?: (value: unknown) => number }[] = [];
+  const shown: Record<string, unknown>[] = [];
   let dropped = 0;
   for (const series of all) {
     if (shown.length === cap) {
@@ -258,15 +277,20 @@ function scatter(input: ChartBuildInput): BuiltChart | null {
     dropped += series.data.length - data.length;
     shown.push({
       name: series.name,
-      type: "scatter",
+      type: input.variationId === "ripple" ? "effectScatter" : "scatter",
       data,
       ...(bubble ? { symbolSize: pointSize } : {}),
+      ...(input.variationId === "diamond" ? { symbol: "diamond" } : {}),
     });
   }
-  if (shown.every((series) => series.data.length === 0)) return null;
-  const notes = [capNote(shown.length, all.length - shown.length, "series")].filter(
-    (note): note is string => note !== null,
-  );
+  const drawn = shown.length;
+  if (input.variationId === "connected") {
+    for (const series of [...shown]) {
+      shown.push({ name: series.name, type: "line", data: series.data, showSymbol: false });
+    }
+  }
+  if (shown.every((series) => (series.data as unknown[]).length === 0)) return null;
+  const notes = [capNote(drawn, all.length - drawn, "series")].filter((note): note is string => note !== null);
   if (dropped > 0) notes.push(`Showing the first ${categoryCap} points in a series. ${dropped} points are not drawn.`);
   return {
     option: frame(theme, {
@@ -293,16 +317,23 @@ function geo(input: ChartBuildInput): BuiltChart | null {
   const latitude = first(input.selection, "latitude");
   if (longitude === null || latitude === null) return null;
   const valueColumn = first(input.selection, "value");
-  const bubble = input.variationId === "bubbles";
+  const variation = input.variationId;
+  const bubble = variation === "bubbles";
+  const heat = variation === "heat";
   const theme = themeOf(input);
   const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
   const plotted: { name: string; value: number[] }[] = [];
+  const magnitudes: number[] = [];
   for (const row of input.rows) {
     const lon = finite(row[longitude]);
     const lat = finite(row[latitude]);
     if (lon === null || lat === null) continue;
     const value = valueColumn === null ? null : finite(row[valueColumn]);
-    if (bubble && value === null) continue;
+    if (value === null) {
+      if (bubble || heat) continue;
+    } else if (heat) {
+      magnitudes.push(value);
+    }
     plotted.push({
       name: value === null ? "" : String(value),
       value: value === null ? [lon, lat] : [lon, lat, value],
@@ -319,12 +350,14 @@ function geo(input: ChartBuildInput): BuiltChart | null {
         roam: true,
         itemStyle: { areaColor: theme.grid, borderColor: theme.axis },
       },
+      ...(heat ? { visualMap: heatScale(theme, magnitudes.slice(0, data.length), "grid") } : {}),
       series: [
         {
-          type: "scatter",
+          type: heat ? "heatmap" : variation === "ripple" ? "effectScatter" : "scatter",
           coordinateSystem: "geo",
           data,
           ...(bubble ? { symbolSize: pointSize } : {}),
+          ...(variation === "labeled" ? { label: { show: true, color: theme.ink } } : {}),
         },
       ],
     }),
@@ -347,11 +380,16 @@ function candlestick(input: ChartBuildInput): BuiltChart | null {
   const high = first(input.selection, "high");
   if (time === null || open === null || close === null || low === null || high === null) return null;
   const theme = themeOf(input);
+  const variation = input.variationId;
+  const volumeColumn =
+    variation === "volume" || variation === "average-volume" ? first(input.selection, "volume") : null;
+  if ((variation === "volume" || variation === "average-volume") && volumeColumn === null) return null;
   const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
   const groupedAll = groupsOf(input.rows, time, input.mask);
   const grouped = groupedAll.slice(0, categoryCap);
   const categories: string[] = [];
   const data: number[][] = [];
+  const volumes: number[] = [];
   for (const group of grouped) {
     let firstOpen: number | null = null;
     let lastClose: number | null = null;
@@ -370,10 +408,21 @@ function candlestick(input: ChartBuildInput): BuiltChart | null {
     if (firstOpen === null || lastClose === null || minLow === null || maxHigh === null) continue;
     categories.push(group.label);
     data.push([firstOpen, lastClose, minLow, maxHigh]);
+    if (volumeColumn !== null) volumes.push(sumOf(group.rows, volumeColumn) ?? 0);
   }
   if (data.length === 0) return null;
-  const series: Record<string, unknown>[] = [{ type: "candlestick", data }];
-  if (input.variationId === "average") {
+  const paint = theme.series[0] ?? theme.ink;
+  const paintDown = theme.series[1] ?? theme.axis;
+  const series: Record<string, unknown>[] = [
+    {
+      type: "candlestick",
+      data,
+      ...(variation === "themed"
+        ? { itemStyle: { color: paint, color0: paintDown, borderColor: paint, borderColor0: paintDown } }
+        : {}),
+    },
+  ];
+  if (variation === "average" || variation === "average-volume") {
     series.push({
       name: "Average",
       type: "line",
@@ -381,6 +430,7 @@ function candlestick(input: ChartBuildInput): BuiltChart | null {
       smooth: true,
     });
   }
+  if (volumeColumn !== null) series.push({ name: "Volume", type: "bar", data: volumes });
   const omitted = groupedAll.length - grouped.length;
   return {
     option: frame(theme, { ...categoryAxes(categories, theme, false), series }),
@@ -402,14 +452,18 @@ function radar(input: ChartBuildInput): BuiltChart | null {
     const peak = Math.max(...totals.map((row) => row[index] ?? 0), 0);
     return { name: metric, max: peak === 0 ? 1 : peak };
   });
+  const variation = input.variationId;
+  const filled = variation === "filled" || variation === "circular-filled";
+  const circular = variation === "circular" || variation === "circular-filled";
   return {
     option: frame(theme, {
       tooltip: { trigger: "item" },
-      radar: { indicator, axisName: { color: theme.axis } },
+      radar: { indicator, axisName: { color: theme.axis }, ...(circular ? { shape: "circle" } : {}) },
       series: [
         {
           type: "radar",
-          ...(input.variationId === "filled" ? { areaStyle: {} } : {}),
+          ...(filled ? { areaStyle: {} } : {}),
+          ...(variation === "symbols" ? { symbol: "circle", symbolSize: 6 } : {}),
           data: shown.map((group, index) => ({ name: group.label, value: totals[index] })),
         },
       ],
@@ -436,11 +490,16 @@ function boxplot(input: ChartBuildInput): BuiltChart | null {
   const valueColumn = first(input.selection, "values");
   if (groupColumn === null || valueColumn === null) return null;
   const theme = themeOf(input);
+  const variation = input.variationId;
   const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
   const grouped = groupsOf(input.rows, groupColumn, input.mask);
   const categories: string[] = [];
   const data: number[][] = [];
+  const marks: number[][] = [];
   let truncated = false;
+  const outliers = variation === "outliers" || variation === "outliers-horizontal";
+  const showPoints = variation === "points";
+  const horizontal = variation === "horizontal" || variation === "outliers-horizontal";
   for (const group of grouped) {
     if (categories.length === categoryCap) {
       truncated = true;
@@ -449,23 +508,53 @@ function boxplot(input: ChartBuildInput): BuiltChart | null {
     const values = group.rows.map((row) => finite(row[valueColumn])).filter((value): value is number => value !== null);
     if (values.length === 0) continue;
     values.sort((a, b) => a - b);
+    const index = categories.length;
     categories.push(group.label);
-    data.push([
-      quartile(values, 0),
-      quartile(values, 0.25),
-      quartile(values, 0.5),
-      quartile(values, 0.75),
-      quartile(values, 1),
-    ]);
+    if (outliers) {
+      const q1 = quartile(values, 0.25);
+      const q3 = quartile(values, 0.75);
+      const iqr = q3 - q1;
+      const low = q1 - iqr * 1.5;
+      const high = q3 + iqr * 1.5;
+      const inside = values.filter((value) => value >= low && value <= high);
+      data.push([Math.min(q1, ...inside), q1, quartile(values, 0.5), q3, Math.max(q3, ...inside)]);
+      for (const value of values) {
+        if (value < low || value > high) marks.push(horizontal ? [value, index] : [index, value]);
+      }
+    } else {
+      data.push([
+        quartile(values, 0),
+        quartile(values, 0.25),
+        quartile(values, 0.5),
+        quartile(values, 0.75),
+        quartile(values, 1),
+      ]);
+      if (showPoints) for (const value of values) marks.push([index, value]);
+    }
   }
   if (data.length === 0) return null;
-  const horizontal = input.variationId === "horizontal";
+  const series: Record<string, unknown>[] = [{ type: "boxplot", data }];
+  if (outliers || showPoints) series.push({ type: "scatter", data: marks });
   return {
     option: frame(theme, {
       ...categoryAxes(categories, theme, horizontal),
-      series: [{ type: "boxplot", data }],
+      series,
     }),
     notes: truncated ? [`Showing the first ${data.length} of ${grouped.length} categories.`] : [],
+  };
+}
+
+function heatScale(theme: ChartTheme, flat: readonly number[], variation: string): Record<string, unknown> {
+  const high = theme.series[0] ?? theme.ink;
+  const mid = theme.series[1] ?? theme.axis;
+  const pieces = variation === "pieces" || variation === "labeled-pieces";
+  return {
+    min: Math.min(...flat),
+    max: Math.max(...flat),
+    calculable: false,
+    ...(pieces ? { type: "piecewise" as const } : {}),
+    inRange: { color: variation === "diverging" ? [mid, theme.grid, high] : [theme.grid, high] },
+    textStyle: { color: theme.ink },
   };
 }
 
@@ -515,24 +604,19 @@ function heatmap(input: ChartBuildInput): BuiltChart | null {
   });
   if (data.length === 0) return null;
   const flat = data.map((cell) => cell[2] ?? 0);
+  const labeled = input.variationId === "labeled" || input.variationId === "labeled-pieces";
   return {
     option: frame(theme, {
       tooltip: { trigger: "item" },
       grid: { left: 16, right: 16, top: 16, bottom: 16, containLabel: true },
       xAxis: { type: "category", data: xLabels, axisLabel: { color: theme.axis } },
       yAxis: { type: "category", data: yLabels, axisLabel: { color: theme.axis } },
-      visualMap: {
-        min: Math.min(...flat),
-        max: Math.max(...flat),
-        calculable: false,
-        inRange: { color: [theme.grid, theme.series[0] ?? theme.ink] },
-        textStyle: { color: theme.ink },
-      },
+      visualMap: heatScale(theme, flat, input.variationId),
       series: [
         {
           type: "heatmap",
           data,
-          ...(input.variationId === "labeled" ? { label: { show: true, color: theme.ink } } : {}),
+          ...(labeled ? { label: { show: true, color: theme.ink } } : {}),
         },
       ],
     }),
@@ -570,15 +654,19 @@ function graph(input: ChartBuildInput): BuiltChart | null {
     links.push(value === null ? { source: from, target: to } : { source: from, target: to, value });
   }
   if (links.length === 0) return null;
+  const variation = input.variationId;
   return {
     option: frame(theme, {
       tooltip: { trigger: "item" },
       series: [
         {
           type: "graph",
-          layout: input.variationId === "circular" ? "circular" : "force",
+          layout: variation === "circular" ? "circular" : "force",
           roam: true,
           label: { show: true, color: theme.ink },
+          ...(variation === "curved" ? { lineStyle: { curveness: 0.3 } } : {}),
+          ...(variation === "arrows" ? { edgeSymbol: ["none", "arrow"] } : {}),
+          ...(variation === "labeled" ? { edgeLabel: { show: true, color: theme.ink } } : {}),
           data: names.map((name) => ({ name })),
           links,
         },
@@ -626,6 +714,9 @@ function treemap(input: ChartBuildInput): BuiltChart | null {
           type: "treemap",
           data,
           label: input.variationId === "values" ? { color: theme.ink, formatter: "{b}\n{c}" } : { color: theme.ink },
+          ...(input.variationId === "depth" ? { leafDepth: 1 } : {}),
+          ...(input.variationId === "plain" ? { breadcrumb: { show: false } } : {}),
+          ...(input.variationId === "padded" ? { itemStyle: { gapWidth: 4 } } : {}),
         },
       ],
     }),
@@ -668,16 +759,21 @@ function sankey(input: ChartBuildInput): BuiltChart | null {
     else existing.value += value;
   }
   if (links.size === 0) return null;
+  const variation = input.variationId;
+  const outflow = new Map<string, number>();
+  for (const link of links.values()) outflow.set(link.source, (outflow.get(link.source) ?? 0) + link.value);
   return {
     option: frame(theme, {
       tooltip: { trigger: "item" },
       series: [
         {
           type: "sankey",
-          orient: input.variationId === "vertical" ? "vertical" : "horizontal",
-          data: nodes.map((name) => ({ name })),
+          orient: variation === "vertical" ? "vertical" : "horizontal",
+          ...(variation === "left" ? { nodeAlign: "left" } : {}),
+          ...(variation === "gradient" ? { lineStyle: { color: "gradient" } } : {}),
+          data: nodes.map((name) => (variation === "values" ? { name, value: outflow.get(name) ?? 0 } : { name })),
           links: [...links.values()],
-          label: { color: theme.ink },
+          label: variation === "values" ? { color: theme.ink, formatter: "{b}\n{c}" } : { color: theme.ink },
         },
       ],
     }),
@@ -697,15 +793,21 @@ function funnel(input: ChartBuildInput): BuiltChart | null {
     .sort((a, b) => (input.variationId === "pyramid" ? a.value - b.value : b.value - a.value));
   const shown = data.slice(0, categoryCap);
   if (shown.length === 0) return null;
+  const variation = input.variationId;
+  const align = variation === "left" ? "left" : variation === "right" ? "right" : null;
   return {
     option: frame(theme, {
       tooltip: { trigger: "item" },
       series: [
         {
           type: "funnel",
-          sort: input.variationId === "pyramid" ? "ascending" : "descending",
+          sort: variation === "pyramid" ? "ascending" : "descending",
+          ...(align === null ? {} : { funnelAlign: align }),
           data: shown,
-          label: { color: theme.ink },
+          label: {
+            color: theme.ink,
+            ...(variation === "percent" ? { formatter: "{b}\n{d}%" } : {}),
+          },
         },
       ],
     }),
@@ -733,15 +835,33 @@ function gauge(input: ChartBuildInput): BuiltChart | null {
           detail: { color: theme.ink },
           title: { color: theme.axis },
           ...(variation === "progress" ? { progress: { show: true }, pointer: { show: false } } : {}),
-          ...(variation === "grade"
+          ...(variation === "ring"
+            ? {
+                startAngle: 90,
+                endAngle: -270,
+                progress: { show: true, roundCap: true },
+                pointer: { show: false },
+                axisLine: { roundCap: true },
+              }
+            : {}),
+          ...(variation === "grade" || variation === "stage"
             ? {
                 axisLine: {
                   lineStyle: {
-                    color: [
-                      [0.3, band(0)],
-                      [0.7, band(1)],
-                      [1, band(2)],
-                    ],
+                    color:
+                      variation === "stage"
+                        ? [
+                            [0.2, band(0)],
+                            [0.4, band(1)],
+                            [0.6, band(2)],
+                            [0.8, band(3)],
+                            [1, band(4)],
+                          ]
+                        : [
+                            [0.3, band(0)],
+                            [0.7, band(1)],
+                            [1, band(2)],
+                          ],
                   },
                 },
               }
@@ -753,9 +873,54 @@ function gauge(input: ChartBuildInput): BuiltChart | null {
   };
 }
 
+function pie(input: ChartBuildInput): BuiltChart | null {
+  const nameColumn = first(input.selection, "name");
+  const valueColumn = first(input.selection, "value");
+  if (nameColumn === null || valueColumn === null) return null;
+  const theme = themeOf(input);
+  const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
+  const slices = groupsOf(input.rows, nameColumn, input.mask)
+    .map((group) => ({ name: group.label, value: sumOf(group.rows, valueColumn) }))
+    .filter((item): item is { name: string; value: number } => item.value !== null && item.value > 0);
+  const shown = slices.slice(0, categoryCap);
+  if (shown.length === 0) return null;
+  const variation = input.variationId;
+  const radius =
+    variation === "half"
+      ? ["40%", "70%"]
+      : variation === "donut"
+        ? ["42%", "70%"]
+        : variation === "rose" || variation === "nightingale"
+          ? ["8%", "70%"]
+          : "70%";
+  return {
+    option: frame(theme, {
+      tooltip: { trigger: "item" },
+      series: [
+        {
+          type: "pie",
+          radius,
+          data: shown,
+          ...(variation === "rose" ? { roseType: "radius" } : {}),
+          ...(variation === "nightingale" ? { roseType: "area" } : {}),
+          ...(variation === "half" ? { startAngle: 180, endAngle: 360 } : {}),
+          label: {
+            color: theme.ink,
+            ...(variation === "labeled" ? { formatter: "{b}\n{d}%" } : {}),
+          },
+        },
+      ],
+    }),
+    notes: [capNote(shown.length, slices.length - shown.length, "categories")].filter(
+      (note): note is string => note !== null,
+    ),
+  };
+}
+
 const BUILDERS: Record<string, (input: ChartBuildInput) => BuiltChart | null> = {
   line: (input) => categorySeries(input, "line"),
   bar: (input) => categorySeries(input, "bar"),
+  pie,
   scatter,
   geo,
   candlestick,
