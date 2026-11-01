@@ -9,6 +9,7 @@ import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
 import { acceptAssistPlan, type AssistChart, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
+import { titleForQuery } from "@/lib/ai/assist-chart";
 import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
@@ -28,6 +29,8 @@ import type { DatabaseConnection, QueryResult } from "@/lib/types";
 interface AssistCard {
   readonly id: string;
   readonly title: string;
+  /** The statement the current title describes. Editing the editor updates `sql` before Run. */
+  readonly titledSql: string;
   readonly sql: string;
   readonly connectionId: string | null;
   readonly connectionName: string;
@@ -83,13 +86,6 @@ function readConnections(): readonly DatabaseConnection[] {
   connectionRaw = raw;
   connectionSnapshot = next;
   return connectionSnapshot;
-}
-
-function connectionLabel(connections: readonly DatabaseConnection[]): string {
-  const only = connections[0];
-  if (only === undefined) return "No database";
-  if (connections.length === 1) return only.name;
-  return `${connections.length} databases`;
 }
 
 function subscribeConnection(): () => void {
@@ -205,7 +201,24 @@ export function AiAssist() {
   };
 
   const runCard = async (id: string, connectionId: string | null, sql: string) => {
-    updateCard(id, { sql, running: true, error: null });
+    setTurns((current) =>
+      current.map((turn) => ({
+        ...turn,
+        cards: turn.cards.map((card) => {
+          if (card.id !== id) return card;
+          const changed = sql.trim() !== card.titledSql.trim();
+          return {
+            ...card,
+            sql,
+            title: changed ? titleForQuery(sql) : card.title,
+            titledSql: sql,
+            chart: changed && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
+            running: true,
+            error: null,
+          };
+        }),
+      })),
+    );
     const target = connectionId === null ? null : (connections.find((item) => item.id === connectionId) ?? null);
     if (target === null) {
       updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." });
@@ -266,6 +279,7 @@ export function AiAssist() {
         return {
           id: nextId(),
           title: query.title,
+          titledSql: query.sql,
           sql: query.sql,
           connectionId: resolved.ok ? resolved.connection.id : null,
           connectionName: resolved.ok ? resolved.connection.name : query.connection,
@@ -314,9 +328,6 @@ export function AiAssist() {
       <header className="grid h-14 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
         <AssistModeToggle mode="assist" />
-        <p className="justify-self-end truncate text-xs text-fg-muted">
-          {hydrated ? connectionLabel(connections) : "\u00a0"}
-        </p>
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
