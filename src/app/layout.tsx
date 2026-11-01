@@ -23,7 +23,7 @@ import { SessionEndedRedirect } from "@/components/auth/SessionEndedRedirect";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const title = "Midst";
+const title = "in the Midst of the markets";
 const description =
   "A self-hosted database management platform for SQL and NoSQL databases, with schema exploration, query tools, data import, and AI-assisted database development.";
 // Project previews use the public demo documented in README, including on private deployments.
