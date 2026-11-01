@@ -20,6 +20,7 @@ mock.module("@/lib/auth", () => ({
 const { GET, POST } = await import("@/app/api/marketplace/checkout/route");
 
 const originalCatalog = process.env.MARKETPLACE_OFFERINGS;
+const originalConnection = process.env.OPEN_SEARCH_CONNECTION_STRING;
 const originalSecret = process.env.STRIPE_SECRET_KEY;
 const originalTestSecret = process.env.STRIPE_TEST_SECRET_KEY;
 const originalTrust = process.env.TRUST_PROXY_HEADERS;
@@ -47,6 +48,7 @@ function get(sessionId: string | null): Request {
 beforeEach(() => {
   mockGetSession.mockResolvedValue({ role: "user", username: "ada" });
   process.env.MARKETPLACE_OFFERINGS = JSON.stringify([OFFERING]);
+  delete process.env.OPEN_SEARCH_CONNECTION_STRING;
   process.env.STRIPE_SECRET_KEY = " sk_test_marketplace ";
   delete process.env.STRIPE_TEST_SECRET_KEY;
   process.env.TRUST_PROXY_HEADERS = "false";
@@ -58,6 +60,8 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   if (originalCatalog === undefined) delete process.env.MARKETPLACE_OFFERINGS;
   else process.env.MARKETPLACE_OFFERINGS = originalCatalog;
+  if (originalConnection === undefined) delete process.env.OPEN_SEARCH_CONNECTION_STRING;
+  else process.env.OPEN_SEARCH_CONNECTION_STRING = originalConnection;
   if (originalSecret === undefined) delete process.env.STRIPE_SECRET_KEY;
   else process.env.STRIPE_SECRET_KEY = originalSecret;
   if (originalTestSecret === undefined) delete process.env.STRIPE_TEST_SECRET_KEY;
@@ -187,6 +191,27 @@ describe("POST /api/marketplace/checkout", () => {
     expect(opensearchBody).toContain("https%3A%2F%2Fstudio.example%2Fstudio%2Fmarketplace%3Fcheckout%3Dcancel");
     expect(amounts[1]).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=1200");
     expect(amounts[1]).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=PostgreSQL");
+  });
+
+  test("sells OpenSearch from its connection string when the catalog JSON is unset", async () => {
+    delete process.env.MARKETPLACE_OFFERINGS;
+    const secret = "https://user:secret-token@search.example:9200";
+    process.env.OPEN_SEARCH_CONNECTION_STRING = secret;
+    const fetchImpl = mock(async (_url: string, init?: RequestInit) => {
+      const body = String(init?.body);
+      expect(body).not.toContain("secret-token");
+      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bunit_amount%5D=500");
+      expect(body).toContain("line_items%5B0%5D%5Bprice_data%5D%5Bproduct_data%5D%5Bname%5D=OpenSearch");
+      return new Response(JSON.stringify({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" }), { status: 200 });
+    });
+    globalThis.fetch = fetchImpl as unknown as typeof fetch;
+
+    const response = await POST(post(JSON.stringify({ id: "opensearch", monthlyCents: 1 })));
+    const payload: unknown = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({ url: "https://checkout.stripe.com/c/pay/cs_test_abc" });
+    expect(JSON.stringify(payload)).not.toContain("secret-token");
   });
 
   test("answers 502 when Stripe does not return a Checkout URL", async () => {

@@ -471,7 +471,7 @@ describe("routes that reach a provider require a session", () => {
     "@/lib/password-hash": "scrypt for stored account passwords; no provider",
     "@/lib/logger": "structured logging",
     "@/lib/marketplace/catalog":
-      "parses MARKETPLACE_OFFERINGS into the catalog the marketplace routes answer; data only, opens nothing",
+      "parses MARKETPLACE_OFFERINGS into the catalog the marketplace routes answer, and lists OpenSearch when OPEN_SEARCH_CONNECTION_STRING is set; data only, opens nothing",
     "@/lib/marketplace/checkout":
       "starts and reads a Stripe Checkout session over fetch to api.stripe.com; opens no database or LLM provider",
     "@/lib/non-finite": "writes NaN and the infinities in held rows as words; pure, imports nothing",
