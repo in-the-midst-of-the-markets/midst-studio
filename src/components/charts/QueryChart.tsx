@@ -25,6 +25,7 @@ import {
 } from "echarts/components";
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
+import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
@@ -175,20 +176,22 @@ export function QueryChart({
       mask,
     });
   }, [hasRows, choice, ready, rows, theme, mask]);
+  const code = useChartCode(built?.option ?? null, choice.typeId, choice.variationId, choice.selection);
+  const [codeOpen, setCodeOpen] = useState(false);
 
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = hostRef.current;
-    if (built === null || element === null) return;
+    if (codeOpen || built === null || element === null) return;
     registerMap(WORLD_MAP_NAME, WORLD_OUTLINE);
     const chart = init(element);
-    chart.setOption(built.option, true);
+    chart.setOption(code.option ?? built.option, true);
     const stop = watchChartSize(element, () => chart.resize());
     return () => {
       stop();
       chart.dispose();
     };
-  }, [built]);
+  }, [built, code.option, codeOpen]);
 
   const selectType = (typeId: string) => {
     setChoice((current) => (current.typeId === typeId ? current : { typeId, variationId: null, selection: {} }));
@@ -345,16 +348,66 @@ export function QueryChart({
             <p className="px-3 py-6 text-center text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
           )}
           {built !== null && (
-            <>
-              <div ref={hostRef} data-testid="query-chart" className="min-h-48 flex-1" />
-              {built.notes.length > 0 && (
-                <ul className="px-3 py-1 text-xs text-fg-muted">
-                  {built.notes.map((note) => (
-                    <li key={note}>{note}</li>
-                  ))}
-                </ul>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex items-center gap-1 border-b border-hairline px-2 py-1">
+                <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+                  <button
+                    type="button"
+                    aria-pressed={!codeOpen}
+                    onClick={() => setCodeOpen(false)}
+                    className={cn(
+                      "rounded-md px-2 py-1 text-xs font-medium",
+                      !codeOpen ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+                    )}
+                  >
+                    Chart
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={codeOpen}
+                    onClick={() => setCodeOpen(true)}
+                    className={cn(
+                      "rounded-md px-2 py-1 text-xs font-medium",
+                      codeOpen ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+                    )}
+                  >
+                    Code
+                  </button>
+                </div>
+              </div>
+              {codeOpen ? (
+                <ChartCodeEditor
+                  value={code.text}
+                  error={code.error}
+                  edited={code.edited}
+                  onChange={code.onChange}
+                  onReset={code.reset}
+                />
+              ) : (
+                <>
+                  {code.option !== null && (
+                    <div className="flex items-center justify-between gap-2 px-3 py-1">
+                      <p className="text-xs text-fg-muted">Showing your chart code.</p>
+                      <button
+                        type="button"
+                        onClick={code.reset}
+                        className="text-xs font-medium text-fg-secondary underline"
+                      >
+                        Use generated chart
+                      </button>
+                    </div>
+                  )}
+                  <div ref={hostRef} data-testid="query-chart" className="min-h-48 flex-1" />
+                  {code.option === null && built.notes.length > 0 && (
+                    <ul className="px-3 py-1 text-xs text-fg-muted">
+                      {built.notes.map((note) => (
+                        <li key={note}>{note}</li>
+                      ))}
+                    </ul>
+                  )}
+                </>
               )}
-            </>
+            </div>
           )}
         </div>
       )}

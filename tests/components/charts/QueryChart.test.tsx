@@ -341,4 +341,42 @@ describe("QueryChart", () => {
     fireEvent.blur(input);
     expect(onFilterChange).toHaveBeenLastCalledWith("SELECT region, total FROM sales WHERE total <= {{total:6}}");
   });
+
+  test("edits the chart code and a new variation returns to the generated chart", () => {
+    const edited = { title: { text: "Edited" } };
+    const drawn = (): FakeChart => {
+      const chart = charts.at(-1);
+      if (chart === undefined) throw new Error("expected a chart");
+      return chart;
+    };
+    const view = render(React.createElement(QueryChart, { result: sales }));
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(code.getAttribute("wrap")).toBe("soft");
+    expect(code.value).toContain('"bar"');
+    fireEvent.change(code, { target: { value: "{" } });
+    expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect((drawn().option as { series: { type: string }[] }).series[0]?.type).toBe("bar");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify(edited) },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(drawn().option).toEqual(edited);
+    fireEvent.click(view.getByRole("button", { name: "Horizontal" }));
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect((drawn().option as { xAxis: { type: string } }).xAxis.type).toBe("value");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const restored = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(restored.value).toContain('"bar"');
+    expect(restored.value).not.toContain("Edited");
+    fireEvent.change(restored, { target: { value: JSON.stringify(edited) } });
+    fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
+    expect((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain('"bar"');
+  });
 });

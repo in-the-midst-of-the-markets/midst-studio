@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
 import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
@@ -101,8 +102,9 @@ function ResultTable({ result }: { result: QueryResult }) {
 }
 
 /**
- * A chart the assistant drew, with the SQL editor behind it.
+ * A chart the assistant drew, with the SQL editor and the chart's own code behind it.
  * Query hides the chart and leaves the editor, which was mounted underneath the whole time.
+ * Code is the chart option as JSON. The canvas keeps the generated option until that JSON parses.
  */
 export function ChartWithEditor({
   title,
@@ -119,7 +121,7 @@ export function ChartWithEditor({
   onRun,
 }: ChartWithEditorProps) {
   const [tracked, setTracked] = useState({ result, error });
-  const [face, setFace] = useState<"chart" | "query">("chart");
+  const [face, setFace] = useState<"chart" | "code" | "query">("chart");
   const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, null));
   const [seen, setSeen] = useState({ result, chart });
   const [typesOpen, setTypesOpen] = useState(false);
@@ -180,6 +182,12 @@ export function ChartWithEditor({
       color,
     });
   }, [result, choice, theme, color]);
+  const code = useChartCode(
+    built?.option ?? null,
+    choice?.typeId ?? null,
+    choice?.variationId ?? null,
+    choice?.selection ?? null,
+  );
 
   return (
     <article className="flex h-[28rem] flex-col overflow-hidden rounded-lg border border-hairline-strong bg-raised">
@@ -205,6 +213,17 @@ export function ChartWithEditor({
               )}
             >
               Chart
+            </button>
+            <button
+              type="button"
+              aria-pressed={face === "code"}
+              onClick={() => setFace("code")}
+              className={cn(
+                "rounded-md px-2 py-1 text-xs font-medium",
+                face === "code" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+              )}
+            >
+              Code
             </button>
             <button
               type="button"
@@ -255,7 +274,7 @@ export function ChartWithEditor({
         </label>
       )}
       <div className="relative min-h-0 flex-1">
-        <div className={cn("absolute inset-0", face === "chart" && "invisible")} aria-hidden={face === "chart"}>
+        <div className={cn("absolute inset-0", face !== "query" && "invisible")} aria-hidden={face !== "query"}>
           <QueryEditor
             value={sql}
             documentId={title}
@@ -404,8 +423,25 @@ export function ChartWithEditor({
               </div>
             )}
             {!running && built !== null && (
-              <div className="min-h-0 flex-1">
-                <AssistChartCanvas option={built.option} notes={built.notes} />
+              <div className="flex min-h-0 flex-1 flex-col">
+                {code.option !== null && (
+                  <div className="flex items-center justify-between gap-2 px-3 py-1">
+                    <p className="text-xs text-fg-muted">Showing your chart code.</p>
+                    <button
+                      type="button"
+                      onClick={code.reset}
+                      className="text-xs font-medium text-fg-secondary underline"
+                    >
+                      Use generated chart
+                    </button>
+                  </div>
+                )}
+                <div className="min-h-0 flex-1">
+                  <AssistChartCanvas
+                    option={code.option ?? built.option}
+                    notes={code.option === null ? built.notes : []}
+                  />
+                </div>
               </div>
             )}
             {!running && built === null && choice !== null && result !== null && result.rows.length > 0 && (
@@ -419,9 +455,20 @@ export function ChartWithEditor({
             )}
             {!running && error === null && result === null && (
               <p className="px-3 py-6 text-center text-xs text-fg-muted">
-                The SQL editor is behind this chart. Open Query to read it.
+                The SQL editor is behind this chart. Open Query to edit it, or Code to edit the chart.
               </p>
             )}
+          </div>
+        )}
+        {face === "code" && (
+          <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
+            <ChartCodeEditor
+              value={code.text}
+              error={code.error}
+              edited={code.edited}
+              onChange={code.onChange}
+              onReset={code.reset}
+            />
           </div>
         )}
       </div>
