@@ -245,6 +245,7 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("A measure over time, including months or dates, is line.");
     expect(messages[0]?.content).toContain("total >= {{total:10}}");
     expect(messages[0]?.content).toContain("region AS area is filtered as region = {{region:east}}");
+    expect(messages[0]?.content).toContain("was renamed or removed");
     expect(messages[0]?.content).toContain(">=, <=, or =");
   });
 });

@@ -1245,7 +1245,9 @@ describe("AiAssist page", () => {
     expect(view.getByText("Logs: Could not read the database.")).toBeTruthy();
     await typeAndSend(view, "Compare them");
     expect(await view.findByText("Both databases.")).toBeTruthy();
-    expect(view.getByText("No connected database is named Nope.")).toBeTruthy();
+    expect(
+      view.getByText("No connected database is named Nope. The connected databases are Orders, Logs."),
+    ).toBeTruthy();
     await waitFor(() => expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(2));
     const ids = calls
       .filter((call) => call.url.includes("/api/db/query"))
@@ -1255,6 +1257,57 @@ describe("AiAssist page", () => {
     unnamed = true;
     await typeAndSend(view, "And another");
     expect(await view.findByText("Name the connected database this query should use.")).toBeTruthy();
+  });
+
+  test("a saved chart follows the connection that replaced a renamed database", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        { id: "c9", name: "Markets", type: "postgres", host: "localhost", createdAt: "2026-01-01T00:00:00.000Z" },
+      ]),
+    );
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([
+        {
+          id: "u1",
+          role: "user",
+          text: "Revenue",
+          at: new Date().toISOString(),
+          cards: [],
+        },
+        {
+          id: "a1",
+          role: "assistant",
+          text: "Saved.",
+          at: new Date().toISOString(),
+          cards: [
+            {
+              id: "card1",
+              title: "Revenue",
+              titledSql: "SELECT 1",
+              modelSql: "SELECT 1",
+              locked: false,
+              sql: "SELECT 1",
+              connectionId: "c1",
+              connectionName: "Warehouse",
+              chart: null,
+              color: null,
+              result: null,
+              error: "No connected database is named Warehouse.",
+            },
+          ],
+        },
+      ]),
+    );
+    const view = render(<AiAssist />);
+    expect(await view.findByText("Saved.")).toBeTruthy();
+    await waitFor(() => expect(view.queryByText(/No connected database is named/)).toBeNull());
+    expect(view.getAllByText("Markets").length).toBeGreaterThan(0);
+    const saved = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { connectionId?: string; connectionName?: string; error?: string | null }[];
+    }[];
+    expect(saved[1]?.cards?.[0]).toMatchObject({ connectionId: "c9", connectionName: "Markets", error: null });
   });
 
   test("ignores a schema that arrives after the page is gone", async () => {

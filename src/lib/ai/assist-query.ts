@@ -34,15 +34,73 @@ function resultOf(body: unknown): QueryResult | null {
   };
 }
 
+const TABLE_REFERENCE = /\b(?:from|join)\s+([^\s,;()]+)/gi;
+
+function schemaObjectNames(schemaContext: string): ReadonlySet<string> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(schemaContext);
+  } catch {
+    return new Set();
+  }
+  if (!Array.isArray(parsed)) return new Set();
+  const names = new Set<string>();
+  for (const item of parsed) {
+    if (item === null || typeof item !== "object" || !("name" in item) || typeof item.name !== "string") continue;
+    const name = item.name.trim().toLowerCase();
+    if (name === "") continue;
+    names.add(name);
+  }
+  return names;
+}
+
+function referencedTables(sql: string): readonly string[] {
+  const found: string[] = [];
+  for (const match of sql.matchAll(TABLE_REFERENCE)) {
+    const token = match[1] ?? "";
+    const piece = token.split(".").pop() ?? token;
+    const bare = piece.replace(/["`[\]]/g, "").toLowerCase();
+    if (bare !== "") found.push(bare);
+  }
+  return found;
+}
+
+/**
+ * The connection whose schema contains a table the statement names.
+ * Zero hits or several hits are not a guess.
+ */
+function connectionByTables<T extends { readonly id: string }>(
+  connections: readonly T[],
+  sql: string,
+  schemas: Readonly<Record<string, string>>,
+): T | null {
+  const tables = referencedTables(sql);
+  if (tables.length === 0) return null;
+  const hits = connections.filter((item) => {
+    const names = schemaObjectNames(schemas[item.id] ?? "");
+    return tables.some((table) => names.has(table));
+  });
+  const hit = hits.length === 1 ? hits[0] : undefined;
+  return hit ?? null;
+}
+
+function missingConnection<T extends { readonly name: string }>(connections: readonly T[], name: string): string {
+  const listed = connections.map((item) => item.name).join(", ");
+  return `No connected database is named ${name}. The connected databases are ${listed}.`;
+}
+
 /**
  * The saved connection a planned statement should run on.
  *
  * An empty name uses the only connection. A name or id must match exactly one
- * saved connection. The match is the connection the studio already stored.
+ * saved connection. A name that no longer matches, after a connection was renamed
+ * or replaced, uses the only connection left, or the one connection whose tables
+ * the statement names. The match is the connection the studio already stored.
  */
 export function connectionForAssistQuery<T extends { readonly id: string; readonly name: string }>(
   connections: readonly T[],
   requested: string,
+  hint?: { readonly sql: string; readonly schemas: Readonly<Record<string, string>> },
 ): { ok: true; connection: T } | { ok: false; error: string } {
   const only = connections[0];
   if (only === undefined) {
@@ -57,8 +115,51 @@ export function connectionForAssistQuery<T extends { readonly id: string; readon
   const matches = connections.filter((item) => item.id.toLowerCase() === lower || item.name.toLowerCase() === lower);
   const match = matches[0];
   if (match !== undefined && matches.length === 1) return { ok: true, connection: match };
-  if (matches.length === 0) return { ok: false, error: `No connected database is named ${name}.` };
-  return { ok: false, error: `More than one connected database is named ${name}.` };
+  if (matches.length > 1) return { ok: false, error: `More than one connected database is named ${name}.` };
+  if (hint !== undefined) {
+    const byTable = connectionByTables(connections, hint.sql, hint.schemas);
+    if (byTable !== null) return { ok: true, connection: byTable };
+  }
+  if (connections.length === 1) return { ok: true, connection: only };
+  return { ok: false, error: missingConnection(connections, name) };
+}
+
+/** A chart saved against a connection that was removed or renamed. */
+export interface AssistConnectionCard {
+  readonly connectionId: string | null;
+  readonly connectionName: string;
+  readonly error: string | null;
+}
+
+const STALE_CONNECTION = /^(?:No connected database is named |Connect a database in Traditional mode)/;
+
+/**
+ * Points a saved chart at a connection that still exists.
+ * The stored id wins. A missing id uses the stored name, then the only connection left.
+ */
+export function rebindAssistCard<
+  T extends { readonly id: string; readonly name: string },
+  C extends AssistConnectionCard,
+>(connections: readonly T[], card: C): C {
+  if (card.connectionId !== null) {
+    const current = connections.find((item) => item.id === card.connectionId);
+    if (current !== undefined) {
+      if (current.name === card.connectionName) return card;
+      return { ...card, connectionName: current.name };
+    }
+  }
+  const resolved = connectionForAssistQuery(connections, card.connectionName);
+  if (!resolved.ok) {
+    if (card.connectionId === null) return card;
+    return { ...card, connectionId: null, error: resolved.error };
+  }
+  const stale = card.error !== null && STALE_CONNECTION.test(card.error);
+  return {
+    ...card,
+    connectionId: resolved.connection.id,
+    connectionName: resolved.connection.name,
+    error: stale ? null : card.error,
+  };
 }
 
 /** The editor query route's answer, or the message to show on the chart card. */

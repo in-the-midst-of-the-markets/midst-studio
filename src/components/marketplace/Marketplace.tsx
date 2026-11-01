@@ -163,7 +163,9 @@ export function Marketplace() {
             className="mt-1.5 h-9 w-full rounded-md border border-hairline bg-surface px-3 text-sm text-fg"
           />
           {offerings.length === 0 ? (
-            <p className="mt-6 text-sm text-fg-secondary">No third-party data is listed yet.</p>
+            <p className="mt-6 text-sm text-fg-secondary">
+              No databases are listed yet. A connection you add in the editor is not listed here.
+            </p>
           ) : visible.length === 0 ? (
             <p className="mt-6 text-sm text-fg-secondary">No data matches that search.</p>
           ) : (

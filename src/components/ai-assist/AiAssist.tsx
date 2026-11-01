@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LayoutDashboard } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { OtherModeLink } from "@/components/ai-assist/AssistModeToggle";
@@ -26,7 +26,7 @@ import {
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
-import { connectionForAssistQuery, runAssistQuery } from "@/lib/ai/assist-query";
+import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
   COMMON_OPENROUTER_MODELS,
@@ -174,6 +174,23 @@ function paint(turns: readonly Turn[], recolors: readonly AssistRecolor[]): read
   }));
 }
 
+function rebindTurns(turns: readonly Turn[], connections: readonly DatabaseConnection[]): readonly Turn[] {
+  let changed = false;
+  const next = turns.map((turn) => {
+    if (turn.cards.length === 0) return turn;
+    let cardsChanged = false;
+    const cards = turn.cards.map((card) => {
+      const rebound = rebindAssistCard(connections, card);
+      if (rebound !== card) cardsChanged = true;
+      return rebound;
+    });
+    if (!cardsChanged) return turn;
+    changed = true;
+    return { ...turn, cards };
+  });
+  return changed ? next : turns;
+}
+
 function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
   const pairs: AssistHistoryTurn[] = [];
   for (let index = 0; index < turns.length; index += 1) {
@@ -266,7 +283,7 @@ export function AiAssist() {
   const turnsRef = useRef<readonly Turn[]>([]);
   const mounted = useRef(true);
 
-  const commit = (next: readonly Turn[], save: boolean) => {
+  const commit = useCallback((next: readonly Turn[], save: boolean) => {
     if (!mounted.current) return;
     turnsRef.current = next;
     if (save) {
@@ -275,11 +292,16 @@ export function AiAssist() {
       return;
     }
     setDraftTurns(next);
-  };
+  }, []);
 
   useEffect(() => {
     turnsRef.current = turns;
   }, [turns, turnsRef]);
+
+  useEffect(() => {
+    const rebound = rebindTurns(turnsRef.current, connections);
+    if (rebound !== turnsRef.current) commit(rebound, true);
+  }, [connections, commit]);
 
   useEffect(() => {
     mounted.current = true;
@@ -454,7 +476,10 @@ export function AiAssist() {
       const recolors = [...follow.recolors, ...recolorsFromQuestion(question, prior)];
       const queries = questionOnlyRecolors(question) ? [] : follow.queries;
       const cards: AssistCard[] = queries.map((query) => {
-        const resolved = connectionForAssistQuery(connections, query.connection);
+        const resolved = connectionForAssistQuery(connections, query.connection, {
+          sql: query.sql,
+          schemas,
+        });
         return {
           id: nextId(),
           title: query.title,

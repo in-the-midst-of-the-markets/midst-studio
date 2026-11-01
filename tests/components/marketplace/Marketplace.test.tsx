@@ -47,7 +47,9 @@ describe("Marketplace", () => {
     render(<Marketplace />);
 
     expect(screen.getByText("Reading the marketplace...")).not.toBeNull();
-    expect(await screen.findByText("No third-party data is listed yet.")).not.toBeNull();
+    expect(
+      await screen.findByText("No databases are listed yet. A connection you add in the editor is not listed here."),
+    ).not.toBeNull();
     expect(
       screen.getByText(
         "Subscribe to third-party databases. Each database has its own monthly price. Payment is collected by Stripe.",
@@ -61,7 +63,9 @@ describe("Marketplace", () => {
 
     render(<Marketplace />);
 
-    expect(await screen.findByText("No third-party data is listed yet.")).not.toBeNull();
+    expect(
+      await screen.findByText("No databases are listed yet. A connection you add in the editor is not listed here."),
+    ).not.toBeNull();
   });
 
   test("says when the catalog cannot be read, including a checkout Stripe did not confirm", async () => {
