@@ -558,18 +558,16 @@ describe("Sidebar", () => {
     }
   });
 
-  test("footer offers AI as a button and does not show a version or the repository", () => {
+  test("footer does not show a version, the repository, or a link to AI", () => {
     process.env.NEXT_PUBLIC_APP_VERSION = "9.8.7";
     const props = createDefaultProps();
-    const { container, getByRole, queryByText } = render(<Sidebar {...props} />);
+    const { container, queryByRole, queryByText } = render(<Sidebar {...props} />);
 
     expect(queryByText("v9.8.7")).toBeNull();
     expect(queryByText("vundefined")).toBeNull();
     expect(container.textContent).not.toContain("undefined");
     expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
-    const link = getByRole("link", { name: "AI" });
-    expect(link.getAttribute("href")).toBe("/assist");
-    expect(link.className).toContain("bg-primary");
+    expect(queryByRole("link", { name: "AI" })).toBeNull();
     expect(queryByText("Connected")).not.toBeNull();
   });
 
