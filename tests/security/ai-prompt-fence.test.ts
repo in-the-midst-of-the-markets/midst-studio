@@ -8,7 +8,7 @@ import { UNTRUSTED_CONTENT_BEGIN, UNTRUSTED_CONTENT_END } from "@/lib/agent/untr
 // ─── The closed list of standalone AI routes ────────────────────────────────
 
 const AI_API_DIR = join(import.meta.dir, "..", "..", "src", "app", "api", "ai");
-const KNOWN_AI_ROUTES = ["describe-schema", "explain", "query-safety"];
+const KNOWN_AI_ROUTES = ["assist", "describe-schema", "explain", "query-safety"];
 
 // A table name written as an instruction: the B109 "Done when" case. It must appear
 // exactly once, and only inside the untrusted-content fence.
@@ -140,7 +140,7 @@ describe("the standalone AI routes fence database content", () => {
     mockStream.mockImplementation(async () => createMockStream());
   });
 
-  test("only the three known routes exist, and each calls the shared fence", () => {
+  test("only the known routes exist, and each calls the shared fence", () => {
     const dirs = readdirSync(AI_API_DIR, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
