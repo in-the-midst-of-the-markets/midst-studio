@@ -40,7 +40,7 @@ import {
   type ClassifiedColumns,
 } from "@/lib/charts/echarts-catalog";
 import { buildChartOption, watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
-import { readQueryFilters, writeQueryFilter } from "@/lib/charts/query-filters";
+import { readQueryFilters, writeMetricCompare, writeMetricFilter, writeQueryFilter } from "@/lib/charts/query-filters";
 import { chartTheme } from "@/lib/charts/palette";
 import {
   loadMaskingConfig,
@@ -205,7 +205,15 @@ export function QueryChart({
       {filters.length > 0 && query !== undefined && onFilterChange !== undefined && !shelfOpen && (
         <QueryFilterBar
           filters={filters}
-          onChange={(name, value) => onFilterChange(writeQueryFilter(query, name, value))}
+          metrics={columns.metrics}
+          onChange={(name, value) =>
+            onFilterChange(
+              columns.metrics.includes(name)
+                ? writeMetricFilter(query, name, value)
+                : writeQueryFilter(query, name, value),
+            )
+          }
+          onCompare={(name, compare) => onFilterChange(writeMetricCompare(query, filters, name, compare))}
         />
       )}
       <fieldset
@@ -314,7 +322,13 @@ export function QueryChart({
               );
             })}
             {query !== undefined && onFilterChange !== undefined && (
-              <ChartFilterShelf columns={columns.dimensions} rows={rows ?? []} sql={query} onSql={onFilterChange} />
+              <ChartFilterShelf
+                columns={columns.dimensions}
+                metrics={columns.metrics}
+                rows={rows ?? []}
+                sql={query}
+                onSql={onFilterChange}
+              />
             )}
           </div>
           {!ready && (
