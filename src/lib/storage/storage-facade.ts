@@ -4,7 +4,14 @@
  * Dispatches CustomEvent on every mutation for the sync hook.
  */
 
-import { DatabaseConnection, QueryHistoryItem, SavedQuery, SchemaSnapshot, SavedChartConfig } from "../types";
+import {
+  DatabaseConnection,
+  QueryHistoryItem,
+  SavedQuery,
+  SchemaSnapshot,
+  SavedChartConfig,
+  SavedDashboard,
+} from "../types";
 import type { DataDictionary } from "../data-dictionary";
 import { type AuditEvent } from "../audit";
 import { DEFAULT_MASKING_CONFIG, type MaskingConfig } from "../data-masking";
@@ -310,6 +317,60 @@ export const storage = {
     const filtered = charts.filter((c) => c.id !== id);
     writeJSON("saved_charts", filtered);
     dispatchChange("saved_charts", filtered);
+    const dashboards = storage.getSavedDashboards();
+    let removed = false;
+    const next = dashboards.map((dashboard) => {
+      const frames = dashboard.charts.filter((frame) => frame.chartId !== id);
+      if (frames.length === dashboard.charts.length) return dashboard;
+      removed = true;
+      return { ...dashboard, charts: frames, updatedAt: new Date() };
+    });
+    if (!removed) return;
+    writeJSON("saved_dashboards", next);
+    dispatchChange("saved_dashboards", next);
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Saved dashboards
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  getSavedDashboards: (): SavedDashboard[] => {
+    const data = readJSON<SavedDashboard[]>("saved_dashboards");
+    if (!data) return [];
+    return reviveDates(data, "createdAt", "updatedAt");
+  },
+
+  saveDashboard: (dashboard: SavedDashboard) => {
+    const dashboards = storage.getSavedDashboards();
+    const index = dashboards.findIndex((item) => item.id === dashboard.id);
+    const now = new Date();
+    if (index > -1) {
+      dashboards[index] = { ...dashboard, updatedAt: now };
+    } else {
+      dashboards.push({ ...dashboard, createdAt: now, updatedAt: now });
+    }
+    writeJSON("saved_dashboards", dashboards);
+    dispatchChange("saved_dashboards", dashboards);
+  },
+
+  deleteDashboard: (id: string) => {
+    const dashboards = storage.getSavedDashboards().filter((item) => item.id !== id);
+    writeJSON("saved_dashboards", dashboards);
+    dispatchChange("saved_dashboards", dashboards);
+  },
+
+  getActiveDashboardId: (): string | null => {
+    return readString("active_dashboard_id");
+  },
+
+  setActiveDashboardId: (id: string | null) => {
+    if (typeof window === "undefined") return;
+    if (id) {
+      writeString("active_dashboard_id", id);
+    } else {
+      remove("active_dashboard_id");
+    }
+    dispatchChange("active_dashboard_id", id);
   },
 
   // ═══════════════════════════════════════════════════════════════════════════

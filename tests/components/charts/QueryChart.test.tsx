@@ -356,6 +356,7 @@ describe("QueryChart", () => {
     const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
     expect(code.getAttribute("wrap")).toBe("soft");
     expect(code.value).toContain('"bar"');
+    expect(code.value).toContain('"text": "Bar"');
     fireEvent.change(code, { target: { value: "{" } });
     expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
     fireEvent.click(view.getByRole("button", { name: "Chart" }));

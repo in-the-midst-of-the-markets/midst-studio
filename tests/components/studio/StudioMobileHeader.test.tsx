@@ -84,6 +84,12 @@ const conn: DatabaseConnection = {
 };
 
 describe("StudioMobileHeader", () => {
+  test("offers Dash beside AI", () => {
+    const { getByRole, queryByRole } = render(<StudioMobileHeader {...defaults} />);
+    expect(getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
+    expect(queryByRole("link", { name: "IDE" })).toBeNull();
+  });
+
   afterEach(() => {
     cleanup();
     if (originalClipboard === undefined)
@@ -506,6 +512,7 @@ describe("StudioMobileHeader", () => {
     expect(ai).toHaveLength(1);
     expect(ai[0]?.getAttribute("href")).toBe("/assist");
     expect(ai[0]?.className.includes("bg-primary")).toBe(true);
+    expect(getAllByRole("link", { name: "Dash" })).toHaveLength(1);
   });
 
   test("transactionActive=true shows TXN badge", () => {

@@ -4,17 +4,29 @@ import { buttonVariants } from "@/components/ui/button";
 import { withBasePath } from "@/lib/config/base-path";
 import { cn } from "@/lib/utils";
 
-export type AssistMode = "traditional" | "assist";
+/** The three top-level surfaces. Each page links to the other two. */
+type StudioSurface = "ide" | "assist" | "dash";
 
-/** The other page, as a button. The IDE offers AI, and the AI page offers the IDE. */
-export function OtherModeLink({ mode }: { mode: AssistMode }) {
-  const toAssist = mode === "traditional";
+const SURFACES: readonly { id: StudioSurface; href: string; label: string }[] = [
+  { id: "assist", href: "/assist", label: "AI" },
+  { id: "ide", href: "/", label: "IDE" },
+  { id: "dash", href: "/create", label: "Dash" },
+];
+
+const linkClass = cn(buttonVariants({ variant: "default", size: "sm" }), "h-7 px-3 text-xs");
+
+/**
+ * The other surfaces, as buttons beside each other.
+ * The IDE offers AI and Dash, the AI page offers the IDE and Dash, and the dashboard offers AI and IDE.
+ */
+export function ModeLinks({ page }: { page: StudioSurface }) {
   return (
-    <a
-      href={withBasePath(toAssist ? "/assist" : "/")}
-      className={cn(buttonVariants({ variant: "default", size: "sm" }), "h-7 px-3 text-xs")}
-    >
-      {toAssist ? "AI" : "IDE"}
-    </a>
+    <div className="flex items-center gap-1.5">
+      {SURFACES.filter((surface) => surface.id !== page).map((surface) => (
+        <a key={surface.id} href={withBasePath(surface.href)} className={linkClass}>
+          {surface.label}
+        </a>
+      ))}
+    </div>
   );
 }

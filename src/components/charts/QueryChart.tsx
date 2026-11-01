@@ -26,6 +26,9 @@ import {
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
+import { SaveChartButton } from "@/components/charts/SaveChartButton";
+import { chartTitleText } from "@/lib/charts/chart-title";
+import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
@@ -92,6 +95,8 @@ export interface QueryChartProps {
   spec?: AgentChartSpec | null;
   /** The editor statement. Placeholders in it become controls on this chart. */
   query?: string;
+  /** The connection the saved chart reruns `query` on. */
+  connectionId?: string;
   /** Replaces the editor statement with the next template and runs it. */
   onFilterChange?: (sql: string) => void;
   maskingEnabled?: boolean;
@@ -122,6 +127,7 @@ export function QueryChart({
   result,
   spec = null,
   query,
+  connectionId,
   onFilterChange,
   maskingEnabled,
   userRole,
@@ -174,8 +180,9 @@ export function QueryChart({
       selection: choice.selection,
       theme,
       mask,
+      title: type?.label ?? "",
     });
-  }, [hasRows, choice, ready, rows, theme, mask]);
+  }, [hasRows, choice, ready, rows, theme, mask, type]);
   const code = useChartCode(built?.option ?? null, choice.typeId, choice.variationId, choice.selection);
   const [codeOpen, setCodeOpen] = useState(false);
 
@@ -374,6 +381,18 @@ export function QueryChart({
                     Code
                   </button>
                 </div>
+                {type !== null && choice.typeId !== null && choice.variationId !== null && (
+                  <SaveChartButton
+                    draft={chartSaveDraft({
+                      title: chartTitleText(code.option ?? built.option),
+                      query,
+                      connectionId,
+                      typeId: choice.typeId,
+                      variationId: choice.variationId,
+                      selection: choice.selection,
+                    })}
+                  />
+                )}
               </div>
               {codeOpen ? (
                 <ChartCodeEditor
