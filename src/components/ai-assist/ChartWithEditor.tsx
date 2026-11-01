@@ -42,6 +42,18 @@ function cellText(value: unknown): string {
   return String(value);
 }
 
+/** A caption-only update is still the same chart the user has been editing. */
+function sameChartPlan(left: AssistChart | null, right: AssistChart | null): boolean {
+  if (left === right) return true;
+  if (left === null || right === null) return false;
+  return (
+    left.type === right.type &&
+    left.x === right.x &&
+    left.y.length === right.y.length &&
+    left.y.every((metric, index) => metric === right.y[index])
+  );
+}
+
 function ResultTable({ result }: { result: QueryResult }) {
   const fields = result.fields.slice(0, PREVIEW_COLUMNS);
   const rows = result.rows.slice(0, PREVIEW_ROWS);
@@ -106,7 +118,7 @@ export function ChartWithEditor({
     setFace("chart");
   }
   if (seen.result !== result || seen.chart !== chart) {
-    const previous = seen.chart === chart ? choice : null;
+    const previous = sameChartPlan(seen.chart, chart) ? choice : null;
     setSeen({ result, chart });
     setChoice(nextAssistChoice(chart, result, previous));
     setBrowsingId(null);
