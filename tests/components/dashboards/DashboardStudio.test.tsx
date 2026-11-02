@@ -2,6 +2,7 @@ import "../../setup-dom";
 
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { mockGlobalFetch, restoreGlobalFetch } from "../../helpers/mock-fetch";
 import type { DatabaseConnection, SavedChartConfig, SavedDashboard } from "@/lib/types";
 
@@ -14,6 +15,21 @@ mock.module("echarts/core", () => ({
   }),
   registerMap: () => {},
 }));
+
+setupChartCodeMonacoMock();
+
+mock.module("@/components/QueryEditor", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const React = require("react");
+  return {
+    QueryEditor: ({ value, onContentChange }: { value: string; onContentChange?: (value: string) => void }) =>
+      React.createElement("textarea", {
+        "aria-label": "Query SQL",
+        value,
+        onChange: (event: { target: { value: string } }) => onContentChange?.(event.target.value),
+      }),
+  };
+});
 
 import { DashboardStudio } from "@/components/dashboards/DashboardStudio";
 import { storage } from "@/lib/storage";
@@ -237,6 +253,44 @@ describe("DashboardStudio", () => {
     expect(view.queryByTestId("dashboard-chart-revenue")).toBeNull();
     expect(storage.getSavedCharts().some((item) => item.id === "revenue")).toBe(false);
     expect(storage.getSavedDashboards()[0]?.charts.some((frame) => frame.chartId === "revenue")).toBe(false);
+  });
+
+  test("edits a dashboard chart's query and code", async () => {
+    storage.saveConnection(connection);
+    storage.saveChart(chart({ look: { color: ["#9546de"] } }));
+    storage.saveDashboard(board("sales", ["revenue"]));
+    storage.setActiveDashboardId("sales");
+    const posted: string[] = [];
+    mockGlobalFetch({
+      "/api/db/query": async (req) => {
+        const body = (await req.json()) as { sql?: string };
+        posted.push(body.sql ?? "");
+        return { json: rows };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    await view.findByTestId("assist-chart");
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    const sql = view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement;
+    expect(sql.value).toBe("SELECT region, total FROM sales");
+    const nextQuery = "SELECT region, total FROM sales WHERE total > 1";
+    fireEvent.change(sql, { target: { value: nextQuery } });
+    fireEvent.click(view.getByRole("button", { name: "Run Revenue" }));
+    await waitFor(() => expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toBe(nextQuery));
+    await waitFor(() => expect(posted).toContain(nextQuery));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(code.value).toContain("#9546de");
+    fireEvent.change(code, { target: { value: "{" } });
+    expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
+    expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.look).toEqual({ color: ["#9546de"] });
+    fireEvent.change(code, { target: { value: JSON.stringify({ color: ["#112233"] }) } });
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.look).toEqual({ color: ["#112233"] }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
+    expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.look).toBeUndefined();
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
   });
 
   test("a new dashboard with no saved charts says so", () => {

@@ -1,6 +1,6 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
 import { applyChartValues } from "@/lib/charts/chart-code";
-import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
+import { chartTitleText, omitDrawnChartTitle } from "@/lib/charts/chart-title";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
 import { withoutFilterLooks } from "@/lib/charts/filter-look";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
@@ -38,7 +38,8 @@ export async function loadSavedChart(
 
 /**
  * The option for a saved chart and a fresh result, or null when the shelves cannot draw it.
- * The dashboard card already shows the chart name, so the plot draws no second title.
+ * The dashboard card already shows the chart name. A title is drawn only when the saved
+ * look has one, which is how chart code asks for a title of its own.
  */
 export function optionForSavedChart(
   chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "look">,
@@ -57,5 +58,6 @@ export function optionForSavedChart(
   if (built === null) return null;
   const look = storedChartLook(chart.look);
   const drawn = look === undefined ? built.option : withoutFilterLooks(applyChartValues(look, built.option));
+  if (look !== undefined && chartTitleText(look) !== "") return { option: drawn, notes: built.notes };
   return { option: omitDrawnChartTitle(drawn, built.option), notes: built.notes };
 }
