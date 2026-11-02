@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronRight, Plus, Sparkles } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
@@ -275,6 +275,7 @@ export function AiAssist() {
   const [draftTurns, setDraftTurns] = useState<readonly Turn[] | null>(null);
   const turns = draftTurns ?? storedTurns;
   const threadRef = useRef<HTMLElement>(null);
+  const chartsRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -310,12 +311,15 @@ export function AiAssist() {
     };
   }, []);
 
-  // A saved conversation is taller than the pane, so opening AI Assist lands on the
-  // latest message. A new reply grows the thread, and the same position keeps it in view.
-  useEffect(() => {
-    const node = threadRef.current;
-    if (node === null || turns.length === 0) return;
-    node.scrollTop = node.scrollHeight - node.clientHeight;
+  // Opening AI Assist, and each new reply, lands on the latest chart and the latest message.
+  useLayoutEffect(() => {
+    const pinToEnd = (node: HTMLElement | null) => {
+      if (node === null) return;
+      node.scrollTop = node.scrollHeight - node.clientHeight;
+    };
+    if (turns.length === 0) return;
+    pinToEnd(chartsRef.current);
+    pinToEnd(threadRef.current);
   }, [turns.length]);
 
   useEffect(() => {
@@ -575,8 +579,8 @@ export function AiAssist() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto 2xl:flex-row 2xl:overflow-hidden">
-        <main className="px-4 py-4 md:px-6 md:py-5 2xl:min-h-0 2xl:flex-1 2xl:overflow-y-auto 2xl:px-8 2xl:py-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden 2xl:flex-row">
+        <main ref={chartsRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 2xl:px-8 2xl:py-6">
           {(hydrated && connections.length === 0) || (hydrated && connections.length > 1) || schemaNotes.length > 0 ? (
             <div className="mx-auto mb-6 flex w-full max-w-5xl flex-col gap-3">
               {hydrated && connections.length === 0 && (
@@ -682,7 +686,7 @@ export function AiAssist() {
           <section
             ref={threadRef}
             aria-label="Conversation"
-            className="h-72 overflow-y-auto px-4 py-4 2xl:h-auto 2xl:min-h-0 2xl:flex-1"
+            className="h-40 overflow-y-auto px-4 py-4 2xl:h-auto 2xl:min-h-0 2xl:flex-1"
           >
             <div className="flex flex-col gap-4">
               {turns.map((turn) =>
