@@ -1676,8 +1676,9 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    expect((await view.findByRole("list", { name: "Connected databases" })).textContent).toContain("Logs");
     expect(await view.findByText("Orders: The catalog is offline.")).toBeTruthy();
+    expect(view.queryByRole("list", { name: "Connected databases" })).toBeNull();
+    expect(view.queryByText("Orders · postgres")).toBeNull();
     expect(view.getByText("Logs: Could not read the database.")).toBeTruthy();
     await typeAndSend(view, "Compare them");
     expect(await view.findByText("Both databases.")).toBeTruthy();
