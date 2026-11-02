@@ -22,7 +22,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
+import { QueryEditor } from "@/components/QueryEditor";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/config/base-path";
 import {
@@ -36,7 +38,9 @@ import {
   withoutChart,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
+import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { classifyColumns } from "@/lib/charts/echarts-catalog";
+import { buildChartOption } from "@/lib/charts/echarts-option";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import {
   clearQueryFilters,
@@ -45,11 +49,13 @@ import {
   writeMetricFilter,
   writeQueryFilter,
 } from "@/lib/charts/query-filters";
+import { storedChartLook } from "@/lib/charts/save-chart";
 import { loadSavedChart, optionForSavedChart, type SavedChartView } from "@/lib/charts/saved-chart-run";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import { chartTheme } from "@/lib/charts/palette";
 import { storage } from "@/lib/storage";
-import type { DatabaseConnection, SavedChartConfig, SavedDashboard } from "@/lib/types";
+import type { DatabaseConnection, DatabaseType, SavedChartConfig, SavedDashboard } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const CHART_GLYPH: Record<string, LucideIcon> = {
   line: LineChart,
@@ -179,7 +185,7 @@ export function DashboardStudio() {
                 Make it your own
               </div>
               <p className="mt-1 text-xs leading-5 text-fg-muted">
-                Add saved charts, filter the data, and switch dashboards for a different view.
+                Add saved charts, edit their query and code, and switch dashboards for a different view.
               </p>
             </div>
             <div className="mt-5 border-t border-hairline pt-4">
@@ -273,6 +279,13 @@ export function DashboardStudio() {
                       storage.saveChart({ ...chart, query });
                       setCharts(storage.getSavedCharts());
                     }}
+                    onLook={(look) => {
+                      const next = { ...chart };
+                      if (look === undefined) delete next.look;
+                      else next.look = look;
+                      storage.saveChart(next);
+                      setCharts(storage.getSavedCharts());
+                    }}
                     onUnsave={() => {
                       storage.deleteChart(chart.id);
                       setCharts(storage.getSavedCharts());
@@ -289,6 +302,30 @@ export function DashboardStudio() {
   );
 }
 
+function FaceButton({
+  pressed,
+  label,
+  onClick,
+}: {
+  readonly pressed: boolean;
+  readonly label: string;
+  readonly onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={cn(
+        "rounded-md px-2 py-1 text-xs font-medium",
+        pressed ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 function DashboardChart({
   chart,
   width,
@@ -297,6 +334,7 @@ function DashboardChart({
   onRemove,
   onResize,
   onQuery,
+  onLook,
   onUnsave,
 }: {
   readonly chart: SavedChartConfig;
@@ -306,10 +344,12 @@ function DashboardChart({
   readonly onRemove: () => void;
   readonly onResize: (size: { width: number; height: number }) => void;
   readonly onQuery: (query: string) => void;
+  readonly onLook: (look: Record<string, unknown> | undefined) => void;
   readonly onUnsave: () => void;
 }) {
   const theme = chartTheme(useEffectiveTheme());
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
+  const [face, setFace] = useState<"chart" | "query" | "code">("chart");
   const query = chart.query;
   const connectionId = chart.connectionId;
   const refreshSeconds = chart.refreshSeconds;
@@ -342,9 +382,47 @@ function DashboardChart({
   const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme) : null;
   const missingShelves = chart.typeId === undefined || chart.variationId === undefined;
   const sql = chart.query ?? "";
+  const [sqlDraft, setSqlDraft] = useState(sql);
+  const [seenSql, setSeenSql] = useState(sql);
+  if (seenSql !== sql) {
+    setSeenSql(sql);
+    setSqlDraft(sql);
+  }
   const filters = readQueryFilters(sql);
   const metrics = view.kind === "result" ? classifyColumns(view.result.fields, view.result.rows).metrics : [];
   const filterLooks = mergeFilterLooks(defaultFilterLooks(filters, metrics), readFilterLooks(chart.look));
+  const shelf =
+    view.kind === "result" && chart.typeId !== undefined && chart.variationId !== undefined
+      ? buildChartOption({
+          typeId: chart.typeId,
+          variationId: chart.variationId,
+          rows: view.result.rows,
+          selection: chart.selection ?? {},
+          title: "",
+          theme,
+        })
+      : null;
+  const storedLook = storedChartLook(chart.look);
+  const code = useChartCode(
+    shelf?.option ?? null,
+    chart.typeId ?? null,
+    chart.variationId ?? null,
+    chart.selection ?? null,
+    view.kind === "result" ? view.result : null,
+    filterLooks,
+    storedLook === undefined ? null : formatChartCode(storedLook),
+  );
+  const databaseType: DatabaseType | undefined = connections.find((item) => item.id === connectionId)?.type;
+  const runDraft = () => {
+    onQuery(sqlDraft);
+    setFace("chart");
+  };
+  const onCodeChange = (text: string) => {
+    code.onChange(text);
+    const parsed = parseChartCode(text);
+    if (!parsed.ok) return;
+    onLook(storedChartLook(stripChartValues(parsed.option)));
+  };
 
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     event.currentTarget.focus();
@@ -386,7 +464,22 @@ function DashboardChart({
     >
       <div className="flex items-center justify-between gap-3 px-4 pt-4">
         <h2 className="min-w-0 truncate text-sm font-semibold text-fg">{chart.name}</h2>
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+            <FaceButton pressed={face === "chart"} label="Chart" onClick={() => setFace("chart")} />
+            <FaceButton pressed={face === "query"} label="Query" onClick={() => setFace("query")} />
+            <FaceButton pressed={face === "code"} label="Code" onClick={() => setFace("code")} />
+          </div>
+          {face === "query" && (
+            <button
+              type="button"
+              aria-label={`Run ${chart.name}`}
+              onClick={runDraft}
+              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+            >
+              Run
+            </button>
+          )}
           <button
             type="button"
             aria-label={`Unsave ${chart.name}`}
@@ -407,7 +500,7 @@ function DashboardChart({
           </button>
         </div>
       </div>
-      {filters.length > 0 && (
+      {face === "chart" && filters.length > 0 && (
         <QueryFilterBar
           filters={filters}
           metrics={metrics}
@@ -428,20 +521,41 @@ function DashboardChart({
         />
       )}
       <div className="min-h-0 flex-1">
-        {view.kind === "loading" && <p className="p-3 text-xs text-fg-muted">Running the query…</p>}
-        {view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
-        {view.kind === "error" && (
+        {face === "query" && (
+          <QueryEditor
+            value={sqlDraft}
+            documentId={chart.id}
+            databaseType={databaseType}
+            wordWrap
+            onContentChange={setSqlDraft}
+          />
+        )}
+        {face === "code" && (
+          <ChartCodeEditor
+            value={code.text}
+            error={code.error}
+            edited={code.edited || storedLook !== undefined}
+            onChange={onCodeChange}
+            onReset={() => {
+              code.reset();
+              onLook(undefined);
+            }}
+          />
+        )}
+        {face === "chart" && view.kind === "loading" && <p className="p-3 text-xs text-fg-muted">Running the query…</p>}
+        {face === "chart" && view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
+        {face === "chart" && view.kind === "error" && (
           <p role="alert" className="p-3 text-xs text-danger">
             {view.message}
           </p>
         )}
-        {view.kind === "result" && missingShelves && (
+        {face === "chart" && view.kind === "result" && missingShelves && (
           <p className="p-3 text-xs text-fg-muted">Save this chart again from the chart view.</p>
         )}
-        {view.kind === "result" && !missingShelves && built === null && (
+        {face === "chart" && view.kind === "result" && !missingShelves && built === null && (
           <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
         )}
-        {built !== null && <AssistChartCanvas option={built.option} notes={built.notes} />}
+        {face === "chart" && built !== null && <AssistChartCanvas option={built.option} notes={built.notes} />}
       </div>
       <button
         type="button"

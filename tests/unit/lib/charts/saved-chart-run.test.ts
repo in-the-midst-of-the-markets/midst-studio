@@ -132,9 +132,12 @@ describe("saved chart run", () => {
     expect((painted.option.color as string[])[0]).toBe("#9546de");
     expect((painted.option.series as { itemStyle?: { color?: string } }[])[0]?.itemStyle?.color).toBe("#9546de");
     expect(painted.option.filters).toBeUndefined();
-    expect(painted.option.title).toBeUndefined();
-    expect((painted.option.legend as { top: number }).top).toBe(4);
-    expect((painted.option.grid as { top: number }).top).toBe(40);
+    expect((painted.option.title as { text: string }).text).toBe("Daily_Active_Users by date");
+    expect((painted.option.legend as { top: number }).top).toBe(28);
+    expect((painted.option.grid as { top: number }).top).toBe(64);
+    expect(
+      optionForSavedChart({ ...shelves, look: { color: ["#112233"] } }, result, chartTheme("dark"))?.option.title,
+    ).toBeUndefined();
     expect((painted.option.series as { data?: unknown }[])[0]?.data).toEqual(
       (plain.option.series as { data?: unknown }[])[0]?.data,
     );

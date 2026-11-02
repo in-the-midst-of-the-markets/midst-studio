@@ -74,6 +74,8 @@ export interface ChartCodeState {
  * `source` is the shelves. A new shelf starts from the generated option again.
  * `refreshToken` is the query result. A new result drops values out of the text
  * and the canvas reads them from that result instead.
+ * `storedText` is a look already saved on the chart. It is what the editor shows
+ * until the user types, so a dashboard chart opens on its own code.
  */
 export function useChartCode(
   generated: Record<string, unknown> | null,
@@ -82,6 +84,7 @@ export function useChartCode(
   selection: SlotSelection | null,
   refreshToken: unknown = null,
   filterLooks: ReadonlyMap<string, FilterLook> = EMPTY_LOOKS,
+  storedText: string | null = null,
 ): ChartCodeState {
   const source = chartSourceKey(typeId, variationId, selection);
   const [draft, setDraft] = useState<string | null>(null);
@@ -134,7 +137,9 @@ export function useChartCode(
   }, [editedOption, generated]);
 
   const text =
-    draft ?? (generated === null ? "" : formatChartCode(withFilterLooks(stripChartValues(generated), filterLooks)));
+    draft ??
+    storedText ??
+    (generated === null ? "" : formatChartCode(withFilterLooks(stripChartValues(generated), filterLooks)));
 
   return {
     text,
