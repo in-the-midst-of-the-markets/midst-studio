@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Editor from "@monaco-editor/react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type * as Monaco from "monaco-editor";
+import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
   applyChartValues,
   chartSourceKey,
@@ -8,8 +11,49 @@ import {
   parseChartCode,
   stripChartValues,
 } from "@/lib/charts/chart-code";
+import { applyExternalChartCode, chartCodeChangeToApply } from "@/lib/charts/chart-code-sync";
 import type { SlotSelection } from "@/lib/charts/echarts-catalog";
 import { withFilterLooks, withoutFilterLooks, type FilterLook } from "@/lib/charts/filter-look";
+import { configureMonacoLoader } from "@/lib/editor/monaco-loader";
+import { defineStudioThemes, STUDIO_THEME_DARK, STUDIO_THEME_LIGHT } from "@/lib/editor/monaco-theme";
+
+// Serve Monaco from our own origin rather than @monaco-editor/react's jsdelivr default.
+// Runs at module load so it is in place before the first <Editor> mounts.
+configureMonacoLoader();
+
+/**
+ * IDE options for the chart JSON. The studio theme supplies the token colours, and Monaco's
+ * JSON grammar is what paints keys, strings, numbers, and true/false/null.
+ */
+const CHART_CODE_EDITOR_OPTIONS = {
+  ariaLabel: "Chart code",
+  minimap: { enabled: false },
+  fontSize: 13,
+  fontFamily: '"JetBrains Mono", "Fira Code", Menlo, Monaco, Consolas, monospace',
+  lineNumbers: "on" as const,
+  tabSize: 2,
+  wordWrap: "on" as const,
+  folding: true,
+  scrollBeyondLastLine: false,
+  automaticLayout: true,
+  fixedOverflowWidgets: true,
+  padding: { top: 8 },
+  cursorSmoothCaretAnimation: "on" as const,
+  cursorBlinking: "smooth" as const,
+  smoothScrolling: true,
+  renderLineHighlight: "all" as const,
+  bracketPairColorization: { enabled: true },
+  matchBrackets: "always" as const,
+  guides: { indentation: true, bracketPairs: true as const },
+  stickyScroll: { enabled: true },
+  scrollbar: {
+    vertical: "visible" as const,
+    horizontal: "visible" as const,
+    verticalScrollbarSize: 8,
+    horizontalScrollbarSize: 8,
+  },
+  fontLigatures: true,
+};
 
 const EMPTY_LOOKS: ReadonlyMap<string, FilterLook> = new Map();
 
@@ -111,17 +155,38 @@ export interface ChartCodeEditorProps {
   readonly onReset: () => void;
 }
 
-/** The chart option as wrapping, editable JSON. */
+/** The chart option as JSON in the studio editor. The query's values stay out of the text. */
 export function ChartCodeEditor({ value, error, edited, onChange, onReset }: ChartCodeEditorProps) {
+  const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const valueRef = useRef(value);
+  const typedByEditor = useRef(false);
+  // A path of its own, so this model does not share view state with the query editor.
+  const path = `chart-code-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}.json`;
+  const theme = useEffectiveTheme() === "light" ? STUDIO_THEME_LIGHT : STUDIO_THEME_DARK;
+
+  useEffect(() => {
+    // Updated before the write, so the write's own change event matches the text already stored.
+    valueRef.current = value;
+    applyExternalChartCode(editorRef.current?.getModel() ?? null, value, typedByEditor.current);
+    typedByEditor.current = false;
+  }, [value]);
+
+  const handleChange = (next: string | undefined) => {
+    const text = chartCodeChangeToApply(next, valueRef.current);
+    if (text === null) return;
+    typedByEditor.current = true;
+    onChange(text);
+  };
+
   return (
     <div className="flex h-full min-h-48 flex-col gap-2 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-fg-muted">
-          Chart code sets the look. The query fills in the values. The title is title.text and its size is
-          title.textStyle.fontSize. A filter is filters.name.control: text, select, number, or slider.
+          This JSON is the whole chart. The query fills in data, links, and a radar indicator, so leave those out. A
+          filter control is filters.name.control: text, select, number, or slider.
         </span>
         {edited && (
-          <button type="button" onClick={onReset} className="text-xs font-medium text-fg-secondary underline">
+          <button type="button" onClick={onReset} className="shrink-0 text-xs font-medium text-fg-secondary underline">
             Use generated chart
           </button>
         )}
@@ -131,15 +196,32 @@ export function ChartCodeEditor({ value, error, edited, onChange, onReset }: Cha
           {error}
         </p>
       )}
-      <textarea
-        aria-label="Chart code"
-        value={value}
-        wrap="soft"
-        spellCheck={false}
-        placeholder="Chart code appears here after a query."
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-48 w-full flex-1 resize-y whitespace-pre-wrap break-words rounded border border-hairline-strong bg-canvas p-2 font-mono text-xs text-fg"
-      />
+      <div className="min-h-48 w-full flex-1 overflow-hidden rounded border border-hairline-strong">
+        {/*
+         * `defaultValue`, not `value`. The controlled prop makes Monaco rewrite the whole buffer
+         * one render behind a keystroke and jump the caret (#808). A new result or a reset still
+         * reaches the model through applyExternalChartCode.
+         */}
+        <Editor
+          path={path}
+          language="json"
+          theme={theme}
+          defaultValue={value}
+          beforeMount={defineStudioThemes}
+          onMount={(editor) => {
+            editorRef.current = editor;
+            applyExternalChartCode(editor.getModel(), valueRef.current, false);
+          }}
+          onChange={handleChange}
+          height="100%"
+          options={CHART_CODE_EDITOR_OPTIONS}
+          loading={
+            <div className="flex h-full items-center justify-center bg-canvas text-xs text-fg-muted">
+              Loading editor...
+            </div>
+          }
+        />
+      </div>
     </div>
   );
 }

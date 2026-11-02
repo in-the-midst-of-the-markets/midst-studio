@@ -56,6 +56,82 @@ export function setupMonacoMock() {
   });
 }
 
+/**
+ * Monaco double for the chart-code editor.
+ *
+ * The shared `setupMonacoMock` labels its textarea `${language} editor` and treats `value` as the
+ * buffer. Chart tests look up "Chart code", and this editor is uncontrolled (`defaultValue`) so a
+ * keystroke does not jump the caret. `setValue` echoes through `onChange`, which is what the real
+ * editor does for a programmatic write.
+ */
+export function setupChartCodeMonacoMock(): void {
+  mock.module("@monaco-editor/react", () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const React = require("react");
+
+    function MockEditor(props: {
+      value?: string;
+      defaultValue?: string;
+      language?: string;
+      onChange?: (value: string | undefined) => void;
+      onMount?: (editor: {
+        getModel: () => { getValue: () => string; setValue: (value: string) => void } | null;
+      }) => void;
+      beforeMount?: (monaco: { editor: { defineTheme: () => void } }) => void;
+      options?: { ariaLabel?: string };
+    }) {
+      const onChangeRef = React.useRef(props.onChange);
+      onChangeRef.current = props.onChange;
+      const valueRef = React.useRef(props.defaultValue ?? props.value ?? "");
+      const [text, setText] = React.useState(props.defaultValue ?? props.value ?? "");
+      const mounted = React.useRef(false);
+
+      React.useEffect(() => {
+        if (mounted.current) return;
+        mounted.current = true;
+        props.beforeMount?.({ editor: { defineTheme() {} } });
+        const model = {
+          getValue: () => valueRef.current as string,
+          setValue: (next: string) => {
+            valueRef.current = next;
+            setText(next);
+            onChangeRef.current?.(next);
+          },
+        };
+        props.onMount?.({ getModel: () => model });
+        // Mount once. The first render's callbacks close over the editor refs, which stay current.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+
+      return React.createElement("textarea", {
+        "aria-label": props.options?.ariaLabel ?? "Chart code",
+        "data-language": props.language ?? "",
+        "data-controlled": props.value === undefined ? "no" : "yes",
+        value: text,
+        spellCheck: false,
+        onChange: (event: { target: { value: string } }) => {
+          valueRef.current = event.target.value;
+          setText(event.target.value);
+          onChangeRef.current?.(event.target.value);
+        },
+      });
+    }
+
+    return {
+      default: MockEditor,
+      Editor: MockEditor,
+      DiffEditor: function MockDiffEditor() {
+        return React.createElement("div", { "data-testid": "mock-monaco-diff-editor" });
+      },
+      loader: {
+        init: mock(() => Promise.resolve()),
+        config: mock(() => {}),
+        __getMonacoInstance: mock(() => null),
+      },
+    };
+  });
+}
+
 export function setupRechartssMock() {
   mock.module("recharts", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
