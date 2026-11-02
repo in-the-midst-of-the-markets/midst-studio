@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   addQueryFilter,
   clearQueryFilters,
@@ -134,6 +134,10 @@ export interface QueryFilterBarProps {
   /** Sits in the Dimension and Metric row, so it has no bar of its own. */
   readonly embedded?: boolean;
   readonly hideNames?: boolean;
+  /** Replaces the "Filters" heading. The dashboard says "Filter by". */
+  readonly label?: ReactNode;
+  readonly className?: string;
+  readonly clearClassName?: string;
   readonly onChange: (name: string, value: string) => void;
   readonly onCompare?: (name: string, compare: FilterCompare) => void;
   readonly onClear?: () => void;
@@ -146,6 +150,9 @@ export function QueryFilterBar({
   disabled = false,
   embedded = false,
   hideNames = false,
+  label = "Filters",
+  className,
+  clearClassName,
   onChange,
   onCompare,
   onClear,
@@ -153,10 +160,14 @@ export function QueryFilterBar({
   const metricNames = new Set(metrics);
   return (
     <div
-      className={embedded ? "contents" : "flex flex-wrap items-center gap-3 border-b border-hairline px-3 py-2"}
+      className={
+        embedded ? "contents" : cn("flex flex-wrap items-center gap-3 border-b border-hairline px-3 py-2", className)
+      }
       aria-label={embedded ? undefined : "Query filters"}
     >
-      {embedded ? null : <span className="text-xs font-medium text-fg-secondary">Filters</span>}
+      {embedded ? null : (
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-secondary">{label}</span>
+      )}
       {filters.map((filter) => (
         <FilterControl
           key={filter.name}
@@ -174,7 +185,10 @@ export function QueryFilterBar({
           aria-label="Clear filters"
           disabled={disabled}
           onClick={onClear}
-          className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50"
+          className={cn(
+            "rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50",
+            clearClassName,
+          )}
         >
           Clear
         </button>
@@ -208,6 +222,7 @@ export interface ChartFilterShelfProps {
   readonly rows: readonly Record<string, unknown>[];
   readonly sql: string;
   readonly disabled?: boolean;
+  readonly clearClassName?: string;
   readonly onSql: (sql: string) => void;
 }
 
@@ -218,6 +233,7 @@ export function ChartFilterShelf({
   rows,
   sql,
   disabled = false,
+  clearClassName,
   onSql,
 }: ChartFilterShelfProps) {
   const filters = readQueryFilters(sql);
@@ -283,7 +299,10 @@ export function ChartFilterShelf({
           aria-label="Clear filters"
           disabled={disabled}
           onClick={() => onSql(clearQueryFilters(sql))}
-          className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50"
+          className={cn(
+            "rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised disabled:opacity-50",
+            clearClassName,
+          )}
         >
           Clear
         </button>

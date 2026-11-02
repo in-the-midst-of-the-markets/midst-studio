@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { LayoutDashboard } from "lucide-react";
+import { ChevronRight, FileText, LineChart, Plus, Sparkles } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
@@ -275,7 +275,8 @@ export function AiAssist() {
   const storedTurns = useSyncExternalStore(subscribeTranscript, readTranscriptSnapshot, () => EMPTY_TURNS);
   const [draftTurns, setDraftTurns] = useState<readonly Turn[] | null>(null);
   const turns = draftTurns ?? storedTurns;
-  const threadRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLElement>(null);
+  const askRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -548,27 +549,48 @@ export function AiAssist() {
     !sending &&
     (settings.source === "openrouter" ? settings.openRouterModel.trim() : settings.fireworksModel.trim()) !== "";
 
+  const queries = turns.flatMap((turn) => turn.cards);
+  const activeQuery = queries.at(-1) ?? null;
+
   return (
     <div className="flex h-dvh min-h-0 flex-col bg-sunken text-fg">
-      <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-hairline bg-surface px-4">
+      <header className="grid h-14 shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
-        <ModeLinks page="assist" />
+        <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-fg-muted">
+          <span>Analytics</span>
+          {activeQuery !== null && (
+            <>
+              <ChevronRight className="size-3.5 shrink-0" />
+              <span className="truncate font-medium text-fg">{activeQuery.title}</span>
+            </>
+          )}
+        </p>
+        <div className="flex items-center justify-end gap-2">
+          <span className="hidden items-center gap-2 rounded-full border border-hairline bg-canvas py-1 pr-3 pl-1 text-xs font-medium text-fg sm:inline-flex">
+            <span className="flex size-6 items-center justify-center rounded-full bg-brand-tint/20 text-[11px] font-semibold text-brand">
+              M
+            </span>
+            Midst
+          </span>
+          <ModeLinks page="assist" variant="outline" />
+        </div>
       </header>
 
-      <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-5 md:px-6">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <aside className="w-full shrink-0 border-b border-hairline bg-surface px-4 py-4 lg:w-56 lg:border-r lg:border-b-0">
+          <div className="flex items-center gap-2 text-sm font-medium text-fg">
+            <LineChart className="size-4 text-fg-muted" />
+            Analytics
+          </div>
           {hydrated && connections.length === 0 && (
-            <p className="text-sm text-fg-muted">
+            <p className="mt-3 text-xs text-fg-muted">
               Add a database in Traditional mode to run the queries this page writes.
             </p>
           )}
           {hydrated && connections.length > 1 && (
-            <ul aria-label="Connected databases" className="flex flex-wrap gap-2">
+            <ul aria-label="Connected databases" className="mt-3 flex flex-col gap-1">
               {connections.map((item) => (
-                <li
-                  key={item.id}
-                  className="rounded-full border border-hairline-strong bg-raised px-2.5 py-0.5 text-xs text-fg"
-                >
+                <li key={item.id} className="truncate text-xs text-fg">
                   {item.name}
                   <span className="text-fg-muted"> · {item.type}</span>
                 </li>
@@ -576,24 +598,52 @@ export function AiAssist() {
             </ul>
           )}
           {schemaNotes.length > 0 && (
-            <div className="rounded-lg border border-hairline-strong bg-raised px-3 py-2">
+            <div className="mt-3 rounded-lg border border-hairline-strong bg-raised px-3 py-2">
               {schemaNotes.map((note) => (
-                <output key={note} className="block text-sm text-fg-muted">
+                <output key={note} className="block text-xs text-fg-muted">
                   {note}
                 </output>
               ))}
               <button
                 type="button"
-                className="mt-1 text-sm text-brand underline"
+                className="mt-1 text-xs text-brand underline"
                 onClick={() => setSchemaAttempt((current) => current + 1)}
               >
                 Retry
               </button>
             </div>
           )}
+          <div className="mt-5 flex items-center justify-between">
+            <span className="text-[11px] font-medium tracking-wide text-fg-muted">QUERIES</span>
+            <button
+              type="button"
+              aria-label="New query"
+              onClick={() => askRef.current?.focus()}
+              className="rounded p-1 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+          <ul className="mt-2 flex gap-2 overflow-x-auto lg:flex-col">
+            {queries.map((card) => (
+              <li
+                key={card.id}
+                className={cn(
+                  "flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg",
+                  card.id === activeQuery?.id && "bg-brand-tint/15",
+                )}
+              >
+                <FileText className="size-3.5 shrink-0 text-fg-muted" />
+                <span className="truncate">{card.title}</span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 lg:px-8">
           {turns.length === 0 && (
-            <div className="mx-auto w-full max-w-lg rounded-lg border border-hairline-strong bg-raised px-6 py-12 text-center">
-              <LayoutDashboard aria-hidden="true" strokeWidth={1.5} className="mx-auto mb-3 h-8 w-8 text-fg-muted" />
+            <div className="mx-auto w-full max-w-lg rounded-xl border border-hairline bg-raised px-6 py-12 text-center shadow-sm">
+              <Sparkles aria-hidden="true" strokeWidth={1.5} className="mx-auto mb-3 h-8 w-8 text-brand" />
               <h1 className="text-lg font-medium text-fg">How can I help?</h1>
               <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
                 {connections.length === 0
@@ -602,202 +652,227 @@ export function AiAssist() {
               </p>
             </div>
           )}
-          {turns.map((turn) =>
-            turn.role === "user" ? (
-              <section key={turn.id} className="flex justify-end">
-                <p className="max-w-xl rounded-2xl bg-brand-solid px-4 py-2 text-sm text-white">{turn.text}</p>
-              </section>
-            ) : (
-              <section key={turn.id} className="flex flex-col gap-4">
-                {turn.text !== "" && (
-                  <p className="rounded-lg border border-hairline-strong bg-raised px-4 py-3 text-sm leading-6 text-fg-secondary">
-                    {turn.text}
-                  </p>
-                )}
-                {turn.cards.length > 0 && (
-                  <div className={cn("grid grid-cols-1 gap-4", turn.cards.length > 1 && "lg:grid-cols-2")}>
-                    {turn.cards.map((card) => {
-                      const target =
-                        card.connectionId === null
-                          ? undefined
-                          : connections.find((item) => item.id === card.connectionId);
-                      return (
-                        <ChartWithEditor
-                          key={card.id}
-                          title={card.title}
-                          sql={card.sql}
-                          connectionId={card.connectionId ?? undefined}
-                          connectionName={card.connectionName}
-                          databaseType={target?.type}
-                          schemaContext={
-                            card.connectionId === null ? schemaContext : (schemas[card.connectionId] ?? schemaContext)
-                          }
-                          result={card.result}
-                          error={card.error}
-                          chart={card.chart}
-                          color={card.color}
-                          running={card.running}
-                          onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
-                          onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </section>
-            ),
-          )}
-        </div>
-      </section>
-
-      <form
-        className="shrink-0 border-t border-hairline bg-surface px-4 py-3"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void send();
-        }}
-      >
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2">
-          {notice !== null && (
-            <p role="alert" className="text-xs text-danger">
-              {notice}
-            </p>
-          )}
-          {serverKey === true && settings.source === "openrouter" && settings.openRouterKey.trim() === "" && (
-            <p className="text-xs text-fg-muted">Using the server OpenRouter key.</p>
-          )}
-          {serverKey === false && settings.source === "openrouter" && settings.openRouterKey.trim() === "" && (
-            <p className="text-xs text-fg-muted">
-              This server has no OpenRouter key. Set OPENROUTER_API_KEY on the running app and redeploy, or add a key
-              under Model.
-            </p>
-          )}
-          <div className="flex items-end gap-2 rounded-xl border border-hairline-strong bg-raised p-2">
-            <textarea
-              aria-label="How can I help?"
-              value={draft}
-              placeholder="How can I help?"
-              rows={2}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void send();
-                }
-              }}
-              className="min-h-16 flex-1 resize-none bg-transparent px-2 py-1 text-sm text-fg outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!canSend}
-              className="rounded-lg bg-brand-solid px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-            >
-              {sending ? "Sending…" : "Send"}
-            </button>
-          </div>
-          <div>
-            <button
-              type="button"
-              aria-expanded={settingsOpen}
-              onClick={() => setSettingsOpen((current) => !current)}
-              className="text-xs font-medium text-fg-muted hover:text-fg"
-            >
-              Model
-            </button>
-            {settingsOpen && (
-              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                <fieldset className="m-0 flex gap-3 border-0 p-0">
-                  <legend className="sr-only">Model provider</legend>
-                  <label className="flex items-center gap-1.5 text-xs text-fg">
-                    <input
-                      type="radio"
-                      name="assist-source"
-                      value="openrouter"
-                      checked={settings.source === "openrouter"}
-                      onChange={() => updateSettings({ source: "openrouter" })}
-                    />
-                    OpenRouter
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs text-fg">
-                    <input
-                      type="radio"
-                      name="assist-source"
-                      value="fireworks"
-                      checked={settings.source === "fireworks"}
-                      onChange={() => updateSettings({ source: "fireworks" })}
-                    />
-                    Fireworks AI
-                  </label>
-                </fieldset>
-                <p className="text-xs text-fg-muted sm:col-span-2">
-                  {serverKey
-                    ? "Saved in this browser. The OpenRouter key can stay blank; this server already has one."
-                    : "Saved in this browser. Leave the OpenRouter key blank to use the server's key."}
-                </p>
-                {settings.source === "openrouter" ? (
-                  <>
-                    <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                      OpenRouter API key
-                      <input
-                        type="password"
-                        aria-label="OpenRouter API key"
-                        autoComplete="off"
-                        value={settings.openRouterKey}
-                        onChange={(event) => updateSettings({ openRouterKey: event.target.value })}
-                        className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                      Model
-                      <select
-                        aria-label="OpenRouter model"
-                        value={settings.openRouterModel}
-                        onChange={(event) => updateSettings({ openRouterModel: event.target.value })}
-                        className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                      >
-                        {modelOptions.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {modelStatus === "failed" && (
-                      <output className="block text-xs text-fg-muted sm:col-span-2">
-                        The OpenRouter catalog could not be loaded.
-                      </output>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                      Fireworks API key
-                      <input
-                        type="password"
-                        aria-label="Fireworks API key"
-                        autoComplete="off"
-                        value={settings.fireworksKey}
-                        onChange={(event) => updateSettings({ fireworksKey: event.target.value })}
-                        className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                      Fine-tuned model
-                      <input
-                        aria-label="Fireworks model"
-                        value={settings.fireworksModel}
-                        placeholder="accounts/your-account/models/your-model"
-                        onChange={(event) => updateSettings({ fireworksModel: event.target.value })}
-                        className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                      />
-                    </label>
-                  </>
-                )}
-              </div>
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+            {turns.map((turn) =>
+              turn.cards.map((card) => {
+                const target =
+                  card.connectionId === null ? undefined : connections.find((item) => item.id === card.connectionId);
+                return (
+                  <ChartWithEditor
+                    key={card.id}
+                    title={card.title}
+                    sql={card.sql}
+                    connectionId={card.connectionId ?? undefined}
+                    connectionName={card.connectionName}
+                    databaseType={target?.type}
+                    schemaContext={
+                      card.connectionId === null ? schemaContext : (schemas[card.connectionId] ?? schemaContext)
+                    }
+                    result={card.result}
+                    error={card.error}
+                    chart={card.chart}
+                    color={card.color}
+                    running={card.running}
+                    onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
+                    onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
+                  />
+                );
+              }),
             )}
           </div>
-        </div>
-      </form>
+        </main>
+
+        <aside className="flex min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-surface lg:w-96 lg:border-t-0 lg:border-l">
+          <div className="flex items-start justify-between gap-3 border-b border-hairline px-4 py-3">
+            <div className="flex items-start gap-2">
+              <span className="flex size-8 items-center justify-center rounded-lg bg-brand-tint/15 text-brand">
+                <Sparkles className="size-4" />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-fg">Ask Midst AI</h2>
+                <p className="text-xs text-fg-muted">Refine your query and explore insights</p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-fill-subtle px-2 py-1 text-xs text-fg-secondary">
+              <span className="size-1.5 rounded-full bg-success" />
+              Ready
+            </span>
+          </div>
+          <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+            <div className="flex flex-col gap-4">
+              {turns.map((turn) =>
+                turn.role === "user" ? (
+                  <section key={turn.id}>
+                    <p className="text-xs font-medium text-fg-muted">You</p>
+                    <p className="mt-1 rounded-xl bg-brand-tint/15 px-3 py-2 text-sm text-fg">{turn.text}</p>
+                  </section>
+                ) : (
+                  <section key={turn.id}>
+                    {turn.text !== "" && (
+                      <>
+                        <p className="text-xs font-medium text-fg-muted">AI</p>
+                        <p className="mt-1 rounded-xl bg-fill-subtle px-3 py-2 text-sm leading-6 text-fg-secondary">
+                          {turn.text}
+                        </p>
+                      </>
+                    )}
+                  </section>
+                ),
+              )}
+            </div>
+          </section>
+          <form
+            className="shrink-0 border-t border-hairline px-4 py-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send();
+            }}
+          >
+            <div className="flex flex-col gap-2">
+              {notice !== null && (
+                <p role="alert" className="text-xs text-danger">
+                  {notice}
+                </p>
+              )}
+              {serverKey === true && settings.source === "openrouter" && settings.openRouterKey.trim() === "" && (
+                <p className="text-xs text-fg-muted">Using the server OpenRouter key.</p>
+              )}
+              {serverKey === false && settings.source === "openrouter" && settings.openRouterKey.trim() === "" && (
+                <p className="text-xs text-fg-muted">
+                  This server has no OpenRouter key. Set OPENROUTER_API_KEY on the running app and redeploy, or add a
+                  key under Model.
+                </p>
+              )}
+              <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-canvas p-2">
+                <Sparkles className="size-4 shrink-0 text-brand" />
+                <textarea
+                  ref={askRef}
+                  aria-label="How can I help?"
+                  value={draft}
+                  placeholder="Ask about your data"
+                  rows={1}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                  className="min-h-9 flex-1 resize-none bg-transparent py-1 text-sm text-fg outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!canSend}
+                  className="rounded-lg bg-brand-solid px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                >
+                  {sending ? "Sending…" : "Send"}
+                </button>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  aria-expanded={settingsOpen}
+                  onClick={() => setSettingsOpen((current) => !current)}
+                  className="text-xs font-medium text-fg-muted hover:text-fg"
+                >
+                  Model
+                </button>
+                {settingsOpen && (
+                  <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                    <fieldset className="m-0 flex gap-3 border-0 p-0">
+                      <legend className="sr-only">Model provider</legend>
+                      <label className="flex items-center gap-1.5 text-xs text-fg">
+                        <input
+                          type="radio"
+                          name="assist-source"
+                          value="openrouter"
+                          checked={settings.source === "openrouter"}
+                          onChange={() => updateSettings({ source: "openrouter" })}
+                        />
+                        OpenRouter
+                      </label>
+                      <label className="flex items-center gap-1.5 text-xs text-fg">
+                        <input
+                          type="radio"
+                          name="assist-source"
+                          value="fireworks"
+                          checked={settings.source === "fireworks"}
+                          onChange={() => updateSettings({ source: "fireworks" })}
+                        />
+                        Fireworks AI
+                      </label>
+                    </fieldset>
+                    <p className="text-xs text-fg-muted sm:col-span-2">
+                      {serverKey
+                        ? "Saved in this browser. The OpenRouter key can stay blank; this server already has one."
+                        : "Saved in this browser. Leave the OpenRouter key blank to use the server's key."}
+                    </p>
+                    {settings.source === "openrouter" ? (
+                      <>
+                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+                          OpenRouter API key
+                          <input
+                            type="password"
+                            aria-label="OpenRouter API key"
+                            autoComplete="off"
+                            value={settings.openRouterKey}
+                            onChange={(event) => updateSettings({ openRouterKey: event.target.value })}
+                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+                          Model
+                          <select
+                            aria-label="OpenRouter model"
+                            value={settings.openRouterModel}
+                            onChange={(event) => updateSettings({ openRouterModel: event.target.value })}
+                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                          >
+                            {modelOptions.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        {modelStatus === "failed" && (
+                          <output className="block text-xs text-fg-muted sm:col-span-2">
+                            The OpenRouter catalog could not be loaded.
+                          </output>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+                          Fireworks API key
+                          <input
+                            type="password"
+                            aria-label="Fireworks API key"
+                            autoComplete="off"
+                            value={settings.fireworksKey}
+                            onChange={(event) => updateSettings({ fireworksKey: event.target.value })}
+                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+                          Fine-tuned model
+                          <input
+                            aria-label="Fireworks model"
+                            value={settings.fireworksModel}
+                            placeholder="accounts/your-account/models/your-model"
+                            onChange={(event) => updateSettings({ fireworksModel: event.target.value })}
+                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                          />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </form>
+        </aside>
+      </div>
     </div>
   );
 }

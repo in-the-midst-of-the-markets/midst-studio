@@ -26,7 +26,7 @@ describe("SaveChartButton", () => {
 
   test("saves a chart, raises a short refresh, and can cancel", () => {
     const view = render(<SaveChartButton draft={draft} />);
-    fireEvent.click(view.getByRole("button", { name: "Save chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Save Chart" }));
     fireEvent.change(view.getByRole("textbox", { name: "Chart name" }), { target: { value: "  " } });
     fireEvent.click(view.getByRole("button", { name: "Save" }));
     expect(view.getByRole("alert").textContent).toBe("Name the chart before saving.");
@@ -54,7 +54,7 @@ describe("SaveChartButton", () => {
 
   test("a chart without a query cannot schedule a refresh", () => {
     const view = render(<SaveChartButton draft={{ ...draft, query: "  " }} />);
-    fireEvent.click(view.getByRole("button", { name: "Save chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Save Chart" }));
     const refresh = view.getByRole("textbox", { name: "Refresh seconds" }) as HTMLInputElement;
     expect(refresh.disabled).toBe(true);
     fireEvent.change(refresh, { target: { value: "nope" } });

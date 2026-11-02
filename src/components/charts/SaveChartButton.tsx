@@ -98,8 +98,12 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
   if (!open) {
     return (
       <span className="inline-flex flex-wrap items-center gap-2">
-        <button type="button" onClick={openDialog} className="text-xs font-medium text-fg-secondary underline">
-          Save chart
+        <button
+          type="button"
+          onClick={openDialog}
+          className="inline-flex items-center rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs font-medium text-fg hover:bg-fill-subtle"
+        >
+          Save Chart
         </button>
         <SaveChartStatus storedId={stored?.id ?? null} notice={notice} onUnsave={unsave} />
       </span>
