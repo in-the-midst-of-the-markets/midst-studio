@@ -806,12 +806,16 @@ describe("AiAssist page", () => {
       saveConnection();
       const view = render(<AiAssist />);
       const thread = view.getByRole("region", { name: "Conversation" });
+      const charts = view.getByRole("main");
       expect(await view.findByText("The latest answer")).toBeTruthy();
       expect(thread.scrollTop).toBe(700);
+      expect(charts.scrollTop).toBe(700);
       thread.scrollTop = 0;
+      charts.scrollTop = 0;
       await typeAndSend(view, "What changed?");
       expect(await view.findByText("Revenue rose.")).toBeTruthy();
       expect(thread.scrollTop).toBe(700);
+      expect(charts.scrollTop).toBe(700);
     } finally {
       if (scrollHeight === undefined) delete (element as { scrollHeight?: unknown }).scrollHeight;
       else Object.defineProperty(element, "scrollHeight", scrollHeight);
