@@ -19,7 +19,7 @@ import { fenceUntrustedContent } from "@/lib/agent/untrusted-content";
 export type AiSurface = "assist" | "describe-schema" | "explain" | "query-safety";
 
 const SURFACE_LABEL: Record<AiSurface, string> = {
-  assist: "question / schema / history",
+  assist: "question / schema / history / results",
   "describe-schema": "schema context",
   explain: "query / plan / schema",
   "query-safety": "query / schema",

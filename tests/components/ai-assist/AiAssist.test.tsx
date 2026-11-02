@@ -179,6 +179,13 @@ function posts() {
   return calls.filter((call) => call.url.includes("/api/ai/assist") && call.method === "POST");
 }
 
+function planPosts() {
+  return posts().filter((call) => {
+    const body = call.body;
+    return body === null || typeof body !== "object" || !("results" in body);
+  });
+}
+
 async function typeAndSend(view: ReturnType<typeof render>, text = "What changed?") {
   fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: text } });
   fireEvent.click(await view.findByRole("button", { name: "Send" }));
@@ -1317,10 +1324,12 @@ describe("AiAssist page", () => {
     await typeAndSend(view, "First");
     await view.findByText("Revenue rose.");
     await typeAndSend(view, "Second");
-    await waitFor(() => expect(posts()).toHaveLength(2));
-    expect(posts()[1]?.body).toMatchObject({
-      history: [{ question: "First", explanation: "Revenue rose." }],
-    });
+    await waitFor(() => expect(planPosts()).toHaveLength(2));
+    const history = (planPosts()[1]?.body as { history?: { question: string; explanation: string }[] } | undefined)
+      ?.history;
+    expect(history?.[0]?.question).toBe("First");
+    expect(history?.[0]?.explanation).toContain("Revenue rose.");
+    expect(history?.[0]?.explanation).toContain("10");
   });
 
   test("keeps a chart the user edited and adds a new one on the next question", async () => {
@@ -1328,7 +1337,15 @@ describe("AiAssist page", () => {
     let assistPosts = 0;
     handler = (url, init) => {
       if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
-        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        const body = JSON.parse(String(init?.body));
+        calls.push({ url, method: "POST", body });
+        if (body !== null && typeof body === "object" && "results" in body) {
+          const posted = body as { pass?: string; question?: string };
+          if (posted.pass === "final" && posted.question === "What about cost?") {
+            return jsonResponse({ explanation: "Cost is separate.", queries: [] });
+          }
+          return jsonResponse({ explanation: "Revenue rose.", queries: [] });
+        }
         assistPosts += 1;
         if (assistPosts === 1) {
           return jsonResponse({
@@ -1380,6 +1397,7 @@ describe("AiAssist page", () => {
       }),
     );
     expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(await view.findByText("Revenue rose.")).toBeTruthy();
 
     await typeAndSend(view, "What about cost?");
     expect(await view.findByText("Cost is separate.")).toBeTruthy();
@@ -1391,7 +1409,7 @@ describe("AiAssist page", () => {
     expect((view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement).value).toBe(
       "SELECT region, cost FROM sales",
     );
-    const history = (posts()[1]?.body as { history?: { question: string; explanation: string }[] } | undefined)
+    const history = (planPosts()[1]?.body as { history?: { question: string; explanation: string }[] } | undefined)
       ?.history;
     expect(history?.[0]?.question).toBe("What changed?");
     expect(history?.[0]?.explanation).toContain(
@@ -1844,6 +1862,144 @@ describe("AiAssist page", () => {
     const kept = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as { text?: string }[];
     expect(kept.some((item) => item.text === "Stay with me")).toBe(true);
     expect(kept.some((item) => item.text === "Too late.")).toBe(false);
+  });
+
+  test("runs the query, adds one chart from those rows, then shows the final analysis", async () => {
+    saveConnection();
+    const revenue = "SELECT month, revenue FROM orders LIMIT 200";
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) body = JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        const posted = body as { pass?: string; results?: unknown } | null;
+        if (posted === null || typeof posted !== "object" || !("results" in posted)) {
+          return jsonResponse({
+            explanation: "I will total revenue.",
+            queries: [
+              {
+                title: "Revenue",
+                connection: "Orders",
+                sql: revenue,
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
+              },
+            ],
+          });
+        }
+        if (posted.pass === "follow") {
+          return jsonResponse({
+            explanation: "A region split would help.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: revenue,
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
+              },
+              {
+                title: "By region",
+                connection: "Orders",
+                sql: "SELECT region, revenue FROM orders",
+                chart: { type: "bar", x: "region", y: ["revenue"], caption: "by region" },
+              },
+            ],
+          });
+        }
+        return jsonResponse({
+          explanation: "January revenue is 10.",
+          queries: [{ title: "Ignored", sql: "SELECT 9", chart: null }],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({
+          rows: [{ month: "Jan", revenue: 10 }],
+          fields: ["month", "revenue"],
+          rowCount: 1,
+          executionTime: 4,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view);
+    expect(await view.findByText("January revenue is 10.")).toBeTruthy();
+    expect(view.queryByText("I will total revenue.")).toBeNull();
+    expect(view.queryByText("A region split would help.")).toBeNull();
+    expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
+    expect(view.getByRole("heading", { name: "By region" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "Ignored" })).toBeNull();
+    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(2);
+    const bodies = posts().map((call) => call.body as { pass?: string; results?: { rows?: { revenue?: number }[] }[] });
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0]?.pass).toBeUndefined();
+    expect(bodies[0]).not.toHaveProperty("results");
+    expect(bodies[1]?.pass).toBe("follow");
+    expect(bodies[1]?.results?.[0]?.rows?.[0]?.revenue).toBe(10);
+    expect(bodies[2]?.pass).toBe("final");
+    expect(bodies[2]?.results).toHaveLength(2);
+  });
+
+  test("shows the final analysis when the follow-up fails, and the plan when neither reading returns one", async () => {
+    saveConnection();
+    let mode: "final" | "none" | "follow" | "blank" | "throw" = "final";
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) {
+        try {
+          body = JSON.parse(String(init.body));
+        } catch {
+          body = null;
+        }
+      }
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        const posted = body as { pass?: string } | null;
+        const reading = posted !== null && typeof posted === "object" && "results" in posted;
+        if (!reading) {
+          return jsonResponse({
+            explanation: "I will total revenue.",
+            queries: [
+              {
+                title: "Revenue",
+                connection: "Orders",
+                sql: "SELECT month, revenue FROM orders LIMIT 200",
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
+              },
+            ],
+          });
+        }
+        if (mode === "throw") throw new Error("offline");
+        if (mode === "blank") return new Response("nope", { status: 200 });
+        if (mode === "none") return jsonResponse({ error: "no" }, 500);
+        if (mode === "follow") {
+          if (posted?.pass === "follow") return jsonResponse({ explanation: "Rows suggest a split.", queries: [] });
+          return jsonResponse({ explanation: "   ", queries: [] });
+        }
+        if (posted?.pass === "follow") return jsonResponse({ error: "no" }, 500);
+        return jsonResponse({ explanation: "January revenue is 10.", queries: [] });
+      }
+      return defaultFetch(url, init);
+    };
+
+    const ask = async (next: typeof mode, visible: string, hidden: string) => {
+      mode = next;
+      const view = render(<AiAssist />);
+      await typeAndSend(view);
+      expect(await view.findByText(visible)).toBeTruthy();
+      expect(view.queryByText(hidden)).toBeNull();
+      expect(view.queryByText("The assistant could not be reached.")).toBeNull();
+      expect(view.queryByRole("heading", { name: "By region" })).toBeNull();
+      view.unmount();
+      localStorage.removeItem(ASSIST_TRANSCRIPT_KEY);
+      calls.length = 0;
+    };
+
+    await ask("final", "January revenue is 10.", "I will total revenue.");
+    await ask("none", "I will total revenue.", "January revenue is 10.");
+    await ask("follow", "Rows suggest a split.", "I will total revenue.");
+    await ask("blank", "I will total revenue.", "January revenue is 10.");
+    await ask("throw", "I will total revenue.", "January revenue is 10.");
   });
 });
 
