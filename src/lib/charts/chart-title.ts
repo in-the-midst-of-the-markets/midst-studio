@@ -48,6 +48,26 @@ export function chartTitleStyle(option: Record<string, unknown> | null | undefin
 }
 
 /**
+ * Drops the title drawn inside the plot.
+ * `untitled` is the same chart built with no title, and its legend and grid tops are what
+ * the plot uses, so removing the words also gives that space back to the chart.
+ */
+export function omitDrawnChartTitle(
+  option: Record<string, unknown>,
+  untitled: Record<string, unknown>,
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...option };
+  delete next.title;
+  const legendTop = recordOf(untitled.legend)?.top;
+  const legend = recordOf(next.legend);
+  if (legend !== null && legendTop !== undefined) next.legend = { ...legend, top: legendTop };
+  const gridTop = recordOf(untitled.grid)?.top;
+  const grid = recordOf(next.grid);
+  if (grid !== null && gridTop !== undefined) next.grid = { ...grid, top: gridTop };
+  return next;
+}
+
+/**
  * Puts `title` on an option and, when the words are non-empty, makes room under the legend.
  * The rest of the option is unchanged, so a refresh can rebuild the series and keep the title.
  */
