@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { shownFilterControl, sliderRange, type FilterLook } from "@/lib/charts/filter-look";
 import {
   addQueryFilter,
   clearQueryFilters,
@@ -22,8 +23,38 @@ interface FilterControlProps {
   readonly hideName?: boolean;
   /** A metric is a number plus >=, <=, or =, rather than a list of category values. */
   readonly numeric?: boolean;
+  /** How the chart code asked to draw this filter. */
+  readonly look?: FilterLook;
   readonly onChange: (name: string, value: string) => void;
   readonly onCompare?: (name: string, compare: FilterCompare) => void;
+}
+
+function CompareSelect({
+  filter,
+  disabled,
+  onCompare,
+}: {
+  readonly filter: QueryFilter;
+  readonly disabled: boolean;
+  readonly onCompare?: (name: string, compare: FilterCompare) => void;
+}) {
+  return (
+    <select
+      aria-label={`${filter.name} comparison`}
+      disabled={disabled}
+      value={filter.compare}
+      onChange={(event) => {
+        const next = event.target.value;
+        if (next !== ">=" && next !== "<=" && next !== "=") return;
+        onCompare?.(filter.name, next);
+      }}
+      className="rounded border border-hairline-strong bg-raised px-1 py-0.5 text-xs text-fg disabled:opacity-50"
+    >
+      <option value=">=">&gt;=</option>
+      <option value="<=">&lt;=</option>
+      <option value="=">=</option>
+    </select>
+  );
 }
 
 function FilterControl({
@@ -31,6 +62,7 @@ function FilterControl({
   disabled,
   hideName = false,
   numeric = false,
+  look,
   onChange,
   onCompare,
 }: FilterControlProps) {
@@ -48,25 +80,33 @@ function FilterControl({
     if (value === filter.value) return;
     onChange(filter.name, value);
   };
-  if (numeric) {
+  const kind = shownFilterControl(filter, numeric, look);
+  const name = hideName ? null : filter.name;
+  if (kind === "slider") {
+    const range = sliderRange(look ?? { control: "slider", min: null, max: null, step: null }, filter.value);
     return (
       <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
-        {hideName ? null : filter.name}
-        <select
-          aria-label={`${filter.name} comparison`}
+        {name}
+        {numeric ? <CompareSelect filter={filter} disabled={disabled} onCompare={onCompare} /> : null}
+        <input
+          type="range"
+          min={range.min}
+          max={range.max}
+          step={range.step}
+          aria-label={filter.name}
           disabled={disabled}
-          value={filter.compare}
-          onChange={(event) => {
-            const next = event.target.value;
-            if (next !== ">=" && next !== "<=" && next !== "=") return;
-            onCompare?.(filter.name, next);
-          }}
-          className="rounded border border-hairline-strong bg-raised px-1 py-0.5 text-xs text-fg disabled:opacity-50"
-        >
-          <option value=">=">&gt;=</option>
-          <option value="<=">&lt;=</option>
-          <option value="=">=</option>
-        </select>
+          value={filter.value}
+          onChange={(event) => onChange(filter.name, event.target.value)}
+          className="w-28 disabled:opacity-50"
+        />
+      </span>
+    );
+  }
+  if (kind === "number") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-fg-muted">
+        {name}
+        <CompareSelect filter={filter} disabled={disabled} onCompare={onCompare} />
         <input
           type="number"
           inputMode="decimal"
@@ -86,7 +126,7 @@ function FilterControl({
       </span>
     );
   }
-  if (filter.options.length > 0) {
+  if (kind === "select") {
     const choices = filter.options.includes(filter.value) ? filter.options : [filter.value, ...filter.options];
     return (
       <label className="flex items-center gap-1 text-xs text-fg-muted">
@@ -136,6 +176,8 @@ export interface QueryFilterBarProps {
   readonly hideNames?: boolean;
   /** Replaces the "Filters" heading. The dashboard says "Filter by". */
   readonly label?: ReactNode;
+  /** Chart-code looks, keyed by filter name. */
+  readonly looks?: ReadonlyMap<string, FilterLook>;
   readonly className?: string;
   readonly clearClassName?: string;
   readonly onChange: (name: string, value: string) => void;
@@ -151,6 +193,7 @@ export function QueryFilterBar({
   embedded = false,
   hideNames = false,
   label = "Filters",
+  looks,
   className,
   clearClassName,
   onChange,
@@ -175,6 +218,7 @@ export function QueryFilterBar({
           disabled={disabled}
           hideName={hideNames}
           numeric={metricNames.has(filter.name)}
+          look={looks?.get(filter.name)}
           onChange={onChange}
           onCompare={onCompare}
         />
@@ -223,6 +267,8 @@ export interface ChartFilterShelfProps {
   readonly sql: string;
   readonly disabled?: boolean;
   readonly clearClassName?: string;
+  /** Chart-code looks, keyed by filter name. */
+  readonly looks?: ReadonlyMap<string, FilterLook>;
   readonly onSql: (sql: string) => void;
 }
 
@@ -234,6 +280,7 @@ export function ChartFilterShelf({
   sql,
   disabled = false,
   clearClassName,
+  looks,
   onSql,
 }: ChartFilterShelfProps) {
   const filters = readQueryFilters(sql);
@@ -280,6 +327,7 @@ export function ChartFilterShelf({
                 disabled={disabled}
                 hideName
                 numeric={metricNames.has(label)}
+                look={looks?.get(filter.name)}
                 onCompare={(filterName, compare) => onSql(writeMetricFilter(sql, filterName, filter.value, compare))}
                 onChange={(filterName, value) =>
                   onSql(
@@ -311,6 +359,7 @@ export function ChartFilterShelf({
         embedded
         filters={filters.filter((filter) => !named.has(filter.name))}
         disabled={disabled}
+        looks={looks}
         onChange={(name, value) => onSql(writeQueryFilter(sql, name, value))}
       />
     </fieldset>

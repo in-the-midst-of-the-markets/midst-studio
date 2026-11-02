@@ -62,6 +62,7 @@ mock.module("echarts/components", () => ({
   LegendComponent: {},
   RadarComponent: {},
   GeoComponent: {},
+  TitleComponent: {},
   VisualMapComponent: {},
 }));
 
@@ -362,6 +363,8 @@ describe("QueryChart", () => {
     expect(code.getAttribute("wrap")).toBe("soft");
     expect(code.value).toContain('"bar"');
     expect(code.value).toContain('"text": "Bar"');
+    expect(code.value).not.toContain('"data"');
+    expect(code.value).not.toContain("east");
     fireEvent.change(code, { target: { value: "{" } });
     expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
@@ -372,7 +375,9 @@ describe("QueryChart", () => {
     });
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
     expect(view.getByText("Showing your chart code.")).toBeTruthy();
-    expect(drawn().option).toEqual(edited);
+    const drawnOption = drawn().option as { title: { text: string }; series: { data: unknown }[] };
+    expect(drawnOption.title.text).toBe("Edited");
+    expect(drawnOption.series[0]?.data).toEqual([1, 2]);
     fireEvent.click(view.getByRole("button", { name: "Horizontal" }));
     expect(view.queryByText("Showing your chart code.")).toBeNull();
     expect((drawn().option as { xAxis: { type: string } }).xAxis.type).toBe("value");

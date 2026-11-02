@@ -20,6 +20,7 @@ import {
   GridComponent,
   LegendComponent,
   RadarComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
 } from "echarts/components";
@@ -45,6 +46,7 @@ registerECharts([
   LegendComponent,
   RadarComponent,
   GeoComponent,
+  TitleComponent,
   VisualMapComponent,
   CanvasRenderer,
 ]);

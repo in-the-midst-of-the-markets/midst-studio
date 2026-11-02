@@ -9,6 +9,15 @@ function recordOf(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+/** Fields from `title.textStyle` that the heading can show. */
+export interface ChartTitleLook {
+  fontSize?: number;
+  fontWeight?: number | string;
+  color?: string;
+  fontFamily?: string;
+  fontStyle?: "normal" | "italic" | "oblique";
+}
+
 /** The words in an option's title, or "" when the option has none. */
 export function chartTitleText(option: Record<string, unknown> | null | undefined): string {
   if (option === null || option === undefined) return "";
@@ -17,6 +26,25 @@ export function chartTitleText(option: Record<string, unknown> | null | undefine
   const record = recordOf(title);
   if (record === null) return "";
   return typeof record.text === "string" ? record.text : "";
+}
+
+/** Font, color, and weight from `title.textStyle`. Anything else is left to the heading. */
+export function chartTitleStyle(option: Record<string, unknown> | null | undefined): ChartTitleLook {
+  const textStyle = recordOf(recordOf(option?.title)?.textStyle);
+  if (textStyle === null) return {};
+  const look: ChartTitleLook = {};
+  const fontSize = textStyle.fontSize;
+  if (typeof fontSize === "number" && Number.isFinite(fontSize) && fontSize > 0) look.fontSize = fontSize;
+  const fontWeight = textStyle.fontWeight;
+  if (typeof fontWeight === "number" && Number.isFinite(fontWeight)) look.fontWeight = fontWeight;
+  else if (typeof fontWeight === "string" && fontWeight.trim() !== "") look.fontWeight = fontWeight;
+  const color = textStyle.color;
+  if (typeof color === "string" && color.trim() !== "") look.color = color;
+  const fontFamily = textStyle.fontFamily;
+  if (typeof fontFamily === "string" && fontFamily.trim() !== "") look.fontFamily = fontFamily;
+  const fontStyle = textStyle.fontStyle;
+  if (fontStyle === "normal" || fontStyle === "italic" || fontStyle === "oblique") look.fontStyle = fontStyle;
+  return look;
 }
 
 /**

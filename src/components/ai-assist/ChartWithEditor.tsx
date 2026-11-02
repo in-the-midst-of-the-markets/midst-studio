@@ -5,7 +5,8 @@ import { BarChart3, Braces, FileText, Terminal, X, type LucideIcon } from "lucid
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
-import { chartTitleText } from "@/lib/charts/chart-title";
+import { chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
+import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
@@ -217,19 +218,25 @@ export function ChartWithEditor({
       title,
     });
   }, [result, choice, theme, color, title]);
+  const filterLooks = defaultFilterLooks(filters, metricNames);
   const code = useChartCode(
     built?.option ?? null,
     choice?.typeId ?? null,
     choice?.variationId ?? null,
     choice?.selection ?? null,
+    result,
+    filterLooks,
   );
+  const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
   const codeTitle = chartTitleText(code.option);
   const heading = codeTitle !== "" ? codeTitle : title;
 
   return (
     <article className="flex w-full flex-col gap-4">
       <div>
-        <h3 className="text-2xl font-semibold tracking-tight text-fg">{heading}</h3>
+        <h3 className="text-2xl font-semibold tracking-tight text-fg" style={chartTitleStyle(code.editedOption)}>
+          {heading}
+        </h3>
         {chart?.caption ? <p className="mt-1 text-sm text-fg-muted">{chart.caption}</p> : null}
       </div>
       <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
@@ -277,6 +284,7 @@ export function ChartWithEditor({
             filters={filters}
             metrics={metricNames}
             disabled={running}
+            looks={looks}
             onChange={changeFilter}
             onCompare={changeCompare}
             onClear={() => onRun(clearQueryFilters(sql))}
@@ -445,6 +453,7 @@ export function ChartWithEditor({
                     sql={sql}
                     disabled={running}
                     clearClassName="border-0 bg-transparent px-1 font-medium text-brand hover:bg-transparent hover:underline"
+                    looks={looks}
                     onSql={onRun}
                   />
                 </div>
