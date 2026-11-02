@@ -14,8 +14,8 @@ import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 
 /**
- * AI Assist. POST plans queries, then reads the rows and may add one charted
- * query, then writes the final analysis. GET lists the public catalogs. The model key is the browser's,
+ * AI Assist. POST plans queries, then reads the rows and may add more charted
+ * queries, then writes the final analysis. GET lists the public catalogs. The model key is the browser's,
  * or OPENROUTER_API_KEY when the browser did not send one for OpenRouter.
  */
 export const dynamic = "force-dynamic";

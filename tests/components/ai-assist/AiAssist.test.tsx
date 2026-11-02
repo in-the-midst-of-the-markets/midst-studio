@@ -1019,6 +1019,11 @@ describe("AiAssist page", () => {
     );
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    expect(view.getByRole("radio", { name: "OpenRouter" }).closest("label")?.className).toContain("bg-brand-tint/15");
+    expect(view.getByRole("radio", { name: "Fireworks AI" }).closest("label")?.className).not.toContain(
+      "bg-brand-tint/15",
+    );
+    expect((view.getByLabelText("OpenRouter API key") as HTMLInputElement).placeholder).toBe("sk-or-...");
     expect(view.getByRole("option", { name: "missing/model" })).toBeTruthy();
     fireEvent.change(view.getByLabelText("OpenRouter API key"), { target: { value: "ork" } });
     fireEvent.change(view.getByLabelText("OpenRouter model"), { target: { value: "other/model" } });
@@ -1864,7 +1869,7 @@ describe("AiAssist page", () => {
     expect(kept.some((item) => item.text === "Too late.")).toBe(false);
   });
 
-  test("runs the query, adds one chart from those rows, then shows the final analysis", async () => {
+  test("runs the query, adds the charts those rows suggest, then shows the final analysis", async () => {
     saveConnection();
     const revenue = "SELECT month, revenue FROM orders LIMIT 200";
     handler = (url, init) => {
@@ -1902,6 +1907,18 @@ describe("AiAssist page", () => {
                 sql: "SELECT region, revenue FROM orders",
                 chart: { type: "bar", x: "region", y: ["revenue"], caption: "by region" },
               },
+              {
+                title: "By product",
+                connection: "Orders",
+                sql: "SELECT product, revenue FROM orders",
+                chart: { type: "bar", x: "product", y: ["revenue"], caption: "by product" },
+              },
+              {
+                title: "By region again",
+                connection: "Orders",
+                sql: "SELECT region, revenue FROM orders LIMIT 50",
+                chart: { type: "bar", x: "region", y: ["revenue"], caption: "again" },
+              },
             ],
           });
         }
@@ -1927,8 +1944,10 @@ describe("AiAssist page", () => {
     expect(view.queryByText("A region split would help.")).toBeNull();
     expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
     expect(view.getByRole("heading", { name: "By region" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "By product" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: "By region again" })).toBeNull();
     expect(view.queryByRole("heading", { name: "Ignored" })).toBeNull();
-    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(2);
+    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(3);
     const bodies = posts().map((call) => call.body as { pass?: string; results?: { rows?: { revenue?: number }[] }[] });
     expect(bodies).toHaveLength(3);
     expect(bodies[0]?.pass).toBeUndefined();
@@ -1936,7 +1955,7 @@ describe("AiAssist page", () => {
     expect(bodies[1]?.pass).toBe("follow");
     expect(bodies[1]?.results?.[0]?.rows?.[0]?.revenue).toBe(10);
     expect(bodies[2]?.pass).toBe("final");
-    expect(bodies[2]?.results).toHaveLength(2);
+    expect(bodies[2]?.results).toHaveLength(3);
   });
 
   test("shows the final analysis when the follow-up fails, and the plan when neither reading returns one", async () => {
