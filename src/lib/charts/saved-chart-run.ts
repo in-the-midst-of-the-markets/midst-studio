@@ -5,6 +5,7 @@ import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
 import { withoutFilterLooks } from "@/lib/charts/filter-look";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
+import { restampThemeChrome } from "@/lib/charts/theme-chrome";
 import { storedChartLook } from "@/lib/charts/save-chart";
 import type { DatabaseConnection, QueryResult, SavedChartConfig } from "@/lib/types";
 
@@ -41,6 +42,7 @@ export async function loadSavedChart(
  * The dashboard card already shows the chart name, so the plot never draws a second title.
  * A title saved in the look stays in the chart code and is left off the plot, and the
  * legend and grid take back the room that title would have used.
+ * Legend type and grid lines follow the theme that is open. Series colors stay saved.
  */
 export function optionForSavedChart(
   chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "look">,
@@ -59,5 +61,5 @@ export function optionForSavedChart(
   if (built === null) return null;
   const look = storedChartLook(chart.look);
   const drawn = look === undefined ? built.option : withoutFilterLooks(applyChartValues(look, built.option));
-  return { option: omitDrawnChartTitle(drawn, built.option), notes: built.notes };
+  return { option: restampThemeChrome(omitDrawnChartTitle(drawn, built.option), theme), notes: built.notes };
 }
