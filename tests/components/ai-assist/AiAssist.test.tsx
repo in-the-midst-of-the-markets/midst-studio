@@ -2,6 +2,7 @@ import "../../setup-dom";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import type { QueryResult } from "@/lib/types";
@@ -56,6 +57,8 @@ mock.module("@/components/QueryEditor", () => ({
 mock.module("@/components/auth/WorkspaceOwnerGate", () => ({
   WorkspaceOwnerGate: ({ children }: { children: React.ReactNode }) => children,
 }));
+
+setupChartCodeMonacoMock();
 
 const { AssistChartCanvas } = await import("@/components/ai-assist/AssistChartCanvas");
 const { ChartWithEditor } = await import("@/components/ai-assist/ChartWithEditor");
@@ -477,7 +480,8 @@ describe("ChartWithEditor", () => {
     );
     fireEvent.click(view.getByRole("button", { name: "Code" }));
     const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
-    expect(code.getAttribute("wrap")).toBe("soft");
+    expect(code.getAttribute("data-language")).toBe("json");
+    expect(code.getAttribute("data-controlled")).toBe("no");
     expect(code.value).toContain('"series"');
     expect(code.value).not.toContain('"data"');
     expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();

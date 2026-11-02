@@ -3,6 +3,7 @@ import "../../setup-dom";
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, within } from "@testing-library/react";
 import React from "react";
+import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { DEFAULT_MASKING_CONFIG } from "@/lib/data-masking";
 import type { QueryResult } from "@/lib/types";
 
@@ -69,6 +70,8 @@ mock.module("echarts/components", () => ({
 mock.module("echarts/renderers", () => ({
   CanvasRenderer: {},
 }));
+
+setupChartCodeMonacoMock();
 
 import { QueryChart } from "@/components/charts/QueryChart";
 
@@ -360,7 +363,8 @@ describe("QueryChart", () => {
     fireEvent.click(view.getByRole("button", { name: "Basic" }));
     fireEvent.click(view.getByRole("button", { name: "Code" }));
     const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
-    expect(code.getAttribute("wrap")).toBe("soft");
+    expect(code.getAttribute("data-language")).toBe("json");
+    expect(code.getAttribute("data-controlled")).toBe("no");
     expect(code.value).toContain('"bar"');
     expect(code.value).toContain('"text": "Bar"');
     expect(code.value).not.toContain('"data"');
