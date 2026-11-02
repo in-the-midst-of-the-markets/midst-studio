@@ -132,6 +132,9 @@ describe("DashboardStudio", () => {
     fireEvent.change(view.getByLabelText("Saved chart"), { target: { value: "revenue" } });
     fireEvent.click(view.getByRole("button", { name: "Add chart" }));
     const tile = await view.findByTestId("dashboard-chart-revenue");
+    const heading = view.getByRole("heading", { name: "Revenue" });
+    expect(heading.className).not.toContain("truncate");
+    expect(heading.parentElement?.className).toContain("flex-wrap");
     expect(tile.style.width).toBe("480px");
     await waitFor(() => expect(view.getByTestId("assist-chart")).toBeTruthy());
     const handle = view.getByRole("button", { name: "Resize Revenue" });

@@ -462,9 +462,13 @@ function DashboardChart({
       style={{ width, height }}
       className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
-      <div className="flex items-center justify-between gap-3 px-4 pt-4">
-        <h2 className="min-w-0 truncate text-sm font-semibold text-fg">{chart.name}</h2>
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+      {/*
+        The name keeps its own width, up to the card. When that no longer fits
+        beside the actions, the actions wrap onto the line below it.
+      */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4">
+        <h2 className="min-w-[min(100%,max-content)] flex-1 break-words text-sm font-semibold text-fg">{chart.name}</h2>
+        <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
           <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
             <FaceButton pressed={face === "chart"} label="Chart" onClick={() => setFace("chart")} />
             <FaceButton pressed={face === "query"} label="Query" onClick={() => setFace("query")} />
