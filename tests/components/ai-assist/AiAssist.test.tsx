@@ -234,6 +234,13 @@ describe("ChartWithEditor", () => {
       );
     }
     const view = render(<Harness />);
+    const toolbar = view.getByRole("button", { name: "Chart" }).parentElement;
+    expect([...(toolbar?.querySelectorAll("button") ?? [])].map((button) => button.textContent)).toEqual([
+      "Chart",
+      "Query",
+      "Code",
+      "Save Chart",
+    ]);
     expect(view.getByText("Revenue by month")).toBeTruthy();
     expect(view.getByText("Warehouse")).toBeTruthy();
     expect(view.getByText("1 rows · 4 ms")).toBeTruthy();

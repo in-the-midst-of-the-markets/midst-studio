@@ -246,6 +246,17 @@ export function ChartWithEditor({
           )}
           <div className="ml-auto flex items-center gap-1.5">
             <FaceButton pressed={face === "chart"} onClick={() => setFace("chart")} icon={BarChart3} label="Chart" />
+            <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
+            {face === "query" && (
+              <button
+                type="button"
+                onClick={() => onRun(sql)}
+                disabled={running}
+                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+              >
+                Run
+              </button>
+            )}
             <FaceButton pressed={face === "code"} onClick={() => setFace("code")} icon={Braces} label="Code" />
             {built !== null && choice !== null && (
               <SaveChartButton
@@ -258,17 +269,6 @@ export function ChartWithEditor({
                   selection: choice.selection,
                 })}
               />
-            )}
-            <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
-            {face === "query" && (
-              <button
-                type="button"
-                onClick={() => onRun(sql)}
-                disabled={running}
-                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-              >
-                Run
-              </button>
             )}
           </div>
         </div>
