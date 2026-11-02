@@ -833,22 +833,12 @@ export function AiAssist() {
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden 2xl:flex-row">
         <main ref={chartsRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 2xl:px-8 2xl:py-6">
-          {(hydrated && connections.length === 0) || (hydrated && connections.length > 1) || schemaNotes.length > 0 ? (
+          {(hydrated && connections.length === 0) || schemaNotes.length > 0 ? (
             <div className="mx-auto mb-6 flex w-full max-w-5xl flex-col gap-3">
               {hydrated && connections.length === 0 && (
                 <p className="text-sm text-fg-muted">
                   Add a database in Traditional mode to run the queries this page writes.
                 </p>
-              )}
-              {hydrated && connections.length > 1 && (
-                <ul aria-label="Connected databases" className="flex flex-wrap gap-x-4 gap-y-1">
-                  {connections.map((item) => (
-                    <li key={item.id} className="truncate text-xs text-fg">
-                      {item.name}
-                      <span className="text-fg-muted"> · {item.type}</span>
-                    </li>
-                  ))}
-                </ul>
               )}
               {schemaNotes.length > 0 && (
                 <div className="rounded-lg border border-hairline-strong bg-raised px-3 py-2">
