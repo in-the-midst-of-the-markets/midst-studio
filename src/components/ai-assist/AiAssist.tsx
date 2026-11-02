@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronRight, FileText, LineChart, Plus, Sparkles } from "lucide-react";
+import { ChevronRight, Plus, Sparkles } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
@@ -39,7 +39,6 @@ import {
   type AssistSettings,
 } from "@/lib/ai/assist-settings";
 import { storage } from "@/lib/storage";
-import { cn } from "@/lib/utils";
 import type { DatabaseConnection, QueryResult } from "@/lib/types";
 
 interface AssistCard {
@@ -553,8 +552,8 @@ export function AiAssist() {
   const activeQuery = queries.at(-1) ?? null;
 
   return (
-    <div className="flex h-dvh min-h-0 flex-col bg-sunken text-fg">
-      <header className="grid h-14 shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-hairline bg-surface px-4">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-sunken text-fg">
+      <header className="grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline bg-surface px-4">
         <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
         <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-fg-muted">
           <span>Analytics</span>
@@ -576,71 +575,43 @@ export function AiAssist() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <aside className="w-full shrink-0 border-b border-hairline bg-surface px-4 py-4 lg:w-56 lg:border-r lg:border-b-0">
-          <div className="flex items-center gap-2 text-sm font-medium text-fg">
-            <LineChart className="size-4 text-fg-muted" />
-            Analytics
-          </div>
-          {hydrated && connections.length === 0 && (
-            <p className="mt-3 text-xs text-fg-muted">
-              Add a database in Traditional mode to run the queries this page writes.
-            </p>
-          )}
-          {hydrated && connections.length > 1 && (
-            <ul aria-label="Connected databases" className="mt-3 flex flex-col gap-1">
-              {connections.map((item) => (
-                <li key={item.id} className="truncate text-xs text-fg">
-                  {item.name}
-                  <span className="text-fg-muted"> · {item.type}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {schemaNotes.length > 0 && (
-            <div className="mt-3 rounded-lg border border-hairline-strong bg-raised px-3 py-2">
-              {schemaNotes.map((note) => (
-                <output key={note} className="block text-xs text-fg-muted">
-                  {note}
-                </output>
-              ))}
-              <button
-                type="button"
-                className="mt-1 text-xs text-brand underline"
-                onClick={() => setSchemaAttempt((current) => current + 1)}
-              >
-                Retry
-              </button>
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto 2xl:flex-row 2xl:overflow-hidden">
+        <main className="px-4 py-4 md:px-6 md:py-5 2xl:min-h-0 2xl:flex-1 2xl:overflow-y-auto 2xl:px-8 2xl:py-6">
+          {(hydrated && connections.length === 0) || (hydrated && connections.length > 1) || schemaNotes.length > 0 ? (
+            <div className="mx-auto mb-6 flex w-full max-w-5xl flex-col gap-3">
+              {hydrated && connections.length === 0 && (
+                <p className="text-sm text-fg-muted">
+                  Add a database in Traditional mode to run the queries this page writes.
+                </p>
+              )}
+              {hydrated && connections.length > 1 && (
+                <ul aria-label="Connected databases" className="flex flex-wrap gap-x-4 gap-y-1">
+                  {connections.map((item) => (
+                    <li key={item.id} className="truncate text-xs text-fg">
+                      {item.name}
+                      <span className="text-fg-muted"> · {item.type}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {schemaNotes.length > 0 && (
+                <div className="rounded-lg border border-hairline-strong bg-raised px-3 py-2">
+                  {schemaNotes.map((note) => (
+                    <output key={note} className="block text-xs text-fg-muted">
+                      {note}
+                    </output>
+                  ))}
+                  <button
+                    type="button"
+                    className="mt-1 text-xs text-brand underline"
+                    onClick={() => setSchemaAttempt((current) => current + 1)}
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-          <div className="mt-5 flex items-center justify-between">
-            <span className="text-[11px] font-medium tracking-wide text-fg-muted">QUERIES</span>
-            <button
-              type="button"
-              aria-label="New query"
-              onClick={() => askRef.current?.focus()}
-              className="rounded p-1 text-fg-muted hover:bg-fill-subtle hover:text-fg"
-            >
-              <Plus className="size-3.5" />
-            </button>
-          </div>
-          <ul className="mt-2 flex gap-2 overflow-x-auto lg:flex-col">
-            {queries.map((card) => (
-              <li
-                key={card.id}
-                className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-fg",
-                  card.id === activeQuery?.id && "bg-brand-tint/15",
-                )}
-              >
-                <FileText className="size-3.5 shrink-0 text-fg-muted" />
-                <span className="truncate">{card.title}</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
-
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-6 lg:px-8">
+          ) : null}
           {turns.length === 0 && (
             <div className="mx-auto w-full max-w-lg rounded-xl border border-hairline bg-raised px-6 py-12 text-center shadow-sm">
               <Sparkles aria-hidden="true" strokeWidth={1.5} className="mx-auto mb-3 h-8 w-8 text-brand" />
@@ -682,23 +653,37 @@ export function AiAssist() {
           </div>
         </main>
 
-        <aside className="flex min-h-0 w-full shrink-0 flex-col border-t border-hairline bg-surface lg:w-96 lg:border-t-0 lg:border-l">
-          <div className="flex items-start justify-between gap-3 border-b border-hairline px-4 py-3">
-            <div className="flex items-start gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-brand-tint/15 text-brand">
+        <aside className="flex w-full shrink-0 flex-col border-t border-hairline bg-surface 2xl:h-full 2xl:w-96 2xl:overflow-hidden 2xl:border-t-0 2xl:border-l">
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-hairline px-4 py-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-tint/15 text-brand">
                 <Sparkles className="size-4" />
               </span>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-sm font-semibold text-fg">Ask Midst AI</h2>
                 <p className="text-xs text-fg-muted">Refine your query and explore insights</p>
               </div>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-fill-subtle px-2 py-1 text-xs text-fg-secondary">
-              <span className="size-1.5 rounded-full bg-success" />
-              Ready
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                aria-label="New query"
+                onClick={() => askRef.current?.focus()}
+                className="rounded p-1 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+              >
+                <Plus className="size-3.5" />
+              </button>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-fill-subtle px-2 py-1 text-xs text-fg-secondary">
+                <span className="size-1.5 rounded-full bg-success" />
+                Ready
+              </span>
+            </div>
           </div>
-          <section ref={threadRef} aria-label="Conversation" className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          <section
+            ref={threadRef}
+            aria-label="Conversation"
+            className="h-72 overflow-y-auto px-4 py-4 2xl:h-auto 2xl:min-h-0 2xl:flex-1"
+          >
             <div className="flex flex-col gap-4">
               {turns.map((turn) =>
                 turn.role === "user" ? (
@@ -722,7 +707,7 @@ export function AiAssist() {
             </div>
           </section>
           <form
-            className="shrink-0 border-t border-hairline px-4 py-3"
+            className="shrink-0 border-t border-hairline px-4 py-3 2xl:max-h-[70%] 2xl:overflow-y-auto"
             onSubmit={(event) => {
               event.preventDefault();
               void send();
