@@ -99,6 +99,7 @@ describe("the requirement mirrors", () => {
       "cassandra",
       "couchbase",
       "druid",
+      "trino",
     ]);
     expect(Object.isFrozen(AGENT_REQUIREMENT_ENGINES["sql-catalog"])).toBe(true);
     for (const type of AGENT_REQUIREMENT_ENGINES["sql-composers"]) {
@@ -169,6 +170,10 @@ describe("the plan-estimate operation of each language", () => {
       netconfrpc: null,
       modbusread: null,
       promql: null,
+      opcuaread: null,
+      mtconnectread: null,
+      mqttread: null,
+      sparkplugread: null,
     });
     expect(Object.isFrozen(AGENT_PLAN_ESTIMATE_OPERATION)).toBe(true);
   });
@@ -432,7 +437,7 @@ describe("workflowAvailability", () => {
     }
   });
 
-  test.each(["mtconnect"] as const)(
+  test.each(["spark"] as const)(
     "%s opens operations and planning, and refuses a statement workflow in agent mode",
     (type) => {
       expect(workflowAvailability("agent", "operations", type).open).toBe(true);
@@ -505,7 +510,7 @@ describe("workflowAvailability", () => {
   });
 
   test("operations on an engine with no language opens under the one operations variant", () => {
-    expect(workflowAvailability("agent", "operations", "sparkplug")).toEqual({
+    expect(workflowAvailability("agent", "operations", "spark")).toEqual({
       open: true,
       statementLanguage: null,
       variant: requiredVariant("sql", "operations"),
@@ -513,7 +518,7 @@ describe("workflowAvailability", () => {
   });
 
   test("a plan on an engine with no language opens under no variant", () => {
-    expect(workflowAvailability("planning", "investigation", "sparkplug")).toEqual({
+    expect(workflowAvailability("planning", "investigation", "spark")).toEqual({
       open: true,
       statementLanguage: null,
       variant: null,
@@ -658,7 +663,7 @@ describe("workflowAvailability", () => {
 
   test("a run on an engine with no language persists nothing either", () => {
     for (const mode of ["agent", "planning"] as const) {
-      const open = workflowAvailability(mode, "operations", "sparkplug");
+      const open = workflowAvailability(mode, "operations", "spark");
       if (!open.open) throw new Error("refused");
       expect(persistedRunFacts(mode, "operations", open), mode).toEqual({});
     }

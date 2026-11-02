@@ -42,6 +42,10 @@ import { snmpgetAgentReadInput } from "./snmpget-admission";
 import { netconfrpcAgentReadInput } from "./netconfrpc-admission";
 import { modbusreadAgentReadInput } from "./modbusread-admission";
 import { promqlAgentReadInput } from "./promql-admission";
+import { opcuareadAgentReadInput } from "./opcuaread-admission";
+import { mtconnectreadAgentReadInput } from "./mtconnectread-admission";
+import { mqttreadAgentReadInput } from "./mqttread-admission";
+import { sparkplugreadAgentReadInput } from "./sparkplugread-admission";
 import { weaviateapiAgentReadInput } from "./weaviateapi-admission";
 import { agentPlanExecutionSqlInput, agentQueryReadSqlInput, agentReadSqlInput } from "./statement-guard";
 import type { RegistrableOperationDescriptor } from "./types";
@@ -891,6 +895,146 @@ const promqlQueryReadDescriptor: RegistrableOperationDescriptor = {
   },
 };
 
+const OPCUAREAD_READ_BOUNDARY =
+  "OPC UA: the provider's structural closed seam: one JSON request, a value read or a history read as the console " +
+  "writes it or a one-level browse, read before it is sent with the console's own parser, and run over a session opened " +
+  "for that read alone through a client that holds Browse, BrowseNext, Read and HistoryRead only, with the browse " +
+  "direction, reference type, result mask, attribute list and history details fixed by the provider, so no Write, " +
+  "Call, HistoryUpdate, node or reference change, RegisterNodes, TranslateBrowsePathsToNodeIds or subscription can be " +
+  "sent; the pinned fixture took an anonymous write, which is why the seam is the boundary. Values are answered as the " +
+  "console renders them, each with its node's engineering units and EU range or 'no units published'. Withheld on " +
+  "every agent-mode handle, decided by node id from the server's own address space before every read: " +
+  "ServerConfiguration, RoleSet, the session diagnostics and the PubSub key management objects, with everything " +
+  "beneath them. A read past the row, byte or time budget, or past its request bound, is refused, never truncated.";
+
+/**
+ * One OPC UA read the model wrote, on an `opcua` connection.
+ *
+ * R1 on a structural boundary: the agent's reads reach the server only through the seam's read services. Its own id,
+ * and not a widened `sql.query.read`, so the SQL contract and its audit action stay exactly what they were.
+ */
+const opcuareadQueryReadDescriptor: RegistrableOperationDescriptor = {
+  id: "opcuaread.query.read",
+  riskClass: 1,
+  accessLevel: "data-read",
+  requiredCapabilities: [],
+  resourceCost: "heavy",
+  supportsDryRun: false,
+  requiresApproval: false,
+  modelStatement: true,
+  inputSchema: opcuareadAgentReadInput,
+  verification: {
+    reviewedBy: "OPC UA agent execution design review",
+    boundary: OPCUAREAD_READ_BOUNDARY,
+    verifiedOn: "2026-11-01",
+  },
+};
+
+const MTCONNECTREAD_READ_BOUNDARY =
+  "MTConnect: the provider's structural closed route table: one request line, written as the console writes it and " +
+  "read before it is sent with the console's own guard, matched against nine routes (probe, current, sample and " +
+  "assets, each for every device or one, and asset by id), every one a GET, and sent by a client with no method " +
+  "argument and no body parameter, so no PUT, POST, /cancel, streaming parameter or second request can be sent; the " +
+  "agent's own AllowPut setting widens what it accepts, which is why the table is the boundary. Each read reads the " +
+  "agent's device model with GET /probe first, on the same one permit per agent. Observations and asset documents " +
+  "are answered as the console renders them, an asset's document as XML text. Withheld on every agent-mode handle: " +
+  "the agent's own adapter connections, whose names, ids and ADAPTER_URI values carry the adapter's network address. " +
+  "A read past the row, byte or time budget is refused, never truncated.";
+
+/**
+ * One MTConnect read the model wrote, on an `mtconnect` connection.
+ *
+ * R1 on a structural boundary: the agent's reads reach the agent only as GET of a route from the closed table. Its own
+ * id, and not a widened `sql.query.read`, so the SQL contract and its audit action stay exactly what they were.
+ */
+const mtconnectreadQueryReadDescriptor: RegistrableOperationDescriptor = {
+  id: "mtconnectread.query.read",
+  riskClass: 1,
+  accessLevel: "data-read",
+  requiredCapabilities: [],
+  resourceCost: "heavy",
+  supportsDryRun: false,
+  requiresApproval: false,
+  modelStatement: true,
+  inputSchema: mtconnectreadAgentReadInput,
+  verification: {
+    reviewedBy: "MTConnect agent execution design review",
+    boundary: MTCONNECTREAD_READ_BOUNDARY,
+    verifiedOn: "2026-11-01",
+  },
+};
+
+const MQTTREAD_READ_BOUNDARY =
+  "MQTT: the provider's structural closed table: one read of a closed table of two, the window read, one subscription " +
+  "to the whole filter # for one window, and the topic read, one subscription to the one topic the request names in " +
+  "full, each a fresh session written by an encoder of five packets (CONNECT, SUBSCRIBE, UNSUBSCRIBE, PINGREQ and " +
+  "DISCONNECT) with no function that writes a PUBLISH and a CONNECT with no Will parameter, every outbound byte " +
+  "re-checked by the valve, so no PUBLISH, Will, shared or exclusive subscription, wildcard below the root or filter " +
+  "of the model's own can be sent. Topic names, payloads, user properties, correlation data, response topics and " +
+  "content types are withheld: every answer is projected to counts and flags (agent-read.ts), with the window it " +
+  "listened for, its stop reason and that a topic not seen may still exist; a time budget that cannot hold a whole " +
+  "window is refused before anything is sent, and a result past the byte budget is refused, never truncated.";
+
+/**
+ * One MQTT read the model wrote, on an `mqtt` connection.
+ *
+ * R1 on a structural boundary: the agent's reads reach the broker only as SUBSCRIBE through an encoder with no PUBLISH
+ * and a valve. Its own id, and not a widened `sql.query.read`, so the SQL contract and its audit action stay exactly
+ * what they were.
+ */
+const mqttreadQueryReadDescriptor: RegistrableOperationDescriptor = {
+  id: "mqttread.query.read",
+  riskClass: 1,
+  accessLevel: "data-read",
+  requiredCapabilities: [],
+  resourceCost: "heavy",
+  supportsDryRun: false,
+  requiresApproval: false,
+  modelStatement: true,
+  inputSchema: mqttreadAgentReadInput,
+  verification: {
+    reviewedBy: "MQTT agent execution design review",
+    boundary: MQTTREAD_READ_BOUNDARY,
+    verifiedOn: "2026-11-01",
+  },
+};
+
+const SPARKPLUGREAD_READ_BOUNDARY =
+  "Sparkplug: the provider's structural closed table: one read of a closed table of four, the window read, one " +
+  "subscription to the whole spBv1.0 namespace for one window, and the group, edge node and device reads, one " +
+  "subscription to the one object the request names in full, each a fresh session written by an encoder of five " +
+  "packets (CONNECT, SUBSCRIBE, UNSUBSCRIBE, PINGREQ and DISCONNECT) with no function that writes a PUBLISH and a " +
+  "CONNECT with no Will parameter, so no PUBLISH, command, rebirth request, host state, Will, $sparkplug or STATE " +
+  "subscription, shared subscription or filter of the model's own can be sent. Group, edge node, device and host " +
+  "application ids, metric names, values, properties and stored certificates are withheld: every answer is projected " +
+  "to counts and flags (agent-read.ts), with the window it listened for, its stop reason and that an edge node or " +
+  "device not seen may still exist; a time budget that cannot hold a whole window is refused before anything is " +
+  "sent, and a result past the byte budget is refused, never truncated.";
+
+/**
+ * One Sparkplug read the model wrote, on a `sparkplug` connection.
+ *
+ * R1 on a structural boundary: the agent's reads reach the broker only as SUBSCRIBE through an encoder with no PUBLISH.
+ * Its own id, and not a widened `sql.query.read`, so the SQL contract and its audit action stay exactly what they
+ * were.
+ */
+const sparkplugreadQueryReadDescriptor: RegistrableOperationDescriptor = {
+  id: "sparkplugread.query.read",
+  riskClass: 1,
+  accessLevel: "data-read",
+  requiredCapabilities: [],
+  resourceCost: "heavy",
+  supportsDryRun: false,
+  requiresApproval: false,
+  modelStatement: true,
+  inputSchema: sparkplugreadAgentReadInput,
+  verification: {
+    reviewedBy: "Sparkplug agent execution design review",
+    boundary: SPARKPLUGREAD_READ_BOUNDARY,
+    verifiedOn: "2026-11-01",
+  },
+};
+
 const FSQUERY_READ_BOUNDARY =
   "Firestore: the provider's structural closed table, read with the console's own parser: one read of a closed table " +
   "of four metadata reads (the root collection ids, the subcollection ids of one document the statement names in full, " +
@@ -1218,6 +1362,10 @@ const CANONICAL_DESCRIPTORS: readonly RegistrableOperationDescriptor[] = Object.
   netconfrpcQueryReadDescriptor,
   modbusreadQueryReadDescriptor,
   promqlQueryReadDescriptor,
+  opcuareadQueryReadDescriptor,
+  mtconnectreadQueryReadDescriptor,
+  mqttreadQueryReadDescriptor,
+  sparkplugreadQueryReadDescriptor,
 ]);
 
 /**

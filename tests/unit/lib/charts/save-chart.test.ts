@@ -80,14 +80,15 @@ describe("save chart", () => {
     expect(saved?.title).toBeUndefined();
     expect(saved?.refreshSeconds).toBeUndefined();
     expect(saved?.typeId).toBeUndefined();
-    expect(buildSavedChart({ ...draft, connectionId: undefined }).id).toBeTypeOf("string");
+    expect(buildSavedChart({ ...draft, connectionId: undefined })?.id).toBeTypeOf("string");
   });
 
   test("the same query, connection, and shelves are the chart already saved", () => {
     const saved = buildSavedChart(draft, "chart-1");
     if (saved === null) throw new Error("expected a chart");
     expect(findSavedChart([saved], draft)?.id).toBe("chart-1");
-    expect(findSavedChart([saved], { ...draft, name: "Other", query: "  SELECT 1  " })?.id).toBe("chart-1");
+    const renamed = { ...draft, name: "Other", query: "  SELECT 1  " };
+    expect(findSavedChart([saved], renamed)?.id).toBe("chart-1");
     expect(
       findSavedChart([saved], {
         ...draft,

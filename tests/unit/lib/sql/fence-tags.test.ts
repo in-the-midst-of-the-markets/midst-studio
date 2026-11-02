@@ -84,6 +84,29 @@ describe("fenceTagEngine", () => {
     expect(fenceTagEngine("firestore")).toBe("firestore");
   });
 
+  test("opcuaread names opcua, the agent's name for the OPC UA read request language", () => {
+    expect(fenceTagEngine("opcuaread")).toBe("opcua");
+    expect(isQueryFenceTag("opcuaread")).toBe(true);
+    expect(fenceTagEngine("opcua")).toBe("opcua");
+  });
+
+  test("mtconnectread names mtconnect, the agent's name for the MTConnect read request language", () => {
+    expect(fenceTagEngine("mtconnectread")).toBe("mtconnect");
+    expect(isQueryFenceTag("mtconnectread")).toBe(true);
+    expect(fenceTagEngine("mtconnect")).toBe("mtconnect");
+  });
+
+  test("sparkplugread names sparkplug, the agent's name for the Sparkplug read request language", () => {
+    expect(fenceTagEngine("sparkplugread")).toBe("sparkplug");
+    expect(isQueryFenceTag("sparkplugread")).toBe(true);
+  });
+
+  test("mqttread names mqtt, the agent's name for the MQTT read request language", () => {
+    expect(fenceTagEngine("mqttread")).toBe("mqtt");
+    expect(isQueryFenceTag("mqttread")).toBe(true);
+    expect(fenceTagEngine("mqtt")).toBe("mqtt");
+  });
+
   test("promql names prometheus, the agent's name for the PromQL language Prometheus runs", () => {
     expect(fenceTagEngine("promql")).toBe("prometheus");
     expect(isQueryFenceTag("promql")).toBe(true);

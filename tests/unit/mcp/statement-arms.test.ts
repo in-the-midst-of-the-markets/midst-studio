@@ -95,6 +95,14 @@ describe("MCP_STATEMENT_ARMS", () => {
     expect(mcpStatementToolFor("modbus")).toBeNull();
     expect(MCP_STATEMENT_ARMS.promql).toBeNull();
     expect(mcpStatementToolFor("prometheus")).toBeNull();
+    expect(MCP_STATEMENT_ARMS.opcuaread).toBeNull();
+    expect(mcpStatementToolFor("opcua")).toBeNull();
+    expect(MCP_STATEMENT_ARMS.mtconnectread).toBeNull();
+    expect(mcpStatementToolFor("mtconnect")).toBeNull();
+    expect(MCP_STATEMENT_ARMS.mqttread).toBeNull();
+    expect(mcpStatementToolFor("mqtt")).toBeNull();
+    expect(MCP_STATEMENT_ARMS.sparkplugread).toBeNull();
+    expect(mcpStatementToolFor("sparkplug")).toBeNull();
   });
 
   test("is built from the languages' MCP facets, one arm per declared facet, in the registry's order", () => {
@@ -179,7 +187,15 @@ describe("the SQL arm", () => {
     expect(RUN_READ_QUERY_ARM.fence("DROP TABLE users", "sqlite")).toStartWith(
       "The statement was refused before it reached the database (",
     );
-    expect(RUN_READ_QUERY_ARM.tooLarge("SELECT 1")).toEqual({});
+    expect(RUN_READ_QUERY_ARM.tooLarge("SELECT 1", "sqlite")).toEqual({});
+    // Elasticsearch SQL has no OFFSET, so its row refusal does not tell the client to page with offset.
+    expect(RUN_READ_QUERY_ARM.tooLarge("SELECT k FROM probe_buckets LIMIT 2000", "elasticsearch")).toEqual({
+      rows: "The result has more than 1000 rows, the most this server reads for one call. Add a LIMIT of 1000 or less, and page it in SQL: ORDER BY a unique field, and for the next page add WHERE that field > the last value read.",
+    });
+    // Nor does CQL's, which has no OFFSET either.
+    expect(RUN_READ_QUERY_ARM.tooLarge("SELECT id FROM probe.customers LIMIT 2000", "cassandra")).toEqual({
+      rows: "The result has more than 1000 rows, the most this server reads for one call. Add a LIMIT of 1000 or less, and page it in SQL: LIMIT n, and for the next page add WHERE token(the partition key) > token(the last one read), or, within one partition, WHERE the clustering column > the last value read.",
+    });
   });
 
   test("takes a database, drops an unknown key rather than refusing it, and refuses an empty statement in its own words", () => {
@@ -256,7 +272,7 @@ describe("the MongoDB arm", () => {
       new Error("Read-only execution exceeded the row budget: 1001 rows > 1000 allowed"),
       1,
       2,
-      RUN_MONGO_COMMAND_ARM.tooLarge(find),
+      RUN_MONGO_COMMAND_ARM.tooLarge(find, "mongodb"),
     );
     expect(rows).toEqual({
       kind: "too-large",
@@ -266,10 +282,10 @@ describe("the MongoDB arm", () => {
       new Error("Read-only execution exceeded the byte budget: 2 > 1"),
       1,
       2,
-      RUN_MONGO_COMMAND_ARM.tooLarge(find),
+      RUN_MONGO_COMMAND_ARM.tooLarge(find, "mongodb"),
     );
-    expect(bytes).toEqual({ kind: "too-large", text: RUN_MONGO_COMMAND_ARM.tooLarge(find).bytes as string });
-    expect(RUN_MONGO_COMMAND_ARM.tooLarge(find).bytes).not.toContain("LIMIT");
+    expect(bytes).toEqual({ kind: "too-large", text: RUN_MONGO_COMMAND_ARM.tooLarge(find, "mongodb").bytes as string });
+    expect(RUN_MONGO_COMMAND_ARM.tooLarge(find, "mongodb").bytes).not.toContain("LIMIT");
   });
 
   test("names no SQL clause where more rows exist, says the tool takes no offset, and pages with skip", () => {
@@ -338,7 +354,7 @@ describe("the kubectl arm", () => {
       new Error("Read-only execution exceeded the row budget: 1001 rows > 1000 allowed"),
       1,
       2,
-      RUN_KUBECTL_READ_ARM.tooLarge("get pods -A"),
+      RUN_KUBECTL_READ_ARM.tooLarge("get pods -A", "kubernetes"),
     );
     expect(rows).toEqual({
       kind: "too-large",
@@ -395,6 +411,16 @@ describe("the tool each engine is read with", () => {
     expect(mcpStatementToolFor("mongodb")).toBe("run_mongo_command");
     expect(mcpStatementToolFor("kubernetes")).toBe("run_kubectl_read");
     for (const type of RUN_READ_QUERY_TYPES) expect(mcpStatementToolFor(type)).toBe("run_read_query");
+    expect(mcpStatementToolFor("clickhouse")).toBe("run_read_query");
+    expect(mcpStatementToolFor("libsql")).toBe("run_read_query");
+    expect(mcpStatementToolFor("influxdb3")).toBe("run_read_query");
+    expect(mcpStatementToolFor("influxdb")).toBeNull();
+    expect(mcpStatementToolFor("elasticsearch")).toBe("run_read_query");
+    expect(mcpStatementToolFor("opensearch")).toBe("run_read_query");
+    expect(mcpStatementToolFor("oracle")).toBe("run_read_query");
+    expect(mcpStatementToolFor("db2")).toBe("run_read_query");
+    expect(mcpStatementToolFor("cassandra")).toBe("run_read_query");
+    expect(mcpStatementToolFor("couchbase")).toBe("run_read_query");
     expect(mcpStatementToolFor("redis")).toBeNull();
     expect(mcpStatementToolFor("snowflake")).toBeNull();
   });
@@ -431,6 +457,10 @@ describe("the tool each engine is read with", () => {
       netconfrpc: null,
       modbusread: null,
       promql: null,
+      opcuaread: null,
+      mtconnectread: null,
+      mqttread: null,
+      sparkplugread: null,
     };
     expect(servingStatementArms(arms)).toEqual([RUN_READ_QUERY_ARM]);
     const registerTool = mock((_name: string) => undefined);

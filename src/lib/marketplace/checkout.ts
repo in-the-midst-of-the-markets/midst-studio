@@ -6,6 +6,7 @@
  */
 
 import { checkOrigin } from "@/lib/api/origin-check";
+import type { MarketplaceEnv } from "@/lib/marketplace/catalog";
 
 const STRIPE_API = "https://api.stripe.com";
 const CHECKOUT_HOST = "checkout.stripe.com";
@@ -88,7 +89,7 @@ export function sessionOutcome(payload: unknown): { offeringId: string; complete
 }
 
 /** The test secret wins when it is set, so a test key is what Checkout uses on this deployment. */
-export function stripeSecret(env: NodeJS.ProcessEnv = process.env): string | null {
+export function stripeSecret(env: MarketplaceEnv = process.env): string | null {
   const testKey = env.STRIPE_TEST_SECRET_KEY?.trim();
   if (testKey) return testKey;
   const liveKey = env.STRIPE_SECRET_KEY?.trim();

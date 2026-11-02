@@ -53,6 +53,18 @@ import { MODBUSREAD_PACK } from "@/lib/agent/languages/modbusread/index";
 import * as PROMQL_CLIENT_OVERLAYS from "@/lib/agent/languages/promql/engines/client";
 import * as PROMETHEUS from "@/lib/agent/languages/promql/engines/prometheus";
 import { PROMQL_PACK } from "@/lib/agent/languages/promql/index";
+import * as OPCUAREAD_CLIENT_OVERLAYS from "@/lib/agent/languages/opcuaread/engines/client";
+import * as OPCUA from "@/lib/agent/languages/opcuaread/engines/opcua";
+import { OPCUAREAD_PACK } from "@/lib/agent/languages/opcuaread/index";
+import * as MTCONNECTREAD_CLIENT_OVERLAYS from "@/lib/agent/languages/mtconnectread/engines/client";
+import * as MTCONNECT from "@/lib/agent/languages/mtconnectread/engines/mtconnect";
+import { MTCONNECTREAD_PACK } from "@/lib/agent/languages/mtconnectread/index";
+import * as MQTTREAD_CLIENT_OVERLAYS from "@/lib/agent/languages/mqttread/engines/client";
+import * as MQTT from "@/lib/agent/languages/mqttread/engines/mqtt";
+import { MQTTREAD_PACK } from "@/lib/agent/languages/mqttread/index";
+import * as SPARKPLUGREAD_CLIENT_OVERLAYS from "@/lib/agent/languages/sparkplugread/engines/client";
+import * as SPARKPLUG from "@/lib/agent/languages/sparkplugread/engines/sparkplug";
+import { SPARKPLUGREAD_PACK } from "@/lib/agent/languages/sparkplugread/index";
 import * as KUBECTL_CLIENT_OVERLAYS from "@/lib/agent/languages/kubectl/engines/client";
 import * as KUBERNETES from "@/lib/agent/languages/kubectl/engines/kubernetes";
 import * as LIBREDBKV_CLIENT_OVERLAYS from "@/lib/agent/languages/libredbkv/engines/client";
@@ -69,6 +81,7 @@ import * as CASSANDRA from "@/lib/agent/languages/sql/engines/cassandra";
 import * as CLICKHOUSE from "@/lib/agent/languages/sql/engines/clickhouse";
 import * as COUCHBASE from "@/lib/agent/languages/sql/engines/couchbase";
 import * as DRUID from "@/lib/agent/languages/sql/engines/druid";
+import * as TRINO from "@/lib/agent/languages/sql/engines/trino";
 import * as ELASTICSEARCH from "@/lib/agent/languages/sql/engines/elasticsearch";
 import * as INFLUXDB3 from "@/lib/agent/languages/sql/engines/influxdb3";
 import * as LIBSQL from "@/lib/agent/languages/sql/engines/libsql";
@@ -129,6 +142,7 @@ const ENGINE_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>
   "sql/engines/cassandra": CASSANDRA,
   "sql/engines/couchbase": COUCHBASE,
   "sql/engines/druid": DRUID,
+  "sql/engines/trino": TRINO,
   "sql/engines/client": SQL_CLIENT_OVERLAYS,
   "mongo/engines/mongodb": MONGODB,
   "mongo/engines/client": MONGO_CLIENT_OVERLAYS,
@@ -168,6 +182,14 @@ const ENGINE_MODULES: Readonly<Record<string, Readonly<Record<string, unknown>>>
   "modbusread/engines/client": MODBUSREAD_CLIENT_OVERLAYS,
   "promql/engines/prometheus": PROMETHEUS,
   "promql/engines/client": PROMQL_CLIENT_OVERLAYS,
+  "opcuaread/engines/opcua": OPCUA,
+  "opcuaread/engines/client": OPCUAREAD_CLIENT_OVERLAYS,
+  "mtconnectread/engines/mtconnect": MTCONNECT,
+  "mtconnectread/engines/client": MTCONNECTREAD_CLIENT_OVERLAYS,
+  "mqttread/engines/mqtt": MQTT,
+  "mqttread/engines/client": MQTTREAD_CLIENT_OVERLAYS,
+  "sparkplugread/engines/sparkplug": SPARKPLUG,
+  "sparkplugread/engines/client": SPARKPLUGREAD_CLIENT_OVERLAYS,
 };
 
 /** Every overlay an engine module exports, named `<module>#<export>`. */
@@ -194,6 +216,7 @@ describe("the engine registry", () => {
       "mssql",
       "clickhouse",
       "druid",
+      "trino",
       "cassandra",
       "elasticsearch",
       "opensearch",
@@ -212,11 +235,15 @@ describe("the engine registry", () => {
       "oxia",
       "s3",
       "kubernetes",
+      "mqtt",
       "firestore",
       "rabbitmq",
+      "opcua",
+      "mtconnect",
       "modbus",
       "netconf",
       "snmp",
+      "sparkplug",
       "libredb",
     ]);
     expect(SQL_ENGINES).toEqual([
@@ -230,6 +257,7 @@ describe("the engine registry", () => {
       "mssql",
       "clickhouse",
       "druid",
+      "trino",
       "cassandra",
       "elasticsearch",
       "opensearch",
@@ -265,7 +293,7 @@ describe("the engine registry", () => {
 
   test("every engine module's server overlay holds a dialect and overridable members, its client one a dialect alone (ruling 2)", () => {
     const exported = exportedOverlays();
-    expect(exported).toHaveLength(68);
+    expect(exported).toHaveLength(78);
     // The one other export is the PostgreSQL retry's rewrite, which its tests call directly.
     expect(
       Object.entries(ENGINE_MODULES)
@@ -344,6 +372,10 @@ describe("the engine packs", () => {
     expect(agentEnginePack("netconf")).toBe(NETCONFRPC_PACK);
     expect(agentEnginePack("modbus")).toBe(MODBUSREAD_PACK);
     expect(agentEnginePack("prometheus")).toBe(PROMQL_PACK);
+    expect(agentEnginePack("opcua")).toBe(OPCUAREAD_PACK);
+    expect(agentEnginePack("mtconnect")).toBe(MTCONNECTREAD_PACK);
+    expect(agentEnginePack("mqtt")).toBe(MQTTREAD_PACK);
+    expect(agentEnginePack("sparkplug")).toBe(SPARKPLUGREAD_PACK);
   });
 
   test.each(SQL_ENGINES)("%s is the SQL pack member for member, with its own dialect on the server facet", (type) => {
@@ -406,6 +438,10 @@ describe("engineServerDialect", () => {
       "netconf",
       "modbus",
       "prometheus",
+      "opcua",
+      "mtconnect",
+      "mqtt",
+      "sparkplug",
     ] as DatabaseType[]) {
       expect(Object.keys(engineServerOverlay(type))).toEqual([]);
     }
@@ -450,6 +486,8 @@ describe("engineServerDialect", () => {
       couchbase: "unsupported",
       // The agent path sends only a SELECT, never an EXPLAIN PLAN FOR.
       druid: "unsupported",
+      // The agent path sends only a SELECT, never an EXPLAIN.
+      trino: "unsupported",
       libsql: { kind: "prefix", prefix: "EXPLAIN QUERY PLAN" },
       influxdb3: { kind: "prefix", prefix: "EXPLAIN" },
     });
@@ -618,6 +656,7 @@ describe("the client dialect", () => {
       cassandra: { catalogRead: "supported", planEstimate: "unsupported", catalogCapture: "unsupported" },
       couchbase: { catalogRead: "supported", planEstimate: "unsupported", catalogCapture: "unsupported" },
       druid: { catalogRead: "supported", planEstimate: "unsupported", catalogCapture: "unsupported" },
+      trino: { catalogRead: "supported", planEstimate: "unsupported", catalogCapture: "unsupported" },
       libsql: { catalogRead: "supported", planEstimate: "supported", catalogCapture: "unsupported" },
       influxdb3: { catalogRead: "supported", planEstimate: "supported", catalogCapture: "unsupported" },
     });
@@ -642,6 +681,10 @@ describe("the client dialect", () => {
       "netconf",
       "modbus",
       "prometheus",
+      "opcua",
+      "mtconnect",
+      "mqtt",
+      "sparkplug",
     ] as const) {
       expect(engineClientPack(type).dialect).toBeUndefined();
     }

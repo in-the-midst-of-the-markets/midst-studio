@@ -39,6 +39,7 @@ import * as engineServerResolvers from "@/lib/agent/languages/engines/server";
 import { agentPosture } from "@/lib/agent/posture";
 import { getDBConfig } from "@/lib/db-ui-config";
 import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
+import { AGENT_PRINCIPAL_STATEMENTS } from "@/lib/db/providers/sql/oracle/agent-read";
 import { createCanonicalOperationRegistry } from "@/lib/db/operations/descriptors";
 import type { DatabaseType } from "@/lib/types";
 
@@ -502,6 +503,11 @@ const READ_ONLY_PROVIDER_FILES: Readonly<Record<string, string>> = {
   netconf: "src/lib/db/providers/network/netconf/index.ts",
   modbus: "src/lib/db/providers/industrial/modbus/index.ts",
   prometheus: "src/lib/db/providers/timeseries/prometheus/index.ts",
+  opcua: "src/lib/db/providers/industrial/opcua/index.ts",
+  mtconnect: "src/lib/db/providers/industrial/mtconnect/index.ts",
+  mqtt: "src/lib/db/providers/keyvalue/mqtt/index.ts",
+  sparkplug: "src/lib/db/providers/industrial/sparkplug/index.ts",
+  trino: "src/lib/db/providers/sql/trino/index.ts",
 };
 
 /**
@@ -610,9 +616,9 @@ describe("every agent-mode engine sentence is the one engine list (#246)", () =>
   const list = namedList(AGENT_EXECUTION_ENGINES.map((type) => getDBConfig(type).label));
   const prose = (relative: string) => read(relative).replace(/\n[ \t]*(?:\*|\/\/|#)?[ \t]*/g, " ");
 
-  test("the derived list is today's thirty-four engines", () => {
+  test("the derived list is today's thirty-nine engines", () => {
     expect(list).toBe(
-      "PostgreSQL, SQLite, DuckDB, SQL Server, MySQL, Kubernetes, MongoDB, ClickHouse, libSQL, InfluxDB 3 (SQL), Elasticsearch, OpenSearch, Oracle, Db2 LUW, Apache Cassandra, Couchbase, Apache Druid, LibreDB, InfluxDB (InfluxQL), Weaviate, Qdrant, Neo4j, Milvus, Redis, etcd, Oxia, RabbitMQ, Apache Kafka, S3-compatible object storage, Firestore, SNMP, NETCONF, Modbus and Prometheus",
+      "PostgreSQL, SQLite, DuckDB, SQL Server, MySQL, Kubernetes, MongoDB, ClickHouse, libSQL, InfluxDB 3 (SQL), Elasticsearch, OpenSearch, Oracle, Db2 LUW, Apache Cassandra, Couchbase, Apache Druid, LibreDB, InfluxDB (InfluxQL), Weaviate, Qdrant, Neo4j, Milvus, Redis, etcd, Oxia, RabbitMQ, Apache Kafka, S3-compatible object storage, Firestore, SNMP, NETCONF, Modbus, Prometheus, OPC UA, MTConnect, MQTT, Sparkplug B and Trino",
     );
   });
 
@@ -698,7 +704,9 @@ describe("every agent-mode engine sentence is the one engine list (#246)", () =>
     const productList = `Query ${EXTERNAL_DATABASE_TYPES.map((type) => getDBConfig(type).label).join(", ")} from your browser, with a read-only agent beside them.`;
     expect(engineClaimsIn(productList)).toEqual([]);
     expect(
-      engineClaimsIn("- `run_read_query` runs on PostgreSQL, SQLite, DuckDB, SQL Server and MySQL in agent mode."),
+      engineClaimsIn(
+        "- `run_read_query` runs on PostgreSQL, SQLite, DuckDB, SQL Server, MySQL, ClickHouse, libSQL, InfluxDB 3 (SQL), Elasticsearch, OpenSearch, Oracle, Db2 LUW, Apache Cassandra and Couchbase in agent mode.",
+      ),
     ).toEqual([]);
   });
 
@@ -951,10 +959,46 @@ describe("docs/AGENT.md names every language-pack resolver in its Language packs
       "eighteen",
       "nineteen",
       "twenty",
+      "twenty-one",
+      "twenty-two",
+      "twenty-three",
+      "twenty-four",
     ];
     expect(ids.length).toBeLessThan(COUNT_WORDS.length);
     expect(section).toContain(
       `Agent mode reads statements in ${COUNT_WORDS[ids.length]} statement languages, ${namedList(ids.map((id) => `\`${id}\``))}, and what it does differently`,
     );
+  });
+});
+
+describe("docs/AGENT.md states every item of the Oracle agent user check", () => {
+  /**
+   * The check is AGENT_PRINCIPAL_STATEMENTS, one read per item; each read has the words docs/AGENT.md's Oracle
+   * paragraph states it in, so an item added to the check without its clause in the guide fails here.
+   */
+  const CLAUSES: Record<keyof typeof AGENT_PRINCIPAL_STATEMENTS, string> = {
+    readOnly: "one set `ALTER USER ... READ ONLY`",
+    roles: "to hold only default roles",
+    units: "no `EXECUTE` on code that `ALL_OBJECTS` does not show it as Oracle-maintained",
+    views: "no such view that calls code",
+    invalidViews: "no view that is not valid",
+    virtualColumns: "no virtual column on such an object it reads",
+    policies: "a row-level security policy whose function is not Oracle-maintained",
+    auditPolicies: "a fine-grained auditing policy with an audit condition or such a handler",
+    sequences: "no such sequence",
+    reach: "none of the packages that reach the network or the server's files, no directory",
+    systemPrivileges: "no system privilege but `CREATE SESSION`",
+    links: "no database link",
+    dictionary:
+      "no grant, its own or a role's, on an object of a schema Oracle maintains but `SELECT` on the two policy catalogs",
+  };
+  const paragraph = AGENT_DOC.split("\n").find((line) => line.trimStart().startsWith("On Oracle the boundary is"));
+
+  test("the Oracle paragraph was found", () => {
+    expect(paragraph).toBeDefined();
+  });
+
+  test.each(Object.keys(AGENT_PRINCIPAL_STATEMENTS))("%s has its clause", (item) => {
+    expect(paragraph).toContain(CLAUSES[item as keyof typeof AGENT_PRINCIPAL_STATEMENTS]);
   });
 });

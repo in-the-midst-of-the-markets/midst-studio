@@ -535,8 +535,9 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   // As Milvus and Qdrant (#1566 spec 3.5): offered for the two metadata tools; tenant names are a collection's detail,
   // listed in its Source up to 1,024 as Milvus lists partitions, and `run_read_query` does not serve it.
   weaviate: true,
-  // Both offered for the two metadata tools (InfluxDB spec I13); `run_read_query` does not serve either, because
-  // neither provider implements `queryReadOnly`.
+  // Both offered for the two metadata tools (InfluxDB spec I13). Both providers implement `queryReadOnly` for agent
+  // mode; `run_read_query` serves InfluxDB 3's SQL, opened by MCP_STATEMENT_READ, and no MCP statement tool reads
+  // InfluxQL, so `influxdb` stays closed there (BACKLOG B94).
   influxdb: true,
   influxdb3: true,
   // Outside this version, as etcd's: Oxia key paths name Pulsar tenants, namespaces and topics (SEC-05), the
@@ -551,8 +552,9 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   // `queryReadOnly`, whose output masks every Secret name, and `inspect_schema` lists relations alone, which no
   // Kubernetes kind is, so no object name, a Secret's included, reaches it.
   kubernetes: true,
-  // Outside this version, as for etcd, Oxia and S3: a read whose completeness cannot be proved is not a
-  // read an agent should be handed without a reader looking at it.
+  // Agent mode reads MQTT through a window whose every answer says a topic not seen may still exist, with topic
+  // names and payloads withheld; no MCP surface that reads through the same window, completeness sentence and
+  // projection is designed yet (BACKLOG B164).
   mqtt: false,
   // Closed, as etcd's, Oxia's and S3's: agent mode reads Firestore's metadata within a run's read allowance, every read
   // is billed to the user's project, and no MCP surface that lists collections but never a document id is designed yet
@@ -562,12 +564,14 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   // not serve it: the provider's read-only query path is agent mode's alone and reads metadata only, and
   // MCP_STATEMENT_READ keeps MCP read closed on it (BACKLOG B108).
   rabbitmq: true,
-  // Outside this version, as for etcd, Oxia, S3 and MQTT. NOT because there is no read to hand over:
-  // the console reads one JSON request and is read-only by construction. Because a node's value
-  // without its plant is a number with no unit, no range and no neighbour - the engineering units
-  // and the EU range live on nodes of their own, and this version reads neither - so an agent
-  // grounded on an address space would be reasoning about figures it cannot qualify.
+  // Outside this version, as for etcd, Oxia, S3 and MQTT. Agent mode reads values with their
+  // engineering units and withholds the server's configuration, role identities and session
+  // diagnostics, one session per read; no MCP surface that reads through the same withheld set and
+  // units lookup is designed yet (BACKLOG B162).
   opcua: false,
+  // Offered for the metadata tools, which acquire an agent-mode handle and so read the device model with the agent's
+  // adapter connections withheld; `run_read_query` does not serve it: MCP_STATEMENT_READ keeps MCP read closed on it
+  // (BACKLOG B163).
   mtconnect: true,
   // MCP is outside this provider's first version. A read also needs the register map kept with
   // the connection, because Modbus has no discovery and a name means only what that document
@@ -583,12 +587,9 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   // Closed: agent mode reads SNMP values with the SNMP security modules withheld, and no MCP surface that
   // withholds them is designed yet (BACKLOG B158).
   snmp: false,
-  // Outside this version, for the reason MQTT's entry gives rather than for the absence of a read query path:
-  // a read whose completeness cannot be proved is not a read an agent should be handed without a reader looking
-  // at it. Sparkplug has no command that lists edge nodes, so a read reports what it saw during its window and
-  // an edge node that published nothing in that window is indistinguishable from one that is gone. The
-  // criterion is provable completeness and not the query path: an engine whose own answer enumerates the
-  // whole model can answer true here without a `queryReadOnly` of its own.
+  // Agent mode reads Sparkplug through a window whose every answer says an edge node or device not seen may still
+  // exist, with ids, metric names and values withheld; no MCP surface that reads through the same window,
+  // completeness sentence and projection is designed yet (BACKLOG B165).
   sparkplug: false,
   libredb: true,
 });
@@ -601,7 +602,7 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
  * joins agent mode does not open to MCP as a side effect: its row stays false until a change of its own opens it.
  *
  * True for the five SQL engines `run_read_query` served before this record existed, so nothing moved when it landed,
- * for MongoDB, whose command `run_mongo_command` reads, and for Kubernetes, whose kubectl line `run_kubectl_read` reads
+ * for ClickHouse, libSQL, InfluxDB 3, Elasticsearch, OpenSearch, Oracle, Db2, Cassandra and Couchbase, each opened to `run_read_query` by a change of its own, for MongoDB, whose command `run_mongo_command` reads, and for Kubernetes, whose kubectl line `run_kubectl_read` reads
  * under the agent's machine redaction. An exhaustive Record for the reason `EXTERNAL` gives, frozen like the records
  * above it, and held false wherever `MCP_EXPOSABLE` is false and true only for an engine agent mode executes on by
  * `tests/unit/db/compatibility.test.ts`.
@@ -613,28 +614,43 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   spark: false,
   mysql: true,
   sqlite: true,
-  // Agent mode executes statements on libSQL, and MCP read stays closed on it until a change of its own opens it.
-  libsql: false,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, a token proven at open to be read-only
+  // and refused every write by the server (docs/providers/libsql.md section 3.6).
+  libsql: true,
   duckdb: true,
-  // Agent mode executes statements on Oracle, and MCP read stays closed on it until a change of its own opens it.
-  oracle: false,
-  // Agent mode executes statements on Db2, and MCP read stays closed on it until a change of its own opens it.
-  db2: false,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, a user set READ ONLY, checked before
+  // every statement on that statement's own session to reach nothing READ ONLY leaves open and to hold no grant on a
+  // schema Oracle maintains beyond the policy catalogs (docs/providers/oracle.md section 5.7).
+  oracle: true,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, a user checked before every statement,
+  // on the statement's own connection, to hold nothing but CONNECT and SELECT (docs/providers/db2.md section 10.1).
+  db2: true,
   mssql: true,
-  // Agent mode executes statements on ClickHouse, and MCP read stays closed on it until a change of its own opens it.
-  clickhouse: false,
-  // Agent mode executes statements on Druid, and MCP read stays closed on it until a change of its own opens it.
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, `readonly = 1` on every request and a
+  // user proven at open to hold only reads (docs/providers/clickhouse.md section 5.6).
+  clickhouse: true,
+  // Agent mode executes statements on Druid, and MCP read stays closed on it until a change of its own opens it: a
+  // LOOKUP of a literal key is kept out by the statement fence alone (BACKLOG B151).
   druid: false,
+  // Agent mode executes statements on Trino, and MCP read stays closed on it until a change of its own opens it.
   trino: false,
-  // Agent mode executes statements on Cassandra, and MCP read stays closed on it until a change of its own opens it.
-  cassandra: false,
-  // Agent mode executes statements on Elasticsearch, and MCP read stays closed on it until a change of its own opens it.
-  elasticsearch: false,
-  // Agent mode executes statements on OpenSearch, and MCP read stays closed on it until a change of its own opens it.
-  opensearch: false,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, a role proven before every statement to
+  // hold only SELECT on the connection's keyspace, on a server that enforces it, and a provider check that sends one
+  // SELECT of that keyspace or of system_schema (docs/providers/cassandra.md section 14).
+  cassandra: true,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, the SQL endpoint's grammar, which holds
+  // no write, on a server checked at open to be the release line whose write refusals were captured
+  // (docs/providers/elasticsearch.md section 5.9). OpenSearch, served by the same provider directory, has a row of its own.
+  elasticsearch: true,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, the SQL plugin's refusal of every write,
+  // on a server whose DELETE is proved off and whose release line was checked at open, with a statement check that
+  // keeps hidden and dot-led indices from each statement (docs/providers/opensearch.md section 5.9).
+  opensearch: true,
   mongodb: true,
-  // Agent mode executes statements on Couchbase, and MCP read stays closed on it until a change of its own opens it.
-  couchbase: false,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, a user whose only roles are query_select
+  // on named scopes of the bucket, checked at open and again before every statement on a server proven to enforce it,
+  // and a fence that sends one SELECT (docs/providers/couchbase.md section 15).
+  couchbase: true,
   // Agent mode executes metadata-only reads on Redis, and MCP read stays closed on it until a change of its own opens
   // it.
   redis: false,
@@ -660,8 +676,10 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   weaviate: false,
   // Agent mode executes statements on InfluxDB, and MCP read stays closed on it until a change of its own opens it.
   influxdb: false,
-  // Agent mode executes statements on InfluxDB 3, and MCP read stays closed on it until a change of its own opens it.
-  influxdb3: false,
+  // Opened on its own: run_read_query runs under the boundary agent mode uses, the 3.12 Core planner's write refusals
+  // on a server checked at open to be that line, behind the read policy and the system schema fence
+  // (docs/providers/influxdb3.md section 3.5).
+  influxdb3: true,
   // Agent mode executes metadata-only reads on Oxia, and MCP read stays closed on it until a change of its own opens
   // it.
   oxia: false,
@@ -670,6 +688,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   // (BACKLOG B104).
   s3: false,
   kubernetes: true,
+  // Agent mode executes window reads on MQTT, metadata only, and MCP read stays closed on it until a change of its own
+  // opens it (BACKLOG B164).
   mqtt: false,
   // Agent mode executes metadata-only reads on Firestore, and MCP read stays closed on it until a change of its own
   // opens it (BACKLOG B107).
@@ -677,7 +697,11 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   // Agent mode executes metadata-only stream reads on RabbitMQ, and MCP read stays closed on it until a change of its
   // own opens it.
   rabbitmq: false,
+  // Agent mode executes reads with engineering units on OPC UA, and MCP read stays closed on it until a change of its
+  // own opens it (BACKLOG B162).
   opcua: false,
+  // Agent mode executes request lines of nine GET routes on MTConnect, and MCP read stays closed on it until a change of
+  // its own opens it (BACKLOG B163).
   mtconnect: false,
   // Agent mode executes paced reads on Modbus, and MCP read stays closed on it until a change of its own opens it
   // (BACKLOG B160).
@@ -688,6 +712,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   // Agent mode executes reads on SNMP with the SNMP security modules withheld, and MCP read stays closed on it
   // until a change of its own opens it (BACKLOG B158).
   snmp: false,
+  // Agent mode executes window reads on Sparkplug, metadata only, and MCP read stays closed on it until a change of
+  // its own opens it (BACKLOG B165).
   sparkplug: false,
   // Agent mode executes statements on LibreDB, and MCP read stays closed on it until a change of its own opens it.
   libredb: false,

@@ -765,7 +765,7 @@ describe("sankey, funnel and gauge", () => {
       { name: "b", value: 0 },
       { name: "c", value: 0 },
     ]);
-    expect((seriesOf(valued)[0]?.label as { formatter?: string }).formatter).toBe("{b}\n{c}");
+    expect(((seriesOf(valued)[0]?.label ?? {}) as { formatter?: string }).formatter).toBe("{b}\n{c}");
     const left = draw({
       typeId: "sankey",
       variationId: "left",
@@ -832,7 +832,7 @@ describe("sankey, funnel and gauge", () => {
       rows,
       selection: { stage: ["stage"], value: ["value"] },
     });
-    expect((seriesOf(percent)[0]?.label as { formatter?: string }).formatter).toBe("{b}\n{d}%");
+    expect(((seriesOf(percent)[0]?.label ?? {}) as { formatter?: string }).formatter).toBe("{b}\n{d}%");
   });
 
   test("sums a gauge and offers a progress mark and a grade band", () => {
@@ -920,7 +920,7 @@ describe("pie", () => {
     expect(chart("nightingale")?.roseType).toBe("area");
     expect(chart("half")?.startAngle).toBe(180);
     expect(chart("half")?.radius).toEqual(["40%", "70%"]);
-    expect((chart("labeled")?.label as { formatter?: string }).formatter).toBe("{b}\n{d}%");
+    expect(((chart("labeled")?.label ?? {}) as { formatter?: string }).formatter).toBe("{b}\n{d}%");
   });
 });
 

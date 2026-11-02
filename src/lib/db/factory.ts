@@ -310,7 +310,7 @@ export async function createDatabaseProvider(
       // analysable: a bare directory resolves only at runtime, which the bundler
       // cannot trace into a chunk.
       const { TrinoProvider } = await import("./providers/sql/trino/index");
-      return new TrinoProvider(connection, options);
+      return new TrinoProvider(connection, options, execution);
     }
 
     case "databend": {
@@ -477,12 +477,12 @@ export async function createDatabaseProvider(
       return new S3Provider(connection, options, execution);
     }
 
-    // MQTT: a key-value provider, placed here beside the platforms because its Keys panel is the whole
-    // surface and it has no query console of its own.
+    // MQTT: a key-value provider beside the platforms, its Keys panel the whole surface and no query console
+    // of its own. The execution context decides whether the handle answers agent reads.
     case "mqtt": {
       // The explicit /index specifier keeps this dynamic import statically analysable.
       const { MqttProvider } = await import("./providers/keyvalue/mqtt/index");
-      return new MqttProvider(connection, options);
+      return new MqttProvider(connection, options, execution);
     }
 
     // RabbitMQ: the second member of the stream family, read-only whatever the flag says. It reads the execution
@@ -493,8 +493,8 @@ export async function createDatabaseProvider(
       return new RabbitMQProvider(connection, options, execution);
     }
 
-    // OPC UA: an industrial address space, browsed level by level. Read-only whatever the flag says,
-    // so no execution context rides along.
+    // OPC UA: an address space browsed level by level, read-only by its seam of eight read services. The execution
+    // context decides whether the handle answers agent reads; an agent-mode handle holds no session.
     case "opcua": {
       // The explicit /index specifier keeps this dynamic import statically analysable.
       const { OpcuaProvider } = await import("./providers/industrial/opcua/index");
@@ -505,19 +505,19 @@ export async function createDatabaseProvider(
       // under Bun 1.4.2 it resolved to a zone-indexed link-local address
       // (`fe80::…%15`) and the error surfaced as an uncaught one. Constructing a provider must not
       // depend on that, so the import happens when a session is actually opened.
-      return new OpcuaProvider(connection, options, async (read) => {
+      return new OpcuaProvider(connection, options, execution, async (read) => {
         const { openLibrarySession } = await import("./providers/industrial/opcua/library");
         return openLibrarySession(read);
       });
     }
 
-    // MTConnect: an agent in front of machine tools, read over HTTP. Read-only whatever the flag says,
-    // so no execution context rides along, as for OPC UA. No library: the client is this repository's
-    // own over the shared transport, so the import is the provider module and nothing else.
+    // MTConnect: an agent in front of machine tools, read over HTTP, read-only by its closed table of nine GET routes.
+    // The execution context decides whether the handle answers agent reads. No library: the client is this
+    // repository's own over the shared transport, so the import is the provider module and nothing else.
     case "mtconnect": {
       // The explicit /index specifier keeps this dynamic import statically analysable.
       const { MTConnectProvider } = await import("./providers/industrial/mtconnect/index");
-      return new MTConnectProvider(connection, options);
+      return new MTConnectProvider(connection, options, execution);
     }
     // SNMP: an agent on a device, read over UDP by this repository's own client through the shared egress rule.
     // Read-only by construction: the outgoing valve parses every datagram and refuses any PDU that is not a Get,
@@ -557,13 +557,13 @@ export async function createDatabaseProvider(
       return new NetconfProvider(connection, options, execution);
     }
 
-    // Sparkplug B (#1720), the third member of the `industrial/` family. Its own bounded MQTT session
-    // rather than the shipped MQTT read, because that read returns one row per topic and a Sparkplug
-    // read depends on the order of successive messages on one topic.
+    // Sparkplug B (#1720), the third member of the `industrial/` family. Its own bounded MQTT session rather than the
+    // shipped MQTT read, which returns one row per topic, since a Sparkplug read depends on the order of successive
+    // messages on one topic. The execution context decides whether the handle answers agent reads.
     case "sparkplug": {
       // The explicit /index specifier keeps this dynamic import statically analysable.
       const { SparkplugProvider } = await import("./providers/industrial/sparkplug/index");
-      return new SparkplugProvider(connection, options);
+      return new SparkplugProvider(connection, options, execution);
     }
 
     // Embedded databases - dynamically imported
@@ -1373,7 +1373,7 @@ export type ExecutionProfile = "agent-read-only" | "agent-operations" | "agent-h
  * handle or transaction, a least-privilege principal the server's own answers prove, or a
  * Studio-enforced request allowlist plus the identity's own authorization), and only the
  * providers of AGENT_EXECUTION_ENGINES implement that: PostgreSQL, SQLite,
- * DuckDB, SQL Server, MySQL, Kubernetes, MongoDB, ClickHouse, libSQL, InfluxDB 3 (SQL), Elasticsearch, OpenSearch, Oracle, Db2 LUW, Apache Cassandra, Couchbase, Apache Druid, LibreDB, InfluxDB (InfluxQL), Weaviate, Qdrant, Neo4j, Milvus, Redis, etcd, Oxia, RabbitMQ, Apache Kafka, S3-compatible object storage, Firestore, SNMP, NETCONF, Modbus and Prometheus (`src/lib/agent/engine-support.ts`). `agent-operations` sends no statement
+ * DuckDB, SQL Server, MySQL, Kubernetes, MongoDB, ClickHouse, libSQL, InfluxDB 3 (SQL), Elasticsearch, OpenSearch, Oracle, Db2 LUW, Apache Cassandra, Couchbase, Apache Druid, LibreDB, InfluxDB (InfluxQL), Weaviate, Qdrant, Neo4j, Milvus, Redis, etcd, Oxia, RabbitMQ, Apache Kafka, S3-compatible object storage, Firestore, SNMP, NETCONF, Modbus, Prometheus, OPC UA, MTConnect, MQTT, Sparkplug B and Trino (`src/lib/agent/engine-support.ts`). `agent-operations` sends no statement
  * at all — it calls the curated reporting methods every provider implements — so
  * requiring a read-only STATEMENT path of it would refuse an engine over a capability
  * the profile never uses. `agent-handover` sends a statement too — the one a run

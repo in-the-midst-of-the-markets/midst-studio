@@ -47,7 +47,11 @@ export type AgentStatementLanguageId =
   | "snmpget"
   | "netconfrpc"
   | "modbusread"
-  | "promql";
+  | "promql"
+  | "opcuaread"
+  | "mtconnectread"
+  | "mqttread"
+  | "sparkplugread";
 
 /** Literal-typed, so `AgentEngineFamily` in `languages/pack.ts` reads each engine's language by type. */
 export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
@@ -64,7 +68,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   mssql: "sql",
   clickhouse: "sql",
   druid: "sql",
-  trino: null,
+  trino: "sql",
   cassandra: "sql",
   elasticsearch: "sql",
   opensearch: "sql",
@@ -84,15 +88,15 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   databend: null,
   s3: "s3api",
   kubernetes: "kubectl",
-  mqtt: null,
+  mqtt: "mqttread",
   firestore: "fsquery",
   rabbitmq: "rabbitread",
-  opcua: null,
-  mtconnect: null,
+  opcua: "opcuaread",
+  mtconnect: "mtconnectread",
   modbus: "modbusread",
   netconf: "netconfrpc",
   snmp: "snmpget",
-  sparkplug: null,
+  sparkplug: "sparkplugread",
   libredb: "libredbkv",
 } as const satisfies Record<DatabaseType, AgentStatementLanguageId | null>);
 

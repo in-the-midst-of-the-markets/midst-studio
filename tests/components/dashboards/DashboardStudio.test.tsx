@@ -180,22 +180,22 @@ describe("DashboardStudio", () => {
   test("reruns a chart on its schedule and ignores a result after the chart is gone", async () => {
     const queued: Array<() => void> = [];
     window.setInterval = ((fn: TimerHandler) => {
-      if (typeof fn === "function") queued.push(fn);
-      return 1 as unknown as ReturnType<typeof setInterval>;
-    }) as typeof setInterval;
+      if (typeof fn === "function") queued.push(() => void (fn as () => void)());
+      return 1;
+    }) as unknown as typeof window.setInterval;
     window.clearInterval = (() => {}) as typeof clearInterval;
     storage.saveConnection(connection);
     storage.saveChart(chart({ refreshSeconds: 60 }));
     storage.saveDashboard(board("sales", ["revenue"]));
     storage.setActiveDashboardId("sales");
     let calls = 0;
-    let release: (() => void) | null = null;
+    const pending: { release: (() => void) | null } = { release: null };
     mockGlobalFetch({
       "/api/db/query": () =>
         new Promise((resolve) => {
           calls += 1;
           if (calls === 1) {
-            release = () => resolve({ json: rows });
+            pending.release = () => resolve({ json: rows });
             return;
           }
           resolve({ json: rows });
@@ -204,7 +204,7 @@ describe("DashboardStudio", () => {
     const view = render(<DashboardStudio />);
     expect(view.getByText("Running the query…")).toBeTruthy();
     view.unmount();
-    release?.();
+    pending.release?.();
     await waitFor(() => expect(calls).toBe(1));
     storage.saveChart(chart({ refreshSeconds: 60 }));
     const again = render(<DashboardStudio />);

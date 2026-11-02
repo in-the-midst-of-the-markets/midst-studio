@@ -672,13 +672,13 @@ describe("POST /api/agent/runs", () => {
     connection. A blanket refusal would withhold a workflow over a claim that is not
     true of it (#411), which is exactly why the rail's amber card does not gate Start.
   */
-  const UNSUPPORTED_ENGINE = { id: "seed:plant", name: "Plant Sparkplug", type: "sparkplug" };
+  const UNSUPPORTED_ENGINE = { id: "seed:lake", name: "Lake Spark", type: "spark" };
 
   /** The sentence the rail's own pre-start card shows, read from the same module. */
   const unsupportedSentence = agentPosture({
     mode: "agent",
-    engine: "sparkplug",
-    engineLabel: getDBConfig("sparkplug").label,
+    engine: "spark",
+    engineLabel: getDBConfig("spark").label,
     handover: false,
   }).body;
 
@@ -754,15 +754,15 @@ describe("POST /api/agent/runs", () => {
     expect(mockStart).toHaveBeenCalledTimes(1);
   });
 
-  test("a Trino investigation is refused with the posture's own paragraph", async () => {
-    mockResolveConnection.mockResolvedValueOnce({ id: "seed:docs", name: "Docs", type: "trino" });
+  test("an Apache Spark investigation is refused with the posture's own paragraph", async () => {
+    mockResolveConnection.mockResolvedValueOnce({ id: "seed:docs", name: "Docs", type: "spark" });
 
     const res = await POST(startRequest({ ...VALID_BODY, workflowType: "investigation" }));
     const body = await parseResponseJSON<{ error: string; refused?: string }>(res);
 
     expect(res.status).toBe(400);
     expect(body.error).toBe(
-      agentPosture({ mode: "agent", engine: "trino", engineLabel: getDBConfig("trino").label, handover: false }).body,
+      agentPosture({ mode: "agent", engine: "spark", engineLabel: getDBConfig("spark").label, handover: false }).body,
     );
     // The listed engines include a cluster, which no database bounds, so the refusal
     // promises a declared boundary rather than a database-native one.

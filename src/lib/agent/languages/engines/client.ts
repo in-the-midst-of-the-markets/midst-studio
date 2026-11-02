@@ -29,6 +29,10 @@ import { SNMP_CLIENT_OVERLAY } from "../snmpget/engines/client";
 import { NETCONF_CLIENT_OVERLAY } from "../netconfrpc/engines/client";
 import { MODBUS_CLIENT_OVERLAY } from "../modbusread/engines/client";
 import { PROMETHEUS_CLIENT_OVERLAY } from "../promql/engines/client";
+import { OPCUA_CLIENT_OVERLAY } from "../opcuaread/engines/client";
+import { MTCONNECT_CLIENT_OVERLAY } from "../mtconnectread/engines/client";
+import { MQTT_CLIENT_OVERLAY } from "../mqttread/engines/client";
+import { SPARKPLUG_CLIENT_OVERLAY } from "../sparkplugread/engines/client";
 import { defineOverlay, dialectOnly } from "../overlay";
 import type { AgentEngineClientDialect, AgentEngineClientOverlays, AgentEnginePack, AgentEngineType } from "../pack";
 import {
@@ -47,6 +51,7 @@ import {
   ORACLE_CLIENT_OVERLAY,
   POSTGRES_CLIENT_OVERLAY,
   SQLITE_CLIENT_OVERLAY,
+  TRINO_CLIENT_OVERLAY,
 } from "../sql/engines/client";
 
 const CLIENT_OVERLAYS: AgentEngineClientOverlays = Object.freeze({
@@ -65,6 +70,7 @@ const CLIENT_OVERLAYS: AgentEngineClientOverlays = Object.freeze({
   cassandra: Object.freeze({ family: "sql", overlay: dialectOnly(CASSANDRA_CLIENT_OVERLAY) }),
   couchbase: Object.freeze({ family: "sql", overlay: dialectOnly(COUCHBASE_CLIENT_OVERLAY) }),
   druid: Object.freeze({ family: "sql", overlay: dialectOnly(DRUID_CLIENT_OVERLAY) }),
+  trino: Object.freeze({ family: "sql", overlay: dialectOnly(TRINO_CLIENT_OVERLAY) }),
   mongodb: Object.freeze({ family: "mongo", overlay: dialectOnly(MONGODB_CLIENT_OVERLAY) }),
   kubernetes: Object.freeze({ family: "kubectl", overlay: dialectOnly(KUBERNETES_CLIENT_OVERLAY) }),
   libredb: Object.freeze({ family: "libredbkv", overlay: dialectOnly(LIBREDB_CLIENT_OVERLAY) }),
@@ -84,6 +90,10 @@ const CLIENT_OVERLAYS: AgentEngineClientOverlays = Object.freeze({
   netconf: Object.freeze({ family: "netconfrpc", overlay: dialectOnly(NETCONF_CLIENT_OVERLAY) }),
   modbus: Object.freeze({ family: "modbusread", overlay: dialectOnly(MODBUS_CLIENT_OVERLAY) }),
   prometheus: Object.freeze({ family: "promql", overlay: dialectOnly(PROMETHEUS_CLIENT_OVERLAY) }),
+  opcua: Object.freeze({ family: "opcuaread", overlay: dialectOnly(OPCUA_CLIENT_OVERLAY) }),
+  mtconnect: Object.freeze({ family: "mtconnectread", overlay: dialectOnly(MTCONNECT_CLIENT_OVERLAY) }),
+  mqtt: Object.freeze({ family: "mqttread", overlay: dialectOnly(MQTT_CLIENT_OVERLAY) }),
+  sparkplug: Object.freeze({ family: "sparkplugread", overlay: dialectOnly(SPARKPLUG_CLIENT_OVERLAY) }),
 } satisfies AgentEngineClientOverlays);
 
 /**

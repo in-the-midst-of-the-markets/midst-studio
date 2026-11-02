@@ -46,7 +46,7 @@ describe("subscribedConnection", () => {
     expect(subscribedConnection({ ...saved, type: "" })).toBeNull();
     expect(subscribedConnection({ ...saved, createdAt: 1 })).toBeNull();
     expect(subscribedConnection({ ...saved, createdAt: "nope" })).toBeNull();
-    expect(subscribedConnection({ ...saved, port: 1.5, ssl: null }).port).toBeUndefined();
+    expect(subscribedConnection({ ...saved, port: 1.5, ssl: null })?.port).toBeUndefined();
     expect(subscribedConnection({ ...saved, ssl: [] })?.ssl).toBeUndefined();
     expect(subscribedConnection({ ...saved, ssl: { mode: "prefer" } })?.ssl).toBeUndefined();
     expect(subscribedConnection({ ...saved, ssl: { mode: "verify-system" } })?.ssl).toEqual({ mode: "verify-system" });
