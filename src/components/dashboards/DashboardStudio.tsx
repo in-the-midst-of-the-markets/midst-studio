@@ -356,6 +356,7 @@ function DashboardChart({
   const theme = chartTheme(useEffectiveTheme());
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
   const [face, setFace] = useState<"chart" | "query" | "code">("chart");
+  const [pending, setPending] = useState<"unsave" | "remove" | null>(null);
   const query = chart.query;
   const connectionId = chart.connectionId;
   const refreshSeconds = chart.refreshSeconds;
@@ -494,20 +495,45 @@ function DashboardChart({
             type="button"
             aria-label={`Unsave ${chart.name}`}
             title={`Unsave ${chart.name}`}
-            onClick={onUnsave}
-            className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
+            aria-pressed="true"
+            onClick={() => setPending((current) => (current === "unsave" ? null : "unsave"))}
+            className="inline-flex size-7 items-center justify-center rounded-md bg-brand-solid text-white"
           >
-            <Bookmark className="size-3.5" aria-hidden="true" />
+            <Bookmark className="size-3.5 fill-current" aria-hidden="true" />
           </button>
+          {pending === "unsave" && (
+            <button
+              type="button"
+              aria-label={`Confirm unsave ${chart.name}`}
+              onClick={onUnsave}
+              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+            >
+              Confirm
+            </button>
+          )}
           <button
             type="button"
             aria-label={`Remove ${chart.name}`}
             title={`Remove ${chart.name}`}
-            onClick={onRemove}
-            className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
+            aria-pressed={pending === "remove"}
+            onClick={() => setPending((current) => (current === "remove" ? null : "remove"))}
+            className={cn(
+              "inline-flex size-7 items-center justify-center rounded-md",
+              pending === "remove" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+            )}
           >
             <X className="size-3.5" aria-hidden="true" />
           </button>
+          {pending === "remove" && (
+            <button
+              type="button"
+              aria-label={`Confirm remove ${chart.name}`}
+              onClick={onRemove}
+              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+            >
+              Confirm
+            </button>
+          )}
         </div>
       </div>
       {face === "chart" && filters.length > 0 && (
