@@ -52,7 +52,7 @@ describe("filter looks", () => {
     expect(cleared.filters).toBeUndefined();
     expect(withoutFilterLooks(bare)).toBe(bare);
     const written = withFilterLooks(bare, merged);
-    const revenueLook = (written.filters as { revenue: FilterLook }).revenue;
+    const revenueLook = (written.filters as { revenue: { control: string; max: number } }).revenue;
     expect(revenueLook).toEqual({ control: "slider", max: 5 });
     expect((written.filters as { region: { control: string } }).region).toEqual({ control: "select" });
     expect(withoutFilterLooks(written).filters).toBeUndefined();

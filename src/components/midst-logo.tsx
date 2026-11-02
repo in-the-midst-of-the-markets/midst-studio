@@ -12,7 +12,12 @@ interface MidstMarkProps {
  * square with a white M. It carries its own ground, so it reads on light and dark chrome.
  */
 function MidstMark({ className, alt = "" }: MidstMarkProps) {
-  return <img src={withBasePath("/midst-logo.png")} alt={alt} className={cn("object-contain", className)} />;
+  // The file is served under a runtime base path. next/image would prefix that path a second time.
+  return (
+    // oxlint-disable-next-line next/no-img-element
+    // eslint-disable-next-line @next/next/no-img-element -- runtime base path, not the image optimizer
+    <img src={withBasePath("/midst-logo.png")} alt={alt} className={cn("object-contain", className)} />
+  );
 }
 
 interface MidstLockupProps {

@@ -8,7 +8,7 @@
 
 import type { UserPayload } from "@/lib/auth";
 import { parseConnectionString } from "@/lib/connection-string-parser";
-import { connectionStringForOffering, type MarketplaceOffering } from "@/lib/marketplace/catalog";
+import { connectionStringForOffering, type MarketplaceEnv, type MarketplaceOffering } from "@/lib/marketplace/catalog";
 import { logger } from "@/lib/logger";
 import { getStorageProvider } from "@/lib/storage/factory";
 import { storageOwnerKey } from "@/lib/storage/owner-key";
@@ -21,7 +21,7 @@ export function marketplaceConnectionId(offeringId: string): string {
 /** The connection to save for this offering, or null when no usable string is configured. */
 export function connectionForSubscription(
   offering: MarketplaceOffering,
-  env: NodeJS.ProcessEnv = process.env,
+  env: MarketplaceEnv = process.env,
   createdAt: Date = new Date(),
 ): DatabaseConnection | null {
   const raw = connectionStringForOffering(offering, env);

@@ -69,11 +69,10 @@ describe("saved chart run", () => {
   });
 
   test("builds an option from the shelves, or nothing when they cannot draw", () => {
-    expect(optionForSavedChart({ name: "Revenue" }, result)).toBeNull();
-    expect(optionForSavedChart({ name: "Revenue", typeId: "bar" }, result)).toBeNull();
+    expect(optionForSavedChart({}, result)).toBeNull();
+    expect(optionForSavedChart({ typeId: "bar" }, result)).toBeNull();
     const drawn = optionForSavedChart(
       {
-        name: "Revenue",
         typeId: "bar",
         variationId: "basic",
         selection: { category: ["region"], values: ["total"] },
@@ -85,22 +84,21 @@ describe("saved chart run", () => {
     expect(drawn.option.title).toBeUndefined();
     expect((drawn.option.legend as { top: number }).top).toBe(4);
     expect((drawn.option.grid as { top: number }).top).toBe(40);
-    expect(optionForSavedChart({ name: "Revenue", typeId: "bar", variationId: "basic" }, result)).toBeNull();
-    const titled = optionForSavedChart(
-      {
-        name: "Revenue",
-        title: "By region",
-        typeId: "bar",
-        variationId: "basic",
-        selection: { category: ["region"], values: ["total"] },
-      },
-      result,
-    );
+    expect(optionForSavedChart({ typeId: "bar", variationId: "basic" }, result)).toBeNull();
+    // A name and a title on the saved chart are not part of the draw input. The plot stays untitled.
+    const withTitle = {
+      name: "Revenue",
+      title: "By region",
+      typeId: "bar",
+      variationId: "basic",
+      selection: { category: ["region"], values: ["total"] },
+    };
+    const titled = optionForSavedChart(withTitle, result);
     if (titled === null) throw new Error("expected a titled chart");
     expect(titled.option.title).toBeUndefined();
     expect(
       optionForSavedChart(
-        { name: "Revenue", typeId: "bar", variationId: "nope", selection: { category: ["region"], values: ["total"] } },
+        { typeId: "bar", variationId: "nope", selection: { category: ["region"], values: ["total"] } },
         result,
       ),
     ).toBeNull();

@@ -140,7 +140,13 @@ function isConfigured(value: string | undefined): value is string {
   return value !== undefined && value.trim() !== "";
 }
 
-export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): MarketplaceCatalog {
+/**
+ * Environment values these readers look up. A caller may pass only the keys it sets.
+ * `process.env` has the same shape.
+ */
+export type MarketplaceEnv = { readonly [key: string]: string | undefined };
+
+export function readMarketplaceCatalog(env: MarketplaceEnv = process.env): MarketplaceCatalog {
   const parsed = parseMarketplaceCatalog(env.MARKETPLACE_OFFERINGS);
   if (!parsed.ok) return parsed;
   const listed = new Set(parsed.offerings.map((item) => item.id));
@@ -157,7 +163,7 @@ export function readMarketplaceCatalog(env: NodeJS.ProcessEnv = process.env): Ma
  */
 export function connectionStringForOffering(
   offering: MarketplaceOffering,
-  env: NodeJS.ProcessEnv = process.env,
+  env: MarketplaceEnv = process.env,
 ): string | null {
   if (offering.connectionString !== undefined) return offering.connectionString;
   const listed = CONNECTION_OFFERINGS.find((item) => item.offering.id === offering.id);

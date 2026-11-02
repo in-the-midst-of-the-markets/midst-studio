@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import type { UserPayload } from "@/lib/auth";
 import type { DatabaseConnection } from "@/lib/types";
-import type { ServerStorageProvider } from "@/lib/storage/types";
+import type { ServerStorageProvider, StorageCollection, StorageData } from "@/lib/storage/types";
 
 const collections = new Map<string, unknown>();
 const getStorageProvider = mock(async (): Promise<ServerStorageProvider | null> => null);
@@ -25,8 +25,9 @@ const postgres = {
 
 function provider(): ServerStorageProvider {
   return {
-    getCollection: async (_userId, collection) => (collections.get(collection) ?? null) as never,
-    setCollection: async (_userId, collection, data) => {
+    getCollection: async (_userId: string, collection: StorageCollection) =>
+      (collections.get(collection) ?? null) as StorageData[StorageCollection] | null,
+    setCollection: async (_userId: string, collection: StorageCollection, data: StorageData[StorageCollection]) => {
       collections.set(collection, data);
     },
   } as unknown as ServerStorageProvider;

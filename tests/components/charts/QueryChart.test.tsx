@@ -233,7 +233,9 @@ describe("QueryChart", () => {
     );
     expect(pie.getByRole("button", { name: "Pie" }).getAttribute("aria-pressed")).toBe("true");
     expect(pie.getByRole("button", { name: "Basic" }).getAttribute("aria-pressed")).toBe("true");
-    expect((charts.at(-1)?.option as { series: { type: string }[] }).series[0]?.type).toBe("pie");
+    const drawnPie = charts.at(-1);
+    if (drawnPie === undefined) throw new Error("expected a chart");
+    expect((drawnPie.option as { series: { type: string }[] }).series[0]?.type).toBe("pie");
     pie.rerender(
       React.createElement(QueryChart, {
         result: resultOf(
