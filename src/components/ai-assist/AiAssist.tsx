@@ -27,7 +27,7 @@ import {
 } from "@/lib/ai/assist-plan";
 import { ASSIST_RESULT_CAP, explanationWithResults, followUpQueries, readAssistResults } from "@/lib/ai/assist-reading";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
-import { titleForQuery } from "@/lib/ai/assist-chart";
+import { titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
@@ -60,6 +60,8 @@ interface AssistCard {
   readonly color: string | null;
   readonly result: QueryResult | null;
   readonly error: string | null;
+  readonly view: AssistChartChoice | null;
+  readonly code: string | null;
   readonly running: boolean;
 }
 
@@ -154,8 +156,20 @@ function storedOf(turns: readonly Turn[]): AssistTranscriptTurn[] {
       color: card.color,
       result: card.result,
       error: card.error,
+      view: card.view,
+      code: card.code,
     })),
   }));
+}
+
+function sameChartView(left: AssistChartChoice | null, right: AssistChartChoice | null): boolean {
+  if (left === right) return true;
+  if (left === null || right === null) return false;
+  return (
+    left.typeId === right.typeId &&
+    left.variationId === right.variationId &&
+    JSON.stringify(left.selection) === JSON.stringify(right.selection)
+  );
 }
 
 /** The latest chart with that statement takes the new colour. Its SQL, title, and type stay. */
@@ -252,6 +266,8 @@ function plannedCards(
       color: query.chart?.color ?? null,
       result: null,
       error: resolved.ok ? null : resolved.error,
+      view: null,
+      code: null,
       running: resolved.ok,
     };
   });
@@ -882,6 +898,15 @@ export function AiAssist() {
                     chart={card.chart}
                     color={card.color}
                     running={card.running}
+                    savedView={card.view}
+                    savedCode={card.code}
+                    onRemember={(view, code) => {
+                      const current = turnsRef.current
+                        .flatMap((turn) => turn.cards)
+                        .find((item) => item.id === card.id);
+                      if (current === undefined || (sameChartView(current.view, view) && current.code === code)) return;
+                      updateCard(card.id, { view, code }, true);
+                    }}
                     onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
                     onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
                   />

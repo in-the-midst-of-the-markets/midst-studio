@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
+import type { AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import type { QueryResult } from "@/lib/types";
 
@@ -927,6 +928,81 @@ describe("ChartWithEditor", () => {
     expect(view.getByRole("button", { name: "Choose a type" })).toBeTruthy();
   });
 
+  test("restores the chosen type and chart code after the chart unmounts", async () => {
+    const props = {
+      title: "Revenue",
+      sql: "SELECT month, revenue FROM orders",
+      result: barResult,
+      error: null,
+      chart: barChart,
+      running: false,
+      onSqlChange: () => {},
+      onRun: () => {},
+    };
+    let memory: { view: AssistChartChoice | null; code: string | null } = { view: null, code: null };
+    const onRemember = (view: AssistChartChoice | null, code: string | null) => {
+      memory = { view, code };
+    };
+    const view = render(<ChartWithEditor {...props} onRemember={onRemember} />);
+    fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
+    fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {
+        name: (accessibleName) => accessibleName === "Area",
+      }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify({ title: { text: "Edited" } }) },
+    });
+    await waitFor(() => expect(memory.code).toContain("Edited"));
+    expect(memory.view).toEqual({ typeId: "line", variationId: "area", selection: expect.any(Object) });
+    view.unmount();
+
+    const again = render(
+      <ChartWithEditor {...props} savedView={memory.view} savedCode={memory.code} onRemember={onRemember} />,
+    );
+    expect(again.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(again.getByText("Showing your chart code.")).toBeTruthy();
+    expect(again.getByRole("heading", { name: "Edited" })).toBeTruthy();
+    fireEvent.click(again.getByRole("button", { name: "Code" }));
+    expect((again.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain("Edited");
+    fireEvent.click(again.getByRole("button", { name: "Use generated chart" }));
+    await waitFor(() => expect(memory.code).toBeNull());
+    expect(again.queryByText("Showing your chart code.")).toBeNull();
+    again.unmount();
+
+    const restored = render(
+      <ChartWithEditor {...props} savedView={memory.view} savedCode={memory.code} onRemember={onRemember} />,
+    );
+    expect(restored.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(restored.queryByText("Showing your chart code.")).toBeNull();
+    fireEvent.click(restored.getByRole("button", { name: "Code" }));
+    expect((restored.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).not.toContain(
+      "Edited",
+    );
+  });
+
+  test("does not apply saved chart code when the saved type no longer fits the rows", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        savedView={{ typeId: "candlestick", variationId: "basic", selection: {} }}
+        savedCode={JSON.stringify({ title: { text: "Edited" } })}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    expect(view.getByRole("button", { name: "Change type, Line, Basic" })).toBeTruthy();
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+  });
+
   test("paints a chart in the colour it was given", () => {
     render(
       <ChartWithEditor
@@ -1335,6 +1411,36 @@ describe("AiAssist page", () => {
     expect(history?.[0]?.question).toBe("First");
     expect(history?.[0]?.explanation).toContain("Revenue rose.");
     expect(history?.[0]?.explanation).toContain("10");
+  });
+
+  test("keeps the chart type and code when the page is opened again", async () => {
+    saveConnection();
+    const view = render(<AiAssist />);
+    await typeAndSend(view);
+    expect(await view.findByRole("heading", { name: "Revenue" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
+    fireEvent.click(
+      within(view.getByRole("group", { name: "Chart variations" })).getByRole("button", {
+        name: (accessibleName) => accessibleName === "Area",
+      }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify({ title: { text: "Edited" } }) },
+    });
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+        cards?: { view?: { variationId?: string } | null; code?: string | null }[];
+      }[];
+      const card = saved.flatMap((turn) => turn.cards ?? []).find((item) => item.code?.includes("Edited"));
+      expect(card?.view?.variationId).toBe("area");
+    });
+    view.unmount();
+    const again = render(<AiAssist />);
+    expect(await again.findByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(again.getByRole("heading", { name: "Edited" })).toBeTruthy();
+    fireEvent.click(again.getByRole("button", { name: "Code" }));
+    expect((again.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain("Edited");
   });
 
   test("keeps a chart the user edited and adds a new one on the next question", async () => {
