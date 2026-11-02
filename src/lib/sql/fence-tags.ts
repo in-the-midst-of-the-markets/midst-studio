@@ -190,6 +190,10 @@ export const QUERY_FENCE_ALIASES: ReadonlySet<string> = new Set([
   "snmpget",
   "netconfrpc",
   "modbusread",
+  "opcuaread",
+  "mtconnectread",
+  "mqttread",
+  "sparkplugread",
 ]);
 
 /**
@@ -263,6 +267,14 @@ export const ALIAS_ENGINES: Readonly<Record<string, DatabaseType>> = Object.free
   netconfrpc: "netconf",
   // The agent's name for the Modbus read request language, and `modbus` is the only type-id that runs it.
   modbusread: "modbus",
+  // The agent's name for the OPC UA read request language, and `opcua` is the only type-id that runs it.
+  opcuaread: "opcua",
+  // The agent's name for the MTConnect read request language, and `mtconnect` is the only type-id that runs it.
+  mtconnectread: "mtconnect",
+  // The agent's name for the MQTT read request language, and `mqtt` is the only type-id that runs it.
+  mqttread: "mqtt",
+  // The agent's name for the Sparkplug read request language, and `sparkplug` is the only type-id that runs it.
+  sparkplugread: "sparkplug",
 });
 
 /**

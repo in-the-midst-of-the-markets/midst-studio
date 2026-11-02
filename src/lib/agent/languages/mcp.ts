@@ -104,6 +104,14 @@ export const AGENT_LANGUAGE_MCP_FACETS = Object.freeze({
   modbusread: null,
   // No MCP statement tool yet: MCP read stays closed on Prometheus until a change of its own declares one and opens it.
   promql: null,
+  // No MCP statement tool yet: MCP read stays closed on OPC UA until a change of its own declares one and opens it.
+  opcuaread: null,
+  // No MCP statement tool yet: MCP read stays closed on MTConnect until a change of its own declares one and opens it.
+  mtconnectread: null,
+  // No MCP statement tool yet: MCP read stays closed on MQTT until a change of its own declares one and opens it.
+  mqttread: null,
+  // No MCP statement tool yet: MCP read stays closed on Sparkplug until a change of its own declares one and opens it.
+  sparkplugread: null,
 } satisfies Record<AgentStatementLanguageId, AgentLanguageMcpFacet | null>);
 
 /** A facet some language declares, with its tool's name as a literal. */

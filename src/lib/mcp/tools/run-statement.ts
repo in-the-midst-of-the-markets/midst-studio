@@ -42,6 +42,7 @@ import {
   classifyReadQueryFailure,
   nextPageHint,
   offsetRefusalText,
+  pagesWithOffset,
   profileRefusalText,
   raceDeadline,
   timeoutText,
@@ -59,17 +60,20 @@ import { MCP_STATEMENT_ARMS, mcpStatementToolFor, servingStatementArms, type Mcp
  *
  * The boundary is the agent-read-only acquisition and the provider's queryReadOnly, which the factory refuses to hand
  * out for an engine without one; this module never calls query(), and that is what makes every statement tool's
- * readOnlyHint true. An engine the arm does not serve is refused before anything is acquired, naming the tool that
- * does serve it, and the arm's fence then runs as defence in depth. One deadline, the call's start plus timeout_ms,
- * covers acquisition and execution; neither a cancel nor the deadline stops a statement already running
- * (docs/BACKLOG.md D128), they end the wait.
+ * readOnlyHint true. A profile refusal, from the acquisition or from a provider that proves its principal before every
+ * statement, is answered in the tool's own sentence; the second kind quotes database names, so it comes behind the
+ * untrusted-data notice. An engine the arm does not serve is refused before anything is
+ * acquired, naming the tool that does serve it, and the arm's fence then runs as defence in depth. One deadline, the
+ * call's start plus timeout_ms, covers acquisition and execution; neither a cancel nor the deadline stops a statement
+ * already running (docs/BACKLOG.md D128), they end the wait.
  *
  * Rows are fetched one past the page where the arm pages, so the extra row proves more exist, cut to max_rows, then
  * cut to the result cap by binary search. offset on a query the provider did not rewrite is refused before anything
  * runs, because the provider would answer the first page labelled with the requested offset; so is an offset the
- * provider's prepareQuery refuses by throwing OffsetUnsupportedError, as the Elasticsearch and Cassandra overrides do,
- * answered in their own words. An arm that does not page sends the statement as written, and the provider's row
- * budget bounds it.
+ * provider's prepareQuery refuses by throwing OffsetUnsupportedError, answered in its own words, and any offset on an
+ * engine whose accepted-forms row says its SQL has none, refused before prepareQuery with the way to page there; such
+ * an engine is never offered a next offset either. An arm that does not page sends the statement as written, and the
+ * provider's row budget bounds it.
  */
 
 /** What the core reads from a call's parsed arguments; the statement itself is under the arm's own key. */
@@ -108,6 +112,7 @@ type Answer = readonly [ToolResult, McpToolAuditReason?];
 /** One call: its arm, its arguments, the statement text the arm read from them, and the offset it pages from. */
 interface StatementCall {
   readonly arm: McpStatementArm;
+  readonly type: DatabaseType;
   readonly args: McpStatementInput;
   readonly statement: string;
   readonly offset: number;
@@ -125,7 +130,7 @@ function failureAnswer(
   deadline: number,
   record: McpCallRecord,
 ): Answer {
-  const failure = classifyReadQueryFailure(error, settledAt, deadline, call.arm.tooLarge(call.statement));
+  const failure = classifyReadQueryFailure(error, settledAt, deadline, call.arm.tooLarge(call.statement, call.type));
   if (failure.kind === "timeout") {
     logger.warn(`MCP ${call.arm.tool} answered a provider failure as the timeout`, {
       route: "/api/mcp",
@@ -151,7 +156,8 @@ function resultOf(call: StatementCall, type: DatabaseType, prepared: PreparedQue
   const build = (count: number) => {
     const truncatedBy = count < page.length ? "result_bytes" : all.length > args.max_rows ? "max_rows" : null;
     const hasMore = all.length > count;
-    const nextOffset = hasMore && prepared.wasLimited ? offset + count : null;
+    // Only a query the provider paged, on an engine whose SQL has an offset to page the next call with.
+    const nextOffset = hasMore && prepared.wasLimited && pagesWithOffset(type) ? offset + count : null;
     return withByteSize(
       {
         connection_id: args.connection_id,
@@ -195,6 +201,11 @@ function prepare(
   const { args, offset, statement } = call;
   if (call.arm.paging === "none") {
     return { prepared: { query: statement, wasLimited: false, limit: args.max_rows, offset: 0 } };
+  }
+  // An engine whose SQL has no offset takes none: refused before the provider is asked, in the words that say how to
+  // page there instead.
+  if (offset > 0 && !pagesWithOffset(type)) {
+    return { refused: [ownWordsError(offsetRefusalText(statement, type)), "mcp_offset_unsupported"] };
   }
   let prepared: PreparedQuery;
   try {
@@ -264,6 +275,12 @@ async function execute(
   );
   if (executed.kind === "cancelled") return [ownWordsError(MCP_CANCELLED_TEXT), "mcp_cancelled"];
   if (executed.kind === "timeout") return [ownWordsError(timeoutText(args.timeout_ms)), "mcp_timeout"];
+  // A provider whose principal check runs before every statement, rather than at the open, refuses there, in the
+  // tool's sentence. That refusal quotes names any user of the database may have chosen (a function, a view, a role),
+  // so it goes behind the untrusted-data notice, redacted and cut as an engine message is.
+  if (executed.kind === "failed" && executed.error instanceof ExecutionProfileError) {
+    return [engineError(`${arm.tool} cannot run on this connection: `, executed.error), "mcp_execution_failed"];
+  }
   if (executed.kind === "failed") return failureAnswer(call, executed.error, executed.settledAt, deadline, record);
   return resultOf(call, connection.type, prepared.prepared, executed.value);
 }
@@ -313,7 +330,7 @@ export async function runStatement(
   const unrecorded = recordOrRefuse(() => recordMcpDecision(resolved));
   if (unrecorded !== null) return unrecorded;
 
-  const call: StatementCall = { arm, args, statement, offset: args.offset ?? 0 };
+  const call: StatementCall = { arm, type: connection.type, args, statement, offset: args.offset ?? 0 };
   const finish = ([result, failure]: Answer): ToolResult =>
     recordOrRefuse(() => recordMcpOutcome(resolved, Date.now() - startedAt, failure)) ?? result;
   try {

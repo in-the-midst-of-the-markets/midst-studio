@@ -30,6 +30,10 @@ import { SNMP_SERVER_OVERLAY } from "../snmpget/engines/snmp";
 import { NETCONF_SERVER_OVERLAY } from "../netconfrpc/engines/netconf";
 import { MODBUS_SERVER_OVERLAY } from "../modbusread/engines/modbus";
 import { PROMETHEUS_SERVER_OVERLAY } from "../promql/engines/prometheus";
+import { OPCUA_SERVER_OVERLAY } from "../opcuaread/engines/opcua";
+import { MTCONNECT_SERVER_OVERLAY } from "../mtconnectread/engines/mtconnect";
+import { MQTT_SERVER_OVERLAY } from "../mqttread/engines/mqtt";
+import { SPARKPLUG_SERVER_OVERLAY } from "../sparkplugread/engines/sparkplug";
 import type { AgentStatementLanguageId } from "../../agent-manifest";
 import { statementFamilyOf } from "../client";
 import { defineOverlay } from "../overlay";
@@ -57,6 +61,7 @@ import { OPENSEARCH_SERVER_OVERLAY } from "../sql/engines/opensearch";
 import { ORACLE_SERVER_OVERLAY } from "../sql/engines/oracle";
 import { POSTGRES_SERVER_OVERLAY } from "../sql/engines/postgres";
 import { SQLITE_SERVER_OVERLAY } from "../sql/engines/sqlite";
+import { TRINO_SERVER_OVERLAY } from "../sql/engines/trino";
 import { engineFamily } from "./client";
 
 const SERVER_OVERLAYS: AgentEngineServerOverlays = Object.freeze({
@@ -75,6 +80,7 @@ const SERVER_OVERLAYS: AgentEngineServerOverlays = Object.freeze({
   cassandra: Object.freeze({ ...CASSANDRA_SERVER_OVERLAY }),
   couchbase: Object.freeze({ ...COUCHBASE_SERVER_OVERLAY }),
   druid: Object.freeze({ ...DRUID_SERVER_OVERLAY }),
+  trino: Object.freeze({ ...TRINO_SERVER_OVERLAY }),
   mongodb: Object.freeze({ ...MONGODB_SERVER_OVERLAY }),
   kubernetes: Object.freeze({ ...KUBERNETES_SERVER_OVERLAY }),
   libredb: Object.freeze({ ...LIBREDB_SERVER_OVERLAY }),
@@ -94,6 +100,10 @@ const SERVER_OVERLAYS: AgentEngineServerOverlays = Object.freeze({
   netconf: Object.freeze({ ...NETCONF_SERVER_OVERLAY }),
   modbus: Object.freeze({ ...MODBUS_SERVER_OVERLAY }),
   prometheus: Object.freeze({ ...PROMETHEUS_SERVER_OVERLAY }),
+  opcua: Object.freeze({ ...OPCUA_SERVER_OVERLAY }),
+  mtconnect: Object.freeze({ ...MTCONNECT_SERVER_OVERLAY }),
+  mqtt: Object.freeze({ ...MQTT_SERVER_OVERLAY }),
+  sparkplug: Object.freeze({ ...SPARKPLUG_SERVER_OVERLAY }),
 } satisfies AgentEngineServerOverlays);
 
 /** What an engine with no dialect answers: every member unsupported. */

@@ -28,8 +28,37 @@ describe("mcpStatementEngines", () => {
     );
   });
 
-  test("leaves RUN_READ_QUERY_TYPES as it was before MCP_STATEMENT_READ existed", () => {
-    expect(RUN_READ_QUERY_TYPES).toEqual(["postgres", "sqlite", "duckdb", "mssql", "mysql"]);
+  test("serves ClickHouse, libSQL, InfluxDB 3, Elasticsearch, OpenSearch, Oracle, Db2, Cassandra and Couchbase beside the five SQL engines it served before MCP_STATEMENT_READ existed", () => {
+    expect(RUN_READ_QUERY_TYPES).toEqual([
+      "postgres",
+      "sqlite",
+      "duckdb",
+      "mssql",
+      "mysql",
+      "clickhouse",
+      "libsql",
+      "influxdb3",
+      "elasticsearch",
+      "opensearch",
+      "oracle",
+      "db2",
+      "cassandra",
+      "couchbase",
+    ]);
+  });
+
+  // Opening ClickHouse, libSQL, InfluxDB 3, Elasticsearch, OpenSearch, Oracle, Db2, Cassandra and Couchbase moved no other
+  // engine: every other language still serves exactly what it did.
+  test("opening ClickHouse, libSQL, InfluxDB 3, Elasticsearch, OpenSearch, Oracle, Db2, Cassandra and Couchbase leaves every other language's served set as it was", () => {
+    const languages = [...new Set(Object.values(AGENT_STATEMENT_LANGUAGE))].filter(
+      (language): language is NonNullable<typeof language> => language !== null && language !== "sql",
+    );
+    const served = Object.fromEntries(languages.map((language) => [language, mcpStatementEngines(language)]));
+    expect(served).toEqual({
+      ...Object.fromEntries(languages.map((language) => [language, []])),
+      mongo: ["mongodb"],
+      kubectl: ["kubernetes"],
+    });
   });
 
   test("reads the shipped records when none are passed", () => {
@@ -53,7 +82,38 @@ describe("mcpStatementEngines", () => {
       "sqlite",
       "mssql",
       "mysql",
+      "clickhouse",
+      "libsql",
+      "influxdb3",
+      "elasticsearch",
+      "opensearch",
+      "oracle",
+      "db2",
+      "cassandra",
+      "couchbase",
     ]);
+  });
+
+  // InfluxDB 3's SQL shares a provider directory with InfluxDB's InfluxQL, and opening the first left the second shut.
+  test("opening InfluxDB 3 leaves InfluxDB over InfluxQL unserved by every statement tool", () => {
+    expect(MCP_STATEMENT_READ.influxdb).toBe(false);
+    expect(AGENT_STATEMENT_LANGUAGE.influxdb).toBe("influxql");
+    expect(mcpStatementEngines("influxql")).toEqual([]);
+    expect(RUN_READ_QUERY_TYPES).not.toContain("influxdb");
+  });
+
+  // One provider directory serves Elasticsearch and OpenSearch, and each opened by a row of its own: the two rows are
+  // separate, so opening OpenSearch moved Elasticsearch's membership nowhere.
+  test("OpenSearch is served by run_read_query alone, through its own row, beside Elasticsearch's", () => {
+    expect(MCP_STATEMENT_READ.opensearch).toBe(true);
+    expect(MCP_EXPOSABLE.opensearch).toBe(true);
+    expect(AGENT_EXECUTION_ENGINES).toContain("opensearch");
+    expect(AGENT_STATEMENT_LANGUAGE.opensearch).toBe("sql");
+    expect(RUN_READ_QUERY_TYPES).toContain("opensearch");
+    expect(RUN_READ_QUERY_TYPES).toContain("elasticsearch");
+    expect(
+      mcpStatementEngines("sql", { ...SHIPPED, statementRead: { ...MCP_STATEMENT_READ, opensearch: false } }),
+    ).toEqual(RUN_READ_QUERY_TYPES.filter((type) => type !== "opensearch"));
   });
 
   test("an engine MCP is not offered for is not served, whatever its MCP read row says", () => {

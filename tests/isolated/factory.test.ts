@@ -52,7 +52,13 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative as relativePath } from "node:path";
 import type { DatabaseConnection, EditorExecutionContext, ReadOnlyStatementBudget } from "@/lib/db/types";
-import { ConnectionError, DatabaseConfigError, ExecutionProfileError, TimeoutError } from "@/lib/db/errors";
+import {
+  ConnectionError,
+  DatabaseConfigError,
+  ExecutionProfileError,
+  RefusedBeforeSendError,
+  TimeoutError,
+} from "@/lib/db/errors";
 import { READ_ONLY_ENFORCED, SHIPPED_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { connectionFingerprint } from "@/lib/db/connection-fingerprint";
 import { supportsQueryCancel } from "@/lib/db/query-cancel";
@@ -64,6 +70,7 @@ import type { SSHTunnelConfig } from "@/lib/types";
 import { CassandraTransportError } from "@/lib/db/providers/sql/cassandra/transport";
 import { CouchbaseError } from "@/lib/db/providers/document/couchbase/transport";
 import { DruidTransportError } from "@/lib/db/providers/sql/druid/transport";
+import { TrinoTransportError } from "@/lib/db/providers/sql/trino/transport";
 import { NEO4J_FIXTURES, recordedGraphClient } from "../helpers/neo4j-fixtures";
 
 // The SQLite agent-profile tests below construct the read-only profile for its
@@ -646,6 +653,49 @@ describe("createDatabaseProvider", () => {
     expect(sent).toEqual(["SELECT 1"]);
   });
 
+  test("the execution context rides along to mqtt: queryReadOnly answers only under the agent profile", async () => {
+    const conn = makeConnection("mqtt", { host: "127.0.0.1", port: 1883 });
+    const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
+    const editor = await createDatabaseProvider(conn);
+    if (profiled.queryReadOnly === undefined || editor.queryReadOnly === undefined) throw new Error("no queryReadOnly");
+    // Neither is connected, so only the context tells the two apart: the editor's refusal comes before the connection
+    // check, and the profiled handle meets the connection check.
+    await expect(editor.queryReadOnly('{"read": "window"}', AGENT_BUDGET)).rejects.toThrow(
+      "Read-only execution requires a provider opened under the agent read-only profile",
+    );
+    await expect(profiled.queryReadOnly('{"read": "window"}', AGENT_BUDGET)).rejects.toThrow(
+      "Provider is not connected",
+    );
+  });
+
+  test("the execution context rides along to sparkplug: queryReadOnly answers only under the agent profile", async () => {
+    const conn = makeConnection("sparkplug", { host: "127.0.0.1", port: 1883 });
+    const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
+    const editor = await createDatabaseProvider(conn);
+    if (profiled.queryReadOnly === undefined || editor.queryReadOnly === undefined) throw new Error("no queryReadOnly");
+    // Neither is connected, so only the context tells the two apart: the editor's refusal comes before the connection
+    // check, and the profiled handle meets the connection check.
+    await expect(editor.queryReadOnly('{"read": "window"}', AGENT_BUDGET)).rejects.toThrow(
+      "Read-only execution requires a provider opened under the agent read-only profile",
+    );
+    await expect(profiled.queryReadOnly('{"read": "window"}', AGENT_BUDGET)).rejects.toThrow(
+      "Provider is not connected",
+    );
+  });
+
+  test("the execution context rides along to mtconnect: queryReadOnly answers only under the agent profile", async () => {
+    const conn = makeConnection("mtconnect", { host: "127.0.0.1", port: 5000 });
+    const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
+    const editor = await createDatabaseProvider(conn);
+    if (profiled.queryReadOnly === undefined || editor.queryReadOnly === undefined) throw new Error("no queryReadOnly");
+    // Neither is connected, so only the context tells the two apart: the editor's refusal comes before the connection
+    // check, and the profiled handle meets the connection check.
+    await expect(editor.queryReadOnly("/current", AGENT_BUDGET)).rejects.toThrow(
+      "Read-only execution requires a provider opened under the agent read-only profile",
+    );
+    await expect(profiled.queryReadOnly("/current", AGENT_BUDGET)).rejects.toThrow("Provider is not connected");
+  });
+
   test("the execution context rides along to opensearch: queryReadOnly answers only under the agent profile", async () => {
     const conn = makeConnection("opensearch", { port: 9200 });
     const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
@@ -727,7 +777,7 @@ describe("createDatabaseProvider", () => {
         rows: [{ role: "agent_ro", resource: "<keyspace probe>", permission: "SELECT" }],
         fieldNames: ["role", "resource", "permission"],
       },
-      "SELECT 1": { rows: [{ x: 1 }], fieldNames: ["x"] },
+      "SELECT x FROM probe.t": { rows: [{ x: 1 }], fieldNames: ["x"] },
     };
     const openAgentTransport = () => ({
       kind: "native" as const,
@@ -746,12 +796,14 @@ describe("createDatabaseProvider", () => {
     for (const provider of [profiled, editor]) {
       Object.assign(provider, { openAgentTransport, ensureConnected: () => undefined, transport: {} });
     }
-    await expect(editor.queryReadOnly("SELECT 1", AGENT_BUDGET)).rejects.toThrow(
+    await expect(editor.queryReadOnly("SELECT x FROM probe.t", AGENT_BUDGET)).rejects.toThrow(
       "Read-only execution requires a provider opened under the agent read-only profile",
     );
     expect(sent).toEqual([]);
-    await expect(profiled.queryReadOnly("SELECT 1", AGENT_BUDGET)).resolves.toMatchObject({ rows: [{ x: 1 }] });
-    expect(sent.at(-1)).toBe("SELECT 1");
+    await expect(profiled.queryReadOnly("SELECT x FROM probe.t", AGENT_BUDGET)).resolves.toMatchObject({
+      rows: [{ x: 1 }],
+    });
+    expect(sent.at(-1)).toBe("SELECT x FROM probe.t");
   });
 
   test("the execution context rides along to couchbase: queryReadOnly answers only under the agent profile", async () => {
@@ -792,13 +844,78 @@ describe("createDatabaseProvider", () => {
     expect(sent.at(-1)).toBe("SELECT 1");
   });
 
+  test("the execution context rides along to trino: queryReadOnly answers only under the agent profile", async () => {
+    const conn = makeConnection("trino", { port: 8080, database: "tpch" });
+    const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
+    const editor = await createDatabaseProvider(conn);
+    if (profiled.queryReadOnly === undefined || editor.queryReadOnly === undefined) throw new Error("no queryReadOnly");
+    // A transport under the read-only access control, which refuses every function, table procedure and catalog
+    // management, on a server with one catalog that lists none, so only the context tells the two apart.
+    const sent: string[] = [];
+    const answer = (fieldNames: string[], rows: unknown[][]) => ({
+      rows: rows.map((row) => Object.fromEntries(fieldNames.map((name, at) => [name, row[at]]))),
+      fieldNames,
+      columnTypes: null,
+      queryId: "20261101_000000_00001_libre",
+      operation: null,
+      affectedRows: null,
+      warnings: [],
+      stats: {
+        state: null,
+        elapsedMs: 1,
+        cpuMs: null,
+        queuedMs: null,
+        processedRows: null,
+        processedBytes: null,
+        peakMemoryBytes: null,
+      },
+      endedTransaction: false,
+    });
+    const transport = {
+      beginReadOnlyTransaction: async () => "tx",
+      rollback: async () => undefined,
+      query: async (statement: string) => {
+        sent.push(statement);
+        if (statement === "SHOW CATALOGS") return answer(["Catalog"], [["system"]]);
+        if (statement.startsWith("SHOW FUNCTIONS")) return answer(["Function", "Function Type"], []);
+        if (statement.startsWith("SELECT * FROM TABLE(")) {
+          throw new TrinoTransportError(
+            "unknown-object",
+            "line 1:21: Table function not registered",
+            "FUNCTION_NOT_FOUND",
+          );
+        }
+        if (statement.startsWith("DROP CATALOG")) {
+          throw new TrinoTransportError("auth", "Access Denied: Cannot drop catalog", "PERMISSION_DENIED");
+        }
+        if (statement.startsWith("ALTER TABLE")) {
+          throw new TrinoTransportError(
+            "auth",
+            "Access Denied: Cannot execute table procedure LIBREDB_NO_SUCH_PROCEDURE on system.runtime.nodes",
+            "PERMISSION_DENIED",
+          );
+        }
+        return answer(["x"], [[1]]);
+      },
+    };
+    for (const provider of [profiled, editor]) {
+      Object.assign(provider, { ensureConnected: () => undefined, transport });
+    }
+    await expect(editor.queryReadOnly("SELECT 1", AGENT_BUDGET)).rejects.toThrow(
+      "Read-only execution requires a provider opened under the agent read-only profile",
+    );
+    expect(sent).toEqual([]);
+    await expect(profiled.queryReadOnly("SELECT 1", AGENT_BUDGET)).resolves.toMatchObject({ rows: [{ x: 1 }] });
+    expect(sent.at(-1)).toBe("SELECT 1");
+  });
+
   test("the execution context rides along to druid: queryReadOnly answers only under the agent profile", async () => {
     const conn = makeConnection("druid", { port: 8888 });
     const profiled = await createDatabaseProvider(conn, {}, { readOnly: true, sendsStatements: true });
     const editor = await createDatabaseProvider(conn);
     if (profiled.queryReadOnly === undefined || editor.queryReadOnly === undefined) throw new Error("no queryReadOnly");
-    // A transport answering the engine probe with the native engine's refusal and the statement with one row, so only
-    // the context tells the two apart.
+    // A transport answering the engine probe with the native engine's refusal, the planner's question with a plan of
+    // inline rows, and the statement with one row, so only the context tells the two apart.
     const sent: string[] = [];
     const transport = {
       agentQuery: async (statement: string) => {
@@ -809,8 +926,12 @@ describe("createDatabaseProvider", () => {
             "INVALID_INPUT",
           );
         }
+        const planned = {
+          PLAN: JSON.stringify([{ query: { queryType: "scan", dataSource: { type: "inline", rows: [[1]] } } }]),
+          RESOURCES: "[]",
+        };
         return {
-          rows: [{ x: 1 }],
+          rows: [statement.startsWith("EXPLAIN PLAN FOR\n") ? planned : { x: 1 }],
           fieldNames: ["x"],
           sqlTypes: {},
           nativeTypes: {},
@@ -3127,7 +3248,7 @@ describe("acquireExecutionProfileProvider", () => {
 
   test("refuses a provider type without a read-only statement path", async () => {
     const error: unknown = await acquireExecutionProfileProvider(
-      makeConnection("mtconnect", { id: "mtconnect-profile" }),
+      makeConnection("spark", { id: "spark-profile" }),
       "agent-read-only",
     ).catch((e: unknown) => e);
 
@@ -3136,22 +3257,31 @@ describe("acquireExecutionProfileProvider", () => {
     // The rule is the method, not the kind of boundary behind it: Kubernetes and MongoDB are granted the profile with
     // no database read-only session.
     expect((error as Error).message).toBe(
-      'Provider type "mtconnect" implements no read-only statement path (queryReadOnly)',
+      'Provider type "spark" implements no read-only statement path (queryReadOnly)',
     );
     expect(getExecutionProfileCacheStats().size).toBe(0);
   });
 
-  test("refuses trino the agent's read-only profile, the gate the explain-analyze descriptor's capability check is not", async () => {
+  test("trino refuses an executed plan before anything is sent, the gate the explain-analyze descriptor's capability check is not", async () => {
     // `sql.explain.analyze` requires only `supportsExplain`, which Trino declares for the editor's Explain button, so
-    // the refusal of a plan execution on Trino is this profile gate: no `queryReadOnly`.
+    // the refusal of a plan execution on Trino's agent path is the provider's statement fence: only a SELECT is sent.
     expect(sqlExplainAnalyzeDescriptor.requiredCapabilities).toEqual(["supportsExplain"]);
-    const error: unknown = await acquireExecutionProfileProvider(
-      makeConnection("trino", { id: "trino-profile" }),
-      "agent-read-only",
-    ).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(ExecutionProfileError);
-    expect((error as InstanceType<typeof ExecutionProfileError>).reasonCode).toBe("PROFILE_UNSUPPORTED_BY_PROVIDER");
-    expect(getExecutionProfileCacheStats().size).toBe(0);
+    const provider = await createDatabaseProvider(
+      makeConnection("trino", { port: 8080, database: "tpch" }),
+      {},
+      { readOnly: true, sendsStatements: true },
+    );
+    if (provider.queryReadOnly === undefined) throw new Error("no queryReadOnly");
+    const sent: string[] = [];
+    Object.assign(provider, {
+      ensureConnected: () => undefined,
+      transport: { query: async (statement: string) => sent.push(statement) },
+    });
+    const error: unknown = await provider
+      .queryReadOnly("EXPLAIN ANALYZE SELECT 1", AGENT_BUDGET)
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(RefusedBeforeSendError);
+    expect(sent).toEqual([]);
   });
 
   test("serves the SAME engine under the operations profile, whose open proves nothing", async () => {
@@ -3191,7 +3321,7 @@ describe("acquireExecutionProfileProvider", () => {
     // entries, so a later change to one path's lifecycle cannot reach the other, and
     // neither is ever the editor's writable pool.
     const refused: unknown = await acquireExecutionProfileProvider(
-      makeConnection("mtconnect", { id: "mtconnect-handover" }),
+      makeConnection("spark", { id: "spark-handover" }),
       "agent-handover",
     ).catch((e: unknown) => e);
     expect(refused).toBeInstanceOf(ExecutionProfileError);

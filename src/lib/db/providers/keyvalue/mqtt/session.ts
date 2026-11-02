@@ -50,6 +50,16 @@ export interface MqttTopicRow {
   readonly payloadBytes: number;
   /** The payload, present only for the one topic `keepPayloadFor` named. */
   readonly payload?: Uint8Array;
+  /**
+   * The QoS the broker delivered the last message at. Always written by `readTopics`; optional so a row built
+   * elsewhere need not carry it. The subscription's maximum is 0 (`encodeSubscribe`), so a conforming broker
+   * delivers at 0 whatever the publisher sent, and this is the delivery's QoS, never the publisher's.
+   */
+  readonly qos?: number;
+  /** Messages the read took on this topic. Always written by `readTopics`. */
+  readonly messages?: number;
+  /** Milliseconds from the start of the read to the last message on this topic, on Studio's clock. */
+  readonly lastSeenMs?: number;
 }
 
 /** Why a read stopped. Always written, never an empty string, and never a guess. */
@@ -59,7 +69,31 @@ export type MqttEndReason =
   | "budget-bytes"
   | "server-disconnect"
   | "subscription-refused"
-  | "transport-closed";
+  | "transport-closed"
+  /** A handshake-only session (`handshakeOnly`): it subscribed to nothing, by design. */
+  | "handshake";
+
+/**
+ * What kind of failure ended a session before it had a read to report, so a caller that must not pass the
+ * transport's or the broker's words on can word it by its kind alone. `refused`: the broker answered CONNACK
+ * with a reason code (`reasonCode`). `handshake`: the broker accepted the connection and never finished the MQTT 5.0
+ * handshake, or ended it before answering. `unreachable`: the transport failed or the dial timed out.
+ * `protocol`: the broker's bytes are not MQTT 5.0 this provider can read, or the decoder did not load.
+ */
+export type MqttFailureCategory = "refused" | "handshake" | "unreachable" | "protocol";
+
+/** A session failure with its kind; the message is the editor's sentence, unchanged. */
+export class MqttSessionError extends QueryError {
+  constructor(
+    message: string,
+    readonly category: MqttFailureCategory,
+    readonly reasonCode?: number,
+  ) {
+    super(message, MQTT_TYPE);
+    this.name = "MqttSessionError";
+    Object.setPrototypeOf(this, MqttSessionError.prototype);
+  }
+}
 
 /** What every read reports, whatever happened. */
 export interface MqttReadOutcome {
@@ -82,8 +116,23 @@ export interface MqttReadOutcome {
   readonly provenLoss: readonly string[];
   /** Messages taken off the wire. A count with no denominator, because MQTT publishes none. */
   readonly messages: number;
-  /** How long the read ran, in milliseconds. Reported, never interpreted. */
+  /** Of `messages`, those the broker delivered with the retain flag set. */
+  readonly retainedMessages: number;
+  /** The payload bytes of `messages`, summed: what the messages carried, not what the wire carried. */
+  readonly payloadBytes: number;
+  /** How long the read ran, in milliseconds, dial and handshake included. Reported, never interpreted. */
   readonly elapsedMs: number;
+  /**
+   * When the read sent its SUBSCRIBE, in milliseconds from the same start as `elapsedMs` and `lastSeenMs`, or
+   * undefined when it sent none. The window opens when the connection is ready, before the CONNACK, so the time the
+   * subscription listened is `elapsedMs` less this, and the handshake's share of the window is not in it.
+   */
+  readonly subscribedAtMs?: number;
+  /**
+   * When the connection was ready and the window's clock started, from the same start, or undefined when it never was.
+   * The window ran for `elapsedMs` less this, and it holds the subscription whole, since the SUBSCRIBE follows it.
+   */
+  readonly readyAtMs?: number;
 }
 
 /**
@@ -179,6 +228,11 @@ export interface MqttSessionOptions {
    * certificate. `sessionOptions()` sets this to the far end's host when a tunnel carries the connection.
    */
   readonly tlsIdentity?: string;
+  /**
+   * Connect, and leave as soon as the broker accepts: no SUBSCRIBE is written, so nothing is read, and the
+   * outcome ends `handshake` with no topic. It proves the broker answers and accepts the credentials.
+   */
+  readonly handshakeOnly?: boolean;
 }
 
 /**
@@ -320,6 +374,7 @@ interface ParsedPacket {
   readonly cmd: string;
   readonly topic?: string;
   readonly retain?: boolean;
+  readonly qos?: number;
   readonly reasonCode?: number;
   readonly granted?: readonly number[];
   readonly properties?: { readonly messageExpiryInterval?: number };
@@ -348,7 +403,7 @@ async function newParser(): Promise<ParserLike> {
   // statics onto the namespace. Both shapes are read so this resolves under the app bundler and the runner.
   const lifted = loaded as unknown as { parser?: (options: { protocolVersion: number }) => ParserLike };
   const factory = lifted.parser ?? loaded.default?.parser;
-  if (typeof factory !== "function") throw new QueryError("The MQTT decoder did not load.", MQTT_TYPE);
+  if (typeof factory !== "function") throw new MqttSessionError("The MQTT decoder did not load.", "protocol");
   return factory({ protocolVersion: 5 });
 }
 
@@ -410,11 +465,19 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
   const parser = await newParser();
   const topics = new Map<string, MqttTopicRow>();
   const provenLoss: string[] = [];
-  const started = Date.now();
+  /**
+   * Every duration the read reports is on the monotonic clock its timers run on, never the wall clock: time sync steps
+   * and slews a wall clock, which would shorten a window the timer ran in full (measured: set back 200 ms mid-read,
+   * `Date.now()` reported a 3,000 ms window as 2,801 ms). Whole milliseconds, as the answer counts them.
+   */
+  const started = performance.now();
+  const sinceStart = (): number => Math.round(performance.now() - started);
 
   return new Promise<MqttReadOutcome>((resolve, reject) => {
     let settled = false;
     let messages = 0;
+    let retainedMessages = 0;
+    let payloadBytes = 0;
     /** PUBLISH packets that carried no topic name, reported as a loss when the read ends. */
     let nameless = 0;
     let bytes = 0;
@@ -431,6 +494,8 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
     /** Bytes of an oversized packet still to be thrown away, across however many chunks they arrive in. */
     let skipping = 0;
     let scope: "incomplete" | "unknown" = "unknown";
+    let subscribedAtMs: number | undefined;
+    let readyAtMs: number | undefined;
     /** The first refusal code the broker sent, kept for the sentence the panel shows. */
     let endCode: number | undefined;
     let ping: ReturnType<typeof setInterval> | undefined;
@@ -495,12 +560,12 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         // and the read ends on the decoder rather than here. What does arrive here is a bare FIN with no
         // bytes at all, where that explanation would usually be wrong. So it reports the fact and stops.
         fail(
-          new QueryError(
+          new MqttSessionError(
             (endReason === "transport-closed"
               ? "The broker closed the connection without answering the handshake, so it never agreed to speak MQTT 5.0."
               : "The broker accepted the connection and sent no CONNACK, so it never agreed to speak MQTT 5.0.") +
               " Nothing was read, and an empty topic tree would be a wrong answer rather than an empty one.",
-            MQTT_TYPE,
+            "handshake",
           ),
         );
         return;
@@ -523,9 +588,13 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         scope,
         endReason,
         ...(endCode === undefined ? {} : { endCode }),
+        ...(subscribedAtMs === undefined ? {} : { subscribedAtMs }),
+        ...(readyAtMs === undefined ? {} : { readyAtMs }),
         provenLoss,
         messages,
-        elapsedMs: Date.now() - started,
+        retainedMessages,
+        payloadBytes,
+        elapsedMs: sinceStart(),
       });
     };
 
@@ -545,17 +614,25 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         // One CONNACK per connection (MQTT 5.0 section 3.2). A second would otherwise send a second SUBSCRIBE.
         if (connected) {
           fail(
-            new QueryError("The broker sent a second CONNACK on one connection, which MQTT 5.0 forbids.", MQTT_TYPE),
+            new MqttSessionError(
+              "The broker sent a second CONNACK on one connection, which MQTT 5.0 forbids.",
+              "protocol",
+            ),
           );
           return;
         }
         const code = packet.reasonCode ?? 0;
         if (code !== 0) {
-          fail(new QueryError(connackSentence(code), MQTT_TYPE));
+          fail(new MqttSessionError(connackSentence(code), "refused", code));
           return;
         }
         connected = true;
         if (dial !== undefined) clearTimeout(dial);
+        if (options.handshakeOnly === true) {
+          finish("handshake");
+          return;
+        }
+        subscribedAtMs = sinceStart();
         write(() => encodeSubscribe(1, [filter]));
         return;
       }
@@ -583,12 +660,18 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         messages += 1;
         const body = packet.payload;
         const bodyBytes = body instanceof Uint8Array ? body : undefined;
+        const size = body?.length ?? 0;
+        if (packet.retain === true) retainedMessages += 1;
+        payloadBytes += size;
         topics.set(topic, {
           ...(packet.properties?.messageExpiryInterval === undefined
             ? {}
             : { lifetimeSeconds: packet.properties.messageExpiryInterval }),
           retained: packet.retain === true,
-          payloadBytes: body?.length ?? 0,
+          payloadBytes: size,
+          qos: packet.qos ?? 0,
+          messages: (topics.get(topic)?.messages ?? 0) + 1,
+          lastSeenMs: sinceStart(),
           ...(options.keepPayloadFor === topic && bodyBytes !== undefined
             ? { payload: Uint8Array.from(bodyBytes) }
             : {}),
@@ -601,10 +684,11 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         if (!connected) {
           const code = packet.reasonCode ?? 0;
           fail(
-            new QueryError(
+            new MqttSessionError(
               `The broker ended the connection before answering the handshake, with reason code ${code} ` +
                 `(0x${code.toString(16)}). Nothing was read.`,
-              MQTT_TYPE,
+              "handshake",
+              code,
             ),
           );
           return;
@@ -617,7 +701,7 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
     });
 
     parser.on("error", (value) =>
-      fail(new QueryError(`The broker sent a packet we cannot read: ${String(value)}`, MQTT_TYPE)),
+      fail(new MqttSessionError(`The broker sent a packet we cannot read: ${String(value)}`, "protocol")),
     );
 
     socket.on("data", (chunk: Buffer) => {
@@ -646,7 +730,7 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
         const verdict = inspectInboundPacket(pending, 0);
         if (verdict.kind === "need") break;
         if (verdict.kind === "malformed") {
-          fail(new QueryError(`The stream is no longer MQTT: ${verdict.reason}`, MQTT_TYPE));
+          fail(new MqttSessionError(`The stream is no longer MQTT: ${verdict.reason}`, "protocol"));
           return;
         }
         if (verdict.kind === "skip") {
@@ -674,7 +758,7 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
       fail(
         error instanceof DatabaseConfigError
           ? error
-          : new QueryError(`The broker could not be reached: ${error.message}`, MQTT_TYPE),
+          : new MqttSessionError(`The broker could not be reached: ${error.message}`, "unreachable"),
       ),
     );
     socket.on("close", () => {
@@ -702,7 +786,22 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
       // timer's. The silence before the handshake is covered by `dial` below, and the silence after it by
       // `budget` plus `finish()`'s `!connected` arm.
       ping = setInterval(() => keepAlive(), options.pingEveryMs ?? MQTT_PING_INTERVAL_MS);
-      budget = setTimeout(() => finish("budget-time"), MQTT_READ_BUDGET_MS);
+      const readyAt = performance.now();
+      readyAtMs = Math.round(readyAt - started);
+      // THE WINDOW ENDS ON THE CLOCK IT IS REPORTED WITH, NOT ON THE TIMER. A timer promises nothing against
+      // `performance.now()`, and Bun's fired early on macOS: CI measured a 2,999 ms window
+      // (runs 41381663638 and 41404970621). An early timer is armed again for the rest, so the window is never
+      // short of the budget the doc promises.
+      const deadline = readyAt + MQTT_READ_BUDGET_MS;
+      const endAtDeadline = (): void => {
+        const left = deadline - performance.now();
+        if (left > 0) {
+          budget = setTimeout(endAtDeadline, Math.ceil(left));
+          return;
+        }
+        finish("budget-time");
+      };
+      budget = setTimeout(endAtDeadline, MQTT_READ_BUDGET_MS);
     };
 
     socket.once(opened.readyEvent, onReady);
@@ -732,12 +831,12 @@ export async function readTopics(options: MqttSessionOptions): Promise<MqttReadO
       // then went quiet, which points the reader at the broker instead of at the route.
       const seconds = (dialTimeout / 1000).toLocaleString("en-US");
       fail(
-        new QueryError(
+        new MqttSessionError(
           tcpOpen
             ? `The broker at ${options.host}:${options.port} accepted the connection and did not finish ` +
                 `${options.tls ? "the TLS handshake" : "the MQTT handshake"} within ${seconds} seconds.`
             : `The broker at ${options.host}:${options.port} did not answer within ${seconds} seconds. ${MQTT_NOTHING_CAME_BACK}`,
-          MQTT_TYPE,
+          tcpOpen ? "handshake" : "unreachable",
         ),
       );
     }, dialTimeout);

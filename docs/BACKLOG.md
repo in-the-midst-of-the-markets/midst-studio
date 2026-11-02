@@ -27,12 +27,12 @@ None of it is a GitHub issue.
 
 **Sections**
 
-- [SQL statement reading](#sql-statement-reading) — S2-S10 · 7
-- [Drivers and connections](#drivers-and-connections) — D1-D413, U17 · 302
+- [SQL statement reading](#sql-statement-reading) — S2-S11 · 8
+- [Drivers and connections](#drivers-and-connections) — D1-D423, U17 · 311
 - [Value interpolation](#value-interpolation) — V1
 - [Row editing](#row-editing) — R1–R3 · 3
-- [Studio UI and query execution](#studio-ui-and-query-execution) — X2-X25, U2-U190 · 175
-- [Dependencies](#dependencies) — P1-P12 · 10
+- [Studio UI and query execution](#studio-ui-and-query-execution) — X2-X26, U2-U196 · 182
+- [Dependencies](#dependencies) — P1-P13 · 11
 - [Documentation](#documentation) — DOC3-DOC35 · 31
 - [Release pipeline](#release-pipeline) — REL1-REL9 · 9
 - [Security Phase 1 deferrals](#security-phase-1-deferrals) — H1–H14 · 4
@@ -40,9 +40,9 @@ None of it is a GitHub issue.
 - [Security Phase 3 deferrals](#security-phase-3-deferrals) — K4-K8 · 5
 - [Security scanner triage](#security-scanner-triage) — SCAN1-SCAN2 · 2
 - [Agent M1 deferrals (#328)](#agent-m1-deferrals-328) — A2–A8 · 5
-- [Agent M2 deferrals (#329)](#agent-m2-deferrals-329) — B2-B161 · 86
+- [Agent M2 deferrals (#329)](#agent-m2-deferrals-329) — B2-B169 · 88
 - [Passkey deferrals (#785)](#passkey-deferrals-785) — PK1-PK9 · 8
-- [MCP server deferrals (#246)](#mcp-server-deferrals-246) — MCP1-MCP4 · 4
+- [MCP server deferrals (#246)](#mcp-server-deferrals-246) — MCP1-MCP13 · 13
 - [Governance follow-ups](#governance-follow-ups) — GOV1-GOV30 · 30
 
 ---
@@ -158,6 +158,17 @@ Druid refuses a lone `SET` ("Statement list is missing a non-SET statement"), so
 Found 2026-10-28 while probing Druid's grammar row on Apache Druid 37.0.0.
 
 **Done when:** the `druid` row declares that a run of `SET` statements belongs to the statement after it, the splitter keeps the run and that statement as one unit, `tests/unit/sql/statement-splitter.test.ts` pins a `SET` and a `SELECT` as one unit beside a following `SELECT` as a second, and the pair is run once on a live Druid.
+
+### S11. A statement that opens with a parenthesis reads as no statement
+
+`readOperativeKeyword` in `src/lib/sql/operative-keyword.ts` finds no keyword when the statement's first code character is `(`, so `inspectAgentStatement` in `src/lib/db/operations/statement-guard.ts` answers `NO_STATEMENT` for a parenthesised query such as `(SELECT 1 FROM DUAL) UNION ALL (SELECT 2 FROM DUAL)`.
+The guard reads under `DEFAULT_SQL_GRAMMAR` whatever the connection, so the answer is the same on every engine.
+Measured 2026-11-02 with a unit call: `(SELECT 1 FROM DUAL) UNION ALL (SELECT 2 FROM DUAL)`, `(SELECT 1)` and `((SELECT 1)) UNION (SELECT 2)` each answered `NO_STATEMENT`, while `SELECT 1 UNION ALL (SELECT 2)` answered no objection.
+So MCP's `run_read_query` refuses such a read before it reaches the database, "The statement was refused before it reached the database (NO_STATEMENT)", followed by the engine's accepted forms, which name the `SELECT` the refused text is; plan mode's read check marks the same draft as not a read, and a rewrite card carrying one is refused.
+`analyzeQuery` in `src/lib/db/utils/query-limiter.ts` types the same text `OTHER`, so the editor writes no row bound on it either.
+Found 2026-11-02 while reviewing the shared statement guard.
+
+**Done when:** the reader reads through the leading parentheses of a query expression to the keyword inside, the guard answers a parenthesised `SELECT` and a parenthesised compound query as a read and still refuses one whose body carries a side-effect word, the limiter's reading of the same text is decided in that change, and unit tests pin each shape in the guard's and the limiter's test files.
 
 ---
 
@@ -969,31 +980,6 @@ statement MEANS, and none of them is reset.
 **Done when:** either the pool resets a connection on release, or every route that mutates session state
 restores it in a `finally`, and the choice is written down where the next writer of a route will read it.
 
-### D88. A multi-statement text sent to the single-statement query route answers HTTP 500
-
-`POST /api/db/query` is the single-statement route and nothing stops a caller sending two. PostgreSQL
-runs both, `pg` answers an ARRAY of results for a multi-statement simple query, and
-`PostgresProvider.query()` reads `result.rows` off that array, which is `undefined`. The route then
-reads `result.rows.length` and throws, so the caller gets a 500 with no sentence about what was wrong
-with their request, after both statements have already run.
-
-MEASURED 2026-09-15 on PostgreSQL 18.4 through `pg` 8.23: a simple query of two statements answers
-`[Result, Result]` with the engine's own command tags, and `Array.prototype.rows` does not exist.
-Read in the tree at the same commit: `src/lib/db/providers/sql/postgres.ts` returns `rows: result.rows`
-from `query()`, and `src/app/api/db/query/route.ts` reads `result.rows.length`.
-
-Found while probing D74. Not caused by it and not fixed by it.
-
-The route's `explain` arm refuses such a text since #1311 (`Only a single statement can be explained`,
-read under the connection type's grammar, before a provider is opened), because there the second
-statement was not only a 500: the background plan request re-ran the INSERT after a leading SELECT. A
-plain run without `explain` still reaches the provider and is what this entry is about.
-
-**Done when:** the route either refuses a text carrying more than one statement with a sentence, or the
-provider names which result of an array it answers with. The first is the smaller change and is what
-the route's own name claims; D76's single-statement check on the object-edit path is the precedent for
-asking the engine rather than splitting the text.
-
 ### D89. A count mismatch is reported on the `interrupted` arm, whose documented meaning says the engine never answered
 
 `applyObjectEdit` on `postgres` counts the results the round trip answered and reports
@@ -1469,6 +1455,7 @@ The same placeholder text would serve every provider listed here only one provid
 Found 2026-09-23 while mapping the Prometheus storage row (#1085, section 6.2); the table half was found by the #1085 review the same day, through `inspectOperationsTool` over the real provider against the compose Prometheus, where all 50 rows reached the model as `"totalSizeBytes":0`.
 Not fixed in #1085: making either field optional changes a type every provider writes, and the agent's two readings have to learn to carry an absence; neither is that PR's to change.
 The table half has a remedy that needs no type change: the `table-stats` reading can forward `null` for `totalSizeBytes` wherever `tableSizeBytes` is absent, the gate the two tabs already apply, because every writer of a measured `totalSizeBytes` also sets `tableSizeBytes` today and every writer above leaves it out.
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass, now that agent mode joined Trino: an Operate run's `storage` reading handed the model five catalogs, each with `size` "N/A" and `sizeBytes` 0, and the model wrote that these fields "do not provide usable measured storage totals" (run `arun_6c40df981f50417182fb0e21614db69e`).
 
 **Done when:** no provider writes 0 for a storage or table size it did not measure, `sizeBytes` can be absent, and the agent's `storage` and `table-stats` readings forward an absence as an absence, with a test on each reading beside "an index the engine published no size for reaches the model as null, not as zero" in `tests/unit/lib/agent/tools.test.ts`, and on each provider that stops writing 0.
 
@@ -1831,11 +1818,11 @@ Both reach the caller as a shorter list with no reason: `GET /api/connections/ma
 ### D128. A read-only statement cannot be cancelled, so a cancelled or timed-out MCP query keeps running
 
 `queryReadOnly` takes no signal (`DatabaseProvider.queryReadOnly` in `src/lib/db/types.ts`), and `cancelQuery` cannot find its statement.
-When an MCP client cancels by closing the request, or `timeout_ms` passes, `run_read_query` stops waiting but the statement runs on: on PostgreSQL until `statement_timeout`, on SQL Server until the provider's deadline, on DuckDB to completion, and on SQLite while blocking the process (A1).
+When an MCP client cancels by closing the request, or `timeout_ms` passes, `run_read_query` stops waiting but the statement runs on: on PostgreSQL until `statement_timeout`, on SQL Server until the provider's deadline, on DuckDB to completion, on SQLite while blocking the process (A1), on ClickHouse until its `max_execution_time`, set to the time left, on libSQL, InfluxDB 3 and Couchbase until the provider closes its request at the time left, on Elasticsearch and OpenSearch to its end, on Db2 to its end on the server, and on Oracle until the driver's call timeout, set to the time left, ends the statement's session, and on Apache Cassandra to its end, since the native protocol has no cancel; a `timeout_ms` on ClickHouse, libSQL, InfluxDB 3, Oracle and Couchbase does end the statement, since the provider closes the request or the session at its deadline, and ClickHouse cancels a read-only query whose client goes away, as sqld, InfluxDB 3 Core and the Couchbase query service stop one (measured on sqld 0.24.33 and on InfluxDB 3 Core 3.12.0 on 2026-11-01, and on Couchbase Server 8.0.2 Enterprise on 2026-11-02), while Elasticsearch runs the statement to its end whether the request is closed at `timeout_ms` or by a cancel, and then holds no search context for it (measured on 9.1.4 on 2026-11-01), as OpenSearch runs the search to its end and then holds none (measured on 3.8.0 on 2026-11-02), Oracle frees the statement within two seconds of the call timeout (measured on 26ai Free 23.26.3 on 2026-11-02), Db2 runs it to its end on the server, its connection closed once it has ended (measured on 12.1.0.0 on 2026-11-02: a statement answered at `timeout_ms`, and one whose client closed the call, each ran 17 to 46 seconds more), and an Apache Cassandra coordinator runs the statement to its end after either (measured on 5.0.9 on 2026-11-02, where over three runs `system_views.queries` listed a filtered count for 875 to 4638 ms past the timeout answer and 721 to 1875 ms past a cancel).
 A 2025-era `notifications/cancelled` sent in its own `POST` does not even stop the wait: the stateless server answers it 202 without knowing the call, which runs to completion or `timeout_ms` (`tests/integration/mcp/http-route.test.ts`).
 This departs from the MCP rule that a server should stop work on a cancelled request as soon as practical.
 
-**Done when:** `queryReadOnly` accepts an `AbortSignal`, each of the four providers stops the statement on abort, their provider docs say so, and `/api/mcp` passes the tool call's signal.
+**Done when:** `queryReadOnly` accepts an `AbortSignal`, each provider named above stops the statement on abort, their provider docs say so, and `/api/mcp` passes the tool call's signal.
 
 ### D129. `attachedSegment`, the object-path policy, is still a constant in each provider file rather than part of the declaration
 
@@ -1873,7 +1860,7 @@ Found 2026-09-30 while designing the etcd provider (#1089, spec 6.1).
 
 ### D132. grpc-js sends an IP-literal target as the TLS server name, which Node 25 and later and Bun refuse
 
-`@grpc/grpc-js` 1.14.5 sets the TLS `servername` from the dial target (`connectionOptions.servername = remoteHost` in `build/src/channel-credentials.js`), and 1.14.6 still does, and Node 25 and later and Bun refuse an IP address as a server name with `ERR_INVALID_ARG_VALUE`, "Setting the TLS ServerName to an IP address is not permitted".
+`@grpc/grpc-js` 1.14.5 sets the TLS `servername` from the dial target (`connectionOptions.servername = remoteHost` in `build/src/channel-credentials.js`), and 1.14.6 and 1.14.7 still do, and Node 25 and later and Bun refuse an IP address as a server name with `ERR_INVALID_ARG_VALUE`, "Setting the TLS ServerName to an IP address is not permitted".
 The etcd provider works around it with a server-name override that is not an IP and a `checkServerIdentity` that verifies the IP (spec E5), which depends on grpc-js internals and is why grpc-js is pinned exactly.
 Amended 2026-10-04: the override now lives once, in `grpcTlsIdentity` (`src/lib/db/grpc/tls.ts`) and `grpcChannelCredentials` (`src/lib/db/grpc/credentials.ts`), for every gRPC provider.
 No open grpc-node issue covers it; the closed #1919 is about `0.0.0.0`.
@@ -2080,17 +2067,13 @@ Found 2026-10-03 while building the Milvus console (vector-family spec 5.4, R33 
 
 **Done when:** users paste commented Milvus bodies; then the dialect declares `bodyComments: true` in one data change, with corpus cases for a comment inside a string, after a value and at the end of the body.
 
-### D160. The Db2 compose service can skip its object fixture on a fresh volume
+### D160. The Db2 compose service reports healthy without its object fixture
 
-On the first start of a fresh volume, `docker/db2-init/01-object-fixture.sh` printed "db2-init: fixture already loaded", yet `SELECT COUNT(*) FROM SYSCAT.TABLES WHERE TABSCHEMA IN ('APP','REPORTING')` returned 0.
-Running `/var/custom-fixture/01-object-fixture.sql` by hand then loaded it with no SQL error.
-The script loads the fixture only when its count query prints exactly `0`, and prints the skip message for anything else, so a query that fails or warns at that point of the start reads as a loaded fixture.
+The service's healthcheck reads only `db2gcf -s`, so a start on which `docker/db2-init/01-object-fixture.sh` failed, because its check of `APP.ORDERS` answered neither 0 nor 1 or because the load ended with an error, still reports the service healthy, and the failure shows only in the container log.
 
-Found 2026-10-03 by the browser pass of #1246.
-Seen again on 2026-10-04, on three fresh volumes in a row (12.1.0.0 twice, 11.5.9.0 once), each printing the skip message over an empty `APP`; run by hand moments after "Setup has completed", the same count query answered `SQL1024N A database connection does not exist`, which the script reads as a loaded fixture.
-Measured 2026-10-29: the count runs in a pipeline (`db2 -x ... | tr -d ' '`), and a db2 command in a pipeline does not share the connection the shell made, so it answers `SQL1024N` whenever it runs; `VALUES 1` piped the same way answers it too, and read through a file it answers 1. `docker/db2-init/02-agent-principal.sh` reads its own count through a file for that reason.
+Found 2026-10-03 by a browser pass over the Db2 object browser.
 
-**Done when:** the script tells a failed or warning count query from a non-zero count and fails loudly on the first, a fresh volume gets the fixture, and the check that the fixture loaded is part of the service's own start.
+**Done when:** the service's own start or healthcheck fails while `APP.ORDERS` is missing, so a Db2 service without its fixture never reports healthy.
 
 ### D161. A PostgreSQL session's duration can read below zero
 
@@ -3514,13 +3497,13 @@ Found 2026-10-14 in the final review of the Apache Spark provider (#1759).
 ### D353. The Spark gRPC runtime cases never run on the Node major production uses
 
 `tests/unit/db/spark/grpc-runtimes.test.ts` runs its bundled child under `Bun.which("node")`, which in the `Unit & Integration Tests` job is the Node 24 that `.github/workflows/ci.yml` installs.
-The job's Node 26 step runs `tests/unit/db/http/node-transport-runtimes.test.ts`, `tests/unit/db/s3/client-wire.test.ts`, `tests/unit/db/rabbitmq/dial-runtimes.test.ts`, `tests/unit/db/mqtt/dial-runtimes.test.ts` and `tests/unit/db/snowflake/key-runtimes.test.ts`, and not the Spark file, while the `Dockerfile` runner stage is `node:26.11.1-trixie-slim`.
+The job's step on the image's Node, the release the `Dockerfile` runner stage names, runs `tests/unit/db/http/node-transport-runtimes.test.ts`, `tests/unit/db/s3/client-wire.test.ts`, `tests/unit/db/rabbitmq/dial-runtimes.test.ts`, `tests/unit/db/mqtt/dial-runtimes.test.ts` and `tests/unit/db/snowflake/key-runtimes.test.ts`, and not the Spark file.
 A grpc-js or TLS behaviour that differs on Node 26 would reach users with every check green; the Bun parent already holds the stricter IP server-name rule, which narrows the gap.
-Verified 2026-10-14 by reading `ci.yml`, the `Dockerfile` and the test on `main` at 5b77948ee.
+Verified 2026-10-14 by reading `ci.yml`, the `Dockerfile` and the test on `main` at 5b77948ee; re-read 2026-11-02, after that step began reading its Node release from the `Dockerfile`, and the Spark file is still not in it.
 
 Found 2026-10-14 in the final review of the Apache Spark provider (#1759).
 
-**Done when:** the existing Node 26 step's runner command also names `tests/unit/db/spark/grpc-runtimes.test.ts` (no new step), and the CI log of that step shows the Spark runtime cases passing under Node 26.
+**Done when:** the existing step on the image's Node also names `tests/unit/db/spark/grpc-runtimes.test.ts` (no new step), and the CI log of that step shows the Spark runtime cases passing under Node 26.
 
 ### D355. A discarded Spark metadata session is never released, so each server restart leaves one session open until its idle timeout
 
@@ -3568,16 +3551,6 @@ Verified 2026-10-14 by reading the three call sites on `main` at 5b77948ee.
 Found 2026-10-14 in the final review of the Apache Spark provider (#1759).
 
 **Done when:** each stream is pre-checked once (`readIpcColumns` takes the result of the check its caller ran, or one entry point checks and reads), a stream with more than one record batch is still refused before apache-arrow reads it, and a case in `tests/unit/db/spark/arrow.test.ts` counts one `checkIpcStream` pass per stream.
-
-### D359. CI's Node 26 step pins 26.10.0 and says it matches the Dockerfile, which runs 26.11.1
-
-The Node 26 step of the `Unit & Integration Tests` job in `.github/workflows/ci.yml` installs Node 26.10.0, asserts `v26.10.0`, and its comment says production runs on Node 26.10.0, the Dockerfile's runner stage.
-The `Dockerfile`'s builder and runner stages are `node:26.11.1-trixie-slim`, so the transport, S3 client wire, RabbitMQ dial and Snowflake key runtime cases that step runs are measured on a Node release production does not run (checked 2026-10-14 on `main` at 5b77948ee).
-A behaviour change in 26.11.1 that those cases pin would reach users with the step green.
-
-Found 2026-10-14 while filing the Apache Spark provider's follow-ups (#1759); pre-existing.
-
-**Done when:** the Node 26 step installs and asserts the version the `Dockerfile` runner stage names, and a test reads both files and fails when they differ.
 
 ### D360. The RabbitMQ hostile-peer test can fail on a loaded machine while the ignores-close peer still holds its socket
 
@@ -4166,6 +4139,100 @@ Found 2026-10-30 in the pre-release browser E2E; pre-existing.
 
 **Done when:** concurrent cache misses for one cache key share one in-flight open, so a connection is opened once, and a test in `tests/unit/lib/db/` fires concurrent `getOrCreateProvider` calls for one connection and asserts a single `createDatabaseProvider` and a single `connect`.
 
+### D414. The OPC UA console writes an extended node id with a namespace URI or a server index in no Part 6 spelling
+
+`shapeBrowse` in `src/lib/db/providers/industrial/opcua/library.ts` writes each reference's id with `reference.nodeId.toString()`, beside a comment saying it keeps `nsu=` where the server gave one.
+`ExpandedNodeId.toString` in `node-opcua-nodeid` 2.187.0 appends the URI and the index after the identifier instead: measured, an id in namespace 0 with URI `urn:x` and server index 2 is written `ns=0;i=5;namespaceUri:urn:x;serverIndex:2`, and with URI alone `ns=0;i=5;namespaceUri:urn:x`, where Part 6 5.3.1.11 spells them `svr=2;nsu=urn:x;i=5` and `nsu=urn:x;i=5`.
+So a reference a server answers that way is listed in the Keys panel under an id no request can name back, and a Read of it is refused by the console's parser; agent mode refuses the whole read that meets one (`unkeyed` in `agent-read.ts`), which is the stated rule there.
+Not reached on the pinned OPC PLC 2.15.10 fixture, whose references carry neither; found 2026-11-01 while verifying the OPC UA agent read.
+
+**Done when:** `shapeBrowse` writes such an id in the Part 6 spelling (`nsu=` for a URI, `svr=` for a non-zero server index), the comment says what it does, a reference on another server is shown as not readable rather than offered as a key, and a library-bridge test pins both spellings.
+
+### D415. The MTConnect editor lists a device's data items as its assets
+
+`listObjects(container, kind)` in `src/lib/db/providers/industrial/mtconnect/index.ts` splits a device's items only by `kind === "condition"`, so on an editor handle `listObjects([device], "asset")` returns every non-condition data item of the device, each labelled `kind: "asset"`, and `describeObjects([device], "asset")` describes them as such.
+The tree never shows it only because `countObjects` answers `asset: { count: 0 }`, so the kind is never expanded; any caller that lists a kind without counting it first, the objects route included, gets data items under the asset heading.
+Agent-mode handles are not affected: there `listObjects` refuses the kind with `MTCONNECT_AGENT_WITHHELD.assets`.
+Found 2026-11-01 while verifying the MTConnect agent read; pre-existing.
+
+**Done when:** `listObjects` answers the asset kind on an editor handle either with the agent's assets (from `/assets`, under the same guard and caps as the console) or with an explicit refusal that says assets are read from the console, never with data items, and the count and the listing agree; a provider test pins `listObjects([device], "asset")` and `describeObjects([device], "asset")` on an editor handle.
+
+### D416. MTConnect's request limit is one permit per provider instance, not per agent
+
+The bound that keeps Studio from degrading an agent's own clients (`MTC_LIMITS.perProvider` in `src/lib/db/providers/industrial/mtconnect/index.ts`, measured in `docs/providers/mtconnect.md` section 3.3) is one permit per provider instance: `limiterFor()` is called once per instance (`engineLimiter` in `src/lib/db/utils/bounded-limiter.ts`).
+So two handles on one agent, the editor and agent mode, or two connections to the same agent, read it at the same time, although the measurement that motivates the bound is about load on one agent.
+Section 3.3 and the `MTC_LIMITS` comments now say so.
+Found 2026-11-01 while verifying the MTConnect agent read.
+
+**Done when:** the limiter is keyed by the agent's base URL, so one agent serves one Studio request at a time whichever handle sends it, with a test that two providers on one URL queue behind one permit, and section 3.3 says so.
+
+### D417. The MTConnect tree labels a device's own named data item with a leading slash
+
+`listObjects` in `src/lib/db/providers/industrial/mtconnect/index.ts` names an item `${item.componentPath}/${item.name}` whenever it has a name, so an item that sits directly under the device, whose `componentPath` is empty, is labelled `/availability`; `displayName` in `model.ts` already leaves out an empty path.
+The same label reaches the agent grounding, since an agent-mode capture lists the same objects.
+Seen 2026-11-01 on the pinned `mtconnect/agent:2.8.0.4` fixture in a browser pass: the editor tree under `LIBREDB-LATHE-1722` showed `/availability`, and the agent-mode capture labelled `d1722-avail` `/availability`; pre-existing (eab62f5138).
+
+**Done when:** a device-level named item is labelled by its name alone, through `displayName`, and a provider test pins the label of a device-level and a component-level item.
+
+### D418. Four HTTP transports each keep their own bounded body reader beside the shared one
+
+`src/lib/db/http/bounded-body.ts` (`readBoundedText`) reads a response body under a byte bound for any HTTP-speaking engine, and the Trino transport reads through it.
+The libSQL (`readCappedBody` and `readCapped` in `src/lib/db/providers/sql/libsql/hrana-transport.ts`), ClickHouse (`readCappedBody` in `clickhouse/http-transport.ts`), search (`readCappedText` in `search/http-transport.ts`) and Druid (`readCapped` in `druid/http-transport.ts`) transports each still hold a reader of their own for the same job.
+Five readers of one rule can drift: a fix to how a bound is counted, how a split character decodes or how the stream is released lands in one and not the others.
+Seen 2026-11-01 when the Trino transport's bounded read was added.
+
+**Done when:** the four transports read through `readBoundedText`, their own readers are removed, and each transport's existing cap tests pass unchanged.
+
+### D419. ClickHouse's read-only path answers a `FORMAT Null` statement as an empty result
+
+`readAgentAnswer` in `src/lib/db/providers/sql/clickhouse/agent-read.ts` refuses an answer in a format the statement chose only when the transport hands back raw text, so `FORMAT TSV` is refused but `FORMAT Null`, whose answer is an empty body, passes as a success with no columns and no rows.
+Measured 2026-11-01 on 26.7.1.1315 through MCP's `run_read_query` as a least-privilege user: `SELECT count() FROM bv41.orders FORMAT Null` answered `row_count` 0 with no error, after the server had run the whole statement (`system.query_log` shows it finished), so a client reads "no rows" where the table holds 5000.
+The `FORMAT TSV` refusal, a `QueryError` thrown after the server answered, reaches an MCP client as "The database refused or failed the call:" followed by Studio's own sentence.
+The agent path reads the same function.
+Found 2026-11-01 while verifying `run_read_query` on ClickHouse; pre-existing.
+
+**Done when:** `queryReadOnly` refuses any statement-chosen `FORMAT` clause, `Null` included, in Studio's words and before the request is sent where the grammar can tell, a provider test pins `FORMAT Null` and `FORMAT TSV`, and section 5.6 of `docs/providers/clickhouse.md` says so.
+
+### D420. The libSQL agent live check passes any statement error for the statements the server refuses for every token
+
+`tests/live/libsql-agent-boundary.ts` marks `ATTACH`, `VACUUM`, `VACUUM INTO`, `ANALYZE`, `CREATE TEMP TABLE`, the three pragmas, `load_extension`, `CREATE FUNCTION ... LANGUAGE wasm` and a second statement with `refusedForEvery: true`, and passes each when the answer merely starts with `refused: `, for the read-only token through `queryReadOnly` and for the writable token in the positive control.
+So any `QueryError` or `LibSQLTransportError` that is not a 403 passes, a connection failure or a server that stopped answering included, and the check cannot tell the server's own refusal from an outage.
+`tests/live/libsql-mcp-boundary.ts` holds each of those statements to the wording `docs/providers/libsql.md` section 3.6 records (`unsupported statement`, `no such database`, `not authorized`, `more than one statement`); the agent check was not tightened with it.
+Found 2026-11-01 while verifying MCP's `run_read_query` on libSQL.
+
+**Done when:** each `refusedForEvery` entry of the agent check carries the server's own wording for its statement, the syntax error of `CREATE FUNCTION ... LANGUAGE wasm` included, both the read-only and the writable leg match on it, and a run against the three servers of section 3.6 passes.
+
+
+### D421. The Sparkplug read measures its durations with the wall clock
+
+`readOnce` in `src/lib/db/providers/industrial/sparkplug/session.ts` takes the window's start, its subscription time and its elapsed time from `Date.now()`, while the window itself is a `setTimeout` on the monotonic clock.
+A wall clock that is stepped or slewed during the window, as on a Windows runner, makes `window_ms` and `listened_ms` report a span other than the one the read listened for.
+The MQTT read had the same pattern and now takes every duration from `performance.now()`; Sparkplug's `receivedAt` and `startedAt` also feed `lastHeardAt` in `state.ts`, a wall-clock timestamp, so its change touches more than the durations.
+Found 2026-11-01 while fixing the MQTT read's window durations.
+
+**Done when:** every Sparkplug duration comes from the monotonic clock while `lastHeardAt` stays a wall-clock time, and a test that steps the wall clock back mid-read shows `window_ms` and `listened_ms` unchanged.
+
+### D422. db2-node decodes fixed-length CODEUNITS32 strings as fixed-width
+
+On Db2 12.1.0.0, `db2-node` 1.0.25 (the pin) and 1.0.27 decode a `CHAR(n CODEUNITS32)` or `GRAPHIC(n CODEUNITS32)` column with the fixed width its descriptor declares, while the server sends a 2-byte length before each value.
+A query that selects one either fails with a protocol error ("query ended with undecoded row data" or "Non-null fetch SQLDIAGGRP is not supported") or returns wrong values without an error, sometimes with fewer rows.
+Measured 2026-11-02 through 1.0.25: reading one non-NULL row of a `CHAR(5 CODEUNITS32)` or `GRAPHIC(5 CODEUNITS32)` column failed with "query ended with undecoded row data", and every row of the `CHAR(5 CODEUNITS32)` table with "Non-null fetch SQLDIAGGRP is not supported"; `GRAPHIC(1 CODEUNITS32)` answered every row with no error and `\u0001x` where `'x'` was inserted, and `GRAPHIC(10 CODEUNITS32)` beside a `NOT NULL` `INTEGER` over 3 rows answered 2 rows with shifted values; `VARCHAR`, `VARGRAPHIC` and `CODEUNITS16` `GRAPHIC` columns read exactly.
+Studio cannot work around it without parsing the wire format itself; section 4 of `docs/providers/db2.md` states it.
+Reported upstream as [gurungabit/db2-node#42](https://github.com/gurungabit/db2-node/issues/42).
+
+Found 2026-11-02 while verifying the Db2 agent and MCP read paths.
+
+**Done when:** Studio's pinned `db2-node` decodes fixed-length `CHAR(n CODEUNITS32)` and `GRAPHIC(n CODEUNITS32)` columns, with a check in `tests/live/db2-agent-boundary.ts` or `tests/live/db2-live-check.ts` that selects one of each against Db2 12.1.0.0 and compares every row and value.
+
+### D423. The Db2 compose service does not come back after a stop and a start
+
+A Db2 12.1.0.0 container started the way `database-compose.yml` starts the `db2` service (same environment, capabilities and `/var/custom` mounts, no volume for `/database`) set up its database and loaded the fixture, but after `docker stop` and `docker start` its entrypoint ran "Restoring global registry file" and "Creating instance" again, logged `SQL20427N` with `CIE0774E The DB2 Text Search configuration could not be found`, and `db2icrt` failed with `DBI1264E`, so the container exited.
+The service declares `restart: unless-stopped`, so a host reboot or a `docker compose restart` would take this path; it was measured once, on 12.1.0.0 only, and the cause is not known.
+
+Found 2026-11-02 while verifying the fix for D160.
+
+**Done when:** a stop and a start of the `db2` service, measured on 12.1.0.0 and 11.5.9.0, bring the database back with its fixture, or the compose file states why the service cannot be restarted and how to recreate it.
+
 ## Value interpolation
 
 ### V1. Query history records the placeholders, not the values that were bound
@@ -4616,6 +4683,20 @@ Db2 declares `kinds` for the same reason: RUNSTATS and REORG are refused on a vi
 Found by the acceptance pass of the vector-family work; the menu entries predate it.
 
 **Done when:** PostgreSQL and SQLite declare `kinds` on the operations their row menus offer, naming the kinds each engine runs them on, measured on a PostgreSQL materialized view and on SQLite's `ANALYZE` of a view, and a test asserts that a view's row menu offers no maintenance entry its engine would not run.
+
+### X26. The row limiter pages a statement that has its own OFFSET and no LIMIT with a second OFFSET
+
+`applyQueryLimit` in `src/lib/db/utils/query-limiter.ts` keeps a statement's own bound only when `analyzeQuery` reports a `LIMIT`, and a digit `OFFSET` with no `LIMIT` is not one, so the limiter writes its own clause after it.
+The first page is then `... OFFSET 5 LIMIT 1001`, and every later page is `... OFFSET 5 LIMIT 1001 OFFSET 1000`: two `OFFSET` clauses, and the statement's own offset left out of the page's arithmetic.
+Measured 2026-11-02 with a unit call of each provider's `prepareQuery` for `SELECT a FROM t ORDER BY a OFFSET 5` at offsets 0 and 1000.
+PostgreSQL, MySQL, SQLite, libSQL, DuckDB, ClickHouse, OpenSearch, Couchbase, InfluxDB 3, Databend, Snowflake and BigQuery reach `applyQueryLimit` and write the shape above.
+The engines with a limiter of their own write the same defect in their own words: Trino `OFFSET 5 OFFSET 1000 LIMIT 1001`, Spark `LIMIT 1001 OFFSET 1000 OFFSET 5`, and SQL Server, Oracle and Db2 `OFFSET 5 OFFSET 1000 ROWS FETCH NEXT 1001 ROWS ONLY`.
+Elasticsearch refuses an offset outright and Druid writes no bound on this statement.
+Because the provider reports `wasLimited`, MCP's `run_read_query` serves the first page and names a `nextOffset`, and the call with that offset fails with the engine's syntax error; measured on Couchbase Server 8.0.2.
+The editor's next-page request sends its offset through the same `prepareQuery`.
+Found 2026-11-02 while verifying `run_read_query` on Couchbase.
+
+**Done when:** on every limiter that writes a page, a statement that carries its own offset and no limit is either paged with the two offsets added into one clause or kept as its own bound (nothing written, `wasLimited` false, so `run_read_query` names no next offset and answers an offset with its own-bound sentence), with a unit test per limiter on `OFFSET 5` at offsets 0 and 1000 and a `run_read_query` handler test that no `nextOffset` it names leads to a refused call.
 
 ---
 
@@ -6092,6 +6173,7 @@ No sentence says which read was refused or which privileges are missing, though 
 A user who sees it cannot tell a missing privilege from a fault, and nothing on screen points at the fix.
 Seen 2026-10-29 on OpenSearch 3.8.0 in a browser pass, signed in with a user holding the agent role alone.
 Elasticsearch grounds plan mode through the same object surface, so it likely shows the same; that was reasoned from the code, not measured.
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: every Sparkplug agent and plan run shows "Schema not captured" with the bare `CATALOG_READ_REFUSED` under Run setup, although no read was sent or refused: an agent-mode handle declares no container level and no kind, so there is nothing to list (`docs/providers/sparkplug.md` section 14.3), and the code reads as a refusal (for example `arun_24dc6dfc3232476a97258ad75f31a57c`).
 
 **Done when:** a refused plan-mode catalog read shows a sentence in the rail that names the read that was refused and, where the engine's refusal says so, the privilege it lacked, with the code kept beside it; the sentence comes from the shared refusal path, not a type-id branch; and a component test pins the rail text for a `CATALOG_READ_REFUSED` run.
 
@@ -6118,6 +6200,7 @@ An agent statement the provider refuses before it is sent, such as Oracle's `SEL
 Seen 2026-10-29 on Oracle 26ai Free in a browser pass.
 Seen again 2026-10-30 on Couchbase enterprise-8.0.2 in a browser pass: a forced `DELETE`, `UPDATE`, `UPDATE STATISTICS` and `BEGIN WORK` each showed "Refused by policy" over the bare code, though the statement fence (`couchbaseAgentStatementRefusal`) refuses with a sentence of its own.
 Seen again 2026-10-30 on Apache Druid 37.0.0 in a browser pass: a forced `INSERT`, `REPLACE ... OVERWRITE ALL` and `SET engine = 'msq-task'; SELECT ...` each showed "Refused by policy" over the bare code; the shared statement guard (`inspectAgentStatement` in `src/lib/db/operations/statement-guard.ts`) refused them at the policy stage, before the Druid fence was reached.
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass: on the `read-only` coordinator a forced `INSERT`, `CALL pg.system.execute(...)`, `SET SESSION`, `COMMIT`, `START TRANSACTION`, `SELECT 1 AS a; DELETE ...`, `CREATE TABLE ... AS` and `SHOW TABLES` each showed "Refused by policy" over the bare code; the shared statement guard refused them at the policy stage, before the Trino fence (`trinoAgentStatementRefusal` in `src/lib/db/providers/sql/trino/agent-boundary.ts`) was reached (runs `arun_d444a49eace54b5a9458465176e9652a`, `arun_9833c42db41f4d02b2c4833f73e28699`).
 
 **Done when:** the rail shows the refusal's sentence with the code beside it, and a component test pins it.
 
@@ -6138,6 +6221,7 @@ And Studio does read the statement first: a forced `UPDATE` on Db2 and a `SELECT
 Seen 2026-10-29 in browser passes on Db2 12.1 and Oracle 26ai.
 Seen again 2026-10-30 on Couchbase enterprise-8.0.2, where the copy is shown unchanged: the boundary there is a user holding only `query_select` on named scopes, checked before every statement, and the statement fence refused four forced statements before they were sent; the consent panel's "same database-enforced read-only session either way" is false there too, since an editor run on that connection has no read-only session.
 Seen again 2026-10-30 on Apache Druid 37.0.0, copy unchanged: there is no read-only session either, the boundary is the native engine checked before every statement (`docs/providers/druid.md` section 15), the shared statement guard refused three forced writes before they were sent, and the header's "200 rows ... enforced by the engine" is not so on Druid, where no row bound is sent and the rows are counted by Studio after a byte-capped read (section 15.3).
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass, copy unchanged: the boundary is the server's read-only access control (`access-control.name=read-only`), proved before every statement, and each statement runs in a read-only transaction Studio opens and rolls back (`docs/providers/trino.md` section 15); the shared statement guard refused seven forced statements and the Trino fence three more before they were sent, so the statement is read first; and the consent panel's "same database-enforced read-only session either way" is false there, since an editor run opens no read-only transaction (an editor `CREATE TABLE ... AS` on the `read-only` coordinator was refused by the access control, and on the `allow-all` one it ran).
 
 **Done when:** the copy states the boundary each engine actually has, from a per-engine row rather than a type-id branch, says that Studio's own admission refuses a statement first and the engine refuses what passes it, and a component test pins the text for a session-enforced engine and a credential-enforced one.
 
@@ -6171,6 +6255,12 @@ Seen again 2026-10-31 on S3 (Silo `RELEASE.2026-09-16T00-00-00Z`) in a browser p
 Seen again 2026-10-31 on Firestore (emulator `cloud-firestore-emulator` 1.22.0) in a browser pass, three times: a run asked to pass `listDocuments()`, a document query, a filtered, an ordered and a limited count, a sum, an average, `findNearest`, `explain()` and `getAll` to `run_read_query` had each refused before anything was sent (`STATEMENT_NOT_ADMITTED`) and finished `answered` with one named document's times and the schema inventory and no word of the ten refusals (run `arun_dcfb2aeecfa44152987451deb6088471`); a run asked for an exact `set`, and one asked for an `update`, a `delete`, an `add`, a transaction, a batch commit and a `recursiveDelete`, had each refused the same way and finished `answered` with the schema inventory alone (runs `arun_5010ac7af4e141309799a258eac0f295`, `arun_288f56c17baf4850b422c0f4c2d5e9f5`).
 
 Seen again 2026-10-31 on Modbus (pymodbus 3.12.1, the pinned `docker/modbus` image) in a browser pass, twice: runs asked to pass a write value, function codes 6, 16, 5, 15, 22, 23, 8, 20 and 21, a broadcast to unit 0, an address past 65535, 126 registers, 2001 coils, a block past the end of the table, a point the map does not name and a request of two shapes to `run_read_query` had each refused before anything was sent (`STATEMENT_NOT_ADMITTED`) and finished `answered` with one claim about the schema inventory and no word of the refusals; the second run's `compose_report` was declined once with `UNVERIFIABLE_EVIDENCE` (runs `arun_42ec8a779aeb46aebc1b6a09d01f94d2`, `arun_4b8655e77e344804995cb0e1b236e1f3`); the device's registers and coils hashed the same before and after.
+Seen again 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: a run asked to pass an exact `write`, `call` and `subscribe` request to `run_read_query` had each refused before anything was sent, then read the two values it was asked to change and finished `answered` with those two values and no word of the three refusals (run `arun_f89f4e62db3444b6a8b8560edbc68235`); the values read the same raw before and after.
+Seen again 2026-11-01 on MTConnect (`mtconnect/agent:2.8.0.4` by digest) in a browser pass, three times: runs asked to pass an exact `PUT`, `POST`, `/cancel/id=1`, `interval`, `heartbeat` and `frequency` request, a two-line request, `/swagger`, `/sample?count=201` and a path value the model does not answer had each refused before the request was sent and finished `answered` with claims about other reads or the schema inventory and no word of the refusals (runs `arun_51bce412585843c5b5f8394de95f07da`, `arun_195cd0b4872848baa125367eefaebade`, `arun_716cebcbbcf44d539bfb45480384f15e`); the agent's program value and asset count read the same raw before and after.
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: a run on EMQX asked to subscribe to `homes/+/door`, read `$SYS/brokers`, read through `$share/g/#`, find the topics under a prefix, publish and set a will had each refused before anything was sent (`STATEMENT_NOT_ADMITTED`); its first report was declined (`UNVERIFIABLE_EVIDENCE`), so it read `plant/line1/temperature` to have something to cite and finished `answered` with that one claim and no word of the six refusals (run `arun_dfdb9d11fd2d4479b4b811a5366ab070`); the same request on Mosquitto did report them (run `arun_35503089c1eb4c60a34154c993159f59`).
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: a run asked to send fifteen exact requests, including a group list, a metric value, a wildcard, `$share`, `STATE`, `$sparkplug`, a rebirth, `NCMD`, `DCMD`, a publish and a will, drafted none of them and answered with four reads of its own and no word of the fifteen (run `arun_e8798c30829a429cbbaa2aab173dafd1`); two later runs sent eight and six such requests, each refused before anything was sent, and both answered with the window's totals and no word of the refusals (runs `arun_bf3ac88953e6487ba14cc3bc8477d254`, `arun_f386eab72fcd4ae9999f3dfec31c9ed3`).
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass, three times: on the `read-only` coordinator a run asked to pass `INSERT`, `CALL`, `SET SESSION`, `COMMIT`, `START TRANSACTION`, a two-statement form and `CREATE TABLE ... AS` had each refused before anything was sent (`INPUT_VALIDATION_FAILED`), and a run asked for `VALUES`, `SHOW TABLES`, `TABLE`, `EXPLAIN` and a parenthesized `SELECT` had four refused before anything was sent and the fifth refused for an exhausted repair budget; on the `read-only-file` coordinator a run asked for a pass-through dblink write had it refused by the server (`Access Denied: Cannot execute function pg.system.query`); each finished `answered` with one claim about the schema inventory and no word of the refusals (runs `arun_d444a49eace54b5a9458465176e9652a`, `arun_9833c42db41f4d02b2c4833f73e28699`, `arun_721939f2fa664f528fae6eed2230baf0`); every PostgreSQL table hashed the same before and after.
+
 **Done when:** a run whose only drafted statement was refused either reports that refusal in its answer, held by the run's verifier, or ends in a state other than `answered`, with an agent test that forces the refusal.
 
 ### U158. On the dev server the login form submitted as a GET on `127.0.0.1`
@@ -6196,6 +6286,11 @@ Seen again 2026-10-31 on NETCONF (Netopeer2 2.8.7, the `docker/netconf` image) i
 
 Seen again 2026-10-31 on Modbus (pymodbus 3.12.1, the pinned `docker/modbus` image) in a browser pass: on an agent-mode handle the provider answers the overview, performance, session, slow-query, table, index and storage readings with its own reason before anything is sent (`MODBUS_AGENT_WITHHELD` in `src/lib/db/providers/industrial/modbus/agent-surface.ts`, thrown as a `QueryError`); an Operate run took the session, slow-query and storage readings, each was recorded `class: "database-error"` and headed "The database refused the statement", and the three spent the run's repair attempts, so the next two readings were refused with `REPAIR_BUDGET_EXHAUSTED` (run `arun_d3b3e98e21bd4ebbaba7ebe000b8cba0`).
 Seen again 2026-10-31 on Prometheus 3.13.3 (prom/prometheus by digest) in a browser pass: on an agent-mode handle the provider answers the session, slow-query and index readings with its own reason before anything is sent (`PROMETHEUS_AGENT_WITHHELD` in `src/lib/db/providers/timeseries/prometheus/agent-surface.ts`, thrown as a `QueryError`); an Operate run took all three after the health, storage and table readings, and each was recorded `class: "database-error"` and headed "The database refused the statement" over Studio's sentence (run `arun_dbdca7a2f72f46148887e45dfef89557`).
+Seen again 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: an Operate run's sessions, health and slow-query panels were each declined by the provider on its agent-mode handle with its own reason (`OPCUA_AGENT_WITHHELD` in `src/lib/db/providers/industrial/opcua/agent-surface.ts`), never a connection failure, yet each was headed "The database refused the statement", the three spent the run's repair attempts, the next three calls were refused with "This run has used all of its repair attempts", and the run ended without a report (run `arun_50b04d75776a4ff0a5f1cf61646745fc`); each reason also opens by naming `run_read_query`, which the operations workflow does not hold.
+Seen again 2026-11-01 on MTConnect (`mtconnect/agent:2.8.0.4` by digest) in a browser pass: an Operate run's health, sessions and slow-query readings were each declined by the provider on its agent-mode handle with its own reason (`MTCONNECT_AGENT_WITHHELD` in `src/lib/db/providers/industrial/mtconnect/agent-surface.ts`), never a connection failure, yet each was recorded `class: "database-error"` and headed "The database refused the statement", the three spent the run's repair attempts, the next three calls were refused with `REPAIR_BUDGET_EXHAUSTED`, and the run ended `unanswered` with `no-reading` (run `arun_543d203761a54c549a6c99e8ec4eeeff`); each reason also opens by naming `run_read_query`.
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: an Operate run's health, sessions and slow-query readings were each declined by the provider on its agent-mode handle with its own reason (`MQTT_AGENT_WITHHELD` in `src/lib/db/providers/keyvalue/mqtt/agent-surface.ts`), never a connection failure, yet each was recorded `class: "database-error"` and headed "The database refused the statement", the three spent the run's repair attempts, the next three calls were refused with `REPAIR_BUDGET_EXHAUSTED`, and the run ended unanswered (run `arun_96ea042e924341f28db46e384fe19d0d`).
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: an Operate run's health, sessions and slow-query readings were each declined by the provider on its agent-mode handle with its own reason (`SPARKPLUG_AGENT_WITHHELD` in `src/lib/db/providers/industrial/sparkplug/agent-surface.ts`), yet each was recorded `class: "database-error"` and headed "The database refused the statement", the three spent the run's repair attempts, the next three were refused with `REPAIR_BUDGET_EXHAUSTED`, every report was declined `UNVERIFIABLE_EVIDENCE`, and the run ended unanswered (run `arun_e2680f7a67174a4aa7609bb28e50d013`).
+
 **Done when:** a panel the provider declines without sending a statement is recorded as not sent and headed "Refused before the database" with the provider's sentence as the detail, it does not count as a repair attempt, and a timeline test and an agent test pin both.
 
 ### U160. A run whose goal verdict is unanswered heads its report "Answer" with a "succeeded" pill
@@ -6237,6 +6332,10 @@ Seen again 2026-10-31 on NETCONF (Netopeer2 2.8.7, the `docker/netconf` image) i
 
 Seen again 2026-10-31 on Modbus (pymodbus 3.12.1, the pinned `docker/modbus` image) in a browser pass: the picker offered Optimize, Assess and Analyze, which the `modbusread` family does not offer (`docs/providers/modbus.md` section 8.5), and Optimize was refused with the same sentence although investigation runs there.
 Seen again 2026-10-31 on Prometheus 3.13.3 (prom/prometheus by digest) in a browser pass: the picker offered Optimize and Assess, which the `promql` family does not offer (`docs/providers/prometheus.md` section 14.5), and Optimize was refused with the same sentence although investigation and data analysis run there.
+Seen again 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: the picker offered Optimize, Assess and Analyze, which the `opcuaread` family does not offer (`docs/providers/opcua.md` section 14.5).
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: the picker offered Optimize, Assess and Analyze, which the `mqttread` family does not offer (`docs/providers/mqtt.md` section 14.4), and Optimize was refused with the same sentence although investigation runs there.
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: the picker offered Optimize, Assess and Analyze, which the `sparkplugread` family does not offer (`docs/providers/sparkplug.md` section 14.4), and Optimize was refused with "The operations workflow runs here, and plan mode drafts here." although investigation runs there.
+
 **Done when:** the refusal names the workflows the connection's statement language does offer, read from `AGENT_WORKFLOW_VARIANTS` rather than fixed text, the picker marks or hides a workflow that language has no variant for, and a test pins the sentence for `libredbkv`.
 
 ### U163. A refused run start announces the previous conversation as ended by a page reload
@@ -6250,6 +6349,7 @@ Seen again 2026-10-30 on Neo4j Enterprise 5.26.31, after the Optimize refusal (U
 Seen again 2026-10-30 on etcd v3.7.2, after the Optimize refusal (U162).
 Seen again 2026-10-31 on RabbitMQ 4.3.6, after the Analyze refusal (U162).
 Seen again 2026-10-31 on SNMP (Net-SNMP snmpd 5.9.4), after the Optimize refusal (U162).
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 by digest), after the Optimize refusal (U162).
 
 **Done when:** a refused start does not announce the stored conversation as ended by a reload (it keeps the conversation, or says the start was refused), with a hook test that refuses a start after a finished run.
 
@@ -6265,6 +6365,7 @@ Seen again 2026-10-30 on Qdrant 1.19.1 in a browser pass: a connection with no k
 Seen again 2026-10-30 on Milvus 3.0.2 in a browser pass: a user on a server with `authorizationEnabled: false` was refused at open with the same sentence naming MongoDB's `security.authorization`, where the setting is Milvus's `common.security.authorizationEnabled`; the provider's own sentence, "Milvus answered this user the list of users, which it refuses every read-only user while authorization is on ... Turn authorization on, then give the agent a read-only user", reached only the server log (run `arun_608f660dbe654134b0a4e087cc7912e7`).
 Seen again 2026-10-30 on Redis 8.10.2 and Valkey 9.1.2 in a browser pass: a connection naming no user was refused before any socket, yet the rail named MongoDB's setting and the ledger's detail said "The server accepted a write it should have refused", though nothing was sent; the provider's sentence, which asks for an ACL user of the agent's own with `~*` and `+@read`, reached only the server log (runs `arun_6454fe4c64114120aefc7bb5f776d46d`, `arun_0ce4e95c4ef14eea8a63467d5be16240`).
 Seen again 2026-10-30 on etcd v3.7.2 in a browser pass: a connection naming no user to a server with authentication off was refused before any socket, yet the rail named MongoDB's setting, where the setting is etcd's `auth enable`; the provider's sentence, which asks for an etcd user of the agent's own whose roles grant READ permissions only, reached only the server log (run `arun_ac5d4d444a02498d85d010087bed37d6`).
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass: on the `allow-all` coordinator (no access control configured) and the `file-nofn` one (`access-control.name=file` granting no function), an agent run was refused when its first statement opened the read-only handle, with the same sentence naming MongoDB's `security.authorization`, where the setting is Trino's `access-control.name=read-only`; the provider's sentence, which names that setting, quotes the server's `PROCEDURE_NOT_FOUND` answer to the table procedure probe and says the check ran nothing, reached only the server log (runs `arun_acaedd6313ac46cd9daaced88a424f6a`, `arun_e80a223546274d76bf52027765a9b3e7`); plan mode grounded on both.
 
 **Done when:** a refusal at open shows the provider's own sentence, or a per-engine remedy read from a contract row rather than a type-id branch, the rail no longer tells a keyless connection that its server does not enforce authorization, and a timeline test pins both Weaviate cases.
 
@@ -6294,6 +6395,13 @@ Seen again 2026-10-31 on NETCONF (Netopeer2 2.8.7, the `docker/netconf` image) i
 
 Seen again 2026-10-31 on Modbus (the single-client libmodbus device built from `tests/fixtures/modbus/2.3.0/agent-boundary/single-client/`) in a browser pass: a points read that would pass the run's 64 device requests is refused by Studio before anything is sent (`MODBUS_AGENT_FAILURE_SENTENCES.requestBound` in `src/lib/db/providers/industrial/modbus/agent-read.ts`, a `RefusedBeforeSendError`), and the rail headed it "Refused before the database" over Studio's sentence, yet the ledger recorded it `class: "database-error"`, which spends a repair attempt (run `arun_40f9c0fbd47b4345b4362e2de3103189`).
 Seen again 2026-10-31 on Prometheus 3.13.3 (prom/prometheus by digest) in a browser pass: `prometheus_http_requests_total[1m]`, a matrix of 1536 samples past the 200-row budget, is refused by Studio and never cut (`docs/providers/prometheus.md` section 14.2), yet the ledger recorded it `class: "database-error"` and the rail headed it "The database refused the statement" over Studio's own sentence ("Read-only execution exceeded the row budget: 1536 rows > 200 allowed") (run `arun_d41617c1ac0446f8a248d6a2d8343e81`).
+Seen again 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: `{"history": "ns=3;s=HistorianInt32"}` with no limit and with a limit of 5000, past the 200-row budget, is refused by Studio after 201 values and never cut, and a value read naming an `nsu=` URI the server's NamespaceArray does not hold is refused by Studio after the one Read of that table (`docs/providers/opcua.md` section 14.2), yet the rail headed each "The database refused the statement" (runs `arun_efdfdd1cb5ed4c5d934925da68ba72e0`, `arun_ac9540aa7a004b3497b708bba1b4541b`).
+Seen again 2026-11-01 on MTConnect (`mtconnect/agent:2.8.0.4` by digest) in a browser pass: a path whose `@type` or `@id` value no answered data item holds is refused by Studio after the one `GET /probe` and before the request (`docs/providers/mtconnect.md` section 14.2), yet the ledger recorded it `class: "database-error"` and the rail headed it "The database refused the statement" over Studio's sentence (run `arun_27bf19382b8c4dbf88bed90ff1375e47`); and `/sample?count=201`, past the 200-row budget, passes the run's admission (whose row cap is 10,000) and is refused by the provider's guard before anything is sent, so the rail headed it "Refused before the database" while the ledger recorded `class: "database-error"`, which spends a repair attempt (run `arun_195cd0b4872848baa125367eefaebade`).
+Measured again 2026-11-01 on MQTT (Mosquitto 2.1.2 by digest) through the provider outside the browser: an agent read given 1,000 or 3,999 ms is refused by Studio with a `RefusedBeforeSendError` ("... needs at least 4,000 ms with the dial ... A window is never shortened, so nothing was sent.") and opens no session, while 4,000 ms reads; the `ownRefusal` branch in `src/lib/agent/tools.ts` records that error `class: "database-error"` with `sent: false` and charges a repair attempt, as for Modbus.
+A run never reached the short budget in the browser pass, since the model stopped before the run's deadline.
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: an exact read naming a group other than the one the connection's Database field names is refused by Studio before anything is sent (`OUTSIDE_GROUP` in `src/lib/db/providers/industrial/sparkplug/index.ts`, a `RefusedBeforeSendError`), and the rail headed it "Refused before the database", yet the ledger recorded it `class: "database-error"`, which spends a repair attempt (run `arun_f386eab72fcd4ae9999f3dfec31c9ed3`); measured through the provider outside the browser, an agent read given 1,000 or 3,999 ms is refused the same way ("... needs at least 4,000 ms ... A window is never shortened, so nothing was sent.") and 4,000 ms reads.
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass: `VALUES (1)`, `TABLE pg.public.rp_t` and `EXPLAIN SELECT 1`, each refused by the Trino fence before anything was sent (`trinoAgentStatementRefusal`, a `RefusedBeforeSendError`), were headed "Refused before the database" yet recorded `class: "database-error"`, so the three spent the run's repair attempts and the next statement was refused with "This run has used all of its repair attempts" (run `arun_9833c42db41f4d02b2c4833f73e28699`); and a result past the row budget (5000 rows > 200) and one past the byte budget (451243 bytes > 262144), each refused by Studio and cancelled on the cluster, never cut, were headed "The database refused the statement" over Studio's own sentence and recorded `class: "database-error"` (run `arun_9fc772e2c99549519cd41fb5ec787b20`).
+
 **Done when:** a tenant refusal Studio makes is recorded and headed as refused before the read it guards, with the provider's sentence as the detail, it does not count as a repair attempt, and an agent test pins both.
 
 ### U167. Qdrant's console calls `GET /snapshots` a snapshot create, delete, download, upload or recover route
@@ -6352,6 +6460,7 @@ Seen 2026-10-30 on Redis 8.10.2 and Valkey 9.1.2 in a browser pass, for `~* +@re
 When the provider refuses to open the connection with a `DatabaseConfigError`, a sentence written for the user, the drive classifies the failure as `internal` (`src/lib/agent/runtime.ts`) and the rail shows "The server could not carry this run. The reason is in the server log." (`src/components/agent/timeline.ts`), so the repair reaches only the server log.
 On an etcd connection with a User and Password to a server with authentication off, the server log read "Authentication is not enabled on this etcd, so the User and Password would not be used. Clear them to connect.", and the run drafted `endpoint status` before it failed.
 Seen 2026-10-30 on etcd v3.7.2 in a browser pass (run `arun_d1fb9b4d1afc4613b904c062263d3123`); the classification is not engine-specific, so any provider's configuration refusal at open shows the same.
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: a TLS connection whose CA did not sign the broker's certificate, and one to a port nothing listens on, both drafted `{"read":"window"}` and then failed `internal` with "The server could not carry this run", since grounding sends nothing on this engine and the first connect is the read-only profile's handshake; the `ConnectionError` it raised ("... presented a certificate Studio does not trust for this host ...") reached only the server log, and agent mode's own failure sentences for an untrusted certificate and an unreachable broker (`failedOutcome` in `src/lib/db/providers/industrial/sparkplug/agent-read.ts`) were never reached (runs `arun_111dd14568964bbd8ad5ab154c6c391d`, `arun_52873c5da53c4de4b1f354e2fc4f848c`); that is a `ConnectionError` at acquisition rather than a `DatabaseConfigError`.
 
 **Done when:** a configuration error raised while the run opens its connection reaches the rail as its own sentence under a reason of its own rather than `internal`, from the error class and not a type-id branch, with a timeline test and an agent runtime test that raise a `DatabaseConfigError` at acquisition.
 
@@ -6401,6 +6510,9 @@ Applied and run, the editor answers "shards is not a command Studio runs on Oxia
 The other two agent reads, `get <key>` and `list`, run in the editor, where `list` lists the key names agent mode withholds; that is the editor's path and expected.
 Seen 2026-10-31 on Oxia 0.18.0 in a browser pass (runs `arun_ad725d1c2ca14394983f955398cc9d4f`, `arun_a281c29cd2bd481e91b49ffae2008dcf`).
 Seen again 2026-10-31 on SNMP (Net-SNMP snmpd 5.9.4, the `docker/snmp` image) in a browser pass: a plan-mode Operate run drafted seven Net-SNMP tool commands such as `snmpwalk $SNMP_OPTS "$AGENT" .1.3.6.1.2.1.2.2.1.7` (U186), offered with Apply to editor, and the editor refused one when run: "`snmpwalk` is not a command: this provider reads with get, next, walk and table" (run `arun_4994c20824f344fe9cccecbe213b59d4`); the plan-mode investigation draft `table ifEntry` applied and ran.
+Seen again 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: every `{"browse": "<node id>"}` an investigation drafted carried Apply to editor, and the editor answers it "A request names \"read\" or \"history\", and this names \"browse\".", since the browse is agent mode's own read (`docs/providers/opcua.md` section 14.2); the value and history reads run there.
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: every `{"read": ...}` request an investigation drafted carried Apply to editor, although the posture says "Nothing reaches your editor"; applied and run, the editor answers "This version reads a broker through the Keys panel. There is no query text to send: MQTT has no query language, and no command that lists topics." (run `arun_f8af378d4be844f4a17464430cbc944c`).
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: every `{"read": ...}` request an investigation drafted carried Apply to editor, although the posture says "Nothing reaches your editor"; applied and run, the editor answers "\"read\" is not a field of a Sparkplug read. The fields are: group, edgeNode, device, seconds, limit, includeBirths." (run `arun_6e25021a447e43e7aae6c869e1839f43`).
 
 **Done when:** Apply to editor is offered only for a drafted statement the connection's editor grammar admits, or says why it is not, decided from the provider's editor parser or a contract row and not a type-id branch, with an AgentRail test on an Oxia `shards` step.
 
@@ -6431,6 +6543,7 @@ Two Operate runs answered "At the time of this reading, the engine reported zero
 Seen 2026-10-31 on RabbitMQ 4.3.6 in a browser pass (runs `arun_509c4fc718744d4ba56ffc48abfd3052`, `arun_56ed2b0f38f7417287484281f6b1a775`); not checked on other providers whose panels answer empty by design.
 D39 is the same gap for a slow-query source that could not be read.
 Apache Kafka's agent-mode handle does not have this shape: its overview, storage, session, slow-query, table and index readings answer their reason, which the model reads as a refusal rather than an empty reading (`docs/providers/kafka.md` section 15.3).
+Seen again 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the coordinators of `tests/fixtures/trino/476/agent-boundary/run.sh up`) in a browser pass: the index reading answers empty with no statement sent (`getIndexStats` in `src/lib/db/providers/sql/trino/introspect.ts`, since `information_schema` publishes no index view), yet `inspect_operations` stored it as a 0-row artifact in 0 ms under the same caption, and the Operate run answered "The index-statistics reading was empty (zero rows), so it reported no index usage or sizes in this reading." (run `arun_6c40df981f50417182fb0e21614db69e`).
 
 **Done when:** a reading the provider answers without asking the engine reaches the model and the rail marked as not read, with the provider's reason, decided from a provider capability rather than a type-id branch, and an operations test pins what the model's tool result says for such a reading.
 
@@ -6489,6 +6602,8 @@ Seen 2026-10-31 on SNMP (Net-SNMP snmpd 5.9.4, the `docker/snmp` image) in a bro
 On SNMP that label is where plan mode learns there is no Net-SNMP tool syntax and that the security and target modules are never drafted, and `docs/providers/snmp.md` section 13.3 says the withheld modules' reason reaches plan mode through it.
 A plan-mode Operate run asked for interfaces, uptime, contact, the VACM access groups and the community table drafted seven `snmpwalk $SNMP_OPTS "$AGENT" ...` and `snmpget ...` commands, three of them into `SNMP-VIEW-BASED-ACM-MIB` (1.3.6.1.6.3.16) and `SNMP-COMMUNITY-MIB` (1.3.6.1.6.3.18), and said only that the community table "can be sensitive"; the same request on the investigation workflow drafted nothing and named both modules as withheld.
 Seen 2026-10-31 on SNMP (Net-SNMP snmpd 5.9.4, the `docker/snmp` image) in a browser pass (runs `arun_4994c20824f344fe9cccecbe213b59d4`, `arun_7514a255d5674b088901a7c7141da6c8`); nothing was executed, and the editor refuses `snmpwalk` (U177). Not checked on other engines that declare a `statementLanguage`.
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: a plan-mode investigation, whose deliverable on `mqttread` is prose, was told neither the statement language nor the two reads agent mode sends, so both plans proposed reading the broker's own monitoring telemetry and spoke of "database objects", where agent mode reads the window and the named topic and never `$SYS` (runs `arun_4e84adc61992423897822be5c8dfbaf5`, `arun_a45fca0c20d84540a607d9f84c9950eb`).
+Seen again 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass: two plan-mode investigations, whose deliverable on `sparkplugread` is prose, were told the capture's sentence and plan mode's own ungrounded rules but neither the four reads nor the `sparkplugread` grounding note, so the plans proposed reading "engine-reported received-message history" and "the latest valid device inventory", which no Sparkplug read offers, and said no request could be drafted because no read syntax was established (runs `arun_b20e6db78c444b2387ca7d2f0c248a9f`, `arun_24dc6dfc3232476a97258ad75f31a57c`); `docs/providers/mqtt.md` section 14.3 still says plan-mode grounding is told why no topic is listed, which holds for the investigation only.
 
 **Done when:** a plan-mode run of a prose deliverable is told the engine's `statementLanguage` wherever it declares one, or the section 13.3 claim is narrowed to the investigation workflow, with a plan-prompt test on an operations run for an engine that declares a label.
 
@@ -6509,6 +6624,7 @@ The grounding a run reads opens "Schema inventory for this run ... 9 table(s) re
 A model repeated it: "The schema inventory names unit 1 holding-register entries including 1.hr0 ... and reports no columns derivable from their stored definitions."
 Seen 2026-10-31 on Modbus (pymodbus 3.12.1, the pinned `docker/modbus` image, and the single-client libmodbus device) in a browser pass (runs `arun_9ca0a6b938724f46a52986272efdf724`, `arun_86493ebf47b74dc09f93084b9b6bf21b`, `arun_94b8f6972b6145a5a9886483953cdd53`).
 `entityName` also labels the editor's object panel, so declaring it is a decision about both surfaces.
+Seen again 2026-11-01 on MTConnect (`mtconnect/agent:2.8.0.4` by digest) in a browser pass: the provider declares no `entityName` either, so the sixteen data items and conditions of an agent-mode capture read "Schema snapshot ctx_a3e4 · 16 tables" in the rail and "16 tables read" in a plan answer, and an Operate answer said the inventory "describes 16 tables and lists table names and indexes only" (runs `arun_543d203761a54c549a6c99e8ec4eeeff`, `arun_786fcaed52cd4e0fadb50a49fe57c417`).
 
 **Done when:** a Modbus run's grounding and rail count register map points as points, the column line is not said of a point, the noun comes from the provider's own declaration rather than a type-id branch, and a context-snapshot test pins the grounding of a Modbus capture.
 
@@ -6519,6 +6635,65 @@ Asked to decode the eight words of a planted `VALMARK-5dec470b` high byte first,
 Seen 2026-10-31 on Modbus (pymodbus 3.12.1, the pinned `docker/modbus` image) in a browser pass.
 
 **Done when:** a point of type `string` is answered as text under the rule identification objects follow (text only when its bytes round-trip as text with no control byte, hex otherwise), in the console and in agent mode, with a read test on a string point that holds a control byte.
+
+### U191. An agent run on a connection whose one object kind only the Keys panel lists is told the provider declares no object kinds
+
+`captureFromProvider` in `src/lib/agent/context-snapshot.ts` answers an `"unsupported"` inventory read with "This server has no inventory to read for a ${type} connection: the provider declares no object kinds, so there is nothing to list."
+`readObjectInventoryForGrounding` (`src/lib/agent/tools.ts`) returns `"unsupported"` when `enumerableKinds` is empty, which is also the case for an engine that declares a kind only the Keys panel enumerates, such as OPC UA's `node` (`objectKinds: OPCUA_OBJECT_KIND_SPECS` in `src/lib/db/providers/industrial/opcua/capabilities.ts`), so the run and the trace are told a fact about the provider that is not true, and the article is fixed to "a", giving "a opcua connection".
+Seen 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: every agent and plan run recorded `context-unavailable` with that sentence (for example `arun_81f972661252411fb53cb2572af14ae9`).
+Seen again 2026-11-01 on MQTT (Mosquitto 2.1.2 and EMQX 5.8.9 by digest) in a browser pass: every agent and plan run recorded `context-unavailable` with "This server has no inventory to read for a mqtt connection: the provider declares no object kinds, so there is nothing to list.", although the provider declares the `topic` kind, which only the Keys panel lists (for example `arun_4e622b68b80b4231854a6849564cb19e`); the `mqttread` grounding note that follows it gives the true reason.
+
+**Done when:** the sentence says the provider declares no kind the object surface lists (naming the Keys panel where a kind is enumerated there) and reads correctly for every type id, with a context-snapshot test for an engine with a Keys-only kind and one with none.
+
+### U192. A plan draft nothing checked is told "What was checked is what this run read of the schema"
+
+`GuardLine` in `src/components/agent/AnswerCard.tsx` always appends `EXECUTION_CAVEAT`, "The run executed nothing. What was checked is what this run read of the schema, which records what exists rather than what your role is permitted to read.", including beside `NAMES_UNREAD_NOTE` and `NO_INVENTORY_NOTE`, which say that nothing checked the names.
+So the same popover says the names were not checked and that a check was made against a schema the run read; on an engine with no inventory, the run read no schema at all.
+Seen 2026-11-01 on OPC UA (OPC PLC 2.15.10 by digest) in a browser pass: a plan draft of `{"read": [...]}` showed "not checked", "The names in this statement were not checked" and the caveat together (run `arun_95edee7dbf9c461cb477b624c9a72525`).
+Seen again 2026-11-01 on MTConnect (`mtconnect/agent:2.8.0.4` by digest) in a browser pass: a plan draft of `/LIBREDB-LATHE-1722/sample?count=-20&path=//DataItem[@id="x1722-pos"]` showed the same three together (run `arun_786fcaed52cd4e0fadb50a49fe57c417`).
+
+**Done when:** the caveat's second sentence is said only where the names were checked against an inventory, and a component test pins the popover for a checked, an unread and a no-inventory draft.
+
+### U193. The rail never shows a read's own warnings, so Sparkplug's window and completeness sentences reach the user only in the model's words
+
+A Sparkplug agent read answers one row and carries its account of the window as warnings: how long it listened to what, why it stopped and what it counted, on an exact read that `last_seen_ms` is the last message's, and the completeness sentence that an edge node or device not seen may still exist (`sparkplugAgentResult` in `src/lib/db/providers/industrial/sparkplug/agent-read.ts`, `docs/providers/sparkplug.md` section 14.3).
+The rail shows each read as "Result stored" with its row and column counts only (the `tool-completed` summary holds `rowCount`, `columnNames` and `elapsedMs`), and its rows are released when the run ends, so none of those sentences is on screen; the user reads them only where the model repeats them.
+In the pass the models repeated the window in most claims but never the completeness sentence itself, writing "not a complete plant inventory" or "not its current online status" instead, and a run asked for every column answered six raw JSON rows with no window sentence and no completeness sentence at all (run `arun_4b7ec068e3ca4ed4a22c09b9760cdfb6`); and a scoped connection's answer called its window "whole-connection" where the read's own sentence says it listened to the one group the connection names (run `arun_10eee9484ac449bcbca303e8b7a45e20`).
+Seen 2026-11-01 on Sparkplug B (Mosquitto 2.0.22 and EMQX 5.8.9 by digest, the fixture's publisher) in a browser pass; MQTT's agent reads carry their window and last-message sentences the same way (`docs/providers/mqtt.md` section 14), not checked in the rail there.
+
+**Done when:** a read's warnings reach the rail beside its stored result, or the report verifier holds a claim cited to an artifact whose warnings carry a completeness sentence to that sentence, decided from the artifact and not a type-id branch, with a timeline test on a Sparkplug read's warnings.
+
+### U194. An `inspect_plan` call on an engine that composes no estimating plan shows the bare code `UNSUPPORTED_DIALECT` in the agent rail
+
+When the engine's overlay declares `planEstimate` `"unsupported"`, `inspect_plan` is refused before the database and the ledger records `class: "not-sent"` with `detail: "UNSUPPORTED_DIALECT"`.
+`describeRefusal` in `src/components/agent/timeline.ts` shows that detail under "Refused before the database" as the tool's own sentence, so the rail shows the code alone and never says that the engine composes no estimating plan for the agent.
+Seen 2026-11-01 on Trino 476 (`trinodb/trino:476` by digest, the agent-boundary fixture's `read-only` coordinator) in a browser pass, twice: asked to send one heavy `SELECT`, the model called `inspect_plan` first, the rail showed "Refused before the database" over `UNSUPPORTED_DIALECT`, and in both runs the model then never sent the statement (runs `arun_9fc772e2c99549519cd41fb5ec787b20`, `arun_1452c8479f8c48dba0d2cb38ac525801`); every engine whose overlay declares `planEstimate` `"unsupported"` takes the same path, not checked in a browser.
+
+**Done when:** a not-sent refusal whose detail is a bare code shows a sentence saying what was refused and why, with the code beside it, read from the refusal rather than a type-id branch, and a timeline test pins it for `inspect_plan` on a dialect with no estimating plan.
+
+### U195. The editor's Druid explain reports a first-line planner error 17 columns to the right of the user's text
+
+`buildSql` of `druidNativeStrategy` in `src/lib/explain/druid-native.ts` writes `EXPLAIN PLAN FOR ` (17 characters) in front of the statement on its first line, and Druid's planner reports an error by line and column of the text it was sent.
+So an error on the statement's first line is reported 17 columns to the right of where the user's text has it, while an error on a later line is reported where it is.
+Measured on Apache Druid 37.0.0.
+The other strategies that prefix `EXPLAIN ` on the same line (`src/lib/explain/couchbase-json.ts`, `src/lib/explain/postgres-text.ts` and others) have the same shape, not measured.
+Found 2026-11-02 while reviewing Druid's explain path.
+
+**Done when:** a planner error from the explain names the line and column of the user's own text, the prefix's width taken back out of a first-line position or the prefix written so that no first-line column moves, decided once for every strategy that prefixes, with a unit test on a first-line and a later-line error for Druid.
+
+### U196. The results header keeps its duplicate row-count stats while the tab strip clips the Dashboard tab
+
+The results-pane header in `src/components/studio/BottomPanel.tsx` lays out a tab strip that scrolls with a hidden scrollbar (`min-w-0 overflow-x-auto`) beside a `shrink-0` group holding the `{rowCount} rows • {executionTime}ms` span and the Export button.
+The span's comment says it is "Dropped first when the panel is narrow", because the stats bar below repeats it, but it is shown from `@4xl/panel` (56rem, 896 px), while the whole header needs roughly 1030 px with nine result tabs and roughly 1100 px when the Graph tab is offered.
+Between those widths the span keeps its space and the strip clips its last tab, so the header reads "Dashbo" right beside "2000 rows • 2ms", with nothing showing that the strip scrolls.
+The tab is clipped, not drawn under the label: a browser probe measured the Dashboard button's box 21 px past the span's left edge, but `getBoundingClientRect` ignores the strip's clipping, and that part of the box lies in the hidden overflow.
+The tab stays reachable by horizontal scroll or keyboard focus, so no function is lost.
+The likely cause is the breakpoint, and the candidate fix is one class on the span, `@4xl/panel:inline` to `@6xl/panel:inline` (72rem, 1152 px), which also covers the Graph tab; it has not been rendered, the widths above are read from screenshots rather than measured, and the Export label's width changes with its count.
+A fixed breakpoint goes stale whenever a tab is added, so hiding the span whenever the strip overflows is the alternative.
+
+Found 2026-11-02 in the browser smoke pass of the Dependabot sweep on `main` (fc54d4c86), a 1440x900 window with the sidebar dragged to 436 px, on a SQLite `SELECT` of 2000 rows; the same with #2167 applied, so not a dependency regression.
+
+**Done when:** at every results-pane width the duplicate stats span is hidden before any result tab is clipped, with the Graph tab offered and not, and a browser check at the widths above shows the whole tab strip and the Export button with no clipped label.
 
 ## Dependencies
 
@@ -6680,10 +6855,11 @@ The wire dump (`DB2_WIRE_DEBUG_HEX=1`) of one failure shows the step before it: 
 A loop of the same two reads on one fresh connection, 50 times on each server, did not fail, so the trigger needs more of the live check's sequence than those two statements.
 1.0.27 also fixes K24: a bound CLOB, DBCLOB or BLOB is written alone and beside other parameters, 100000, 40000 and 70000 bytes long, on 12.1.0.0 and 11.5.9.0, so D225 waits on this entry.
 Reported upstream as gurungabit/db2-node#37.
+`.github/dependabot.yml` ignores exactly 1.0.26 and 1.0.27, because the weekly production group proposed 1.0.27 in #1966 and again in #2167, and it was held by hand in each; a later release is still proposed.
 
 Found 2026-10-26 while measuring `db2-node` 1.0.27 for the Dependabot production group; the pin stays at 1.0.25.
 
-**Done when:** a `db2-node` release passes `tests/live/db2-live-check.ts` in 8 of 8 runs on each of Db2 12.1.0.0 and 11.5.9.0, and the pin moves to it with the measurement its `//dependencies` note asks for.
+**Done when:** a `db2-node` release passes `tests/live/db2-live-check.ts` in 8 of 8 runs on each of Db2 12.1.0.0 and 11.5.9.0, the pin moves to it with the measurement its `//dependencies` note asks for, and the `db2-node` ignore entry in `.github/dependabot.yml` is removed with it.
 
 ### P12. Monaco's own copy of DOMPurify stays at 3.4.15 until a Monaco release takes 3.4.17
 
@@ -6694,6 +6870,17 @@ The note records why they are not reachable here: Monaco sanitizes markdown with
 Found 2026-10-28 while closing the dependency advisories.
 
 **Done when:** a monaco-editor release whose `min/vs` and `esm` trees inline DOMPurify 3.4.17 or later is taken, and the `dompurify` override and its note are removed as the note says.
+
+### P13. neo4j-driver-lite 6.3.0 waits for the agent-boundary captures on Neo4j Enterprise
+
+`neo4j-driver-lite` is pinned exactly at 6.2.0, and 6.3.0 (published 2026-10-29) was held out of the Dependabot production group in #2167.
+On 6.3.0 the evidence harness (`tests/live/neo4j-evidence.ts`) against the pinned 5.26.31 Community server matched every committed capture, but the agent-boundary captures of `tests/live/neo4j-agent-captures.ts` were not recorded again, because their `run.sh` starts Neo4j Enterprise, whose licence only the person running it can accept.
+6.3.0 also refuses a non-empty token without a scheme instead of treating it as `none` (neo4j/neo4j-javascript-driver#1451); every token Studio builds is `auth.basic` or absent, and an absent token still maps to `none`, so this change does not reach the provider, but the provider's measurement is incomplete without the agent-boundary captures.
+`.github/dependabot.yml` ignores exactly 6.3.0, because the production group proposed it in #2167 and again in #2188, and it was held by hand in each; a later release is still proposed.
+
+Found 2026-11-02 while taking the Dependabot production group (#2167); the pin stays at 6.2.0.
+
+**Done when:** the agent-boundary captures are recorded on 6.3.0 or a later release against the Enterprise fixture and match the committed ones (or the differences are taken into the provider and `docs/providers/neo4j.md`), the pin moves to it with the measurement its `//dependencies` note asks for, with `neo4j-driver-core` and `neo4j-driver-bolt-connection` on the same version, and the `neo4j-driver-lite` ignore entry in `.github/dependabot.yml` is removed with it.
 
 ## Documentation
 
@@ -8374,7 +8561,7 @@ Found 2026-10-03 while designing the Neo4j provider (spec 6.4).
 No MCP tool runs InfluxQL: the `influxql` language pack declares no MCP facet (`AGENT_LANGUAGE_MCP_FACETS.influxql` is null) and `MCP_STATEMENT_READ.influxdb` is false; plan mode and the MCP metadata tools work (`MCP_EXPOSABLE` in `src/lib/db/compatibility.ts`).
 The agent half closed on 2026-10-30: the `influxdb` provider implements `queryReadOnly` for a principal the server proves read-only before every statement, under the agent's InfluxQL statement reader (`docs/providers/influxdb.md`, section Agent mode).
 Its agent credential takes the default form, `agentUser` and `agentPassword` together, which is a 1.x user; a 2.x token beside the connection's own credential has no form, because one provider class serves both lines and declares its form before it knows the line, so a 2.x connection gives the agent a read-only token as its own credential.
-`influxdb3` left this entry on 2026-10-29: agent mode executes its DataFusion SQL under the 3.12 Core planner's write refusals, and its MCP statement read stays closed until a change of its own opens it.
+`influxdb3` left this entry on 2026-10-29: agent mode executes its DataFusion SQL under the 3.12 Core planner's write refusals, and on 2026-11-01 MCP's `run_read_query` opened on it under the same boundary (`docs/providers/influxdb3.md` section 3.5), with `MCP_STATEMENT_READ.influxdb` left false.
 
 Found 2026-10-04 while designing the InfluxDB provider (ruling R10).
 
@@ -8638,55 +8825,9 @@ No read-only boundary exists to build one on: Spark has no engine-side read-only
 
 Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
 
+Re-measured 2026-11-01 on Spark 4.3.0, the first release with `spark.sql.restrictedMode.enabled` (SPARK-59319): with it set, `reflect`, `java_method` and `TRANSFORM ... USING` are refused, and a session can read that the setting is on and cannot change it, but `ADD JAR`, `CREATE TEMPORARY FUNCTION ... USING JAR` (whose class ran its own code on the driver when called), writes and `SET spark.sql.catalog.*` all still run, and no setting refuses them, so the trigger below is not met.
+
 **Done when:** an upstream Spark release offers an authorization feature or a read-only session that Studio can prove at open, a boundary test against it with a writable positive control shows `ADD JAR`, a code-loading function and a write refused, and Spark then joins agent execution through `queryReadOnly` with its `MCP_STATEMENT_READ` row false until the owner opens MCP read for it; cited in `docs/AGENT.md`.
-
-### B130. Trino has no agent execution and no MCP `run_read_query`
-
-The Trino provider implements no `queryReadOnly`, so agent execution refuses it and MCP `run_read_query` answers that the engine is not served; the MCP metadata tools work (`MCP_EXPOSABLE.trino` is true, `MCP_STATEMENT_READ.trino` is false).
-`START TRANSACTION READ ONLY` holds for Trino's own connectors, but a pass-through table function, `TABLE(<catalog>.system.query(...))`, sends its text to the remote source, where it runs under the catalog's own credential and outside the read-only transaction, and pinning reads to one catalog still admits it on that catalog.
-Studio cannot prove a catalog's connector credential read-only, so only a lexer fence could stop that path, and a lexer is defence in depth, never the boundary.
-
-Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
-
-**Done when:** either a way to prove each reachable catalog's connector credential read-only at open, or an engine switch that disables pass-through table functions, is found and measured, a boundary test with a writable positive control shows a pass-through write refused, and Trino then joins agent execution through `queryReadOnly` with its `MCP_STATEMENT_READ` row false until the owner opens MCP read for it; cited in `docs/AGENT.md`.
-
-### B132. MTConnect has no agent execution and no MCP statement read
-
-The MTConnect provider implements no `queryReadOnly`, so agent execution refuses it and no MCP tool runs a request line; the MCP metadata tools work (`MCP_EXPOSABLE.mtconnect` is true, `MCP_STATEMENT_READ.mtconnect` is false).
-Its console text is one request line in the agent's own URL grammar, not a query language, and #424 gives such a provider no read-only statement path (`docs/providers/mtconnect.md` section 3.1); the nine GET routes the provider pins, with any non-GET and any second request refused, would serve as a structural closed table once that rule is lifted.
-
-Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
-
-**Done when:** the owner lifts the #424 request-line rule for MTConnect, the provider implements `queryReadOnly` over the pinned route table, refuses a handle not opened under the agent profile, joins `AGENT_EXECUTION_ENGINES` under a statement language of its own, and MCP serves it through its own MCP facet in its language pack (`src/lib/agent/languages/<statement-language>/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`) once the owner opens its MCP read, with tests; `docs/providers/mtconnect.md` section 3.1 says what changed; cited in `docs/AGENT.md`.
-
-### B133. MQTT has no agent execution and no MCP surface
-
-`MCP_EXPOSABLE.mqtt` is false and the provider implements no `queryReadOnly`, so agent execution and every MCP tool refuse an MQTT connection.
-A read reports what the broker delivered during its window, and an agent asked whether a sensor is reporting would take a topic's absence as proof it does not exist, the inference the provider doc says cannot be drawn (`docs/providers/mqtt.md` section 9.1).
-The closed five-packet encoder and the outbound check in `valve.ts`, which send no PUBLISH and no will, would serve as a structural closed table; the open question is completeness, not the boundary.
-
-Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
-
-**Done when:** the owner overturns section 9.1 of the provider doc, the provider implements `queryReadOnly` whose answers carry topic metadata and no payload, joins `AGENT_EXECUTION_ENGINES`, and MCP read is opened for it only on its own exposure ruling, with tests; cited in `docs/AGENT.md`.
-
-### B134. Sparkplug has no agent execution and no MCP surface
-
-`MCP_EXPOSABLE.sparkplug` is false and the provider implements no `queryReadOnly`, so agent execution and every MCP tool refuse a Sparkplug connection, for MQTT's reason (B133).
-Sparkplug has no command that lists edge nodes, so a read reports what it saw during its window, and an edge node that published nothing in that window cannot be told from one that is gone (`MCP_EXPOSABLE` in `src/lib/db/compatibility.ts`).
-
-Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
-
-**Done when:** the owner rules on completeness for Sparkplug as for MQTT (B133), the provider implements `queryReadOnly` over the same packet table with answers that carry metric metadata and no payload, joins `AGENT_EXECUTION_ENGINES`, and MCP read is opened for it only on its own exposure ruling, with tests; cited in `docs/AGENT.md`.
-
-### B135. OPC UA has no agent execution and no MCP surface
-
-`MCP_EXPOSABLE.opcua` is false and the provider implements no `queryReadOnly`, so agent execution and every MCP tool refuse an OPC UA connection.
-The console reads one JSON request and is read-only by construction, so the boundary is not what is missing: a node's value reaches a reader without its engineering units or its EU range, which live on nodes of their own that this version does not read, so an agent grounded on an address space would reason about figures it cannot qualify (`docs/providers/opcua.md`).
-The engine accepted an anonymous write in the measured fixture, so the provider's `OpcuaReadOnlyClient` seam of eight read services is the whole guarantee for any agent path.
-
-Found 2026-10-27 while designing read-only agent and MCP execution for every provider.
-
-**Done when:** the engineering-units objection is answered, either by reading the units and the EU range beside each value or by an owner ruling, the provider implements `queryReadOnly` through the `OpcuaReadOnlyClient` seam with a test that pins its services, joins `AGENT_EXECUTION_ENGINES`, and MCP read is opened for it only on its own exposure ruling, with tests; cited in `docs/AGENT.md`.
 
 ### B136. etcd's agent reads are metadata only, and it has no MCP statement tool
 
@@ -8830,17 +8971,23 @@ Found 2026-10-30 with agent execution on Couchbase.
 
 **Done when:** the Couchbase overlay gains an estimating plan whose `EXPLAIN SELECT` the agent path's fence admits, measured on 8.0, and a profile composition, or a recorded decision that it keeps none, with tests for each; cited in `docs/AGENT.md`.
 
-### B151. Apache Druid composes no estimating plan, profile, statistics reading or grounding capture
+### B151. Apache Druid composes no estimating plan, profile, statistics reading or grounding capture, and has no MCP statement read
 
 Druid's engine overlay (`src/lib/agent/languages/sql/engines/druid.ts`) supplies the catalog read alone: the column kind reads `INFORMATION_SCHEMA.COLUMNS`, which the server filters to the datasources the user may read, and the relation kind answers the projection the other engines answer with no rows, since a datasource cannot reference another; the index and statistics kinds are refused, since every dimension is indexed inside its segments and the catalog keeps no row count (the segment list does, and is not read).
 The other four dialect members are `"unsupported"`: the estimating plan, the profile composition, the statistics reading and the grounding capture.
 Druid has `EXPLAIN PLAN FOR`, and the editor reads its native plan, but the provider sends only one statement whose first keyword is `SELECT` or `WITH` on the agent path, since a `SET` before a statement selects another engine and replaces the request's query id; an estimating plan would need that fence to admit `EXPLAIN PLAN FOR SELECT` by the server's own reading, never measured for the fence. A table profile would be an aggregate over a whole datasource, never measured.
 So investigation, database assessment and data analysis open on Druid, where `inspect_plan` and `profile_table` answer `UNSUPPORTED_DIALECT`, and database assessment, which needs a table profile, opens but cannot pass (B146); the `sql-composers` requirement holds query optimization out; plan mode drafts there and grounds under the operations profile.
-Kept so that the engine joined on the members measured on it, and nothing composed from another engine's rule.
+The provider does send `EXPLAIN PLAN FOR` the agent's statement before it, but as its own check of what the statement reads, never as an answer to the agent.
+`MCP_STATEMENT_READ.druid` is false, so MCP `run_read_query` answers that the engine is not served, while the MCP metadata tools serve Druid as before (`MCP_EXPOSABLE.druid` is true).
+Measured on 37.0.0 on 2026-11-02 (`tests/fixtures/druid/37.0.0/agent-boundary/` capture 08): every login reads every lookup, both as a table of the `lookup` schema and through `LOOKUP`, since no permission of druid-basic-security names a lookup, and the segment, task and supervisor lists of its datasources, each supervisor's spec among them, and a holder of `STATE` `READ` the server tables.
+The agent path keeps a statement out of all of them twice: the statement fence refuses the `sys`, `lookup` and `view` schemas, `LOOKUP` and a name spelled with Unicode escapes, and the planner check refuses a statement whose `EXPLAIN PLAN FOR` reads anything but datasources and `INFORMATION_SCHEMA`.
+But the planner evaluates `LOOKUP` of a literal key while it plans, and rewrites a filter on `LOOKUP` of a column into one on the keys it maps from, so neither plan shows a lookup, and for those the statement fence, which reads the text, is the only layer.
+The one parse-independent check measured, refusing a login that `INFORMATION_SCHEMA` shows any lookup, would refuse agent mode on every cluster that registers a lookup, the repository's own Druid fixture included.
+Kept so that the engine joined on the members measured on it, nothing composed from another engine's rule, and so that MCP statement reads on Druid are a decision of their own rather than a side effect of agent mode joining.
 
-Found 2026-10-30 with agent execution on Apache Druid.
+Found 2026-10-30 with agent execution on Apache Druid; the MCP read measured 2026-11-02.
 
-**Done when:** the Druid overlay gains an estimating plan whose `EXPLAIN PLAN FOR` the agent path's fence admits, measured on 37.0, and a profile composition, or a recorded decision that it keeps none, with tests for each; cited in `docs/AGENT.md`.
+**Done when:** the Druid overlay gains an estimating plan whose `EXPLAIN PLAN FOR` the agent path's fence admits, measured on 37.0, and a profile composition, or a recorded decision that it keeps none, with tests for each, and a per-engine exposure ruling opens MCP statement reads on Druid through the same checks with `MCP_STATEMENT_READ.druid` true, once a lookup is kept from a statement by a layer that does not read its text (or lookups are ruled in scope), with a test that refuses a literal `LOOKUP`, with its accepted-forms row (on 37.0.0 through the agent path a `SELECT`, a `WITH` before it fine, paged with `LIMIT n OFFSET m`, which the native engine runs on a scan, a `GROUP BY` and an aggregate) and its cancel and timeout row in `docs/MCP.md` measured; cited in `docs/AGENT.md`.
 
 ### B152. LibreDB's command language has no MCP statement tool
 
@@ -8994,6 +9141,115 @@ Found 2026-10-31 when agent mode joined Prometheus.
 
 **Done when:** a change of its own opens MCP statement reads on Prometheus: the pack declares its MCP facet (`src/lib/agent/languages/promql/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`) under the same closed table, budgets and projection, and `MCP_STATEMENT_READ.prometheus` is true, with tests that an MCP read sends only the instant query's form and that no MCP answer carries the flags or a URL's userinfo or query string; cited in `docs/AGENT.md`.
 
+### B162. OPC UA's agent reads withhold the server's configuration, roles and sessions, and it has no MCP surface
+
+Agent mode executes OPC UA reads under the `opcuaread` request language, one JSON request per call: a value read or a history read written as the console writes it, or a one-level browse of one node (`docs/providers/opcua.md`, section 14).
+The boundary is the provider's structural closed seam: an agent read reaches the server only through a session opened for that read alone, through a client that holds Browse, BrowseNext, Read and HistoryRead and nothing else, with the reference type, result mask, attribute list and history details fixed by the provider and the browse direction forward but where the provider reads a node's parents, so no Write, Call, HistoryUpdate, node or reference change, RegisterNodes, TranslateBrowsePathsToNodeIds or subscription can be sent on the agent path.
+No principal can be the boundary: the pinned fixture took a raw anonymous Write with status Good, and `ResetToServerDefaults` reported UserExecutable true to an anonymous session.
+Values are the server's process data, so they are answered as the console renders them, each with its node's engineering units and EU range read from its own `EngineeringUnits` and `EURange` properties through the same two services, or "no units published" and "no range published" where it has none, never a unit derived from a name; the units lookup counts against the read's request bound, so a value is never answered without it.
+Withheld on every agent-mode path, decided by node id before every read on the read's own session: `Server.ServerConfiguration` (i=12637), `RoleSet` (i=15606), the session diagnostics (i=3706, i=3707, i=3708) and the PubSub security groups and key push targets (i=15443, i=25440), with every node the server answers beneath them, so no trust list, account name, role identity mapping or open session's client, user identity or endpoint reaches an agent answer.
+In namespace 0 agent mode reads only a list of standard nodes (the Root and Objects folders, the Server object, its state, its capabilities but `RoleSet`, and its diagnostics summary counters), so every standard descendant of a withheld root is refused by id even where the server will not let a walk see it; where the server refuses this identity the browse of a withheld node, each node the read answers outside namespace 0 is placed by its parents through an inverse Browse, and refused when they cannot be read.
+Node ids are compared as one key: a GUID in lower case, an opaque id as its bytes, and an `nsu=` URI through the server's NamespaceArray, read on the read's session; an id with no key refuses the read.
+An aggregating server that exposes another server's configuration under a namespace of its own is not recognised by these ids.
+A browse or a history read past the row budget, any read past the byte or time budget, and a read needing more than 100 requests are refused, never cut, and one session is opened and closed per read, so nothing is held between reads.
+On a handle of either agent profile the console and the Keys panel are refused, and the overview, health, performance, slow-query, session, table, index and storage readings answer their reason rather than an empty reading; the provider declares no kind the grounding walk lists, so an agent run is ungrounded and is told to read a node id the question names as it is written and to browse from the Objects folder only for any other.
+So the language offers the investigation and the operations workflow only.
+`MCP_EXPOSABLE.opcua` is false, and the language's MCP facet is null (`AGENT_LANGUAGE_MCP_FACETS` in `src/lib/agent/languages/mcp.ts`) with `MCP_STATEMENT_READ.opcua` false, so MCP `run_read_query` refuses an OPC UA connection, because no MCP surface that reads through the same withheld set and units lookup is designed yet; `READ_ONLY_ENFORCED.opcua` is unchanged.
+Kept so that MCP access, and any widening of what agent mode reads on an OPC UA server, are decisions of their own rather than side effects of agent mode joining.
+
+Found 2026-11-01 when agent mode joined OPC UA.
+
+**Done when:** a per-engine exposure ruling opens MCP for OPC UA, an MCP surface that reads through the same seam, withheld set, units lookup and request bound is designed and `MCP_EXPOSABLE.opcua` turns true for it, the pack declares its MCP facet (`src/lib/agent/languages/opcuaread/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`), and `MCP_STATEMENT_READ.opcua` is true, with tests that no MCP read reaches a withheld node or answers a value without its units; cited in `docs/AGENT.md`.
+
+### B163. MTConnect's agent reads withhold the adapter connections, and it has no MCP statement read
+
+Agent mode executes MTConnect reads under the `mtconnectread` request language, one request line per call, the statement, written as the console writes it with GET implied (`docs/providers/mtconnect.md`, section 14).
+The boundary is the provider's structural closed route table: the request line is read by the console's own guard against nine routes, `/probe`, `/current`, `/sample` and `/assets`, each for every device or for one, and `/asset/{assetIds}`, every one a GET, and sent by a client with no method argument and no body parameter, so no PUT, POST, `/cancel`, streaming parameter or second request can be sent on the agent path.
+No agent setting can be the boundary: measured on the pinned agent, `AllowPut` set to true opens a PUT that sets an observation and a POST that injects one, which `/current` then serves.
+Each read reads the agent's device model with `GET /probe` first, on the handle's one permit, so the device a request names, the rows' join and the withheld items are decided from the model the agent serves at that read; nothing of one read is kept for the next.
+Observations and asset documents are the machine's own data, so they are answered as the console renders them, one row per observation, data item or asset, an asset's document as XML text rendered from the parsed tree.
+Withheld on every agent-mode path, the grounding and the MCP metadata tools included, are the agent's own adapter connections: the agent writes an `Adapter` component per adapter it reads from under its Agent device, and that component's name, its data item ids and its `ADAPTER_URI` value carry the adapter's network address, so none of its observations or data items is answered or listed, and an answer counts what it withheld.
+A `path` is agent mode's own subset, `//DataItem` alternatives of equality tests on `@id`, `@name`, `@type`, `@subType` or `@category` whose every value an answered data item holds, since the agent answers a path that matches a withheld item differently from one that matches nothing, so `contains()`, `starts-with()` or an exact test of a withheld id would read the adapter's address back; a hit and its miss are refused alike.
+A `count` past the row budget is refused before anything is sent, an answer past the row or byte budget or a read past its time budget is refused, never cut, and a failure is worded by its category and the agent's standard error code, never in the agent's text.
+On a handle of either agent profile the console is refused, the connection reads only the device model, assets are not listed as objects, and the overview, health, performance, slow-query, session, table, index and storage readings answer their reason rather than an empty reading or Studio's own figure.
+So the language offers the investigation and the operations workflow only.
+`MCP_EXPOSABLE.mtconnect` stays true for the metadata tools, which acquire an agent-mode handle and so read the device model with the adapter connections withheld; the language's MCP facet is null (`AGENT_LANGUAGE_MCP_FACETS` in `src/lib/agent/languages/mcp.ts`) and `MCP_STATEMENT_READ.mtconnect` is false, so MCP `run_read_query` refuses an MTConnect connection; `READ_ONLY_ENFORCED.mtconnect` is unchanged.
+Kept so that MCP statement reads, and any widening of what agent mode reads on an MTConnect agent, are decisions of their own rather than side effects of agent mode joining.
+
+Found 2026-11-01 when agent mode joined MTConnect.
+
+**Done when:** a change of its own opens MCP statement reads on MTConnect: MCP serves it through its own MCP facet in its language pack (`src/lib/agent/languages/<statement-language>/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`), here `mtconnectread/mcp.ts`, under the same route table, budgets and withheld adapter connections, and `MCP_STATEMENT_READ.mtconnect` is true, with tests that an MCP read sends only GET of the nine routes and that no MCP answer carries an adapter's address; cited in `docs/AGENT.md`.
+
+### B164. MQTT's agent reads count what one window delivers, with topic names withheld, and it has no MCP surface
+
+Agent mode executes MQTT reads under the `mqttread` request language, one JSON request per call: `{"read": "window"}`, one subscription to the whole filter `#` for one window, answered as totals only, and `{"read": "topic", "topic": "<topic>"}`, one subscription to one topic the request names in full, answered as that topic's metadata (`docs/providers/mqtt.md`, section 14).
+The boundary is the provider's structural closed table: each read is one fresh session, Clean Start with a zero Session Expiry Interval, written by the encoder, which holds CONNECT, SUBSCRIBE, UNSUBSCRIBE, PINGREQ and DISCONNECT and no function that writes a PUBLISH, with a CONNECT that takes no Will, and every outbound byte is checked again by the valve, so no PUBLISH, no Will and no subscription of a filter the model wrote can be sent on the agent path.
+Topic names count as stored values, since a topic path names the people and devices behind it, and so do payloads, user properties, correlation data, response topics and content types: no agent answer names a topic, the topic read does not echo the topic it named, and no payload or property is read into a row; a loss the read proves is counted and never named.
+A filter the model writes would bisect topic names one level at a time, so every other filter, `+` and `#` below the root, a topic under a `$` root (`$SYS`, whose topic names carry each client's id on some brokers, and `$share/`, `$queue/` and `$exclusive/`, which take messages away from the devices subscribed beside Studio), a publish, a will and every key outside `read` and `topic` are refused before anything is sent, decided by the request's text alone, so a withheld topic and a missing one are refused alike.
+MQTT has no command that lists topics, so no answer is complete: each states the window it listened for, what it counted, why it stopped and that a topic not seen in the window may still exist, and its scope is never `complete`; a time budget that cannot hold a whole window plus a dial is refused rather than shortened, a result past the byte budget is refused, and a failure is worded by its kind, never in the broker's or the transport's words, with no credential in any answer.
+On a handle of either agent profile connecting is a handshake that subscribes to nothing, the Keys panel, a topic's listing, description and Source tab and the console are refused, and the overview, health, performance, slow-query, session, table, index and storage readings answer their reason rather than an empty reading or Studio's own figure; the provider declares no kind the grounding walk lists, so an agent run is ungrounded and is told why no topic is listed and to read a topic the question names directly.
+So the language offers the investigation and the operations workflow only, and a plan of the investigation is prose, since the editor runs no request on an MQTT connection.
+`MCP_EXPOSABLE.mqtt` is false, and the language's MCP facet is null (`AGENT_LANGUAGE_MCP_FACETS` in `src/lib/agent/languages/mcp.ts`) with `MCP_STATEMENT_READ.mqtt` false, so every MCP tool refuses an MQTT connection; `READ_ONLY_ENFORCED.mqtt` is unchanged.
+Kept so that MCP access, and any widening of what agent mode reads on a broker (a topic name, a payload, `$SYS`), are decisions of their own rather than side effects of agent mode joining.
+
+Found 2026-11-01 when agent mode joined MQTT.
+
+**Done when:** a per-engine exposure ruling opens MCP for MQTT, an MCP surface that reads through the same closed table, window, completeness sentence and metadata-only projection is designed and `MCP_EXPOSABLE.mqtt` turns true for it, the pack declares its MCP facet (`src/lib/agent/languages/mqttread/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`), and `MCP_STATEMENT_READ.mqtt` is true, with tests that an MCP read sends no PUBLISH and no Will, that no MCP answer names a topic or carries a payload, and that every answer carries its window and the completeness sentence; cited in `docs/AGENT.md`.
+
+### B165. Sparkplug's agent reads count what one window delivers, with ids withheld, and it has no MCP surface
+
+Agent mode executes Sparkplug reads under the `sparkplugread` request language, one JSON request per call: `{"read": "window"}`, one subscription to the whole `spBv1.0` namespace (or to the connection's own group) for one window, answered as totals only, and the `group`, `edgeNode` and `device` reads, one subscription to one object the request names in full with every level above it, answered as that object's counts (`docs/providers/sparkplug.md`, section 14).
+The boundary is the provider's structural closed table: each read is one fresh session, Clean Start with a zero Session Expiry Interval, written by the encoder, which holds CONNECT, SUBSCRIBE, UNSUBSCRIBE, PINGREQ and DISCONNECT and no function that writes a PUBLISH, with a CONNECT that takes no Will, so no PUBLISH, command, rebirth request, host state, Will and no subscription of a filter the model wrote can be sent on the agent path.
+Group, edge node, device and host application ids count as stored values, since they name the plants, machines and people behind them, and so do metric names, values, properties, datasets, templates, aliases and stored certificates: no agent answer names an id, an exact read does not echo the id it named, a payload is decoded only to count its metrics, and a group read answers no count of the edge nodes or devices in it.
+A filter the model writes would bisect ids one level at a time, so an id with `+`, `#` or `/`, a group named `STATE`, a group other than the connection's own, every key outside `read`, `group`, `edgeNode` and `device` and every read outside the four are refused before anything is sent, decided by the request's text and the connection's setting alone, so a withheld id and a missing one are refused alike; no request can reach `$sparkplug/` or a shared subscription.
+Sparkplug has no command that lists edge nodes or devices and a birth is published at QoS 0 and not retained, so no answer is complete: each states the window it listened for, what it counted, why it stopped and that an edge node or device not seen in the window may still exist, none says a node is online or offline, and its scope is never `complete`; a time budget that cannot hold a whole window is refused rather than shortened, a result past the byte budget is refused, and a failure is worded by its kind, never in the broker's or the transport's words.
+On a handle of either agent profile connecting is a handshake that subscribes to nothing, the tree, an object's listing, description and birth certificate and the console are refused, and the overview, health, performance, slow-query, session, table, index and storage readings answer their reason rather than an empty reading or Studio's own figure, so an agent run is ungrounded and is told why no id is listed and to read an object the question names directly.
+So the language offers the investigation and the operations workflow only, and a plan of the investigation is prose, since the editor's console request reads metric values.
+`MCP_EXPOSABLE.sparkplug` is false, and the language's MCP facet is null (`AGENT_LANGUAGE_MCP_FACETS` in `src/lib/agent/languages/mcp.ts`) with `MCP_STATEMENT_READ.sparkplug` false, so every MCP tool refuses a Sparkplug connection; `READ_ONLY_ENFORCED.sparkplug` is unchanged.
+Kept so that MCP access, and any widening of what agent mode reads on a plant (an id, a metric name or value, a stored certificate, host state), are decisions of their own rather than side effects of agent mode joining.
+
+Found 2026-11-01 when agent mode joined Sparkplug.
+
+**Done when:** a per-engine exposure ruling opens MCP for Sparkplug, an MCP surface that reads through the same closed table, window, completeness sentence and metadata-only projection is designed and `MCP_EXPOSABLE.sparkplug` turns true for it, the pack declares its MCP facet (`src/lib/agent/languages/sparkplugread/mcp.ts`, registered in `AGENT_LANGUAGE_MCP_FACETS`), and `MCP_STATEMENT_READ.sparkplug` is true, with tests that an MCP read sends no PUBLISH and no Will, that no MCP answer names an id or carries a metric, and that every answer carries its window and the completeness sentence; cited in `docs/AGENT.md`.
+
+### B166. Trino composes no estimating plan, profile, statistics reading or grounding capture, and has no MCP statement read
+
+Agent mode executes statements on Trino on a server whose access control refuses every identity every catalog's functions but the builtin ones, and catalog management (Trino's read-only access control, alone or beside other access controls; file rules alone are refused, since a view runs as its owner and another identity's grant reaches this user through that identity's view), proved before every statement with calls that run nothing, every statement inside a read-only transaction Studio rolls back (`docs/providers/trino.md`, section 15).
+Trino's engine overlay (`src/lib/agent/languages/sql/engines/trino.ts`) supplies the catalog read alone: the column kind reads `information_schema.columns` of the pinned catalog, which the server filters to the tables the user may see, and the relation kind answers the projection the other engines answer with no rows, since Trino declares no key; the index and statistics kinds are refused, since there is no index object and the row counts come from `SHOW STATS`, which is not a `SELECT`.
+The other four dialect members are `"unsupported"`: the estimating plan, the profile composition, the statistics reading and the grounding capture.
+Trino has `EXPLAIN`, and the editor reads its plan, but the provider sends only one statement whose first keyword is `SELECT` or `WITH` on the agent path, since a statement that ends or nests the read-only transaction, changes the session or calls a procedure must never reach the server; an estimating plan would need that fence to admit `EXPLAIN` by the server's own reading, never measured for the fence, and a table profile would be an aggregate over a whole table, never measured.
+So investigation, database assessment and data analysis open on Trino, where `inspect_plan` and `profile_table` answer `UNSUPPORTED_DIALECT`, and database assessment, which needs a table profile, opens but cannot pass (B146); the `sql-composers` requirement holds query optimization out; plan mode drafts there and grounds under the operations profile, whose open runs no check.
+`MCP_STATEMENT_READ.trino` is false, so MCP `run_read_query` answers that the engine is not served, while the MCP metadata tools serve Trino as before (`MCP_EXPOSABLE.trino` is true).
+The read-only access control lets every identity read every other user's query text in `system.runtime.queries` (measured on 476, 2026-11-02).
+The agent path refuses a statement that names the `system` catalog and an open that pins it, but that is a check on the statement text alone: a view stored in another catalog over that table is not a name it sees, and the operator's query rules that hide other users' queries cannot be proved from the connection's own session, since only another identity's query would show them.
+So MCP statement reads stay closed until Studio can prove at open that the connection's user cannot read other users' queries.
+Kept so that the engine joined on the members measured on it, nothing composed from another engine's rule, and so that MCP statement reads on Trino are a decision of their own rather than a side effect of agent mode joining.
+
+Found 2026-11-01 with agent execution on Trino.
+
+**Done when:** the Trino overlay gains an estimating plan whose `EXPLAIN` the agent path's fence admits, measured on 476, and a profile composition, or a recorded decision that it keeps none, with tests for each, and a per-engine exposure ruling opens MCP statement reads on Trino through the same check and read-only transaction with `MCP_STATEMENT_READ.trino` true, once the open proves, beyond the statement text, that the connection's user cannot read other users' query text, with a test that refuses a user who can; cited in `docs/AGENT.md`.
+
+### B168. Db2's agent profiles show a column declared in `CODEUNITS32` with its length in the type's default units
+
+`SYSCAT.COLUMNS` and six other IBM objects keep the second highest and lowest value of every column as `HIGH2KEY` and `LOW2KEY`, so the agent user's seed revokes them from `PUBLIC`, the agent check refuses a grantee that may read any of them, directly or through a view or an alias, and under every agent profile the provider reads a relation's columns from `SYSIBM.COLUMNS` and `SYSIBM.SQLCOLUMNS`, which keep no stored value (`src/lib/db/providers/sql/db2/catalog.ts`, `docs/providers/db2.md` sections 6.4 and 10.1).
+Neither view keeps the string units a character column was declared in, so on those profiles `VARCHAR(20 CODEUNITS32)` shows as `VARCHAR(80)`, its length in bytes, where an editor handle shows the declaration (capture 16 of `tests/fixtures/db2/12.1.0.0/agent-boundary/`).
+A zero-row describe of a table the user may read already answers a `DECFLOAT` column's precision, and its reply carries a byte that read 8, 16 or 32 for `OCTETS`, `CODEUNITS16` and `CODEUNITS32` on four columns measured on 12.1.0.0, but db2-node 1.0.25 exposes neither that byte nor the CCSID.
+A `DECFLOAT` column of a table the user may not read, or of a view, shows no precision either; that is Db2's, which refuses a describe without `SELECT`, and no driver change lifts it.
+Found 2026-11-02 while opening MCP's `run_read_query` on Db2.
+
+**Done when:** db2-node exposes the describe reply's string units (gurungabit/db2-node#40) in a release Studio can take, and under the agent profiles the provider spells a `CODEUNITS32` or `CODEUNITS16` column of a table the user may read as declared, with a provider test and the live check; cited in `docs/AGENT.md`.
+
+### B169. Couchbase answers a refused user-defined function call as "Error evaluating projection", without the role it lacks
+
+`payloadError` in `src/lib/db/providers/document/couchbase/http-transport.ts` builds the `CouchbaseError` from `errors[0].msg` alone.
+When the least-privilege agent user calls a user-defined function inside a projection, Couchbase answers code 5010 with the message "Error evaluating projection", and the refusal itself, code 13014 with a sentence naming the missing role, sits only in `errors[0].reason` (`reason.cause.missing_role` and `reason.message`).
+`mapAgentStatementError` in `src/lib/db/providers/document/couchbase/index.ts` passes a role refusal on as the statement's to repair only for a top-level 13014, so the 5010 falls through to `mapCouchbaseError`, which answers the bare message.
+Neither agent mode nor MCP's `run_read_query` can tell the model which role the call needed.
+Measured on Couchbase Server 8.0.2 Enterprise: capture 02 of `tests/fixtures/couchbase/8.0.2/agent-boundary/` holds the answers for a scoped inline function (`query_execute_functions`), a scoped JavaScript function (`query_execute_external_functions`) and a global inline function (`query_execute_global_functions`), and section 15.7 of `docs/providers/couchbase.md` states that the role is lost.
+Found 2026-11-02 while verifying `run_read_query` on Couchbase.
+
+**Done when:** a 5010 whose `reason` carries 13014 reaches the agent path and `run_read_query` as the role refusal naming the missing role, read from the structured `reason` rather than its prose, a transport and a provider test pin the three captured answers, and `docs/providers/couchbase.md` no longer says the role is lost; cited in `docs/AGENT.md`.
+
 ## Passkey deferrals (#785)
 
 Each was decided when passkey sign-in was designed, not overlooked.
@@ -9110,6 +9366,95 @@ Shared MCP code is meant to read the registries and name no statement language, 
 Found 2026-10-28 while moving the SQL MCP surface into its language pack; left in place then to keep `tools/list` byte-identical.
 
 **Done when:** the three texts are the SQL facet's words and the shared module takes them from the facet, with `tools/list` and every SQL refusal unchanged byte for byte and a test that pins them through the facet.
+
+### MCP5. The MCP statement fence refuses ClickHouse's `merge()` table function as a side effect
+
+`SIDE_EFFECT_WORDS` in `src/lib/db/operations/statement-guard.ts` holds `MERGE` for a data-modifying CTE, and the guard reads the word anywhere in the statement, so `SELECT * FROM merge('bv41', '.*') LIMIT 1`, a read of local tables, is refused before the connection is acquired with `SIDE_EFFECT_KEYWORD`.
+The answer then says that on this engine `run_read_query` runs "a SELECT (a WITH is fine), or EXPLAIN without ANALYZE", which the refused statement is, so a client cannot tell what to change.
+Found 2026-11-01 while verifying `run_read_query` on ClickHouse.
+
+**Done when:** a word that is a table function or a scalar function in the engine's own grammar is not read as a side-effect keyword where it is followed by an argument list, or the refusal names the word it matched, with a test on ClickHouse's `merge()` and on PostgreSQL's `MERGE INTO` inside a CTE.
+
+### MCP6. A row about half the 32 KiB result limit is refused as larger than it
+
+`build` in `src/lib/mcp/tools/run-statement.ts` measures the whole tool result with `resultBytes` in `src/lib/mcp/output.ts`, and that result carries the rows twice, once in the text block and once in `structuredContent`.
+So one row of about 16 KiB is answered with `ROW_OVER_CAP_TEXT`, "One row of this result is larger than the 32 KiB result limit": measured 2026-11-01 on ClickHouse, a row of `repeat('x', 15000)` was served and one of `repeat('x', 16000)` refused.
+`docs/MCP.md` says a call answers at most 32 KiB, which holds; the refusal's sentence does not.
+Found 2026-11-01 while verifying `run_read_query` on ClickHouse; pre-existing and engine-agnostic.
+
+**Done when:** the refusal states the limit the row actually exceeds, or the cap is measured on one copy of the rows, with a test on a row between 16 and 32 KiB, and `docs/MCP.md` says which bytes the 32 KiB counts.
+
+### MCP7. `list_connections` names `run_read_query` for a SQLite seed every MCP call refuses
+
+A SQLite seed whose `roles` admit a non-admin role is opened with external file access denied, so every `run_read_query` on it answers "SQLite connections require an administrator because this driver cannot confine statement-level file access" (`connect()` in `src/lib/db/providers/sql/sqlite.ts`), whoever holds the token; `docs/providers/sqlite.md` says so, and `docs/MCP.md` does not.
+`list_connections` still gives that connection `read_tool: "run_read_query"`.
+Measured 2026-11-01 with a seed set to `roles: ["*"]` and an admin's token.
+Found 2026-11-01 while verifying `run_read_query` on ClickHouse.
+
+**Done when:** `list_connections` gives such a seed a `read_tool` that can run, or says why none can, `docs/MCP.md` states the SQLite seed requirement beside the PostgreSQL, SQL Server and ClickHouse ones, and a test pins both.
+
+### MCP8. An InfluxDB 3 refusal through `run_read_query` names `SHOW` and `DESCRIBE`, which the tool refuses
+
+`run_read_query`'s statement fence admits a `TABLE` statement on an InfluxDB 3 (SQL) connection, and the provider's read policy then refuses it with `notARead` of `INFLUX_SQL_POLICY_SENTENCES` in `src/lib/db/providers/timeseries/influxdb/sql-policy.ts`: "Only SELECT, WITH, VALUES, SHOW, EXPLAIN and DESCRIBE run on an InfluxDB 3 connection in Studio".
+The same fence refuses `SHOW` and `DESCRIBE` before anything is acquired, so through MCP that sentence names two forms the tool does not take.
+`docs/MCP.md` says a refused statement's answer names what else that engine takes, and the "MCP read" subsection of `docs/providers/influxdb3.md` lists what `run_read_query` runs there: a `SELECT`, `VALUES`, or `EXPLAIN` without `ANALYZE`.
+The sentence is the provider's own and predates MCP read on InfluxDB 3; the editor and agent mode, which take `SHOW` and `DESCRIBE`, read it correctly.
+Found 2026-11-01 while verifying `run_read_query` on InfluxDB 3.12.0 Core.
+
+**Done when:** a statement the read policy refuses through `run_read_query` is answered with the forms that tool runs on InfluxDB 3, the editor and agent mode keep the policy's sentence, and a test sends `TABLE` through the tool's handler and pins the answer.
+
+### MCP9. On Elasticsearch and OpenSearch, `inspect_schema` and agent grounding list hidden indices and aliases with their columns
+
+`inspect_schema` and agent grounding read Elasticsearch's object surface under the operations profile, and that surface tells a system object by its name alone.
+`toIndexInfo` in `src/lib/db/providers/sql/search/http-transport.ts` marks only a name that starts with a dot as a system index, `GET /_cat/indices` is sent without `expand_wildcards`, so it lists hidden indices too, and `readKind` in `src/lib/db/providers/sql/search/index.ts` drops only what is marked system.
+So a hidden index whose name has no leading dot, a hidden alias, and an alias over a hidden index are listed, each with its columns.
+Measured 2026-11-02 on Elasticsearch 9.1.4 with security off: `inspect_schema` listed an index created with `index.hidden`, a hidden alias over `probe_orders` and an alias over that hidden index, each with the columns of the index behind it.
+Their rows are not exposed: the provider's statement check refuses a statement naming any of them before it is sent.
+Found 2026-11-02 while reviewing `run_read_query` on Elasticsearch.
+OpenSearch shares the object surface: measured 2026-11-02 on OpenSearch 3.8.0 with security off, `GET /_cat/indices` leaves a hidden index out, but `inspect_schema` listed a hidden alias over `probe_orders` and an alias over a hidden index, each with the columns of the index behind it; their rows are kept out the same way, by OpenSearch's own statement check.
+It also listed an alias over a visible index whose name starts with a dot (an alias over `.plugins-ml-config` answered that index's columns, `master_key` among them), the indices of the plugin families the OpenSearch dialect declares (`pluginIndexFamilies` in `http-transport.ts`) that `toIndexInfo` does not mark system, such as `ubi_queries`, `search-relevance-queryset` and `opensearch-forecast-results-history-<date>-1`, and an alias over a `top_queries-*` index, each with its columns, measured on 3.8.0 the same day; the statement check refuses their rows.
+
+**Done when:** under the agent-facing profiles the object listings drop the names `GET /_resolve/index` marks hidden or system, and the aliases that are hidden or sit over a hidden index, with a live test against a 9.1.4 node that pins all three cases, and on OpenSearch the hidden aliases, the aliases over a hidden index or over an index whose name starts with a dot, and the indices of the dialect's plugin families and the aliases over them, with a live test against a 3.8.0 node.
+
+### MCP10. `run_read_query`'s row refusal hides an engine row limit below 1000
+
+`classifyReadQueryFailure` in `src/lib/mcp/tools/read-query-limits.ts` maps every row-budget refusal to a fixed text, and the statement arms supply that text from `tooLarge` in `src/lib/mcp/tools/statement-arms.ts`: "The result has more than 1000 rows, the most this server reads for one call", followed by the advice to add a `LIMIT` of 1000 or less.
+OpenSearch refuses an answer that reaches `plugins.query.size_limit`, because the plugin cuts the rest without saying so, and its own sentence names that setting and its value; through `run_read_query` that sentence is replaced by the fixed text.
+So where the engine's limit is below 1000, the answer names a limit the query did not reach and advice that does not help.
+Repro: OpenSearch 3.8.0 with `plugins.query.size_limit` set to 500, `SELECT k FROM probe_buckets LIMIT 500` through `run_read_query` is answered "The result has more than 1000 rows ... Add a LIMIT of 1000 or less ...", while agent mode answers "OpenSearch answers at most 500 rows (plugins.query.size_limit) ...".
+`docs/providers/opensearch.md` (The statement path, MCP read) says what each path answers.
+Found 2026-11-02 while verifying `run_read_query` on OpenSearch.
+
+**Done when:** the refusal names the engine's own limit when the provider reports one, with a unit test.
+
+### MCP11. SQL Server's `run_read_query` budget refusals advise a `LIMIT`
+
+`tooLargeTextsOf` in `src/lib/mcp/tools/read-query-limits.ts` gives an engine its own row refusal only when the engine does not page with offset, and SQL Server's row in `src/lib/db/providers/sql/read-query-forms.ts` pages with offset, so `run_read_query` answers its row and byte refusals with the shared texts.
+Measured 2026-11-02 with a unit call of `classifyReadQueryFailure` on the provider's budget sentences under SQL Server's texts: "Add a LIMIT of 1000 or less, or remove your own LIMIT and page with offset" and "Select fewer or narrower columns, or add a smaller LIMIT".
+T-SQL has no `LIMIT`: it bounds rows with `TOP n` or with `ORDER BY ... OFFSET m ROWS FETCH NEXT n ROWS ONLY`, the form the same row names for paging, so a client that follows the advice writes a statement SQL Server refuses, and the provider's own bound is a `TOP` there.
+`ReadQueryForms` carries an engine's statements and its paging clause but no row limit clause, so the budget texts have nothing engine-specific to name, and another engine without `LIMIT` that opens to `run_read_query` meets the same texts.
+Found 2026-11-02 while reviewing the `run_read_query` budget refusals.
+
+**Done when:** each served engine's row states its own row limit clause, both budget refusals name it, SQL Server's name `TOP n` and the `OFFSET ... FETCH` form, every other served engine's refusals stay byte-identical, and a unit test pins the texts per served engine.
+
+### MCP12. A profile refusal raised when `run_read_query` acquires its connection carries no untrusted-data notice
+
+`execute` in `src/lib/mcp/tools/run-statement.ts` answers an `ExecutionProfileError` raised by `acquire` with `ownWordsError(profileRefusalText(...))`, Studio's own words with no `MCP_UNTRUSTED_NOTICE` before them.
+The provider's sentence can quote names a database user chose: ClickHouse's check in `src/lib/db/providers/sql/clickhouse/agent-boundary.ts` names the user and each grant's target, such as `ClickHouse user "<user>" holds <privilege> ON <target>`.
+A profile refusal raised while the statement runs takes `failureAnswer`, where `classifyReadQueryFailure` answers it as the engine's error through `engineError`, which carries the notice, so only the acquire branch answers without it.
+`inspect_schema` answers an `ExecutionProfileError` the same way on purpose (`src/lib/mcp/tools/inspect-schema.ts`), so the gap is on both tools.
+Found 2026-11-02 while reviewing `run_read_query`'s refusal paths.
+
+**Done when:** a profile refusal whose sentence can carry a name the database holds reaches the client after `MCP_UNTRUSTED_NOTICE` on both tools, or the provider's sentence is split so that only Studio's words go unmarked, with a handler test per tool on a refusal that quotes a user name.
+
+### MCP13. Couchbase's `inspect_schema` lists the columns it inferred from sampled documents
+
+`docs/MCP.md` and `INSPECT_SCHEMA_DESCRIPTION` in `src/lib/mcp/tools/inspect-schema.ts` say a column an engine only inferred from sampled data is never listed, and `machineColumns` in `src/lib/db/detailed-object.ts` drops a column only when its `provenance` is `"sampled"`.
+Couchbase stores no schema: `describeObject` infers a collection's columns with `INFER` over a document sample (`src/lib/db/providers/document/couchbase/introspect.ts`), and none of those columns carries `provenance: "sampled"`, while Firestore's and Qdrant's sampled columns do.
+So `inspect_schema` on a Couchbase connection lists every inferred field as a column, and agent grounding and the AI panels, which the same document says never receive such a column, receive them through the same filter.
+Found 2026-11-02 while reviewing `inspect_schema` on Couchbase.
+
+**Done when:** Couchbase's inferred columns are marked sampled, `inspect_schema` and agent grounding leave them out as they do Firestore's, the object tree still shows them with the sampled mark, and a provider test and an `inspect_schema` handler test pin both.
 
 ---
 
