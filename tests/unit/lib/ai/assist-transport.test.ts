@@ -60,13 +60,19 @@ describe("completeChat", () => {
     expect(seen?.url).toBe(OPENROUTER_CHAT_URL);
     expect(seen?.headers.get("Authorization")).toBe("Bearer secret");
     expect(seen?.headers.get("X-Title")).toBe("Midst");
-    expect(seen?.body).toMatchObject({ model: "openai/gpt-4o", stream: false });
+    expect(seen?.body).toMatchObject({
+      model: "openai/gpt-4o",
+      stream: false,
+      reasoning: { effort: "low" },
+    });
   });
 
   test("posts to Fireworks and joins text parts", async () => {
     let url = "";
+    let body: unknown;
     globalThis.fetch = (async (input: string, init?: RequestInit) => {
       url = input;
+      body = JSON.parse(String(init?.body));
       expect(new Headers(init?.headers).get("X-Title")).toBeNull();
       return jsonResponse({
         choices: [{ message: { content: ["a", { text: "b" }, { text: 1 }, 4] } }],
@@ -80,6 +86,7 @@ describe("completeChat", () => {
     });
     expect(url).toBe(FIREWORKS_CHAT_URL);
     expect(text).toBe("ab");
+    expect(body).not.toHaveProperty("reasoning");
   });
 
   test("posts to Vercel AI Gateway without OpenRouter headers", async () => {
@@ -99,6 +106,7 @@ describe("completeChat", () => {
     expect(seen?.headers.get("Authorization")).toBe("Bearer gw");
     expect(seen?.headers.get("X-Title")).toBeNull();
     expect(seen?.body).toMatchObject({ model: "alibaba/qwen-3-14b", stream: false });
+    expect(seen?.body).not.toHaveProperty("reasoning");
   });
 
   test.each([
@@ -131,6 +139,36 @@ describe("completeChat", () => {
         "empty answer",
       );
     }
+  });
+
+  test("reads a blank content from the reasoning fields, and keeps a real answer", async () => {
+    const read = async (payload: unknown): Promise<string> => {
+      globalThis.fetch = (async () => jsonResponse(payload)) as unknown as typeof fetch;
+      return completeChat({ source: "openrouter", apiKey: "k", model: "m", messages });
+    };
+    expect(await read({ choices: [{ message: { content: "", reasoning: "  from reasoning  " } }] })).toBe(
+      "  from reasoning  ",
+    );
+    expect(
+      await read({
+        choices: [
+          { message: { content: "   ", reasoning: "   ", reasoning_content: [{ text: "from field" }, " tail"] } },
+        ],
+      }),
+    ).toBe("from field tail");
+    expect(
+      await read({
+        choices: [
+          {
+            message: {
+              reasoning_content: "",
+              reasoning_details: ["detail ", { text: "text" }, { text: 2 }, null],
+            },
+          },
+        ],
+      }),
+    ).toBe("detail text");
+    expect(await read({ choices: [{ message: { content: "visible", reasoning: "hidden" } }] })).toBe("visible");
   });
 
   test("treats a body that is not JSON as an empty answer", async () => {

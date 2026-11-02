@@ -26,18 +26,10 @@ export interface AssistChatMessage {
   readonly content: string;
 }
 
-function messageText(payload: unknown): string {
-  if (payload === null || typeof payload !== "object" || !("choices" in payload)) return "";
-  const choices = payload.choices;
-  if (!Array.isArray(choices) || choices.length === 0) return "";
-  const first = choices[0];
-  if (first === null || typeof first !== "object" || !("message" in first)) return "";
-  const message = first.message;
-  if (message === null || typeof message !== "object" || !("content" in message)) return "";
-  const content = message.content;
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
+function joinedText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (!Array.isArray(value)) return "";
+  return value
     .map((part) => {
       if (typeof part === "string") return part;
       if (part !== null && typeof part === "object" && "text" in part && typeof part.text === "string")
@@ -45,6 +37,30 @@ function messageText(payload: unknown): string {
       return "";
     })
     .join("");
+}
+
+/**
+ * The answer text. A blank `content` falls through to the reasoning fields
+ * some models fill instead. A real answer wins over the reasoning trace.
+ */
+function messageText(payload: unknown): string {
+  if (payload === null || typeof payload !== "object" || !("choices" in payload)) return "";
+  const choices = payload.choices;
+  if (!Array.isArray(choices) || choices.length === 0) return "";
+  const first = choices[0];
+  if (first === null || typeof first !== "object" || !("message" in first)) return "";
+  const message = first.message;
+  if (message === null || typeof message !== "object") return "";
+  const fields = message as Record<string, unknown>;
+  const content = joinedText(fields.content);
+  if (content.trim() !== "") return content;
+  const reasoning = joinedText(fields.reasoning);
+  if (reasoning.trim() !== "") return reasoning;
+  const reasoningContent = joinedText(fields.reasoning_content);
+  if (reasoningContent.trim() !== "") return reasoningContent;
+  const details = joinedText(fields.reasoning_details);
+  if (details.trim() !== "") return details;
+  return content;
 }
 
 function chatUrl(source: AssistSource): string {
@@ -97,15 +113,26 @@ export async function completeChat(input: {
     headers["HTTP-Referer"] = "https://midst.market";
     headers["X-Title"] = "Midst";
   }
+  const body: {
+    model: string;
+    messages: readonly AssistChatMessage[];
+    temperature: number;
+    stream: false;
+    reasoning?: { effort: "low" };
+  } = {
+    model: input.model,
+    messages: input.messages,
+    temperature: 0.2,
+    stream: false,
+  };
+  // GLM 5.3 reasons at max effort unless the request says otherwise, and that
+  // effort can use the whole reply before any answer text. OpenRouter ignores
+  // this field on a model that does not reason.
+  if (input.source === "openrouter") body.reasoning = { effort: "low" };
   const response = await fetchImpl(chatUrl(input.source), {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      model: input.model,
-      messages: input.messages,
-      temperature: 0.2,
-      stream: false,
-    }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) throw new LLMAuthError("The model rejected the API key.");
