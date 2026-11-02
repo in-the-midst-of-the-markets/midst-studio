@@ -281,7 +281,6 @@ Standalone application only: the embedded `@libredb/studio` package carries no a
 - **8 Chart Types**: Bar, Line, Pie, Area, Scatter, Histogram, Stacked Bar, and Stacked Area charts powered by Recharts. A NULL category is drawn as its own category named `NULL`, the word the results grid shows, and every value stays on its own row's category; a cell holding the text `NULL` reads the same on the axis, and an empty-string category is its own, blank-labelled category.
 - **Data Aggregation**: Group-by with SUM, AVG, COUNT, MIN, MAX aggregation functions. Date grouping by hour, day, week, month, or year.
 - **Chart Persistence**: Save chart configurations and reload them instantly. Manage a library of saved charts.
-- **Chart Dashboard**: Grid view of all saved charts for at-a-glance data overview directly in the bottom panel.
 
 ### Display Masking (Preview)
 - **Client-Side Display Layer**: Masks sensitive values in the browser UI — useful for screen sharing, demos, and reducing accidental on-screen exposure. **Not server-enforced**; query API responses still contain full values for authenticated users.

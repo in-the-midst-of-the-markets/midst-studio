@@ -252,7 +252,7 @@ export function useQueryAdapter({
         ),
       );
       // A run refreshes the view already open. The embedded shell has the same
-      // Charts, Pivot and dashboard tabs, and a rerun leaves that selection in place.
+      // Charts and Pivot tabs, and a rerun leaves that selection in place.
 
       const startTime = Date.now();
 
