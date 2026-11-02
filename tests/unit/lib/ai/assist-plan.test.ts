@@ -258,6 +258,7 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("region AS area is filtered as region = {{region:east}}");
     expect(messages[0]?.content).toContain("was renamed or removed");
     expect(messages[0]?.content).toContain(">=, <=, or =");
+    expect(messages[0]?.content).toContain("You have not seen the rows yet.");
   });
 });
 

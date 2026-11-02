@@ -21,8 +21,11 @@ import {
   splitAssistFollowUp,
   type AssistChart,
   type AssistHistoryTurn,
+  type AssistPlan,
+  type AssistQueryPlan,
   type AssistRecolor,
 } from "@/lib/ai/assist-plan";
+import { explanationWithResults, followUpQuery, readAssistResults } from "@/lib/ai/assist-reading";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
@@ -190,6 +193,24 @@ function rebindTurns(turns: readonly Turn[], connections: readonly DatabaseConne
   return changed ? next : turns;
 }
 
+function resultPayload(card: AssistCard): {
+  title: string;
+  sql: string;
+  fields: string[];
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  error: string | null;
+} {
+  return {
+    title: card.title,
+    sql: card.sql,
+    fields: card.result?.fields ?? [],
+    rows: card.result?.rows.slice(0, 12) ?? [],
+    rowCount: card.result?.rowCount ?? 0,
+    error: card.error,
+  };
+}
+
 function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
   const pairs: AssistHistoryTurn[] = [];
   for (let index = 0; index < turns.length; index += 1) {
@@ -197,10 +218,68 @@ function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
     const next = turns[index + 1];
     if (turn?.role === "user" && next?.role === "assistant") {
       const edited = next.cards.filter((card) => card.locked).map((card) => card.sql);
-      pairs.push({ question: turn.text, explanation: explanationWithEdits(next.text, edited) });
+      const results = readAssistResults(next.cards.slice(0, 4).map(resultPayload));
+      const explanation = explanationWithResults(
+        explanationWithEdits(next.text, edited),
+        results.ok ? results.value : [],
+      );
+      pairs.push({ question: turn.text, explanation });
     }
   }
   return pairs.slice(-6);
+}
+
+function plannedCards(
+  queries: readonly AssistQueryPlan[],
+  connections: readonly DatabaseConnection[],
+  schemas: Readonly<Record<string, string>>,
+): AssistCard[] {
+  return queries.map((query) => {
+    const resolved = connectionForAssistQuery(connections, query.connection, {
+      sql: query.sql,
+      schemas,
+    });
+    return {
+      id: nextId(),
+      title: query.title,
+      titledSql: query.sql,
+      modelSql: query.sql,
+      locked: false,
+      sql: query.sql,
+      connectionId: resolved.ok ? resolved.connection.id : null,
+      connectionName: resolved.ok ? resolved.connection.name : query.connection,
+      chart: query.chart,
+      color: query.chart?.color ?? null,
+      result: null,
+      error: resolved.ok ? null : resolved.error,
+      running: resolved.ok,
+    };
+  });
+}
+
+async function groundResults(input: {
+  readonly source: AssistSettings["source"];
+  readonly model: string;
+  readonly apiKey: string;
+  readonly question: string;
+  readonly schemaContext: string;
+  readonly databaseType: string;
+  readonly history: readonly AssistHistoryTurn[];
+  readonly results: ReturnType<typeof resultPayload>[];
+  readonly pass: "follow" | "final";
+}): Promise<AssistPlan | null> {
+  try {
+    const response = await appFetch("/api/ai/assist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) return null;
+    return acceptAssistPlan(body);
+  } catch {
+    return null;
+  }
 }
 
 function errorText(body: unknown, fallback: string): string {
@@ -567,50 +646,76 @@ export function AiAssist() {
       const follow = splitAssistFollowUp(plan.queries, prior);
       const recolors = [...follow.recolors, ...recolorsFromQuestion(question, prior)];
       const queries = questionOnlyRecolors(question) ? [] : follow.queries;
-      const cards: AssistCard[] = queries.map((query) => {
-        const resolved = connectionForAssistQuery(connections, query.connection, {
-          sql: query.sql,
-          schemas,
-        });
-        return {
-          id: nextId(),
-          title: query.title,
-          titledSql: query.sql,
-          modelSql: query.sql,
-          locked: false,
-          sql: query.sql,
-          connectionId: resolved.ok ? resolved.connection.id : null,
-          connectionName: resolved.ok ? resolved.connection.name : query.connection,
-          chart: query.chart,
-          color: query.chart?.color ?? null,
-          result: null,
-          error: resolved.ok ? null : resolved.error,
-          running: resolved.ok,
-        };
-      });
+      const cards = plannedCards(queries, connections, schemas);
+      const assistantId = nextId();
+      const databaseType = assistDatabaseType(connections.map((item) => item.type));
       commit(
         [
           ...paint(turnsRef.current, recolors),
-          { id: nextId(), role: "assistant", text: plan.explanation, at: askedAt(), cards },
+          {
+            id: assistantId,
+            role: "assistant",
+            text: cards.length === 0 ? plan.explanation : "",
+            at: askedAt(),
+            cards,
+          },
         ],
         true,
       );
-      await Promise.all(
-        cards.map(async (card) => {
-          const target =
-            card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
-          if (target === null) return;
-          const outcome = await runAssistQuery(target, applyQueryFilters(card.sql), appFetch);
-          updateCard(
-            card.id,
-            {
-              running: false,
-              ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
-            },
+      const executeCards = async (batch: readonly AssistCard[]) => {
+        await Promise.all(
+          batch.map(async (card) => {
+            const target =
+              card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
+            if (target === null) return;
+            const outcome = await runAssistQuery(target, applyQueryFilters(card.sql), appFetch);
+            updateCard(
+              card.id,
+              {
+                running: false,
+                ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
+              },
+              true,
+            );
+          }),
+        );
+      };
+      await executeCards(cards);
+      if (cards.length > 0) {
+        const ids = new Set(cards.map((card) => card.id));
+        const ranCards = () => turnsRef.current.flatMap((turn) => turn.cards).filter((card) => ids.has(card.id));
+        const readingInput = {
+          source: settings.source,
+          model,
+          apiKey,
+          question,
+          schemaContext,
+          databaseType,
+          history,
+        };
+        const follow = await groundResults({ ...readingInput, pass: "follow", results: ranCards().map(resultPayload) });
+        const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
+        const extra = follow === null ? null : followUpQuery(follow.queries, existingSql);
+        const extraCards = extra === null ? [] : plannedCards([extra], connections, schemas);
+        for (const card of extraCards) ids.add(card.id);
+        if (extraCards.length > 0) {
+          commit(
+            turnsRef.current.map((turn) =>
+              turn.id === assistantId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
+            ),
             true,
           );
-        }),
-      );
+          await executeCards(extraCards);
+        }
+        const final = await groundResults({ ...readingInput, pass: "final", results: ranCards().map(resultPayload) });
+        const analyzed = [final, follow].map((item) => item?.explanation.trim() ?? "").find((text) => text !== "");
+        commit(
+          turnsRef.current.map((turn) =>
+            turn.id === assistantId ? { ...turn, text: analyzed ?? plan.explanation } : turn,
+          ),
+          true,
+        );
+      }
     } catch {
       commit(
         [
