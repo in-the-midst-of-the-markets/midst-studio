@@ -92,17 +92,6 @@ mock.module("@/components/SavedQueries", () => ({
 // Captured for the same reason the grid's props are: the charts view can be handed
 // the tab's own result or a run's, with or without the chart the run composed, and
 // only the props say which.
-let capturedDataChartsProps: Record<string, unknown> = {};
-
-mock.module("@/components/DataCharts", () => ({
-  DataCharts: (props: Record<string, unknown>) => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const React = require("react");
-    capturedDataChartsProps = props;
-    return React.createElement("div", { "data-testid": "datacharts" }, "DataCharts");
-  },
-}));
-
 let capturedQueryChartProps: Record<string, unknown> = {};
 
 mock.module("@/components/charts/QueryChart", () => ({
@@ -181,16 +170,6 @@ mock.module("@/components/results-graph/GraphView", () => ({
   },
 }));
 
-// ---- Mock storage so the ChartDashboardLazy saved-charts grid is controllable ----
-
-const mockGetSavedCharts = mock(() => [] as SavedChartConfig[]);
-
-mock.module("@/lib/storage", () => ({
-  storage: {
-    getSavedCharts: mockGetSavedCharts,
-  },
-}));
-
 // ---- Now import bun:test, testing-library, and the component ----
 
 import { describe, test, expect, afterEach, beforeAll, spyOn } from "bun:test";
@@ -200,23 +179,10 @@ import React from "react";
 
 import { BottomPanel } from "@/components/studio/BottomPanel";
 import type { BottomPanelMode } from "@/components/studio/BottomPanel";
-import type { SavedChartConfig } from "@/lib/types";
 
 // =============================================================================
 // BottomPanel Tests
 // =============================================================================
-
-function makeSavedChart(overrides: Partial<SavedChartConfig> = {}): SavedChartConfig {
-  return {
-    id: "chart-1",
-    name: "Revenue Chart",
-    chartType: "bar",
-    xAxis: "month",
-    yAxis: ["revenue"],
-    createdAt: new Date("2026-01-01"),
-    ...overrides,
-  };
-}
 
 function createDefaultProps(overrides: Partial<Record<string, unknown>> = {}) {
   // The panel no longer receives the whole tab (X5), so a `currentTab` override is
@@ -297,10 +263,6 @@ describe("BottomPanel", () => {
 
   afterEach(() => {
     cleanup();
-    // ChartDashboard now reads the saved charts from a lazy useState initializer, which
-    // React may re-invoke if it discards and retries a render. A persistent mockReturnValue
-    // reset here is what keeps a populated fixture from silently becoming empty.
-    mockGetSavedCharts.mockReturnValue([]);
   });
 
   test("renders tab buttons for all modes", () => {
@@ -309,7 +271,7 @@ describe("BottomPanel", () => {
     });
     const { getByText, queryByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
 
-    const expectedLabels = ["Results", "Explain", "History", "Saved", "Charts", "Pivot", "Docs", "Diff", "Dashboard"];
+    const expectedLabels = ["Results", "Explain", "History", "Saved", "Charts", "Pivot", "Docs", "Diff"];
     for (const label of expectedLabels) {
       const btn = getByText(label);
       expect(btn).not.toBeNull();
@@ -322,7 +284,7 @@ describe("BottomPanel", () => {
       here to catch — the milestone's gate asks for the removal to be asserted rather
       than eyeballed. Found by review on #349.
     */
-    for (const removed of ["NL2SQL", "Autopilot"]) {
+    for (const removed of ["NL2SQL", "Autopilot", "Dashboard"]) {
       expect(queryByText(removed)).toBeNull();
     }
   });
@@ -1062,13 +1024,6 @@ describe("BottomPanel", () => {
     expect(queryByText(/123ms/)).not.toBeNull();
   });
 
-  test('Dashboard tab renders chart dashboard when mode="dashboard"', () => {
-    const props = createDefaultProps({ mode: "dashboard" });
-    const { queryByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    // ChartDashboardLazy shows empty state with no saved charts
-    expect(queryByText("No saved charts yet")).not.toBeNull();
-  });
-
   test("clicking Charts tab fires onSetMode with charts", () => {
     const onSetMode = mock(() => {});
     const props = createDefaultProps({ onSetMode });
@@ -1099,43 +1054,6 @@ describe("BottomPanel", () => {
     const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
     fireEvent.click(getByText("Docs").closest("button")!);
     expect(onSetMode).toHaveBeenCalledWith("docs");
-  });
-
-  test("Dashboard renders saved chart cards with DataCharts when result exists", async () => {
-    mockGetSavedCharts.mockReturnValue([
-      makeSavedChart({ id: "chart-1", name: "Revenue", chartType: "bar", xAxis: "month", yAxis: ["revenue"] }),
-    ]);
-    const props = createDefaultProps({
-      mode: "dashboard",
-      currentTab: {
-        id: "tab-1",
-        name: "Query 1",
-        query: "SELECT 1",
-        result: { rows: [{ id: 1 }], fields: ["id"], rowCount: 1, executionTime: 10 },
-        isExecuting: false,
-        type: "sql" as const,
-      },
-    });
-    const { findByText, findByTestId } = render(
-      <BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />,
-    );
-
-    expect(await findByText("Revenue")).not.toBeNull();
-    expect(await findByText("bar")).not.toBeNull();
-    expect(await findByText(/X: month/)).not.toBeNull();
-    expect(await findByText(/Y: revenue/)).not.toBeNull();
-    expect(await findByTestId("datacharts")).not.toBeNull();
-  });
-
-  test("Dashboard shows placeholder on saved chart card when result is null", () => {
-    mockGetSavedCharts.mockReturnValue([makeSavedChart()]);
-    const props = createDefaultProps({ mode: "dashboard" });
-    const { getByText, queryByTestId } = render(
-      <BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />,
-    );
-
-    expect(getByText("Execute a query to see chart")).not.toBeNull();
-    expect(queryByTestId("datacharts")).toBeNull();
   });
 
   /*
@@ -1511,7 +1429,7 @@ describe("BottomPanel", () => {
   });
 });
 
-describe("masking inputs to the pivot, charts and dashboard views (#1939)", () => {
+describe("masking inputs to the pivot and charts views (#1939)", () => {
   const MASK_RESULT = {
     rows: [{ id: 1, email: "a@b.co" }],
     fields: ["id", "email"],
@@ -1521,20 +1439,17 @@ describe("masking inputs to the pivot, charts and dashboard views (#1939)", () =
   const EXEMPTION = { column: "^id$", reason: "the engine's key" };
 
   beforeAll(async () => {
-    mockGetSavedCharts.mockReturnValue([makeSavedChart()]);
-    for (const mode of ["charts", "pivot", "dashboard"] as const) {
+    for (const mode of ["charts", "pivot"] as const) {
       const props = createDefaultProps({ mode, currentTab: { result: MASK_RESULT } });
       await act(async () => {
         render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
       });
     }
     cleanup();
-    mockGetSavedCharts.mockReturnValue([]);
   });
 
   afterEach(() => {
     cleanup();
-    mockGetSavedCharts.mockReturnValue([]);
   });
 
   const maskedPanelProps = (mode: BottomPanelMode) =>
@@ -1563,15 +1478,5 @@ describe("masking inputs to the pivot, charts and dashboard views (#1939)", () =
     expect(capturedQueryChartProps.userRole).toBe("user");
     expect(capturedQueryChartProps.maskingConfig).toBe(props.maskingConfig);
     expect(capturedQueryChartProps.maskingExemptColumns).toEqual(EXEMPTION);
-  });
-
-  test("each saved chart on the dashboard receives the grid's masking inputs", () => {
-    mockGetSavedCharts.mockReturnValue([makeSavedChart()]);
-    const props = maskedPanelProps("dashboard");
-    render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(capturedDataChartsProps.maskingEnabled).toBe(true);
-    expect(capturedDataChartsProps.userRole).toBe("user");
-    expect(capturedDataChartsProps.maskingConfig).toBe(props.maskingConfig);
-    expect(capturedDataChartsProps.maskingExemptColumns).toEqual(EXEMPTION);
   });
 });

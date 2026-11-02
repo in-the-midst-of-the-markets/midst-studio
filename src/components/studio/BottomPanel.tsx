@@ -4,7 +4,6 @@ import type { CsvDelimiter } from "@/lib/export/csv";
 
 import React, { useMemo } from "react";
 import type { DatabaseConnection, QueryResult } from "@/lib/types";
-import type { ProviderCapabilities } from "@/lib/db/types";
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
 import { detectSensitiveColumnsFromConfig, type MaskingConfig } from "@/lib/data-masking";
@@ -30,7 +29,6 @@ import {
   Download,
   FileText,
   GitCompare,
-  LayoutDashboard,
   LayoutGrid,
   Network,
   Terminal,
@@ -47,8 +45,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { withBasePath } from "@/lib/config/base-path";
-import { storage } from "@/lib/storage";
 import { offersSqlExport } from "@/lib/db/types";
 
 /**
@@ -88,8 +84,7 @@ export type BottomPanelMode =
   | "charts"
   | "pivot"
   | "docs"
-  | "schemadiff"
-  | "dashboard";
+  | "schemadiff";
 
 /*
   The panel's heavy views, split out of the first load.
@@ -97,8 +92,8 @@ export type BottomPanelMode =
   Each one is already gated on `mode`, so only one of them can be on screen and most
   sessions never open the others — but a static import puts every one of them, and the
   libraries they pull in, into the bundle that has to arrive before the editor can be
-  typed in. `QueryChart` brings ECharts and `DataCharts` brings recharts;
-  `VisualExplain` and `SchemaDiff` bring their own trees.
+  typed in. `QueryChart` brings ECharts; `VisualExplain` and `SchemaDiff` bring
+  their own trees.
 
   `React.lazy` rather than `next/dynamic`: this file is reached from BOTH shells, and
   the embeddable one (`src/workspace/StudioWorkspace.tsx`) deliberately imports nothing
@@ -122,9 +117,6 @@ const DatabaseDocs = React.lazy(
 const VisualExplain = React.lazy(
   lazyRetry(() => import("@/components/VisualExplain").then((m) => ({ default: m.VisualExplain }))),
 );
-const DataCharts = React.lazy(
-  lazyRetry(() => import("@/components/DataCharts").then((m) => ({ default: m.DataCharts }))),
-);
 const QueryChart = React.lazy(
   lazyRetry(() => import("@/components/charts/QueryChart").then((m) => ({ default: m.QueryChart }))),
 );
@@ -136,76 +128,6 @@ const SchemaDiff = React.lazy(
 const GraphView = React.lazy(
   lazyRetry(() => import("@/components/results-graph/GraphView").then((m) => ({ default: m.GraphView }))),
 );
-
-// The saved-chart dashboard. Its data is read on mount, not its module — the module
-// is split at the import above, along with the `DataCharts` this renders.
-function ChartDashboard({
-  result,
-  maskingEnabled,
-  userRole,
-  maskingConfig,
-  maskingExemptColumns,
-}: {
-  result: QueryResult | null;
-  maskingEnabled: boolean;
-  userRole: string | undefined;
-  maskingConfig: MaskingConfig;
-  maskingExemptColumns: ProviderCapabilities["maskingExemptColumns"];
-}) {
-  // The saved-chart list, read once from storage. Nothing here writes it back —
-  // saving and deleting happen in DataCharts, which owns its own copy.
-  const [savedCharts] = React.useState(() => storage.getSavedCharts());
-
-  if (savedCharts.length === 0) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center bg-sunken text-fg-muted gap-2">
-        <LayoutDashboard strokeWidth={1.5} className="w-10 h-10 opacity-30" />
-        <p className="text-xs">No saved charts yet</p>
-        <p className="text-xs text-fg-subtle">Charts saved earlier show here with the result you have open</p>
-        <a href={withBasePath("/create")} className="text-xs font-medium text-brand underline">
-          Create a dashboard
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-auto bg-sunken p-4">
-      <a href={withBasePath("/create")} className="mb-3 inline-block text-xs font-medium text-brand underline">
-        Create a dashboard
-      </a>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {savedCharts.map((chart) => (
-          <div key={chart.id} className="bg-raised border border-hairline-strong rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-fg-secondary">{chart.name}</span>
-              <span className="text-xs text-fg-subtle">{chart.chartType}</span>
-            </div>
-            <div className="text-xs text-fg-muted">
-              {chart.xAxis && <span>X: {chart.xAxis}</span>}
-              {chart.yAxis?.length > 0 && <span className="ml-2">Y: {chart.yAxis.join(", ")}</span>}
-            </div>
-            {result ? (
-              <div className="mt-2 h-[160px]">
-                <DataCharts
-                  result={result}
-                  maskingEnabled={maskingEnabled}
-                  userRole={userRole}
-                  maskingConfig={maskingConfig}
-                  maskingExemptColumns={maskingExemptColumns}
-                />
-              </div>
-            ) : (
-              <div className="mt-2 h-[100px] flex items-center justify-center text-fg-subtle text-xs">
-                Execute a query to see chart
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 interface BottomPanelProps {
   mode: BottomPanelMode;
@@ -466,12 +388,6 @@ export const BottomPanel = React.memo(function BottomPanel({
       icon: <GitCompare strokeWidth={1.5} className="w-3 h-3" />,
       activeClass: "text-hue-rose border-hue-rose-tint bg-fill",
     },
-    {
-      key: "dashboard",
-      label: "Dashboard",
-      icon: <LayoutDashboard strokeWidth={1.5} className="w-3 h-3" />,
-      activeClass: "text-hue-indigo border-hue-indigo-tint bg-fill",
-    },
   ];
 
   const explainTabs = metadata?.capabilities.explainFormat ? tabs : tabs.filter((tab) => tab.key !== "explain");
@@ -489,7 +405,7 @@ export const BottomPanel = React.memo(function BottomPanel({
         {/*
           The tab strip is the part that yields. It scrolls (without a visible bar in
           a 36px-tall row) rather than pushing the export group out of the header:
-          nine mode tabs plus a rail plus a sidebar is enough to clip the right-hand
+          eight mode tabs plus a rail plus a sidebar is enough to clip the right-hand
           side entirely, and what got clipped was the only way to save a result.
         */}
         <div className="flex items-center h-full gap-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -700,14 +616,6 @@ export const BottomPanel = React.memo(function BottomPanel({
               />
             ) : mode === "schemadiff" ? (
               <SchemaDiff schema={schema} connection={activeConnection} />
-            ) : mode === "dashboard" ? (
-              <ChartDashboard
-                result={result}
-                maskingEnabled={maskingEnabled}
-                userRole={userRole}
-                maskingConfig={maskingConfig}
-                maskingExemptColumns={metadata?.capabilities.maskingExemptColumns}
-              />
             ) : mode === "explain" ? (
               <VisualExplain
                 plan={hydratedPlan ?? explainInput}

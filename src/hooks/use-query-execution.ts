@@ -505,7 +505,7 @@ export function useQueryExecution({
             : t,
         ),
       );
-      // A run refreshes the view already open. Charts, Pivot, Graph and the dashboard
+      // A run refreshes the view already open. Charts, Pivot and Graph
       // all read this tab's result, so a rerun — including one a schedule will fire —
       // updates that picture and leaves the selection where the user put it. Explain
       // is the exception: its output is a plan, and only the Explain tab draws one.
