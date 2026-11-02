@@ -138,7 +138,10 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("button", { name: "Chart" }).textContent).toBe("");
     expect(view.getByRole("button", { name: "Query" }).textContent).toBe("");
     expect(view.getByRole("button", { name: "Code" }).textContent).toBe("");
-    expect(view.getByRole("button", { name: "Unsave Revenue" }).textContent).toBe("");
+    const unsave = view.getByRole("button", { name: "Unsave Revenue" });
+    expect(unsave.textContent).toBe("");
+    expect(unsave.getAttribute("aria-pressed")).toBe("true");
+    expect(unsave.className).toContain("bg-brand-solid");
     expect(view.getByRole("button", { name: "Remove Revenue" }).textContent).toBe("");
     expect(tile.style.width).toBe("480px");
     await waitFor(() => expect(view.getByTestId("assist-chart")).toBeTruthy());
@@ -155,6 +158,11 @@ describe("DashboardStudio", () => {
     fireEvent.keyDown(handle, { key: "Enter" });
     expect(storage.getSavedDashboards()[0]?.charts[0]?.width).toBe(520 + 16 - 48);
     fireEvent.click(view.getByRole("button", { name: "Remove Revenue" }));
+    expect(view.getByTestId("dashboard-chart-revenue")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Remove Revenue" }));
+    expect(view.queryByRole("button", { name: "Confirm remove Revenue" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Remove Revenue" }));
+    fireEvent.click(view.getByRole("button", { name: "Confirm remove Revenue" }));
     expect(view.queryByTestId("dashboard-chart-revenue")).toBeNull();
   });
 
@@ -258,6 +266,16 @@ describe("DashboardStudio", () => {
       expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).not.toContain("{"),
     );
     fireEvent.click(view.getByRole("button", { name: "Unsave Revenue" }));
+    expect(view.getByTestId("dashboard-chart-revenue")).toBeTruthy();
+    expect(storage.getSavedCharts().some((item) => item.id === "revenue")).toBe(true);
+    expect(view.getByRole("button", { name: "Confirm unsave Revenue" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Remove Revenue" }));
+    expect(view.queryByRole("button", { name: "Confirm unsave Revenue" })).toBeNull();
+    expect(view.getByRole("button", { name: "Confirm remove Revenue" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Remove Revenue" }));
+    expect(view.queryByRole("button", { name: "Confirm remove Revenue" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Unsave Revenue" }));
+    fireEvent.click(view.getByRole("button", { name: "Confirm unsave Revenue" }));
     expect(view.queryByTestId("dashboard-chart-revenue")).toBeNull();
     expect(storage.getSavedCharts().some((item) => item.id === "revenue")).toBe(false);
     expect(storage.getSavedDashboards()[0]?.charts.some((frame) => frame.chartId === "revenue")).toBe(false);
