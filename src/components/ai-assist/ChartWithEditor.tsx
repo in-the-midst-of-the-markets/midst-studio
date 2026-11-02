@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { BarChart3, Braces, FileText, Terminal, X, type LucideIcon } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
@@ -27,6 +28,33 @@ import { cn } from "@/lib/utils";
 
 const PREVIEW_ROWS = 8;
 const PREVIEW_COLUMNS = 6;
+
+function FaceButton({
+  pressed,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  readonly pressed: boolean;
+  readonly onClick: () => void;
+  readonly icon: LucideIcon;
+  readonly label: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium",
+        pressed ? "bg-brand-solid text-white" : "border border-hairline-strong bg-surface text-fg hover:bg-fill-subtle",
+      )}
+    >
+      <Icon className="size-3.5" />
+      {label}
+    </button>
+  );
+}
 
 export interface ChartWithEditorProps {
   readonly title: string;
@@ -199,174 +227,117 @@ export function ChartWithEditor({
   const heading = codeTitle !== "" ? codeTitle : title;
 
   return (
-    <article className="flex h-[28rem] flex-col overflow-hidden rounded-lg border border-hairline-strong bg-raised">
-      <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-3 py-2">
-        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{heading}</h3>
-        {connectionName !== undefined && connectionName !== "" && (
-          <span className="text-xs text-fg-subtle">{connectionName}</span>
-        )}
-        {result !== null && (
-          <span className="text-xs text-fg-muted">
-            {result.rowCount} rows · {result.executionTime} ms
-          </span>
-        )}
-        <div className="flex items-center gap-1">
-          <div className="flex items-center rounded-lg border border-hairline bg-sunken p-0.5">
-            <button
-              type="button"
-              aria-pressed={face === "chart"}
-              onClick={() => setFace("chart")}
-              className={cn(
-                "rounded-md px-2 py-1 text-xs font-medium",
-                face === "chart" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-              )}
-            >
-              Chart
-            </button>
-            <button
-              type="button"
-              aria-pressed={face === "code"}
-              onClick={() => setFace("code")}
-              className={cn(
-                "rounded-md px-2 py-1 text-xs font-medium",
-                face === "code" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-              )}
-            >
-              Code
-            </button>
-            <button
-              type="button"
-              aria-pressed={face === "query"}
-              onClick={() => setFace("query")}
-              className={cn(
-                "rounded-md px-2 py-1 text-xs font-medium",
-                face === "query" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-              )}
-            >
-              Query
-            </button>
-          </div>
-          {built !== null && choice !== null && (
-            <SaveChartButton
-              draft={chartSaveDraft({
-                title: chartTitleText(code.option ?? built.option),
-                query: sql,
-                connectionId,
-                typeId: choice.typeId,
-                variationId: choice.variationId,
-                selection: choice.selection,
-              })}
-            />
-          )}
-          {face === "query" && (
-            <button
-              type="button"
-              onClick={() => onRun(sql)}
-              disabled={running}
-              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-            >
-              Run
-            </button>
-          )}
-        </div>
+    <article className="flex w-full flex-col gap-4">
+      <div>
+        <h3 className="text-2xl font-semibold tracking-tight text-fg">{heading}</h3>
+        {chart?.caption ? <p className="mt-1 text-sm text-fg-muted">{chart.caption}</p> : null}
       </div>
-      {chart?.caption ? <p className="px-3 pt-2 text-xs text-fg-muted">{chart.caption}</p> : null}
-      {filters.length > 0 && (running || columns === null || slots === null) && (
-        <QueryFilterBar
-          filters={filters}
-          metrics={metricNames}
-          disabled={running}
-          onChange={changeFilter}
-          onCompare={changeCompare}
-          onClear={() => onRun(clearQueryFilters(sql))}
-        />
-      )}
-      {error !== null && (
-        <label className="block border-b border-hairline px-3 py-2">
-          <span className="text-xs text-fg-muted">SQL</span>
-          <textarea
-            aria-label="Query SQL"
-            value={sql}
-            wrap="soft"
-            rows={4}
-            onChange={(event) => onSqlChange(event.target.value)}
-            className="mt-1 w-full resize-y whitespace-pre-wrap break-words rounded border border-hairline-strong bg-canvas p-2 font-mono text-xs text-fg"
-          />
-        </label>
-      )}
-      <div className="relative min-h-0 flex-1">
-        <div className={cn("absolute inset-0", face !== "query" && "invisible")} aria-hidden={face !== "query"}>
-          <QueryEditor
-            value={sql}
-            documentId={title}
-            databaseType={databaseType}
-            schemaContext={schemaContext}
-            wordWrap
-            onContentChange={onSqlChange}
-          />
-        </div>
-        {face === "chart" && (
-          <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
-            {error !== null && (
-              <p role="alert" className="px-3 py-2 text-xs text-danger">
-                {error}
-              </p>
+      <div className="flex h-[28rem] flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-3">
+          <FileText className="size-4 shrink-0 text-fg-muted" />
+          <span className="min-w-0 truncate text-sm font-medium text-fg">{title}</span>
+          {connectionName !== undefined && connectionName !== "" && (
+            <span className="text-xs text-fg-subtle">{connectionName}</span>
+          )}
+          {result !== null && (
+            <span className="text-xs text-fg-muted">
+              {result.rowCount} rows · {result.executionTime} ms
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            <FaceButton pressed={face === "chart"} onClick={() => setFace("chart")} icon={BarChart3} label="Chart" />
+            <FaceButton pressed={face === "code"} onClick={() => setFace("code")} icon={Braces} label="Code" />
+            {built !== null && choice !== null && (
+              <SaveChartButton
+                draft={chartSaveDraft({
+                  title: chartTitleText(code.option ?? built.option),
+                  query: sql,
+                  connectionId,
+                  typeId: choice.typeId,
+                  variationId: choice.variationId,
+                  selection: choice.selection,
+                })}
+              />
             )}
-            {running && <p className="px-3 py-6 text-center text-xs text-fg-muted">Running the query…</p>}
-            {!running && columns !== null && (
-              <div className="border-b border-hairline px-3 py-2">
-                <button
-                  type="button"
-                  aria-expanded={typesOpen}
-                  aria-label={typeButtonLabel}
-                  onClick={() => setTypesOpen((open) => !open)}
-                  className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised"
-                >
-                  {typeMeta === null || variationMeta === null
-                    ? "Choose a type"
-                    : `${typeMeta.label} · ${variationMeta.label}`}
-                </button>
-                {typesOpen && (
-                  <div className="mt-2 flex flex-col gap-2">
-                    <fieldset aria-label="Chart types" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
-                      {ECHART_TYPES.map((item) => {
-                        const pressed = (browsingId ?? choice?.typeId) === item.id;
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            aria-pressed={pressed}
-                            onClick={() => setBrowsingId((current) => (current === item.id ? current : item.id))}
-                            className={cn(
-                              "rounded border px-2 py-0.5 text-xs",
-                              pressed
-                                ? "border-brand bg-brand/15 text-brand"
-                                : "border-hairline-strong text-fg-secondary hover:bg-raised",
-                            )}
-                          >
-                            {item.label}
-                          </button>
-                        );
-                      })}
-                    </fieldset>
-                    {shownType !== null && (
-                      <fieldset aria-label="Chart variations" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
-                        {shownType.variations.map((item) => {
-                          const pressed = choice?.typeId === shownType.id && choice.variationId === item.id;
+            <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
+            {face === "query" && (
+              <button
+                type="button"
+                onClick={() => onRun(sql)}
+                disabled={running}
+                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+              >
+                Run
+              </button>
+            )}
+          </div>
+        </div>
+        {filters.length > 0 && (running || columns === null || slots === null) && (
+          <QueryFilterBar
+            filters={filters}
+            metrics={metricNames}
+            disabled={running}
+            onChange={changeFilter}
+            onCompare={changeCompare}
+            onClear={() => onRun(clearQueryFilters(sql))}
+          />
+        )}
+        {error !== null && (
+          <label className="block border-b border-hairline px-3 py-2">
+            <span className="text-xs text-fg-muted">SQL</span>
+            <textarea
+              aria-label="Query SQL"
+              value={sql}
+              wrap="soft"
+              rows={4}
+              onChange={(event) => onSqlChange(event.target.value)}
+              className="mt-1 w-full resize-y whitespace-pre-wrap break-words rounded border border-hairline-strong bg-canvas p-2 font-mono text-xs text-fg"
+            />
+          </label>
+        )}
+        <div className="relative min-h-0 flex-1">
+          <div className={cn("absolute inset-0", face !== "query" && "invisible")} aria-hidden={face !== "query"}>
+            <QueryEditor
+              value={sql}
+              documentId={title}
+              databaseType={databaseType}
+              schemaContext={schemaContext}
+              wordWrap
+              onContentChange={onSqlChange}
+            />
+          </div>
+          {face === "chart" && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
+              {error !== null && (
+                <p role="alert" className="px-3 py-2 text-xs text-danger">
+                  {error}
+                </p>
+              )}
+              {running && <p className="px-3 py-6 text-center text-xs text-fg-muted">Running the query…</p>}
+              {!running && columns !== null && (
+                <div className="border-b border-hairline px-3 py-2">
+                  <button
+                    type="button"
+                    aria-expanded={typesOpen}
+                    aria-label={typeButtonLabel}
+                    onClick={() => setTypesOpen((open) => !open)}
+                    className="rounded border border-hairline-strong px-2 py-0.5 text-xs text-fg-secondary hover:bg-raised"
+                  >
+                    {typeMeta === null || variationMeta === null
+                      ? "Choose a type"
+                      : `${typeMeta.label} · ${variationMeta.label}`}
+                  </button>
+                  {typesOpen && (
+                    <div className="mt-2 flex flex-col gap-2">
+                      <fieldset aria-label="Chart types" className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0">
+                        {ECHART_TYPES.map((item) => {
+                          const pressed = (browsingId ?? choice?.typeId) === item.id;
                           return (
                             <button
                               key={item.id}
                               type="button"
                               aria-pressed={pressed}
-                              onClick={() => {
-                                const classified = columns;
-                                setChoice((current) => {
-                                  if (current?.typeId === shownType.id && current.variationId === item.id) {
-                                    return current;
-                                  }
-                                  return assistChoiceForVariation(shownType.id, item.id, classified) ?? current;
-                                });
-                              }}
+                              onClick={() => setBrowsingId((current) => (current === item.id ? current : item.id))}
                               className={cn(
                                 "rounded border px-2 py-0.5 text-xs",
                                 pressed
@@ -379,119 +350,155 @@ export function ChartWithEditor({
                           );
                         })}
                       </fieldset>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            {!running && result !== null && slots !== null && columns !== null && (
-              <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2">
-                {slots.map((slot) => {
-                  const pool = slot.kind === "metric" ? columns.metrics : columns.dimensions;
-                  const selected = new Set(choice?.selection[slot.id] ?? []);
-                  return (
-                    <fieldset
-                      key={slot.id}
-                      aria-label={slot.label}
-                      className="m-0 flex min-w-0 flex-wrap items-center gap-1 border-0 p-0"
-                    >
-                      <span className="text-xs text-fg-muted">{slot.label}</span>
-                      {pool.map((name) => {
-                        const pressed = selected.has(name);
-                        return (
-                          <button
-                            key={name}
-                            type="button"
-                            aria-pressed={pressed}
-                            onClick={() =>
-                              setChoice((current) => {
-                                if (current === null) return current;
-                                return {
-                                  ...current,
-                                  selection: toggleSlot(
-                                    current.typeId,
-                                    current.variationId,
-                                    columns,
-                                    current.selection,
-                                    slot.id,
-                                    name,
-                                  ),
-                                };
-                              })
-                            }
-                            className={cn(
-                              "rounded border px-2 py-0.5 text-xs",
-                              pressed
-                                ? "border-brand bg-brand/15 text-brand"
-                                : "border-hairline-strong text-fg-secondary hover:bg-raised",
-                            )}
-                          >
-                            {name}
-                          </button>
-                        );
-                      })}
-                    </fieldset>
-                  );
-                })}
-                <ChartFilterShelf
-                  columns={columns.dimensions}
-                  metrics={columns.metrics}
-                  rows={result.rows}
-                  sql={sql}
-                  disabled={running}
-                  onSql={onRun}
-                />
-              </div>
-            )}
-            {!running && built !== null && (
-              <div className="flex min-h-0 flex-1 flex-col">
-                {code.option !== null && (
-                  <div className="flex items-center justify-between gap-2 px-3 py-1">
-                    <p className="text-xs text-fg-muted">Showing your chart code.</p>
-                    <button
-                      type="button"
-                      onClick={code.reset}
-                      className="text-xs font-medium text-fg-secondary underline"
-                    >
-                      Use generated chart
-                    </button>
-                  </div>
-                )}
-                <div className="min-h-0 flex-1">
-                  <AssistChartCanvas
-                    option={code.option ?? built.option}
-                    notes={code.option === null ? built.notes : []}
+                      {shownType !== null && (
+                        <fieldset
+                          aria-label="Chart variations"
+                          className="m-0 flex min-w-0 flex-wrap gap-1 border-0 p-0"
+                        >
+                          {shownType.variations.map((item) => {
+                            const pressed = choice?.typeId === shownType.id && choice.variationId === item.id;
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                aria-pressed={pressed}
+                                onClick={() => {
+                                  const classified = columns;
+                                  setChoice((current) => {
+                                    if (current?.typeId === shownType.id && current.variationId === item.id) {
+                                      return current;
+                                    }
+                                    return assistChoiceForVariation(shownType.id, item.id, classified) ?? current;
+                                  });
+                                }}
+                                className={cn(
+                                  "rounded border px-2 py-0.5 text-xs",
+                                  pressed
+                                    ? "border-brand bg-brand/15 text-brand"
+                                    : "border-hairline-strong text-fg-secondary hover:bg-raised",
+                                )}
+                              >
+                                {item.label}
+                              </button>
+                            );
+                          })}
+                        </fieldset>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {!running && result !== null && slots !== null && columns !== null && (
+                <div className="flex flex-wrap gap-3 border-b border-hairline px-3 py-2">
+                  {slots.map((slot) => {
+                    const pool = slot.kind === "metric" ? columns.metrics : columns.dimensions;
+                    const selected = new Set(choice?.selection[slot.id] ?? []);
+                    return (
+                      <fieldset
+                        key={slot.id}
+                        aria-label={slot.label}
+                        className="m-0 flex min-w-0 flex-wrap items-center gap-1 border-0 p-0"
+                      >
+                        <span className="text-xs text-fg-muted">{slot.label}</span>
+                        {pool.map((name) => {
+                          const pressed = selected.has(name);
+                          return (
+                            <button
+                              key={name}
+                              type="button"
+                              aria-pressed={pressed}
+                              onClick={() =>
+                                setChoice((current) => {
+                                  if (current === null) return current;
+                                  return {
+                                    ...current,
+                                    selection: toggleSlot(
+                                      current.typeId,
+                                      current.variationId,
+                                      columns,
+                                      current.selection,
+                                      slot.id,
+                                      name,
+                                    ),
+                                  };
+                                })
+                              }
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs",
+                                pressed
+                                  ? "border-transparent bg-brand-tint/15 text-brand"
+                                  : "border-hairline-strong text-fg-secondary hover:bg-raised",
+                              )}
+                            >
+                              {name}
+                              {pressed && <X className="size-3" />}
+                            </button>
+                          );
+                        })}
+                      </fieldset>
+                    );
+                  })}
+                  <ChartFilterShelf
+                    columns={columns.dimensions}
+                    metrics={columns.metrics}
+                    rows={result.rows}
+                    sql={sql}
+                    disabled={running}
+                    clearClassName="border-0 bg-transparent px-1 font-medium text-brand hover:bg-transparent hover:underline"
+                    onSql={onRun}
                   />
                 </div>
-              </div>
-            )}
-            {!running && built === null && choice !== null && result !== null && result.rows.length > 0 && (
-              <p className="px-3 py-6 text-center text-xs text-fg-muted">Choose the columns this chart needs.</p>
-            )}
-            {!running && built === null && result !== null && result.rows.length === 0 && (
-              <p className="px-3 py-6 text-center text-xs text-fg-muted">The query returned no rows.</p>
-            )}
-            {!running && built === null && choice === null && result !== null && result.rows.length > 0 && (
-              <ResultTable result={result} />
-            )}
-            {!running && error === null && result === null && (
-              <p className="px-3 py-6 text-center text-xs text-fg-muted">
-                The SQL editor is behind this chart. Open Query to edit it, or Code to edit the chart.
-              </p>
-            )}
-          </div>
-        )}
-        {face === "code" && (
-          <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
-            <ChartCodeEditor
-              value={code.text}
-              error={code.error}
-              edited={code.edited}
-              onChange={code.onChange}
-              onReset={code.reset}
-            />
-          </div>
-        )}
+              )}
+              {!running && built !== null && (
+                <div className="flex min-h-0 flex-1 flex-col">
+                  {code.option !== null && (
+                    <div className="flex items-center justify-between gap-2 px-3 py-1">
+                      <p className="text-xs text-fg-muted">Showing your chart code.</p>
+                      <button
+                        type="button"
+                        onClick={code.reset}
+                        className="text-xs font-medium text-fg-secondary underline"
+                      >
+                        Use generated chart
+                      </button>
+                    </div>
+                  )}
+                  <div className="min-h-0 flex-1">
+                    <AssistChartCanvas
+                      option={code.option ?? built.option}
+                      notes={code.option === null ? built.notes : []}
+                    />
+                  </div>
+                </div>
+              )}
+              {!running && built === null && choice !== null && result !== null && result.rows.length > 0 && (
+                <p className="px-3 py-6 text-center text-xs text-fg-muted">Choose the columns this chart needs.</p>
+              )}
+              {!running && built === null && result !== null && result.rows.length === 0 && (
+                <p className="px-3 py-6 text-center text-xs text-fg-muted">The query returned no rows.</p>
+              )}
+              {!running && built === null && choice === null && result !== null && result.rows.length > 0 && (
+                <ResultTable result={result} />
+              )}
+              {!running && error === null && result === null && (
+                <p className="px-3 py-6 text-center text-xs text-fg-muted">
+                  The SQL editor is behind this chart. Open Query to edit it, or Code to edit the chart.
+                </p>
+              )}
+            </div>
+          )}
+          {face === "code" && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-canvas">
+              <ChartCodeEditor
+                value={code.text}
+                error={code.error}
+                edited={code.edited}
+                onChange={code.onChange}
+                onReset={code.reset}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </article>
   );

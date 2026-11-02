@@ -826,7 +826,9 @@ describe("AiAssist page", () => {
     expect(view.queryByRole("navigation", { name: "Editor mode" })).toBeNull();
     const ide = view.getByRole("link", { name: "IDE" });
     expect(ide.getAttribute("href")).toBe("/");
-    expect(ide.className.includes("bg-primary")).toBe(true);
+    expect(ide.className.includes("border")).toBe(true);
+    fireEvent.click(view.getByRole("button", { name: "New query" }));
+    expect(document.activeElement).toBe(view.getByLabelText("How can I help?"));
     expect(view.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
     expect(view.queryByRole("link", { name: "AI" })).toBeNull();
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
