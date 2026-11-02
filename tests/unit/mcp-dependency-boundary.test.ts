@@ -69,8 +69,9 @@ describe("bun.lock resolves the SDK onto one core and the root zod", () => {
   });
 
   test.each(["server", "client", "core"])("no nested zod copy sits under @modelcontextprotocol/%s", (name) => {
-    // The control: bun.lock names a nested copy by this key shape, as it does for @vercel/cli-auth.
-    expect(lockfile).toContain('"@vercel/cli-auth/zod": [');
+    // The control: bun.lock names a nested copy by this key shape. Zod itself is hoisted,
+    // so the sample is another package still nested under the same parent.
+    expect(lockfile).toContain('"@vercel/cli-auth/open": [');
     expect(lockfile).not.toContain(`"@modelcontextprotocol/${name}/zod": [`);
   });
 });
