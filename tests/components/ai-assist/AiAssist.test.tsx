@@ -1028,6 +1028,103 @@ describe("AiAssist page", () => {
     expect(readStored().source).toBe("fireworks");
   });
 
+  test("hides a saved API key and asks Vercel AI Gateway", async () => {
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({
+        source: "openrouter",
+        openRouterModel: "openai/gpt-4o",
+        openRouterKey: "ork-secret",
+        fireworksModel: "",
+        fireworksKey: "",
+        gatewayModel: "",
+        gatewayKey: "",
+      }),
+    );
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      if (url.includes("/api/ai/assist") && method === "GET") {
+        return jsonResponse({
+          models: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+          gatewayModels: [{ id: "alibaba/qwen-3-14b", name: "Qwen3-14B" }],
+          gatewayCatalog: true,
+          serverKey: false,
+        });
+      }
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        calls.push({ url, method, body: JSON.parse(String(init?.body)) });
+        return jsonResponse({ explanation: "Routed.", queries: [] });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    expect(view.queryByLabelText("OpenRouter API key")).toBeNull();
+    expect(view.getByText("API key saved")).toBeTruthy();
+    expect(view.container.textContent?.includes("ork-secret")).toBe(false);
+    fireEvent.click(view.getByRole("button", { name: "Replace OpenRouter API key" }));
+    expect((view.getByLabelText("OpenRouter API key") as HTMLInputElement).value).toBe("");
+    fireEvent.click(view.getByRole("button", { name: "Save OpenRouter API key" }));
+    expect(view.getByLabelText("OpenRouter API key")).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").openRouterKey).toBe("");
+
+    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
+    expect(view.getByText(/Vercel AI Gateway uses the key you save here/)).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Vercel AI Gateway API key"), { target: { value: "gw-secret" } });
+    expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").gatewayKey).toBe("");
+    fireEvent.click(view.getByRole("button", { name: "Save Vercel AI Gateway API key" }));
+    expect(view.queryByLabelText("Vercel AI Gateway API key")).toBeNull();
+    expect(view.getByText("API key saved")).toBeTruthy();
+    expect(view.container.textContent?.includes("gw-secret")).toBe(false);
+    const listed = document.querySelector("#vercel-gateway-models option");
+    expect(listed?.getAttribute("value")).toBe("alibaba/qwen-3-14b");
+    expect(listed?.textContent).toBe("Qwen3-14B");
+    fireEvent.change(view.getByLabelText("Vercel AI Gateway model"), { target: { value: "alibaba/qwen-3-14b" } });
+    await typeAndSend(view, "What changed?");
+    expect(await view.findByText("Routed.")).toBeTruthy();
+
+    fireEvent.click(view.getByLabelText("Fireworks AI"));
+    expect(view.getByText(/A Fireworks model uses the key you save here/)).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Fireworks model"), { target: { value: "accounts/acme/models/tuned" } });
+    fireEvent.change(view.getByLabelText("Fireworks API key"), { target: { value: "fw-secret" } });
+    fireEvent.click(view.getByRole("button", { name: "Save Fireworks API key" }));
+    expect(view.queryByLabelText("Fireworks API key")).toBeNull();
+    expect(view.container.textContent?.includes("fw-secret")).toBe(false);
+    await typeAndSend(view, "And cost?");
+    expect(await view.findByText("Routed.")).toBeTruthy();
+
+    const sent = posts().map((call) => call.body);
+    expect(sent[0]).toMatchObject({
+      source: "gateway",
+      model: "alibaba/qwen-3-14b",
+      apiKey: "gw-secret",
+    });
+    expect(sent[1]).toMatchObject({
+      source: "fireworks",
+      model: "accounts/acme/models/tuned",
+      apiKey: "fw-secret",
+    });
+    expect(JSON.stringify(sent)).not.toContain("ork-secret");
+  });
+
+  test("says when the Vercel AI Gateway catalog cannot be loaded", async () => {
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "GET") {
+        return jsonResponse({
+          models: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+          gatewayModels: [],
+          gatewayCatalog: false,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
+    expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
+    expect(view.getByLabelText("Vercel AI Gateway model")).toBeTruthy();
+  });
+
   test("writes a query, draws the chart, and reveals the editor behind it", async () => {
     saveConnection();
     const view = render(<AiAssist />);
@@ -1349,6 +1446,8 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
     expect(await view.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
+    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
+    expect(view.getByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     view.unmount();
 
     let release: ((response: Response) => void) | undefined;

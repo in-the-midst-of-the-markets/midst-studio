@@ -5,17 +5,21 @@
  * collection, so the storage sync does not copy them to the server.
  */
 
+import { ASSIST_SOURCES, type AssistSource } from "@/lib/ai/assist-plan";
+
 export interface AssistModelOption {
   readonly id: string;
   readonly name: string;
 }
 
 export interface AssistSettings {
-  readonly source: "openrouter" | "fireworks";
+  readonly source: AssistSource;
   readonly openRouterModel: string;
   readonly fireworksModel: string;
+  readonly gatewayModel: string;
   readonly openRouterKey: string;
   readonly fireworksKey: string;
+  readonly gatewayKey: string;
 }
 
 export const COMMON_OPENROUTER_MODELS: readonly AssistModelOption[] = [
@@ -31,8 +35,10 @@ export const DEFAULT_ASSIST_SETTINGS: AssistSettings = {
   source: "openrouter",
   openRouterModel: COMMON_OPENROUTER_MODELS[0].id,
   fireworksModel: "",
+  gatewayModel: "",
   openRouterKey: "",
   fireworksKey: "",
+  gatewayKey: "",
 };
 
 const STORAGE_KEY = "libredb_ai_assist";
@@ -80,15 +86,19 @@ function settingsFrom(raw: string | null): AssistSettings {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed === null || typeof parsed !== "object") return DEFAULT_ASSIST_SETTINGS;
-    const source = "source" in parsed && parsed.source === "fireworks" ? "fireworks" : "openrouter";
+    const named = "source" in parsed ? parsed.source : undefined;
+    const source = ASSIST_SOURCES.find((item) => item === named) ?? "openrouter";
     const openRouterModel = text("openRouterModel" in parsed ? parsed.openRouterModel : undefined, 200);
     const fireworksModel = text("fireworksModel" in parsed ? parsed.fireworksModel : undefined, 200);
+    const gatewayModel = text("gatewayModel" in parsed ? parsed.gatewayModel : undefined, 200);
     return {
       source,
       openRouterModel: openRouterModel === "" ? DEFAULT_ASSIST_SETTINGS.openRouterModel : openRouterModel,
       fireworksModel,
+      gatewayModel,
       openRouterKey: text("openRouterKey" in parsed ? parsed.openRouterKey : undefined, 500),
       fireworksKey: text("fireworksKey" in parsed ? parsed.fireworksKey : undefined, 500),
+      gatewayKey: text("gatewayKey" in parsed ? parsed.gatewayKey : undefined, 500),
     };
   } catch {
     return DEFAULT_ASSIST_SETTINGS;

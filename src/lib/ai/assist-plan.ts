@@ -10,7 +10,7 @@
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { applyQueryFilters, promoteQueryFilters, queryIdentity } from "@/lib/charts/query-filters";
 
-export const ASSIST_SOURCES = ["openrouter", "fireworks"] as const;
+export const ASSIST_SOURCES = ["openrouter", "fireworks", "gateway"] as const;
 
 export type AssistSource = (typeof ASSIST_SOURCES)[number];
 
@@ -302,6 +302,10 @@ function historyOf(value: unknown): AssistHistoryTurn[] | null {
   return turns;
 }
 
+function isAssistSource(value: unknown): value is AssistSource {
+  return typeof value === "string" && (ASSIST_SOURCES as readonly string[]).includes(value);
+}
+
 function stringField(
   value: unknown,
   cap: number,
@@ -324,8 +328,8 @@ export function readAssistRequest(body: {
   readonly databaseType?: unknown;
   readonly history?: unknown;
 }): { ok: true; value: AssistRequest } | { ok: false; error: string } {
-  if (body.source !== "openrouter" && body.source !== "fireworks") {
-    return { ok: false, error: "Choose OpenRouter or Fireworks." };
+  if (!isAssistSource(body.source)) {
+    return { ok: false, error: "Choose OpenRouter, Fireworks, or Vercel AI Gateway." };
   }
   if (typeof body.model !== "string" || !/^[\w./:-]{1,200}$/.test(body.model)) {
     return { ok: false, error: "Name the model to use." };

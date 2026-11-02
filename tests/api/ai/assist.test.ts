@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { createMockRequest } from "../../helpers/mock-next";
 import { clearRateLimitState } from "@/lib/api/rate-limit";
 import { UNTRUSTED_CONTENT_BEGIN, UNTRUSTED_CONTENT_END } from "@/lib/agent/untrusted-content";
+import { GATEWAY_CHAT_URL } from "@/lib/ai/assist-transport";
 
 const session = {
   current: { role: "admin", username: "admin" } as { role: string; username: string } | null,
@@ -75,6 +76,15 @@ describe("POST /api/ai/assist", () => {
     );
     expect(fireworks.status).toBe(400);
     expect(((await fireworks.json()) as { error: string }).error).toBe("Add a Fireworks API key under Model.");
+
+    const gateway = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { source: "gateway", model: "alibaba/qwen-3-14b", question: "What changed?" },
+      }) as never,
+    );
+    expect(gateway.status).toBe(400);
+    expect(((await gateway.json()) as { error: string }).error).toBe("Add a Vercel AI Gateway API key under Model.");
   });
 
   test("fences the schema, drops a write, and does not echo the key", async () => {
@@ -128,6 +138,31 @@ describe("POST /api/ai/assist", () => {
     const end = joined.indexOf(UNTRUSTED_CONTENT_END, begin);
     expect(joined.slice(begin, end)).toContain(HOSTILE);
     expect(joined.slice(0, begin)).not.toContain(HOSTILE);
+  });
+
+  test("calls Vercel AI Gateway with the browser key", async () => {
+    let url = "";
+    let authorization = "";
+    globalThis.fetch = (async (input: string, init?: RequestInit) => {
+      url = String(input);
+      authorization = new Headers(init?.headers).get("Authorization") ?? "";
+      return jsonResponse({ choices: [{ message: { content: "Routed." } }] });
+    }) as unknown as typeof fetch;
+    const response = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "gateway",
+          model: "alibaba/qwen-3-14b",
+          apiKey: "gw-secret",
+          question: "What changed?",
+        },
+      }) as never,
+    );
+    expect(response.status).toBe(200);
+    expect(url).toBe(GATEWAY_CHAT_URL);
+    expect(authorization).toBe("Bearer gw-secret");
+    expect(JSON.stringify(await response.json())).not.toContain("gw-secret");
   });
 
   test("uses the server OpenRouter key and keeps prose that is not a plan", async () => {
@@ -193,6 +228,8 @@ describe("GET /api/ai/assist", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       models: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+      gatewayModels: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+      gatewayCatalog: true,
       serverKey: false,
     });
 
@@ -205,5 +242,20 @@ describe("GET /api/ai/assist", () => {
     globalThis.fetch = (async () => jsonResponse({}, 503)) as unknown as typeof fetch;
     const failed = await GET(createMockRequest("/api/ai/assist") as never);
     expect(failed.status).toBe(502);
+  });
+
+  test("keeps the OpenRouter catalog when the gateway list fails", async () => {
+    globalThis.fetch = (async (input: string) => {
+      if (String(input).includes("ai-gateway.vercel.sh")) return jsonResponse({}, 503);
+      return jsonResponse({ data: [{ id: "openai/gpt-4o", name: "GPT-4o" }] });
+    }) as unknown as typeof fetch;
+    const response = await GET(createMockRequest("/api/ai/assist") as never);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      models: [{ id: "openai/gpt-4o", name: "GPT-4o" }],
+      gatewayModels: [],
+      gatewayCatalog: false,
+      serverKey: false,
+    });
   });
 });

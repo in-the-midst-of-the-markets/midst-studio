@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ChevronRight, Plus, Sparkles } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
@@ -241,6 +241,85 @@ function useHydrated(): boolean {
   return useSyncExternalStore(subscribeHydration, hydratedNow, hydratedNow);
 }
 
+function modelFor(settings: AssistSettings): string {
+  if (settings.source === "fireworks") return settings.fireworksModel.trim();
+  if (settings.source === "gateway") return settings.gatewayModel.trim();
+  return settings.openRouterModel.trim();
+}
+
+function keyFor(settings: AssistSettings): string {
+  if (settings.source === "fireworks") return settings.fireworksKey;
+  if (settings.source === "gateway") return settings.gatewayKey;
+  return settings.openRouterKey;
+}
+
+function providerNote(source: AssistSettings["source"], serverKey: boolean | null): string {
+  if (source === "fireworks") return "Saved in this browser. A Fireworks model uses the key you save here.";
+  if (source === "gateway") return "Saved in this browser. Vercel AI Gateway uses the key you save here.";
+  if (serverKey === true) {
+    return "Saved in this browser. The OpenRouter key can stay blank; this server already has one.";
+  }
+  return "Saved in this browser. Leave the OpenRouter key blank to use the server's key.";
+}
+
+function SavedKeyField({ label, stored, onSave }: { label: string; stored: string; onSave: (key: string) => void }) {
+  const [draft, setDraft] = useState("");
+  const [replacing, setReplacing] = useState(false);
+  const saved = stored.trim() !== "";
+  const showInput = !saved || replacing;
+  let action: ReactNode = null;
+  if (!showInput) {
+    action = (
+      <button
+        type="button"
+        aria-label={`Replace ${label}`}
+        onClick={() => {
+          setDraft("");
+          setReplacing(true);
+        }}
+        className="text-xs font-medium text-fg-muted hover:text-fg"
+      >
+        Replace
+      </button>
+    );
+  } else if (draft.trim() !== "" || saved) {
+    action = (
+      <button
+        type="button"
+        aria-label={`Save ${label}`}
+        onClick={() => {
+          onSave(draft.trim());
+          setDraft("");
+          setReplacing(false);
+        }}
+        className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+      >
+        Save
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1 text-xs text-fg-muted">
+      <span>{label}</span>
+      <span className="flex items-center gap-2">
+        {showInput ? (
+          <input
+            type="password"
+            aria-label={label}
+            autoComplete="off"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            className="min-w-0 flex-1 rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+          />
+        ) : (
+          <output className="text-sm text-fg">API key saved</output>
+        )}
+        {action}
+      </span>
+    </div>
+  );
+}
+
 /**
  * The AI Assist page: a chat that writes queries, draws charts, and explains them.
  * Each chart keeps the SQL editor behind it.
@@ -252,7 +331,9 @@ export function AiAssist() {
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [models, setModels] = useState<readonly AssistModelOption[]>([]);
+  const [gatewayModels, setGatewayModels] = useState<readonly AssistModelOption[]>([]);
   const [modelStatus, setModelStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [gatewayStatus, setGatewayStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [serverKey, setServerKey] = useState<boolean | null>(null);
   const hydrated = useHydrated();
   const connections = useSyncExternalStore(subscribeConnection, readConnections, () => EMPTY_CONNECTIONS);
@@ -329,20 +410,27 @@ export function AiAssist() {
         if (cancelled) return;
         if (!response.ok) {
           setModelStatus("failed");
+          setGatewayStatus("failed");
           return;
         }
         const body: unknown = await response.json();
-        const listed =
-          body !== null && typeof body === "object" && "models" in body ? normalizeModels(body.models) : [];
-        const hasServerKey =
-          body !== null && typeof body === "object" && "serverKey" in body ? body.serverKey === true : false;
+        const record = body !== null && typeof body === "object" ? body : null;
+        const listed = record !== null && "models" in record ? normalizeModels(record.models) : [];
+        const listedGateway = record !== null && "gatewayModels" in record ? normalizeModels(record.gatewayModels) : [];
+        const hasServerKey = record !== null && "serverKey" in record ? record.serverKey === true : false;
+        const gatewayFailed = record !== null && "gatewayCatalog" in record && record.gatewayCatalog === false;
         if (cancelled) return;
         setModels(listed);
+        setGatewayModels(listedGateway);
         setServerKey(hasServerKey);
         setModelStatus("ready");
+        setGatewayStatus(gatewayFailed ? "failed" : "ready");
       })
       .catch(() => {
-        if (!cancelled) setModelStatus("failed");
+        if (!cancelled) {
+          setModelStatus("failed");
+          setGatewayStatus("failed");
+        }
       });
     return () => {
       cancelled = true;
@@ -428,12 +516,12 @@ export function AiAssist() {
   const send = async () => {
     const question = draft.trim();
     if (question === "" || sendingRef.current) return;
-    const model = settings.source === "openrouter" ? settings.openRouterModel.trim() : settings.fireworksModel.trim();
+    const model = modelFor(settings);
     if (model === "") {
       setNotice("Name the model to use.");
       return;
     }
-    const apiKey = settings.source === "openrouter" ? settings.openRouterKey : settings.fireworksKey;
+    const apiKey = keyFor(settings);
     sendingRef.current = true;
     setSending(true);
     setNotice(null);
@@ -547,10 +635,7 @@ export function AiAssist() {
   const modelOptions = catalog.some((item) => item.id === settings.openRouterModel)
     ? catalog
     : [{ id: settings.openRouterModel, name: settings.openRouterModel }, ...catalog];
-  const canSend =
-    draft.trim() !== "" &&
-    !sending &&
-    (settings.source === "openrouter" ? settings.openRouterModel.trim() : settings.fireworksModel.trim()) !== "";
+  const canSend = draft.trim() !== "" && !sending && modelFor(settings) !== "";
 
   const queries = turns.flatMap((turn) => turn.cards);
   const activeQuery = queries.at(-1) ?? null;
@@ -767,7 +852,7 @@ export function AiAssist() {
                 </button>
                 {settingsOpen && (
                   <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                    <fieldset className="m-0 flex gap-3 border-0 p-0">
+                    <fieldset className="m-0 flex flex-wrap gap-3 border-0 p-0 sm:col-span-2">
                       <legend className="sr-only">Model provider</legend>
                       <label className="flex items-center gap-1.5 text-xs text-fg">
                         <input
@@ -789,25 +874,25 @@ export function AiAssist() {
                         />
                         Fireworks AI
                       </label>
+                      <label className="flex items-center gap-1.5 text-xs text-fg">
+                        <input
+                          type="radio"
+                          name="assist-source"
+                          value="gateway"
+                          checked={settings.source === "gateway"}
+                          onChange={() => updateSettings({ source: "gateway" })}
+                        />
+                        Vercel AI Gateway
+                      </label>
                     </fieldset>
-                    <p className="text-xs text-fg-muted sm:col-span-2">
-                      {serverKey
-                        ? "Saved in this browser. The OpenRouter key can stay blank; this server already has one."
-                        : "Saved in this browser. Leave the OpenRouter key blank to use the server's key."}
-                    </p>
-                    {settings.source === "openrouter" ? (
+                    <p className="text-xs text-fg-muted sm:col-span-2">{providerNote(settings.source, serverKey)}</p>
+                    {settings.source === "openrouter" && (
                       <>
-                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                          OpenRouter API key
-                          <input
-                            type="password"
-                            aria-label="OpenRouter API key"
-                            autoComplete="off"
-                            value={settings.openRouterKey}
-                            onChange={(event) => updateSettings({ openRouterKey: event.target.value })}
-                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                          />
-                        </label>
+                        <SavedKeyField
+                          label="OpenRouter API key"
+                          stored={settings.openRouterKey}
+                          onSave={(openRouterKey) => updateSettings({ openRouterKey })}
+                        />
                         <label className="flex flex-col gap-1 text-xs text-fg-muted">
                           Model
                           <select
@@ -829,19 +914,14 @@ export function AiAssist() {
                           </output>
                         )}
                       </>
-                    ) : (
+                    )}
+                    {settings.source === "fireworks" && (
                       <>
-                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                          Fireworks API key
-                          <input
-                            type="password"
-                            aria-label="Fireworks API key"
-                            autoComplete="off"
-                            value={settings.fireworksKey}
-                            onChange={(event) => updateSettings({ fireworksKey: event.target.value })}
-                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
-                          />
-                        </label>
+                        <SavedKeyField
+                          label="Fireworks API key"
+                          stored={settings.fireworksKey}
+                          onSave={(fireworksKey) => updateSettings({ fireworksKey })}
+                        />
                         <label className="flex flex-col gap-1 text-xs text-fg-muted">
                           Fine-tuned model
                           <input
@@ -852,6 +932,38 @@ export function AiAssist() {
                             className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
                           />
                         </label>
+                      </>
+                    )}
+                    {settings.source === "gateway" && (
+                      <>
+                        <SavedKeyField
+                          label="Vercel AI Gateway API key"
+                          stored={settings.gatewayKey}
+                          onSave={(gatewayKey) => updateSettings({ gatewayKey })}
+                        />
+                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+                          Model
+                          <input
+                            aria-label="Vercel AI Gateway model"
+                            list="vercel-gateway-models"
+                            value={settings.gatewayModel}
+                            placeholder="provider/model"
+                            onChange={(event) => updateSettings({ gatewayModel: event.target.value })}
+                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                          />
+                          <datalist id="vercel-gateway-models">
+                            {gatewayModels.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </datalist>
+                        </label>
+                        {gatewayStatus === "failed" && (
+                          <output className="block text-xs text-fg-muted sm:col-span-2">
+                            The Vercel AI Gateway catalog could not be loaded.
+                          </output>
+                        )}
                       </>
                     )}
                   </div>

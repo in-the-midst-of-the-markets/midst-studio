@@ -67,16 +67,33 @@ describe("assist settings storage", () => {
     localStorage.setItem("libredb_ai_assist", JSON.stringify({ source: "elsewhere", openRouterModel: 4 }));
     expect(readAssistSettings().source).toBe("openrouter");
     expect(readAssistSettings().openRouterModel).toBe(DEFAULT_ASSIST_SETTINGS.openRouterModel);
+
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ source: "gateway", gatewayModel: "alibaba/qwen-3-14b", gatewayKey: "gw" }),
+    );
+    expect(readAssistSettings()).toMatchObject({
+      source: "gateway",
+      gatewayModel: "alibaba/qwen-3-14b",
+      gatewayKey: "gw",
+    });
   });
 
   test("caps oversized strings", () => {
     localStorage.setItem(
       "libredb_ai_assist",
-      JSON.stringify({ openRouterModel: "m".repeat(250), fireworksKey: "k".repeat(600) }),
+      JSON.stringify({
+        openRouterModel: "m".repeat(250),
+        fireworksKey: "k".repeat(600),
+        gatewayModel: "g".repeat(250),
+        gatewayKey: "k".repeat(600),
+      }),
     );
     const settings = readAssistSettings();
     expect(settings.openRouterModel).toHaveLength(200);
     expect(settings.fireworksKey).toHaveLength(500);
+    expect(settings.gatewayModel).toHaveLength(200);
+    expect(settings.gatewayKey).toHaveLength(500);
   });
 
   test("writes the choice and ignores a storage failure", () => {
