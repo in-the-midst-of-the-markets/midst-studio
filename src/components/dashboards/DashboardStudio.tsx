@@ -36,7 +36,8 @@ import {
   withoutChart,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
-import { classifyColumns, echartType } from "@/lib/charts/echarts-catalog";
+import { classifyColumns } from "@/lib/charts/echarts-catalog";
+import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import {
   clearQueryFilters,
   readQueryFilters,
@@ -343,7 +344,7 @@ function DashboardChart({
   const sql = chart.query ?? "";
   const filters = readQueryFilters(sql);
   const metrics = view.kind === "result" ? classifyColumns(view.result.fields, view.result.rows).metrics : [];
-  const kind = chart.typeId === undefined ? null : echartType(chart.typeId);
+  const filterLooks = mergeFilterLooks(defaultFilterLooks(filters, metrics), readFilterLooks(chart.look));
 
   const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     event.currentTarget.focus();
@@ -384,10 +385,7 @@ function DashboardChart({
       className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
       <div className="flex items-center justify-between gap-3 px-4 pt-4">
-        <h2 className="min-w-0 truncate text-sm font-semibold text-fg">
-          {chart.name}
-          {kind !== null && <span className="ml-2 text-xs font-normal text-fg-muted">{kind.label} chart</span>}
-        </h2>
+        <h2 className="min-w-0 truncate text-sm font-semibold text-fg">{chart.name}</h2>
         <div className="flex shrink-0 items-center gap-4">
           <button
             type="button"
@@ -420,6 +418,7 @@ function DashboardChart({
             </>
           }
           className="border-0 px-4 py-3"
+          looks={filterLooks}
           clearClassName="border-0 bg-transparent px-1 font-medium text-brand hover:bg-transparent hover:underline"
           onChange={(name, value) =>
             onQuery(metrics.includes(name) ? writeMetricFilter(sql, name, value) : writeQueryFilter(sql, name, value))

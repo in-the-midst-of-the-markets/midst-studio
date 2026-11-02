@@ -10,29 +10,9 @@ export interface SaveChartButtonProps {
   readonly draft: Omit<SaveChartDraft, "refreshText">;
 }
 
-function SaveChartStatus({
-  storedId,
-  notice,
-  onUnsave,
-}: {
-  readonly storedId: string | null;
-  readonly notice: string | null;
-  readonly onUnsave: (id: string) => void;
-}) {
-  return (
-    <>
-      {storedId !== null && (
-        <button type="button" onClick={() => onUnsave(storedId)} className="text-xs font-medium text-danger underline">
-          Unsave
-        </button>
-      )}
-      {notice !== null && (
-        <span role="status" className="text-xs text-fg-muted">
-          {notice}
-        </span>
-      )}
-    </>
-  );
+function SaveNotice({ notice }: { readonly notice: string | null }) {
+  if (notice === null) return null;
+  return <output className="text-xs text-fg-muted">{notice}</output>;
 }
 
 /**
@@ -98,14 +78,20 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
   if (!open) {
     return (
       <span className="inline-flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openDialog}
-          className="inline-flex items-center rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs font-medium text-fg hover:bg-fill-subtle"
-        >
-          Save Chart
-        </button>
-        <SaveChartStatus storedId={stored?.id ?? null} notice={notice} onUnsave={unsave} />
+        {stored === null ? (
+          <button
+            type="button"
+            onClick={openDialog}
+            className="inline-flex items-center rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs font-medium text-fg hover:bg-fill-subtle"
+          >
+            Save Chart
+          </button>
+        ) : (
+          <button type="button" onClick={() => unsave(stored.id)} className="text-xs font-medium text-danger underline">
+            Unsave
+          </button>
+        )}
+        <SaveNotice notice={notice} />
       </span>
     );
   }
@@ -136,7 +122,7 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
       <button type="button" onClick={() => setOpen(false)} className="text-xs font-medium text-fg-muted underline">
         Cancel
       </button>
-      <SaveChartStatus storedId={stored?.id ?? null} notice={notice} onUnsave={unsave} />
+      <SaveNotice notice={notice} />
       {error !== null && (
         <p role="alert" className="text-xs text-danger">
           {error}

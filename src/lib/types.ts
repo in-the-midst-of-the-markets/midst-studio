@@ -1216,6 +1216,11 @@ export interface SavedChartConfig {
   selection?: Record<string, string[]>;
   /** The title in the chart code (`title.text`). Absent leaves the chart untitled. */
   title?: string;
+  /**
+   * How the chart looked when it was saved: colours, title, and series style, without
+   * the query's values. A refresh fills those values back in. Absent rebuilds from the shelves.
+   */
+  look?: Record<string, unknown>;
 }
 
 /** One saved chart placed on a dashboard, at the size the user dragged it to. */

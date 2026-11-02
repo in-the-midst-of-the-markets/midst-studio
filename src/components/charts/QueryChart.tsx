@@ -28,8 +28,9 @@ import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
+import { stripChartValues } from "@/lib/charts/chart-code";
 import { chartTitleText } from "@/lib/charts/chart-title";
-import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
+import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
@@ -197,6 +198,7 @@ export function QueryChart({
     filterLooks,
   );
   const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
+  const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const [codeOpen, setCodeOpen] = useState(false);
 
   const hostRef = useRef<HTMLDivElement>(null);
@@ -404,6 +406,7 @@ export function QueryChart({
                       typeId: choice.typeId,
                       variationId: choice.variationId,
                       selection: choice.selection,
+                      look: savedLook,
                     })}
                   />
                 )}

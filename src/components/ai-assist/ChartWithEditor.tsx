@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Braces, FileText, Terminal, X, type LucideIcon } from "lucide-react";
+import { BarChart3, Braces, Terminal, X, type LucideIcon } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
+import { stripChartValues } from "@/lib/charts/chart-code";
 import { chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
-import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
+import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
@@ -62,7 +63,6 @@ export interface ChartWithEditorProps {
   readonly sql: string;
   /** The connection the saved chart reruns `sql` on. */
   readonly connectionId?: string;
-  readonly connectionName?: string;
   readonly databaseType?: DatabaseType;
   readonly schemaContext?: string;
   readonly result: QueryResult | null;
@@ -144,7 +144,6 @@ export function ChartWithEditor({
   title,
   sql,
   connectionId,
-  connectionName,
   databaseType,
   schemaContext,
   result,
@@ -228,30 +227,18 @@ export function ChartWithEditor({
     filterLooks,
   );
   const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
+  const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const codeTitle = chartTitleText(code.option);
   const heading = codeTitle !== "" ? codeTitle : title;
 
   return (
     <article className="flex w-full flex-col gap-4">
-      <div>
-        <h3 className="text-2xl font-semibold tracking-tight text-fg" style={chartTitleStyle(code.editedOption)}>
-          {heading}
-        </h3>
-        {chart?.caption ? <p className="mt-1 text-sm text-fg-muted">{chart.caption}</p> : null}
-      </div>
+      <h3 className="text-2xl font-semibold tracking-tight text-fg" style={chartTitleStyle(code.editedOption)}>
+        {heading}
+      </h3>
       <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
-        <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-3">
-          <FileText className="size-4 shrink-0 text-fg-muted" />
-          <span className="min-w-0 truncate text-sm font-medium text-fg">{title}</span>
-          {connectionName !== undefined && connectionName !== "" && (
-            <span className="text-xs text-fg-subtle">{connectionName}</span>
-          )}
-          {result !== null && (
-            <span className="text-xs text-fg-muted">
-              {result.rowCount} rows · {result.executionTime} ms
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-hairline px-4 py-3">
+          <div className="flex items-center gap-1.5">
             <FaceButton pressed={face === "chart"} onClick={() => setFace("chart")} icon={BarChart3} label="Chart" />
             <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
             {face === "query" && (
@@ -274,6 +261,7 @@ export function ChartWithEditor({
                   typeId: choice.typeId,
                   variationId: choice.variationId,
                   selection: choice.selection,
+                  look: savedLook,
                 })}
               />
             )}

@@ -45,11 +45,13 @@ describe("SaveChartButton", () => {
     expect(storage.getSavedCharts()).toHaveLength(1);
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     expect(view.queryByRole("textbox", { name: "Chart name" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Save Chart" })).toBeNull();
     expect(view.getByRole("status").textContent).toBe("Saved.");
     fireEvent.click(view.getByRole("button", { name: "Unsave" }));
     expect(storage.getSavedCharts()).toHaveLength(0);
     expect(view.getByRole("status").textContent).toBe("Unsaved.");
     expect(view.queryByRole("button", { name: "Unsave" })).toBeNull();
+    expect(view.getByRole("button", { name: "Save Chart" })).toBeTruthy();
   });
 
   test("a chart without a query cannot schedule a refresh", () => {
@@ -62,8 +64,11 @@ describe("SaveChartButton", () => {
     expect(storage.getSavedCharts()[0]?.query).toBeUndefined();
     expect(storage.getSavedCharts()[0]?.refreshSeconds).toBeUndefined();
     expect(view.getByRole("status").textContent).toBe("Saved.");
+    expect(view.queryByRole("button", { name: "Save Chart" })).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Unsave" }));
     expect(storage.getSavedCharts()).toHaveLength(0);
+    expect(view.queryByRole("button", { name: "Unsave" })).toBeNull();
+    expect(view.getByRole("button", { name: "Save Chart" })).toBeTruthy();
     expect(view.getByRole("status").textContent).toBe("Unsaved.");
   });
 });

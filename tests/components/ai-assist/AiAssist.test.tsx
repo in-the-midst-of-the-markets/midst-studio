@@ -220,7 +220,6 @@ describe("ChartWithEditor", () => {
         <ChartWithEditor
           title="Revenue"
           sql={sql}
-          connectionName="Warehouse"
           databaseType="postgres"
           result={result}
           error={null}
@@ -242,16 +241,17 @@ describe("ChartWithEditor", () => {
       "Code",
       "Save Chart",
     ]);
-    expect(view.getByText("Revenue by month")).toBeTruthy();
-    expect(view.getByText("Warehouse")).toBeTruthy();
-    expect(view.getByText("1 rows · 4 ms")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    expect(view.queryByText("Warehouse")).toBeNull();
+    expect(view.queryByText("Revenue by month")).toBeNull();
+    expect(view.queryByText("1 rows · 4 ms")).toBeNull();
     expect(view.getByTestId("assist-chart")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     const editor = view.getByLabelText("SQL editor");
     fireEvent.change(editor, { target: { value: "SELECT 2" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
     await waitFor(() => expect(ran).toEqual(["SELECT 2"]));
-    expect(view.getByText("1 rows · 9 ms")).toBeTruthy();
+    expect(view.queryByText("1 rows · 9 ms")).toBeNull();
     expect(view.getByRole("button", { name: "Chart" }).getAttribute("aria-pressed")).toBe("true");
     const dimension = within(view.getByRole("group", { name: "Dimension" }));
     const metrics = within(view.getByRole("group", { name: "Metrics" }));
@@ -881,7 +881,6 @@ describe("ChartWithEditor", () => {
     const props = {
       title: "Revenue",
       sql: "SELECT month, revenue FROM orders",
-      connectionName: "Orders",
       result: barResult,
       error: null,
       chart: barChart,
@@ -1032,8 +1031,9 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     await typeAndSend(view);
     expect(await view.findByText("Revenue rose.")).toBeTruthy();
-    expect(await view.findByText("Revenue by month")).toBeTruthy();
-    expect(await view.findByText("1 rows · 4 ms")).toBeTruthy();
+    expect(await view.findByRole("heading", { name: "Revenue" })).toBeTruthy();
+    expect(view.queryByText("Revenue by month")).toBeNull();
+    expect(view.queryByText("1 rows · 4 ms")).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     expect(view.getByLabelText("SQL editor")).toBeTruthy();
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
@@ -1043,7 +1043,7 @@ describe("AiAssist page", () => {
       expect(calls.filter((call) => call.url.includes("/api/db/query")).length).toBeGreaterThan(queriesBeforeRerun),
     );
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
-    expect(view.getByText("Revenue by month")).toBeTruthy();
+    expect(view.queryByText("Revenue by month")).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "DELETE FROM orders" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
@@ -1484,7 +1484,7 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     expect(await view.findByText("Saved.")).toBeTruthy();
     await waitFor(() => expect(view.queryByText(/No connected database is named/)).toBeNull());
-    expect(view.getAllByText("Markets").length).toBeGreaterThan(0);
+    expect(view.getByText(/Markets/)).toBeTruthy();
     const saved = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
       cards?: { connectionId?: string; connectionName?: string; error?: string | null }[];
     }[];

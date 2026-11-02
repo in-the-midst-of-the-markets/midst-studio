@@ -102,5 +102,41 @@ describe("saved chart run", () => {
         result,
       ),
     ).toBeNull();
+    const shelves = {
+      name: "Revenue",
+      typeId: "bar",
+      variationId: "basic",
+      selection: { category: ["region"], values: ["total"] },
+    };
+    const plain = optionForSavedChart(shelves, result, chartTheme("dark"));
+    if (plain === null) throw new Error("expected a chart");
+    const palette = plain.option.color as string[];
+    const painted = optionForSavedChart(
+      {
+        ...shelves,
+        look: {
+          color: ["#9546de", ...palette.slice(1)],
+          series: [{ itemStyle: { color: "#9546de" } }],
+          filters: { region: { control: "slider", min: 0, max: 10 } },
+        },
+      },
+      result,
+      chartTheme("dark"),
+    );
+    if (painted === null) throw new Error("expected a painted chart");
+    expect((painted.option.color as string[])[0]).toBe("#9546de");
+    expect((painted.option.series as { itemStyle?: { color?: string } }[])[0]?.itemStyle?.color).toBe("#9546de");
+    expect(painted.option.filters).toBeUndefined();
+    expect((painted.option.series as { data?: unknown }[])[0]?.data).toEqual(
+      (plain.option.series as { data?: unknown }[])[0]?.data,
+    );
+    expect(optionForSavedChart({ ...shelves, look: {} }, result, chartTheme("dark"))?.option.color).toEqual(palette);
+    expect(
+      optionForSavedChart(
+        { ...shelves, variationId: "nope", look: { color: ["#9546de"] } },
+        result,
+        chartTheme("dark"),
+      ),
+    ).toBeNull();
   });
 });

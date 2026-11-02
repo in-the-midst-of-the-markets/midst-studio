@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { axesFromSelection, buildSavedChart, chartSaveDraft, findSavedChart } from "@/lib/charts/save-chart";
+import {
+  axesFromSelection,
+  buildSavedChart,
+  chartSaveDraft,
+  findSavedChart,
+  storedChartLook,
+} from "@/lib/charts/save-chart";
 
 const draft = {
   name: "Revenue",
@@ -91,6 +97,21 @@ describe("save chart", () => {
     expect(findSavedChart([saved], { ...draft, query: "SELECT 2" })).toBeNull();
     expect(findSavedChart([saved], { ...draft, variationId: "stacked" })).toBeNull();
     expect(findSavedChart([], draft)).toBeNull();
+    const painted = buildSavedChart({ ...draft, look: { color: ["#9546de"], mark: () => 1 } }, "painted");
+    expect(painted?.look).toEqual({ color: ["#9546de"] });
+    expect(
+      findSavedChart(painted === null ? [] : [painted], { ...draft, look: { color: ["#9546de"], mark: () => 1 } })?.id,
+    ).toBe("painted");
+    expect(findSavedChart(painted === null ? [] : [painted], { ...draft, look: { color: ["#112233"] } })).toBeNull();
+    expect(buildSavedChart({ ...draft, look: {} })?.look).toBeUndefined();
+    expect(buildSavedChart({ ...draft, look: [] as unknown as Record<string, unknown> })?.look).toBeUndefined();
+    const loop: Record<string, unknown> = {};
+    loop.self = loop;
+    expect(storedChartLook(loop)).toBeUndefined();
+    expect(storedChartLook({ toJSON: () => "text" })).toBeUndefined();
+    expect(storedChartLook({ toJSON: () => null })).toBeUndefined();
+    expect(storedChartLook({ toJSON: () => [1] })).toBeUndefined();
+    expect(chartSaveDraft({ ...draft, look: { color: ["#9546de"] } }).look).toEqual({ color: ["#9546de"] });
     const bare = {
       ...saved,
       connectionId: undefined,
