@@ -180,6 +180,102 @@ describe("cancelMarketplaceSubscription", () => {
     expect(over).toMatchObject({ ok: true, subscription: { status: "ended" } });
   });
 
+  test("cancels every active subscription for that database", async () => {
+    const posted: string[] = [];
+    const fetchImpl = routes({
+      subscriptions: () => page([subscription({ id: "sub_first" }), subscription({ id: "sub_second" })]),
+      cancel: (url) => {
+        posted.push(url);
+        const id = url.slice(url.lastIndexOf("/") + 1);
+        return new Response(JSON.stringify(subscription({ id, cancel_at_period_end: true })), { status: 200 });
+      },
+    });
+
+    expect(await cancelMarketplaceSubscription("sk_test_x", "ada", "opensearch", fetchImpl, NOW)).toEqual({
+      ok: true,
+      subscription: { offeringId: "opensearch", status: "canceling", accessUntil: FUTURE_ISO },
+    });
+    expect(posted).toEqual([
+      "https://api.stripe.com/v1/subscriptions/sub_first",
+      "https://api.stripe.com/v1/subscriptions/sub_second",
+    ]);
+  });
+
+  test("cancels only the database that was asked for", async () => {
+    const posted: string[] = [];
+    const fetchImpl = routes({
+      subscriptions: () =>
+        page([
+          subscription(),
+          subscription({ id: "sub_quotes", metadata: { offering_id: "north-quotes", subscriber: "ada" } }),
+        ]),
+      cancel: (url) => {
+        posted.push(url);
+        return new Response(JSON.stringify(subscription({ cancel_at_period_end: true })), { status: 200 });
+      },
+    });
+
+    expect(await cancelMarketplaceSubscription("sk_test_x", "ada", "opensearch", fetchImpl, NOW)).toEqual({
+      ok: true,
+      subscription: { offeringId: "opensearch", status: "canceling", accessUntil: FUTURE_ISO },
+    });
+    expect(posted).toEqual(["https://api.stripe.com/v1/subscriptions/sub_abc"]);
+  });
+
+  test("stops when a later subscription cannot be canceled", async () => {
+    let calls = 0;
+    const fetchImpl = routes({
+      subscriptions: () => page([subscription({ id: "sub_first" }), subscription({ id: "sub_second" })]),
+      cancel: () => {
+        calls += 1;
+        if (calls === 1) {
+          return new Response(JSON.stringify(subscription({ id: "sub_first", cancel_at_period_end: true })), {
+            status: 200,
+          });
+        }
+        return new Response(JSON.stringify({ error: "no" }), { status: 400 });
+      },
+    });
+
+    expect(await cancelMarketplaceSubscription("sk_test_x", "ada", "opensearch", fetchImpl, NOW)).toEqual({
+      ok: false,
+      missing: false,
+    });
+    expect(calls).toBe(2);
+  });
+
+  test("keeps the subscription that still has access when another has already ended", async () => {
+    const endedThenCanceling = routes({
+      subscriptions: () =>
+        page([
+          subscription({ id: "sub_old", status: "canceled" }),
+          subscription({ id: "sub_keep", cancel_at_period_end: true }),
+        ]),
+      cancel: () => {
+        throw new Error("should not post");
+      },
+    });
+    const cancelingThenEnded = routes({
+      subscriptions: () =>
+        page([
+          subscription({ id: "sub_keep", cancel_at_period_end: true }),
+          subscription({ id: "sub_old", status: "canceled" }),
+        ]),
+      cancel: () => {
+        throw new Error("should not post");
+      },
+    });
+
+    expect(await cancelMarketplaceSubscription("sk_test_x", "ada", "opensearch", endedThenCanceling, NOW)).toEqual({
+      ok: true,
+      subscription: { offeringId: "opensearch", status: "canceling", accessUntil: FUTURE_ISO },
+    });
+    expect(await cancelMarketplaceSubscription("sk_test_x", "ada", "opensearch", cancelingThenEnded, NOW)).toEqual({
+      ok: true,
+      subscription: { offeringId: "opensearch", status: "canceling", accessUntil: FUTURE_ISO },
+    });
+  });
+
   test("a subscription this account does not hold is missing", async () => {
     const fetchImpl = routes({
       subscriptions: () => page([subscription({ metadata: { offering_id: "opensearch", subscriber: "bob" } })]),

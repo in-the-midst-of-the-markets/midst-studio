@@ -12,6 +12,7 @@ import {
   heldSubscriptions,
   readSubscription,
   stripeListPage,
+  subscriptionCandidates,
   subscriptionView,
   type HeldSubscription,
   type SubscriptionView,
@@ -40,17 +41,27 @@ async function stripePages(
   return rows;
 }
 
-async function heldForAccount(
+const PHASE_RANK: Record<SubscriptionView["status"], number> = { active: 0, canceling: 1, ended: 2 };
+
+async function stripeLists(
   secretKey: string,
-  username: string,
   fetchImpl: typeof fetch,
-  now: number,
-): Promise<{ ok: true; subscriptions: HeldSubscription[] } | { ok: false }> {
+): Promise<{ ok: true; subscriptions: unknown[]; sessions: unknown[] } | { ok: false }> {
   const subscriptions = await stripePages(secretKey, "/v1/subscriptions", "status=all&limit=100", fetchImpl);
   if (subscriptions === null) return { ok: false };
   const sessions = await stripePages(secretKey, "/v1/checkout/sessions", "limit=100", fetchImpl);
   if (sessions === null) return { ok: false };
-  return { ok: true, subscriptions: heldSubscriptions(subscriptions, sessions, username, now) };
+  return { ok: true, subscriptions, sessions };
+}
+
+/** The subscription that still grants the most access. An open one wins over one that is ending. */
+function leadingSubscription(rows: readonly HeldSubscription[]): HeldSubscription {
+  let best = rows[0] as HeldSubscription;
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index] as HeldSubscription;
+    if (PHASE_RANK[row.status] < PHASE_RANK[best.status]) best = row;
+  }
+  return best;
 }
 
 export async function listMarketplaceSubscriptions(
@@ -59,14 +70,19 @@ export async function listMarketplaceSubscriptions(
   fetchImpl: typeof fetch = fetch,
   now: number = Date.now(),
 ): Promise<{ ok: true; subscriptions: SubscriptionView[] } | { ok: false }> {
-  const held = await heldForAccount(secretKey, username, fetchImpl, now);
-  if (!held.ok) return { ok: false };
-  return { ok: true, subscriptions: held.subscriptions.map(subscriptionView) };
+  const loaded = await stripeLists(secretKey, fetchImpl);
+  if (!loaded.ok) return { ok: false };
+  return {
+    ok: true,
+    subscriptions: heldSubscriptions(loaded.subscriptions, loaded.sessions, username, now).map(subscriptionView),
+  };
 }
 
 /**
- * Schedules the offering's subscription to stop at the end of the paid period.
- * One that has already ended, or is already set to end, is returned as it stands.
+ * Schedules every active subscription for this offering to stop at the end of its paid period.
+ * One that has already ended, or is already set to end, is left as it stands. The view that
+ * comes back is the one that still grants access, so a second open subscription cannot hide
+ * a cancellation that was just scheduled.
  */
 export async function cancelMarketplaceSubscription(
   secretKey: string,
@@ -75,19 +91,25 @@ export async function cancelMarketplaceSubscription(
   fetchImpl: typeof fetch = fetch,
   now: number = Date.now(),
 ): Promise<{ ok: true; subscription: SubscriptionView } | { ok: false; missing: boolean }> {
-  const held = await heldForAccount(secretKey, username, fetchImpl, now);
-  if (!held.ok) return { ok: false, missing: false };
-  const match = held.subscriptions.find((row) => row.offeringId === offeringId);
-  if (match === undefined) return { ok: false, missing: true };
-  if (match.status !== "active") return { ok: true, subscription: subscriptionView(match) };
-  const result = await stripeRequest(
-    secretKey,
-    `/v1/subscriptions/${match.subscriptionId}`,
-    cancelSubscriptionBody(username, offeringId),
-    fetchImpl,
+  const loaded = await stripeLists(secretKey, fetchImpl);
+  if (!loaded.ok) return { ok: false, missing: false };
+  const matches = subscriptionCandidates(loaded.subscriptions, loaded.sessions, username, now).filter(
+    (row) => row.offeringId === offeringId,
   );
-  if (!result.ok) return { ok: false, missing: false };
-  const access = readSubscription(result.payload, now);
-  if (access === null) return { ok: false, missing: false };
-  return { ok: true, subscription: subscriptionView({ ...access, offeringId }) };
+  if (matches.length === 0) return { ok: false, missing: true };
+  const settled: HeldSubscription[] = matches.filter((row) => row.status !== "active");
+  for (const match of matches.filter((row) => row.status === "active")) {
+    // oxlint-disable-next-line no-await-in-loop -- each remaining subscription is canceled before the next is posted.
+    const result = await stripeRequest(
+      secretKey,
+      `/v1/subscriptions/${match.subscriptionId}`,
+      cancelSubscriptionBody(username, offeringId),
+      fetchImpl,
+    );
+    if (!result.ok) return { ok: false, missing: false };
+    const access = readSubscription(result.payload, now);
+    if (access === null) return { ok: false, missing: false };
+    settled.push({ ...access, offeringId });
+  }
+  return { ok: true, subscription: subscriptionView(leadingSubscription(settled)) };
 }

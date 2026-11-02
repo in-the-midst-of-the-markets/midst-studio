@@ -21,6 +21,15 @@ const QUOTES = {
   priceLabel: "$12/month",
 };
 
+function saveMarketplaceConnection(id: string, name: string): void {
+  storage.saveConnection({
+    id: `marketplace-${id}`,
+    name,
+    type: "postgres",
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
+}
+
 function deferred(): {
   promise: Promise<MockFetchResponse>;
   resolve: (value: MockFetchResponse) => void;
@@ -360,6 +369,7 @@ describe("Marketplace", () => {
   });
 
   test("shows a scheduled cancellation without another cancel button", async () => {
+    saveMarketplaceConnection("acme-trades", "Acme Trades");
     mockGlobalFetch({
       "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
       "/api/marketplace/subscriptions": {
@@ -376,6 +386,44 @@ describe("Marketplace", () => {
     ).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel subscription" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Subscribe with Stripe" })).toBeNull();
+  });
+
+  test("offers cancel only for a database this browser subscribed to", async () => {
+    saveMarketplaceConnection("acme-trades", "Acme Trades");
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES, QUOTES] } },
+      "/api/marketplace/subscriptions": {
+        json: {
+          subscriptions: [
+            { offeringId: "acme-trades", status: "active", accessUntil: "2027-01-01T00:00:00.000Z" },
+            { offeringId: "north-quotes", status: "active", accessUntil: "2027-01-01T00:00:00.000Z" },
+          ],
+        },
+      },
+    });
+
+    render(<Marketplace />);
+
+    expect(await screen.findByRole("button", { name: "Cancel subscription" })).not.toBeNull();
+    expect(screen.getAllByRole("button", { name: "Cancel subscription" }).length).toBe(1);
+    expect(screen.getAllByRole("button", { name: "Subscribe with Stripe" }).length).toBe(1);
+  });
+
+  test("does not show a cancellation for a database this browser does not have", async () => {
+    mockGlobalFetch({
+      "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
+      "/api/marketplace/subscriptions": {
+        json: {
+          subscriptions: [{ offeringId: "acme-trades", status: "canceling", accessUntil: null }],
+        },
+      },
+    });
+
+    render(<Marketplace />);
+
+    expect(await screen.findByRole("button", { name: "Subscribe with Stripe" })).not.toBeNull();
+    expect(screen.queryByText("This database stays in your connections until the subscription ends.")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel subscription" })).toBeNull();
   });
 
   test("removes the database once the subscription has ended", async () => {
@@ -457,6 +505,7 @@ describe("Marketplace", () => {
     const show = async (subscriptions: MockFetchResponse | ((req: Request) => MockFetchResponse)) => {
       cleanup();
       localStorage.clear();
+      saveMarketplaceConnection("acme-trades", "Acme Trades");
       mockGlobalFetch({
         "/api/marketplace/offerings": { json: { offerings: [TRADES] } },
         "/api/marketplace/subscriptions": (request) => {
@@ -491,6 +540,7 @@ describe("Marketplace", () => {
   });
 
   test("ignores a second cancel while the first is still running", async () => {
+    saveMarketplaceConnection("acme-trades", "Acme Trades");
     const pending = deferred();
     const fetchMock = mockGlobalFetch({
       "/api/marketplace/offerings": { json: { offerings: [TRADES] } },

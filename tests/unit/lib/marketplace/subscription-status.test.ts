@@ -6,6 +6,7 @@ import {
   heldSubscriptions,
   isSubscriptionId,
   readSubscription,
+  subscriptionCandidates,
   stripeListPage,
   subscriptionFromBody,
   subscriptionView,
@@ -72,6 +73,16 @@ describe("readSubscription", () => {
     expect(readSubscription(subscription({ current_period_end: undefined, cancel_at: FUTURE }), NOW)?.accessUntil).toBe(
       FUTURE_ISO,
     );
+  });
+
+  test("treats a future cancel_at as scheduled and a past one as over", () => {
+    const pastIso = new Date(PAST * 1000).toISOString();
+    expect(readSubscription(subscription({ cancel_at: FUTURE, cancel_at_period_end: false }), NOW)?.status).toBe(
+      "canceling",
+    );
+    expect(
+      readSubscription(subscription({ cancel_at: PAST, cancel_at_period_end: false, current_period_end: FUTURE }), NOW),
+    ).toEqual({ subscriptionId: "sub_abc", status: "ended", accessUntil: pastIso });
   });
 
   test("leaves the end empty when Stripe did not send one", () => {
@@ -152,6 +163,19 @@ describe("stripeListPage", () => {
 
   test.each([null, [[]], { data: "no" }])("refuses %j", (payload) => {
     expect(stripeListPage(payload)).toBeNull();
+  });
+});
+
+describe("subscriptionCandidates", () => {
+  test("keeps every subscription for one offering", () => {
+    const rows = subscriptionCandidates(
+      [subscription({ id: "sub_old" }), subscription({ id: "sub_new" })],
+      [],
+      "ada",
+      NOW,
+    );
+
+    expect(rows.map((row) => row.subscriptionId)).toEqual(["sub_old", "sub_new"]);
   });
 });
 
