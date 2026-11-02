@@ -1059,6 +1059,31 @@ describe("AiAssist page", () => {
     }
   });
 
+  test("clears the conversation and reads the catalog again", async () => {
+    const at = new Date().toISOString();
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([{ id: "assist-1", role: "user", text: "Earlier question", at, cards: [] }]),
+    );
+    saveConnection();
+    const view = render(<AiAssist />);
+    expect(await view.findByText("Earlier question")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    expect(view.getByText("Earlier question")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Clear chat" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    expect(view.queryByRole("button", { name: "Confirm clear chat" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    fireEvent.click(view.getByRole("button", { name: "Confirm clear chat" }));
+    expect(view.queryByText("Earlier question")).toBeNull();
+    expect(view.getByRole("heading", { name: "How can I help?" })).toBeTruthy();
+    expect(JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "null")).toEqual([]);
+    await waitFor(() => expect(calls.filter((call) => call.url.includes("provider-meta")).length).toBeGreaterThan(1));
+    await typeAndSend(view, "What is in the new tables?");
+    const history = (planPosts()[0]?.body as { history?: unknown[] } | undefined)?.history;
+    expect(history).toEqual([]);
+  });
+
   test("asks how it can help and points back at the editor", async () => {
     const view = render(<AssistPage />);
     expect(await view.findByRole("heading", { name: "How can I help?" })).toBeTruthy();

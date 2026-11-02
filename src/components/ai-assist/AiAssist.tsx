@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ChevronRight, Plus, Sparkles } from "lucide-react";
+import { ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
@@ -500,6 +500,7 @@ export function AiAssist() {
   const askRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const sendingRef = useRef(false);
   const turnsRef = useRef<readonly Turn[]>([]);
@@ -928,6 +929,35 @@ export function AiAssist() {
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              {turns.length > 0 && (
+                <>
+                  {confirmClear && (
+                    <button
+                      type="button"
+                      aria-label="Confirm clear chat"
+                      onClick={() => {
+                        commit([], true);
+                        setConfirmClear(false);
+                        setSchemaAttempt((current) => current + 1);
+                      }}
+                      className="rounded px-2 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                    >
+                      Confirm
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Clear chat"
+                    title="Clear chat"
+                    aria-pressed={confirmClear}
+                    disabled={sending}
+                    onClick={() => setConfirmClear((current) => !current)}
+                    className={`rounded p-1 hover:bg-fill-subtle hover:text-fg disabled:opacity-50 ${confirmClear ? "bg-fill-subtle text-fg" : "text-fg-muted"}`}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 aria-label="New query"
