@@ -238,12 +238,10 @@ describe("ChartWithEditor", () => {
     }
     const view = render(<Harness />);
     const toolbar = view.getByRole("button", { name: "Chart" }).parentElement;
-    expect([...(toolbar?.querySelectorAll("button") ?? [])].map((button) => button.textContent)).toEqual([
-      "Chart",
-      "Query",
-      "Code",
-      "Save Chart",
-    ]);
+    expect([...(toolbar?.querySelectorAll("button") ?? [])].map((button) => button.getAttribute("aria-label"))).toEqual(
+      ["Chart", "Query", "Code", "Save Chart"],
+    );
+    expect([...(toolbar?.querySelectorAll("button") ?? [])].every((button) => button.textContent === "")).toBe(true);
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     expect(view.queryByText("Warehouse")).toBeNull();
     expect(view.queryByText("Revenue by month")).toBeNull();

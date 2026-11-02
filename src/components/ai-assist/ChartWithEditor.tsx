@@ -45,15 +45,16 @@ function FaceButton({
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium",
-        pressed ? "bg-brand-solid text-white" : "border border-hairline-strong bg-surface text-fg hover:bg-fill-subtle",
+        "inline-flex size-7 items-center justify-center rounded-lg",
+        pressed ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
       )}
     >
-      <Icon className="size-3.5" />
-      {label}
+      <Icon className="size-3.5" aria-hidden="true" />
     </button>
   );
 }

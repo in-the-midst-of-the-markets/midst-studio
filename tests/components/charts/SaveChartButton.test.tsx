@@ -46,12 +46,17 @@ describe("SaveChartButton", () => {
     fireEvent.click(view.getByRole("button", { name: "Cancel" }));
     expect(view.queryByRole("textbox", { name: "Chart name" })).toBeNull();
     expect(view.queryByRole("button", { name: "Save Chart" })).toBeNull();
+    const unsave = view.getByRole("button", { name: "Unsave" });
+    expect(unsave.getAttribute("aria-pressed")).toBe("true");
+    expect(unsave.textContent).toBe("");
     expect(view.getByRole("status").textContent).toBe("Saved.");
-    fireEvent.click(view.getByRole("button", { name: "Unsave" }));
+    fireEvent.click(unsave);
     expect(storage.getSavedCharts()).toHaveLength(0);
     expect(view.getByRole("status").textContent).toBe("Unsaved.");
     expect(view.queryByRole("button", { name: "Unsave" })).toBeNull();
-    expect(view.getByRole("button", { name: "Save Chart" })).toBeTruthy();
+    const saveAgain = view.getByRole("button", { name: "Save Chart" });
+    expect(saveAgain.getAttribute("aria-pressed")).toBe("false");
+    expect(saveAgain.textContent).toBe("");
   });
 
   test("a chart without a query cannot schedule a refresh", () => {

@@ -11,12 +11,14 @@ import {
 import {
   BarChart3,
   Bookmark,
+  Braces,
   ChartColumn,
   LayoutDashboard,
   LayoutGrid,
   LineChart,
   ListFilter,
   Plus,
+  Terminal,
   Trash2,
   X,
   type LucideIcon,
@@ -305,23 +307,27 @@ export function DashboardStudio() {
 function FaceButton({
   pressed,
   label,
+  icon: Icon,
   onClick,
 }: {
   readonly pressed: boolean;
   readonly label: string;
+  readonly icon: LucideIcon;
   readonly onClick: () => void;
 }) {
   return (
     <button
       type="button"
+      aria-label={label}
+      title={label}
       aria-pressed={pressed}
       onClick={onClick}
       className={cn(
-        "rounded-md px-2 py-1 text-xs font-medium",
+        "inline-flex size-7 items-center justify-center rounded-md",
         pressed ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
       )}
     >
-      {label}
+      <Icon className="size-3.5" aria-hidden="true" />
     </button>
   );
 }
@@ -470,9 +476,9 @@ function DashboardChart({
         <h2 className="min-w-[min(100%,max-content)] flex-1 break-words text-sm font-semibold text-fg">{chart.name}</h2>
         <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
           <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
-            <FaceButton pressed={face === "chart"} label="Chart" onClick={() => setFace("chart")} />
-            <FaceButton pressed={face === "query"} label="Query" onClick={() => setFace("query")} />
-            <FaceButton pressed={face === "code"} label="Code" onClick={() => setFace("code")} />
+            <FaceButton pressed={face === "chart"} label="Chart" icon={BarChart3} onClick={() => setFace("chart")} />
+            <FaceButton pressed={face === "query"} label="Query" icon={Terminal} onClick={() => setFace("query")} />
+            <FaceButton pressed={face === "code"} label="Code" icon={Braces} onClick={() => setFace("code")} />
           </div>
           {face === "query" && (
             <button
@@ -487,20 +493,20 @@ function DashboardChart({
           <button
             type="button"
             aria-label={`Unsave ${chart.name}`}
+            title={`Unsave ${chart.name}`}
             onClick={onUnsave}
-            className="inline-flex items-center gap-1.5 text-xs text-fg-secondary hover:text-fg"
+            className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
           >
-            <Bookmark className="size-3.5" />
-            Unsave chart
+            <Bookmark className="size-3.5" aria-hidden="true" />
           </button>
           <button
             type="button"
             aria-label={`Remove ${chart.name}`}
+            title={`Remove ${chart.name}`}
             onClick={onRemove}
-            className="inline-flex items-center gap-1.5 text-xs text-fg-secondary hover:text-fg"
+            className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
           >
-            <X className="size-3.5" />
-            Remove
+            <X className="size-3.5" aria-hidden="true" />
           </button>
         </div>
       </div>
