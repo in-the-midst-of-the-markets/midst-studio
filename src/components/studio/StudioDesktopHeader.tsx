@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
+import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
 
 /** What the pulse indicator reads for each state. Only Online animates: the others are not live. */
@@ -134,7 +134,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
         )}
         {/* Renders nothing when a host (platform) owns the theme — see ThemeToggle. */}
         <ThemeToggle className="mr-1" />
-        <ModeLinks page="ide" />
+        <ModeLinks page="ide" className={IDE_MODE_LINK_CLASS} />
       </div>
     </header>
   );
