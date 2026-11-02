@@ -20,6 +20,7 @@ import {
   GridComponent,
   LegendComponent,
   RadarComponent,
+  TitleComponent,
   TooltipComponent,
   VisualMapComponent,
 } from "echarts/components";
@@ -28,6 +29,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
 import { chartTitleText } from "@/lib/charts/chart-title";
+import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
@@ -82,6 +84,7 @@ registerECharts([
   LegendComponent,
   RadarComponent,
   GeoComponent,
+  TitleComponent,
   VisualMapComponent,
   CanvasRenderer,
 ]);
@@ -183,7 +186,17 @@ export function QueryChart({
       title: type?.label ?? "",
     });
   }, [hasRows, choice, ready, rows, theme, mask, type]);
-  const code = useChartCode(built?.option ?? null, choice.typeId, choice.variationId, choice.selection);
+  const filters = query !== undefined && onFilterChange !== undefined ? readQueryFilters(query) : [];
+  const filterLooks = defaultFilterLooks(filters, columns.metrics);
+  const code = useChartCode(
+    built?.option ?? null,
+    choice.typeId,
+    choice.variationId,
+    choice.selection,
+    result,
+    filterLooks,
+  );
+  const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
   const [codeOpen, setCodeOpen] = useState(false);
 
   const hostRef = useRef<HTMLDivElement>(null);
@@ -214,7 +227,6 @@ export function QueryChart({
     });
   };
 
-  const filters = query !== undefined && onFilterChange !== undefined ? readQueryFilters(query) : [];
   const shelfOpen = slots !== null && hasRows;
   return (
     <div className="flex h-full min-h-0 flex-col bg-sunken">
@@ -222,6 +234,7 @@ export function QueryChart({
         <QueryFilterBar
           filters={filters}
           metrics={columns.metrics}
+          looks={looks}
           onChange={(name, value) =>
             onFilterChange(
               columns.metrics.includes(name)
@@ -344,6 +357,7 @@ export function QueryChart({
                 metrics={columns.metrics}
                 rows={rows ?? []}
                 sql={query}
+                looks={looks}
                 onSql={onFilterChange}
               />
             )}

@@ -41,6 +41,7 @@ mock.module("echarts/components", () => ({
   LegendComponent: {},
   RadarComponent: {},
   GeoComponent: {},
+  TitleComponent: {},
   VisualMapComponent: {},
 }));
 mock.module("echarts/renderers", () => ({ CanvasRenderer: {} }));
@@ -331,6 +332,38 @@ describe("ChartWithEditor", () => {
     expect(onRun).toHaveBeenLastCalledWith("SELECT month, revenue FROM orders WHERE revenue > {{revenue:3}}");
   });
 
+  test("chart code can turn a filter into a slider and the query still supplies the value", () => {
+    const onRun = mock(() => {});
+    const sql = "SELECT month, revenue FROM orders WHERE revenue > {{revenue:10}}";
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql={sql}
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={onRun}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    const parsed = JSON.parse(code.value) as {
+      filters: { revenue: { control: string; min?: number; max?: number; step?: number } };
+    };
+    expect(parsed.filters.revenue.control).toBe("number");
+    expect(code.value).not.toContain('"data"');
+    parsed.filters.revenue = { control: "slider", min: 0, max: 20, step: 1 };
+    fireEvent.change(code, { target: { value: JSON.stringify(parsed) } });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    const slider = view.getByRole("slider", { name: "revenue" }) as HTMLInputElement;
+    expect(slider.max).toBe("20");
+    expect(slider.step).toBe("1");
+    fireEvent.change(slider, { target: { value: "4" } });
+    expect(onRun).toHaveBeenCalledWith("SELECT month, revenue FROM orders WHERE revenue > {{revenue:4}}");
+  });
+
   test("filters a renamed column by its original name and can clear it", () => {
     const ran: string[] = [];
     const view = render(
@@ -446,6 +479,7 @@ describe("ChartWithEditor", () => {
     const code = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
     expect(code.getAttribute("wrap")).toBe("soft");
     expect(code.value).toContain('"series"');
+    expect(code.value).not.toContain('"data"');
     expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     fireEvent.change(code, { target: { value: "{" } });
     expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
@@ -459,7 +493,7 @@ describe("ChartWithEditor", () => {
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
     expect(view.getByText("Showing your chart code.")).toBeTruthy();
     expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
-    expect(lastOption()).toEqual(edited);
+    expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("10");
     view.rerender(
       <ChartWithEditor
         title="Revenue"
@@ -473,20 +507,42 @@ describe("ChartWithEditor", () => {
       />,
     );
     expect(view.getByText("Showing your chart code.")).toBeTruthy();
-    expect(lastOption()).toEqual(edited);
+    expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
+    expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("99");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const kept = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(kept.value).toContain("Edited");
+    expect(kept.value).not.toContain("99");
+    expect(kept.value).not.toContain('"data"');
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={{ ...barResult, rows: [{ month: "Mar", revenue: 7 }] }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("7");
     fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
     expect(view.queryByText("Showing your chart code.")).toBeNull();
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Code" }));
     const restored = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
-    expect(restored.value).toContain("99");
+    expect(restored.value).not.toContain("99");
+    expect(restored.value).not.toContain('"data"');
     expect(restored.value).not.toContain("Edited");
     expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     fireEvent.change(restored, { target: { value: "[]" } });
     expect(view.getByRole("alert").textContent).toBe("Chart code must be a JSON object.");
     fireEvent.change(restored, { target: { value: JSON.stringify(edited) } });
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
-    expect(lastOption()).toEqual(edited);
+    expect((lastOption() as { title: { text: string } }).title.text).toBe("Edited");
+    expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("7");
     fireEvent.click(within(view.getByRole("group", { name: "Metrics" })).getByRole("button", { name: "revenue" }));
     expect(view.queryByText("Showing your chart code.")).toBeNull();
     fireEvent.click(within(view.getByRole("group", { name: "Metrics" })).getByRole("button", { name: "revenue" }));
@@ -512,6 +568,94 @@ describe("ChartWithEditor", () => {
       target: { value: JSON.stringify({ title: { text: "" } }) },
     });
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+  });
+
+  test("title textStyle changes the heading, and a rerun drops values out of the code", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={{ ...barResult, executionTime: 8 }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), { target: { value: "{" } });
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={{ ...barResult, rows: [{ month: "Feb", revenue: 99 }] }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    expect(view.getByRole("alert").textContent).toBe("Chart code is not valid JSON.");
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: {
+        value: JSON.stringify({
+          title: {
+            text: "Edited",
+            textStyle: {
+              fontSize: 32,
+              fontWeight: "bold",
+              color: "#112233",
+              fontFamily: "Georgia",
+              fontStyle: "italic",
+            },
+          },
+          series: [{ data: [1] }],
+        }),
+      },
+    });
+    const heading = view.getByRole("heading", { name: "Edited" });
+    expect(heading.style.fontSize).toBe("32px");
+    expect(heading.style.fontWeight).toBe("bold");
+    expect(heading.style.fontFamily).toContain("Georgia");
+    expect(heading.style.fontStyle).toBe("italic");
+    view.rerender(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={{ ...barResult, rows: [{ month: "Feb", revenue: 99 }] }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const cleaned = view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement;
+    expect(cleaned.value).toContain("Edited");
+    expect(cleaned.value).toContain("32");
+    expect(cleaned.value).not.toContain('"data"');
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(view.getByRole("heading", { name: "Edited" }).style.fontSize).toBe("32px");
+    const drawn = charts.at(-1);
+    if (drawn === undefined) throw new Error("expected a chart");
+    const plotted = drawn.setOption.mock.calls.at(-1)?.[0] as { series?: unknown } | undefined;
+    expect(JSON.stringify(plotted?.series)).toContain("99");
   });
 
   test("listens for the editor's run event only while the query is showing", () => {

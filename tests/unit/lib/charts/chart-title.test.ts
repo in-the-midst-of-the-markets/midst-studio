@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyChartTitle, chartTitleText } from "@/lib/charts/chart-title";
+import { applyChartTitle, chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
 
 describe("chart title", () => {
   test("reads title text and nothing else", () => {
@@ -11,6 +11,51 @@ describe("chart title", () => {
     expect(chartTitleText({ title: [] })).toBe("");
     expect(chartTitleText({ title: null })).toBe("");
     expect(chartTitleText({})).toBe("");
+  });
+
+  test("title textStyle sets the heading's font, color, and weight", () => {
+    expect(chartTitleStyle(null)).toEqual({});
+    expect(chartTitleStyle(undefined)).toEqual({});
+    expect(chartTitleStyle({ title: "Revenue" })).toEqual({});
+    expect(chartTitleStyle({ title: { textStyle: [] } })).toEqual({});
+    expect(chartTitleStyle({ title: { text: "Revenue" } })).toEqual({});
+    expect(
+      chartTitleStyle({
+        title: {
+          textStyle: {
+            fontSize: 0,
+            fontWeight: Number.NaN,
+            color: "  ",
+            fontFamily: "",
+            fontStyle: "bold",
+          },
+        },
+      }),
+    ).toEqual({});
+    expect(
+      chartTitleStyle({
+        title: {
+          textStyle: {
+            fontSize: 32,
+            fontWeight: 700,
+            color: "#112233",
+            fontFamily: "Georgia",
+            fontStyle: "italic",
+          },
+        },
+      }),
+    ).toEqual({
+      fontSize: 32,
+      fontWeight: 700,
+      color: "#112233",
+      fontFamily: "Georgia",
+      fontStyle: "italic",
+    });
+    expect(chartTitleStyle({ title: { textStyle: { fontWeight: " bold ", fontStyle: "oblique" } } })).toEqual({
+      fontWeight: " bold ",
+      fontStyle: "oblique",
+    });
+    expect(chartTitleStyle({ title: { textStyle: { fontStyle: "normal" } } }).fontStyle).toBe("normal");
   });
 
   test("an empty title is stored and does not move the legend", () => {
