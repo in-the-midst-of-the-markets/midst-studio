@@ -3,6 +3,9 @@ import { LLMAuthError, LLMError, LLMRateLimitError } from "@/lib/llm/types";
 import {
   completeChat,
   FIREWORKS_CHAT_URL,
+  GATEWAY_CHAT_URL,
+  GATEWAY_MODELS_URL,
+  listGatewayModels,
   listOpenRouterModels,
   OPENROUTER_CHAT_URL,
   OPENROUTER_MODELS_URL,
@@ -29,6 +32,7 @@ describe("resolveAssistKey", () => {
     process.env.OPENROUTER_API_KEY = "server";
     expect(resolveAssistKey("openrouter", "  browser  ")).toBe("browser");
     expect(resolveAssistKey("fireworks", "browser")).toBe("browser");
+    expect(resolveAssistKey("gateway", "  browser  ")).toBe("browser");
   });
 
   test("uses the server OpenRouter key only when the browser sent none", () => {
@@ -40,6 +44,7 @@ describe("resolveAssistKey", () => {
     expect(resolveAssistKey("openrouter", "")).toBeNull();
     process.env.OPENROUTER_API_KEY = "server";
     expect(resolveAssistKey("fireworks", "")).toBeNull();
+    expect(resolveAssistKey("gateway", "")).toBeNull();
   });
 });
 
@@ -75,6 +80,25 @@ describe("completeChat", () => {
     });
     expect(url).toBe(FIREWORKS_CHAT_URL);
     expect(text).toBe("ab");
+  });
+
+  test("posts to Vercel AI Gateway without OpenRouter headers", async () => {
+    let seen: { url: string; headers: Headers; body: unknown } | undefined;
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      seen = { url, headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) };
+      return jsonResponse({ choices: [{ message: { content: "routed" } }] });
+    }) as unknown as typeof fetch;
+    const text = await completeChat({
+      source: "gateway",
+      apiKey: "gw",
+      model: "alibaba/qwen-3-14b",
+      messages,
+    });
+    expect(text).toBe("routed");
+    expect(seen?.url).toBe(GATEWAY_CHAT_URL);
+    expect(seen?.headers.get("Authorization")).toBe("Bearer gw");
+    expect(seen?.headers.get("X-Title")).toBeNull();
+    expect(seen?.body).toMatchObject({ model: "alibaba/qwen-3-14b", stream: false });
   });
 
   test.each([
@@ -153,5 +177,22 @@ describe("listOpenRouterModels", () => {
   test("raises when the catalog cannot be read", async () => {
     globalThis.fetch = (async () => jsonResponse({}, 503)) as unknown as typeof fetch;
     await expect(listOpenRouterModels()).rejects.toThrow("could not be read");
+  });
+});
+
+describe("listGatewayModels", () => {
+  test("reads the public gateway catalog", async () => {
+    let url = "";
+    globalThis.fetch = (async (input: string) => {
+      url = input;
+      return jsonResponse({ data: [{ id: "alibaba/qwen-3-14b", name: "Qwen3-14B" }] });
+    }) as unknown as typeof fetch;
+    expect(await listGatewayModels()).toEqual([{ id: "alibaba/qwen-3-14b", name: "Qwen3-14B" }]);
+    expect(url).toBe(GATEWAY_MODELS_URL);
+  });
+
+  test("raises when the gateway catalog cannot be read", async () => {
+    globalThis.fetch = (async () => jsonResponse({}, 503)) as unknown as typeof fetch;
+    await expect(listGatewayModels()).rejects.toThrow("Vercel AI Gateway model list");
   });
 });

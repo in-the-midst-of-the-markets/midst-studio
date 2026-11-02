@@ -175,6 +175,16 @@ describe("readAssistRequest", () => {
     expect(parsed.value.apiKey).toBe("");
     expect(parsed.value.history).toEqual([]);
     expect(parsed.value.databaseType).toBe("");
+    const gateway = readAssistRequest({
+      source: "gateway",
+      model: "alibaba/qwen-3-14b",
+      apiKey: "gw",
+      question: "What changed?",
+    });
+    expect(gateway.ok).toBe(true);
+    if (!gateway.ok) return;
+    expect(gateway.value.source).toBe("gateway");
+    expect(gateway.value.model).toBe("alibaba/qwen-3-14b");
   });
 
   test("trims a key and keeps earlier turns", () => {
@@ -186,7 +196,8 @@ describe("readAssistRequest", () => {
   });
 
   test.each([
-    [{ source: "other" }, "Choose OpenRouter or Fireworks."],
+    [{ source: "other" }, "Choose OpenRouter, Fireworks, or Vercel AI Gateway."],
+    [{ source: 4 }, "Choose OpenRouter, Fireworks, or Vercel AI Gateway."],
     [{ model: "bad model" }, "Name the model to use."],
     [{ model: "" }, "Name the model to use."],
     [{ apiKey: 1 }, "The API key is not valid."],

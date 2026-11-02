@@ -1,9 +1,8 @@
 /**
- * OpenRouter and Fireworks, the two model accounts AI Assist calls.
- *
- * Both speak the OpenAI chat-completions shape. The browser may send its own key.
- * When it does not, OpenRouter can use the server's OPENROUTER_API_KEY. A Fireworks
- * key is always the user's: a fine-tuned model lives on their account.
+ * OpenRouter, Fireworks, and Vercel AI Gateway. Each speaks the OpenAI
+ * chat-completions shape. The browser may send its own key. When it does not,
+ * OpenRouter can use the server's OPENROUTER_API_KEY. Fireworks and Vercel AI
+ * Gateway always use the key saved in the browser.
  */
 
 import { LLMAuthError, LLMError, LLMRateLimitError } from "@/lib/llm/types";
@@ -12,6 +11,8 @@ import type { AssistSource } from "@/lib/ai/assist-plan";
 export const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 export const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 export const FIREWORKS_CHAT_URL = "https://api.fireworks.ai/inference/v1/chat/completions";
+export const GATEWAY_CHAT_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
+export const GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1/models";
 
 const MODEL_CAP = 400;
 
@@ -47,7 +48,9 @@ function messageText(payload: unknown): string {
 }
 
 function chatUrl(source: AssistSource): string {
-  return source === "fireworks" ? FIREWORKS_CHAT_URL : OPENROUTER_CHAT_URL;
+  if (source === "fireworks") return FIREWORKS_CHAT_URL;
+  if (source === "gateway") return GATEWAY_CHAT_URL;
+  return OPENROUTER_CHAT_URL;
 }
 
 /**
@@ -115,11 +118,7 @@ export async function completeChat(input: {
   return text;
 }
 
-/** The public OpenRouter catalog, capped and sorted by the name a person reads. */
-export async function listOpenRouterModels(fetchImpl: typeof fetch = fetch): Promise<AssistModelOption[]> {
-  const response = await fetchImpl(OPENROUTER_MODELS_URL);
-  if (!response.ok) throw new LLMError("OpenRouter's model list could not be read.", undefined, 502);
-  const payload: unknown = await response.json().catch(() => null);
+function catalogModels(payload: unknown): AssistModelOption[] {
   const data = payload !== null && typeof payload === "object" && "data" in payload ? payload.data : null;
   if (!Array.isArray(data)) return [];
   const byId = new Map<string, AssistModelOption>();
@@ -131,4 +130,21 @@ export async function listOpenRouterModels(fetchImpl: typeof fetch = fetch): Pro
     byId.set(id, { id, name });
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(0, MODEL_CAP);
+}
+
+async function listModels(url: string, failure: string, fetchImpl: typeof fetch): Promise<AssistModelOption[]> {
+  const response = await fetchImpl(url);
+  if (!response.ok) throw new LLMError(failure, undefined, 502);
+  const payload: unknown = await response.json().catch(() => null);
+  return catalogModels(payload);
+}
+
+/** The public OpenRouter catalog, capped and sorted by the name a person reads. */
+export function listOpenRouterModels(fetchImpl: typeof fetch = fetch): Promise<AssistModelOption[]> {
+  return listModels(OPENROUTER_MODELS_URL, "OpenRouter's model list could not be read.", fetchImpl);
+}
+
+/** The public Vercel AI Gateway catalog. Ids are the provider/model strings the gateway returns. */
+export function listGatewayModels(fetchImpl: typeof fetch = fetch): Promise<AssistModelOption[]> {
+  return listModels(GATEWAY_MODELS_URL, "The Vercel AI Gateway model list could not be read.", fetchImpl);
 }
