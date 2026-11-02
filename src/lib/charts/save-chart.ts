@@ -13,6 +13,8 @@ export interface SaveChartDraft {
   typeId?: string;
   variationId?: string;
   selection?: Record<string, string[]>;
+  /** The chart's look, without query values. A colour edit belongs to the saved chart. */
+  look?: Record<string, unknown>;
   refreshText: string;
 }
 
@@ -29,6 +31,7 @@ export function chartSaveDraft(input: {
   typeId: string;
   variationId: string;
   selection: Record<string, readonly string[]>;
+  look?: Record<string, unknown>;
 }): Omit<SaveChartDraft, "refreshText"> {
   const selection = Object.fromEntries(Object.entries(input.selection).map(([key, values]) => [key, [...values]]));
   const title = input.title.trim();
@@ -41,8 +44,25 @@ export function chartSaveDraft(input: {
     typeId: input.typeId,
     variationId: input.variationId,
     selection,
+    ...(input.look !== undefined ? { look: input.look } : {}),
     ...axesFromSelection(selection),
   };
+}
+
+/** A look that can be stored. Functions and cycles are dropped. An empty object is not a look. */
+export function storedChartLook(look: unknown): Record<string, unknown> | undefined {
+  if (typeof look !== "object" || look === null || Array.isArray(look)) return undefined;
+  try {
+    const cloned = JSON.parse(JSON.stringify(look)) as unknown;
+    if (typeof cloned !== "object" || cloned === null || Array.isArray(cloned)) return undefined;
+    return Object.keys(cloned).length === 0 ? undefined : (cloned as Record<string, unknown>);
+  } catch {
+    return undefined;
+  }
+}
+
+function lookKey(look: unknown): string {
+  return JSON.stringify(storedChartLook(look) ?? null);
 }
 
 interface ChartIdentity {
@@ -51,6 +71,7 @@ interface ChartIdentity {
   typeId?: string;
   variationId?: string;
   selection?: Record<string, readonly string[]>;
+  look?: unknown;
 }
 
 /** The parts that make one saved chart the same as another. A new name is not a new chart. */
@@ -65,6 +86,7 @@ function chartIdentity(chart: ChartIdentity): string {
     chart.variationId ?? "",
     shelves.join("\n"),
     (chart.query ?? "").trim(),
+    lookKey(chart.look),
   ].join("\u0001");
 }
 
@@ -86,6 +108,7 @@ export function buildSavedChart(draft: SaveChartDraft, id = crypto.randomUUID())
   const query = draft.query?.trim();
   const hasQuery = query !== undefined && query !== "";
   const title = draft.title.trim();
+  const look = storedChartLook(draft.look);
   return {
     id,
     name,
@@ -99,6 +122,7 @@ export function buildSavedChart(draft: SaveChartDraft, id = crypto.randomUUID())
     ...(draft.variationId !== undefined ? { variationId: draft.variationId } : {}),
     ...(draft.selection !== undefined ? { selection: draft.selection } : {}),
     ...(title !== "" ? { title } : {}),
+    ...(look !== undefined ? { look } : {}),
     createdAt: new Date(),
   };
 }

@@ -638,7 +638,6 @@ export function AiAssist() {
                     title={card.title}
                     sql={card.sql}
                     connectionId={card.connectionId ?? undefined}
-                    connectionName={card.connectionName}
                     databaseType={target?.type}
                     schemaContext={
                       card.connectionId === null ? schemaContext : (schemas[card.connectionId] ?? schemaContext)

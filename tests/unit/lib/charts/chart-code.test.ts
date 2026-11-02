@@ -71,6 +71,15 @@ describe("chart code", () => {
     circular.self = circular;
     const looped = applyChartValues({}, { series: [circular] });
     expect((looped.series as unknown[])[0]).toBe(circular);
+
+    const symbolSize = () => 8;
+    const withMark = applyChartValues(
+      { series: [{ itemStyle: { color: "red" } }] },
+      { series: [{ data: [1], symbolSize }] },
+    );
+    expect((withMark.series as { symbolSize: unknown }[])[0]?.symbolSize).toBe(symbolSize);
+    const sized = applyChartValues({ series: [{ symbolSize: 12 }] }, { series: [{ data: [1], symbolSize }] });
+    expect((sized.series as { symbolSize: number }[])[0]?.symbolSize).toBe(12);
   });
 
   test("the same shelves are the same source, and a new variation is not", () => {

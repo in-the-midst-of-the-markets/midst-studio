@@ -1,7 +1,10 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
+import { applyChartValues } from "@/lib/charts/chart-code";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
+import { withoutFilterLooks } from "@/lib/charts/filter-look";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
+import { storedChartLook } from "@/lib/charts/save-chart";
 import type { DatabaseConnection, QueryResult, SavedChartConfig } from "@/lib/types";
 
 type Post = (path: string, init?: RequestInit) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
@@ -34,12 +37,12 @@ export async function loadSavedChart(
 
 /** The option for a saved chart and a fresh result, or null when the shelves cannot draw it. */
 export function optionForSavedChart(
-  chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "title" | "name">,
+  chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "title" | "name" | "look">,
   result: QueryResult,
   theme: ChartTheme = chartTheme("dark"),
 ): BuiltChart | null {
   if (chart.typeId === undefined || chart.variationId === undefined) return null;
-  return buildChartOption({
+  const built = buildChartOption({
     typeId: chart.typeId,
     variationId: chart.variationId,
     rows: result.rows,
@@ -47,4 +50,7 @@ export function optionForSavedChart(
     title: chart.title ?? chart.name,
     theme,
   });
+  const look = storedChartLook(chart.look);
+  if (built === null || look === undefined) return built;
+  return { option: withoutFilterLooks(applyChartValues(look, built.option)), notes: built.notes };
 }

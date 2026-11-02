@@ -106,7 +106,8 @@ function applyNode(edited: unknown, generated: unknown): unknown {
         continue;
       }
       if (!(key in edited)) {
-        if (QUERY_VALUE_CONTAINERS.has(key)) next[key] = copyValue(value);
+        // The chart code leaves functions out. A missing one is still the generated mark size.
+        if (QUERY_VALUE_CONTAINERS.has(key) || typeof value === "function") next[key] = copyValue(value);
         continue;
       }
       next[key] = applyNode(edited[key], value);
