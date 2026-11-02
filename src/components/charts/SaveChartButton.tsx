@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Bookmark } from "lucide-react";
 import { MIN_CHART_REFRESH_SECONDS, readRefreshText } from "@/lib/charts/chart-refresh";
 import { buildSavedChart, findSavedChart, type SaveChartDraft } from "@/lib/charts/save-chart";
 import { storage } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 
 export interface SaveChartButtonProps {
   /** The chart on screen. The name and the refresh field are edited here. */
@@ -78,19 +80,22 @@ export function SaveChartButton({ draft }: SaveChartButtonProps) {
   if (!open) {
     return (
       <span className="inline-flex flex-wrap items-center gap-2">
-        {stored === null ? (
-          <button
-            type="button"
-            onClick={openDialog}
-            className="inline-flex items-center rounded-lg border border-hairline-strong bg-surface px-3 py-1.5 text-xs font-medium text-fg hover:bg-fill-subtle"
-          >
-            Save Chart
-          </button>
-        ) : (
-          <button type="button" onClick={() => unsave(stored.id)} className="text-xs font-medium text-danger underline">
-            Unsave
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label={stored === null ? "Save Chart" : "Unsave"}
+          title={stored === null ? "Save Chart" : "Unsave"}
+          aria-pressed={stored !== null}
+          onClick={() => {
+            if (stored === null) openDialog();
+            else unsave(stored.id);
+          }}
+          className={cn(
+            "inline-flex size-7 items-center justify-center rounded-lg",
+            stored === null ? "text-fg-muted hover:text-fg" : "bg-brand-solid text-white",
+          )}
+        >
+          <Bookmark className={cn("size-3.5", stored !== null && "fill-current")} aria-hidden="true" />
+        </button>
         <SaveNotice notice={notice} />
       </span>
     );
