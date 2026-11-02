@@ -38,6 +38,8 @@ function stringMetadata(value: unknown): Record<string, string> {
 }
 
 function periodEndSeconds(row: Record<string, unknown>): number | null {
+  // cancel_at is the moment access actually stops. The period end is only a fallback.
+  if (typeof row.cancel_at === "number") return row.cancel_at;
   if (typeof row.current_period_end === "number") return row.current_period_end;
   const items = row.items;
   if (items !== null && typeof items === "object" && !Array.isArray(items)) {
@@ -48,11 +50,16 @@ function periodEndSeconds(row: Record<string, unknown>): number | null {
       if (typeof end === "number") return end;
     }
   }
-  return typeof row.cancel_at === "number" ? row.cancel_at : null;
+  return null;
+}
+
+function cancellationScheduled(row: Record<string, unknown>): boolean {
+  return row.cancel_at_period_end === true || typeof row.cancel_at === "number";
 }
 
 /**
  * The access a subscription object grants at `now` (milliseconds).
+ * A future `cancel_at` is a scheduled cancellation even when `cancel_at_period_end` is absent.
  * A missing or unfamiliar object is null, so a bad Stripe payload cannot be treated as ended.
  */
 export function readSubscription(
@@ -64,9 +71,10 @@ export function readSubscription(
   if (typeof row.id !== "string" || !isSubscriptionId(row.id) || typeof row.status !== "string") return null;
   const endSeconds = periodEndSeconds(row);
   const accessUntil = endSeconds === null ? null : new Date(endSeconds * 1000).toISOString();
-  const periodOver = row.cancel_at_period_end === true && endSeconds !== null && endSeconds * 1000 <= now;
+  const scheduled = cancellationScheduled(row);
+  const periodOver = scheduled && endSeconds !== null && endSeconds * 1000 <= now;
   if (ENDED_STATUS.has(row.status) || periodOver) return { subscriptionId: row.id, status: "ended", accessUntil };
-  if (row.cancel_at_period_end === true) return { subscriptionId: row.id, status: "canceling", accessUntil };
+  if (scheduled) return { subscriptionId: row.id, status: "canceling", accessUntil };
   if (OPEN_STATUS.has(row.status)) return { subscriptionId: row.id, status: "active", accessUntil };
   return { subscriptionId: row.id, status: "ended", accessUntil };
 }
@@ -132,11 +140,11 @@ function preferSubscriptions(rows: readonly HeldSubscription[]): HeldSubscriptio
 }
 
 /**
- * The subscriptions `username` may manage.
+ * Every subscription `username` may manage, including more than one for the same offering.
  * A subscription stamped with another account is hidden. One with no subscriber yet, including a
  * Checkout completed before subscribers were stamped, stays visible so it can still be canceled.
  */
-export function heldSubscriptions(
+export function subscriptionCandidates(
   subscriptions: readonly unknown[],
   sessions: readonly unknown[],
   username: string,
@@ -160,7 +168,17 @@ export function heldSubscriptions(
     if (access === null) continue;
     found.push({ ...access, offeringId });
   }
-  return preferSubscriptions(found);
+  return found;
+}
+
+/** One subscription per offering. An open one wins over one that is already ending or ended. */
+export function heldSubscriptions(
+  subscriptions: readonly unknown[],
+  sessions: readonly unknown[],
+  username: string,
+  now: number,
+): HeldSubscription[] {
+  return preferSubscriptions(subscriptionCandidates(subscriptions, sessions, username, now));
 }
 
 export function subscriptionView(row: HeldSubscription): SubscriptionView {

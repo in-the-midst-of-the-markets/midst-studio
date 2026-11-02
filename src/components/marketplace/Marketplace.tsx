@@ -8,6 +8,7 @@ import { acceptSubscribedConnection } from "@/lib/marketplace/accept-subscriptio
 import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
 import { dropEndedSubscription, releaseEndedSubscriptions } from "@/lib/marketplace/release-subscription";
 import { cancellationNotice, subscriptionFromBody, type SubscriptionView } from "@/lib/marketplace/subscription-status";
+import { storage } from "@/lib/storage";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
 
@@ -25,6 +26,11 @@ function matches(offering: PublicMarketplaceOffering, query: string): boolean {
   const name = offering.name.toLowerCase();
   const description = offering.description.toLowerCase();
   return name.includes(query) || description.includes(query);
+}
+
+/** Checkout saved this database on this browser. Cancel belongs to that database only. */
+function holdsMarketplaceDatabase(offeringId: string): boolean {
+  return storage.getConnections().some((connection) => connection.id === `marketplace-${offeringId}`);
 }
 
 /**
@@ -228,7 +234,8 @@ export function Marketplace() {
           ) : (
             <ul className="mt-4 divide-y divide-border rounded-lg border border-border">
               {visible.map((offering) => {
-                const held = subscriptions.find((row) => row.offeringId === offering.id);
+                const listed = subscriptions.find((row) => row.offeringId === offering.id);
+                const held = listed !== undefined && holdsMarketplaceDatabase(offering.id) ? listed : undefined;
                 return (
                   <li key={offering.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
