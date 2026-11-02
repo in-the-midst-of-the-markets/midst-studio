@@ -118,17 +118,18 @@ export async function completeChat(input: {
     messages: readonly AssistChatMessage[];
     temperature: number;
     stream: false;
-    reasoning?: { effort: "low" };
+    reasoning?: { effort: "high" };
   } = {
     model: input.model,
     messages: input.messages,
     temperature: 0.2,
     stream: false,
   };
-  // GLM 5.3 reasons at max effort unless the request says otherwise, and that
-  // effort can use the whole reply before any answer text. OpenRouter ignores
-  // this field on a model that does not reason.
-  if (input.source === "openrouter") body.reasoning = { effort: "low" };
+  // GLM 5.3 accepts low, high, and max. max is the default and can spend the
+  // whole reply before any answer text. A medium effort is handled as max.
+  // high is the stronger effort that still leaves room for the answer.
+  // OpenRouter ignores this field on a model that does not reason.
+  if (input.source === "openrouter") body.reasoning = { effort: "high" };
   const response = await fetchImpl(chatUrl(input.source), {
     method: "POST",
     headers,
