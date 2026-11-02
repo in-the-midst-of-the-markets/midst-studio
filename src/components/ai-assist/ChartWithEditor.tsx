@@ -232,7 +232,7 @@ export function ChartWithEditor({
         <h3 className="text-2xl font-semibold tracking-tight text-fg">{heading}</h3>
         {chart?.caption ? <p className="mt-1 text-sm text-fg-muted">{chart.caption}</p> : null}
       </div>
-      <div className="flex h-[28rem] flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm">
+      <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
         <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-4 py-3">
           <FileText className="size-4 shrink-0 text-fg-muted" />
           <span className="min-w-0 truncate text-sm font-medium text-fg">{title}</span>
