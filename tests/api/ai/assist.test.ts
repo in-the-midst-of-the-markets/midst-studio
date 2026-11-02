@@ -260,7 +260,8 @@ describe("POST /api/ai/assist", () => {
     expect(JSON.stringify(await follow.json())).not.toContain("browser-secret");
     const system = messages[0]?.content ?? "";
     const joined = messages.map((message) => message.content).join("\n");
-    expect(system).toContain("The chart is required.");
+    expect(system).toContain("The chart is required on every query.");
+    expect(system).toContain("queries has up to 3 items");
     expect(system).not.toContain("LEAK-CELL");
     expect(joined.split("LEAK-CELL").length - 1).toBe(1);
     expect(joined.split(UNTRUSTED_CONTENT_BEGIN).length - 1).toBe(4);

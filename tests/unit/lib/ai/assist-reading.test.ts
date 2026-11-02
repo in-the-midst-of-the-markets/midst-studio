@@ -3,7 +3,7 @@ import type { AssistQueryPlan } from "@/lib/ai/assist-plan";
 import {
   buildAssistReadingMessages,
   explanationWithResults,
-  followUpQuery,
+  followUpQueries,
   formatAssistResults,
   readAssistReading,
   readAssistResults,
@@ -68,9 +68,16 @@ describe("readAssistResults", () => {
     expect(kept?.error).toBeNull();
   });
 
-  test("refuses a list that is not four results and skips a result with no statement", () => {
+  test("refuses a list past the result cap and skips a result with no statement", () => {
     expect(readAssistResults("no").ok).toBe(false);
-    expect(readAssistResults([1, 2, 3, 4, 5])).toEqual({ ok: false, error: "The query results are not valid." });
+    expect(readAssistResults([1, 2, 3, 4, 5, 6, 7])).toEqual({
+      ok: false,
+      error: "The query results are not valid.",
+    });
+    const full = readAssistResults(Array.from({ length: 6 }, (_, index) => ({ sql: `SELECT ${index}` })));
+    expect(full.ok).toBe(true);
+    if (!full.ok) return;
+    expect(full.value).toHaveLength(6);
     const read = readAssistResults([
       null,
       [],
@@ -191,17 +198,21 @@ describe("explanationWithResults", () => {
   });
 });
 
-describe("followUpQuery", () => {
-  test("returns the first statement that has not already run", () => {
-    const other = "SELECT region, revenue FROM orders";
-    expect(followUpQuery([plan(select), plan(other)], [select])).toEqual(plan(other));
-    expect(followUpQuery([plan(`${select} LIMIT 50`)], [select])).toBeNull();
-    expect(followUpQuery([], [select])).toBeNull();
+describe("followUpQueries", () => {
+  test("returns every statement that has not already run", () => {
+    const region = "SELECT region, revenue FROM orders";
+    const product = "SELECT product, revenue FROM orders";
+    expect(followUpQueries([plan(select), plan(region), plan(region), plan(product)], [select])).toEqual([
+      plan(region),
+      plan(product),
+    ]);
+    expect(followUpQueries([plan(`${select} LIMIT 50`)], [select])).toEqual([]);
+    expect(followUpQueries([], [select])).toEqual([]);
   });
 });
 
 describe("buildAssistReadingMessages", () => {
-  test("asks for one charted query, then for the analysis and no further query", () => {
+  test("asks for charted queries, then for the analysis and no further query", () => {
     const follow = buildAssistReadingMessages({
       pass: "follow",
       databaseType: "postgres",
@@ -211,7 +222,8 @@ describe("buildAssistReadingMessages", () => {
       resultsBlock: "RESULT-TOKEN",
     });
     expect(follow[0]?.content).toContain("The connected engine is postgres.");
-    expect(follow[0]?.content).toContain("The chart is required.");
+    expect(follow[0]?.content).toContain("The chart is required on every query.");
+    expect(follow[0]?.content).toContain("queries has up to 3 items");
     expect(follow[0]?.content).not.toContain("Do not plan another query.");
     expect(follow[0]?.content).not.toContain("RESULT-TOKEN");
     expect(follow[1]?.content).toContain("RESULT-TOKEN");

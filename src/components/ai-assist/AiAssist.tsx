@@ -25,7 +25,7 @@ import {
   type AssistQueryPlan,
   type AssistRecolor,
 } from "@/lib/ai/assist-plan";
-import { explanationWithResults, followUpQuery, readAssistResults } from "@/lib/ai/assist-reading";
+import { ASSIST_RESULT_CAP, explanationWithResults, followUpQueries, readAssistResults } from "@/lib/ai/assist-reading";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
@@ -218,7 +218,7 @@ function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
     const next = turns[index + 1];
     if (turn?.role === "user" && next?.role === "assistant") {
       const edited = next.cards.filter((card) => card.locked).map((card) => card.sql);
-      const results = readAssistResults(next.cards.slice(0, 4).map(resultPayload));
+      const results = readAssistResults(next.cards.slice(0, ASSIST_RESULT_CAP).map(resultPayload));
       const explanation = explanationWithResults(
         explanationWithEdits(next.text, edited),
         results.ok ? results.value : [],
@@ -332,6 +332,40 @@ function keyFor(settings: AssistSettings): string {
   return settings.openRouterKey;
 }
 
+function SourceChoice({
+  value,
+  checked,
+  label,
+  onSelect,
+}: {
+  value: AssistSettings["source"];
+  checked: boolean;
+  label: string;
+  onSelect: () => void;
+}) {
+  return (
+    <label
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fg ${checked ? "bg-brand-tint/15" : ""}`}
+    >
+      <input
+        type="radio"
+        name="assist-source"
+        value={value}
+        checked={checked}
+        onChange={onSelect}
+        className="sr-only"
+      />
+      <span
+        aria-hidden="true"
+        className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${checked ? "border-brand" : "border-hairline-strong"}`}
+      >
+        {checked ? <span className="size-2 rounded-full bg-brand" /> : null}
+      </span>
+      {label}
+    </label>
+  );
+}
+
 function providerNote(source: AssistSettings["source"], serverKey: boolean | null): string {
   if (source === "fireworks") return "Saved in this browser. A Fireworks model uses the key you save here.";
   if (source === "gateway") return "Saved in this browser. Vercel AI Gateway uses the key you save here.";
@@ -341,7 +375,17 @@ function providerNote(source: AssistSettings["source"], serverKey: boolean | nul
   return "Saved in this browser. Leave the OpenRouter key blank to use the server's key.";
 }
 
-function SavedKeyField({ label, stored, onSave }: { label: string; stored: string; onSave: (key: string) => void }) {
+function SavedKeyField({
+  label,
+  stored,
+  placeholder,
+  onSave,
+}: {
+  label: string;
+  stored: string;
+  placeholder?: string;
+  onSave: (key: string) => void;
+}) {
   const [draft, setDraft] = useState("");
   const [replacing, setReplacing] = useState(false);
   const saved = stored.trim() !== "";
@@ -386,9 +430,10 @@ function SavedKeyField({ label, stored, onSave }: { label: string; stored: strin
             type="password"
             aria-label={label}
             autoComplete="off"
+            placeholder={placeholder}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-            className="min-w-0 flex-1 rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+            className="min-w-0 flex-1 rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
           />
         ) : (
           <output className="text-sm text-fg">API key saved</output>
@@ -695,8 +740,8 @@ export function AiAssist() {
         };
         const follow = await groundResults({ ...readingInput, pass: "follow", results: ranCards().map(resultPayload) });
         const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
-        const extra = follow === null ? null : followUpQuery(follow.queries, existingSql);
-        const extraCards = extra === null ? [] : plannedCards([extra], connections, schemas);
+        const extra = follow === null ? [] : followUpQueries(follow.queries, existingSql);
+        const extraCards = plannedCards(extra, connections, schemas);
         for (const card of extraCards) ids.add(card.id);
         if (extraCards.length > 0) {
           commit(
@@ -951,51 +996,40 @@ export function AiAssist() {
                   type="button"
                   aria-expanded={settingsOpen}
                   onClick={() => setSettingsOpen((current) => !current)}
-                  className="text-xs font-medium text-fg-muted hover:text-fg"
+                  className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
                 >
                   Model
                 </button>
                 {settingsOpen && (
-                  <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                    <fieldset className="m-0 flex flex-wrap gap-3 border-0 p-0 sm:col-span-2">
+                  <div className="mt-3 flex flex-col gap-3">
+                    <fieldset className="m-0 flex flex-wrap gap-x-1 gap-y-1 border-0 p-0">
                       <legend className="sr-only">Model provider</legend>
-                      <label className="flex items-center gap-1.5 text-xs text-fg">
-                        <input
-                          type="radio"
-                          name="assist-source"
-                          value="openrouter"
-                          checked={settings.source === "openrouter"}
-                          onChange={() => updateSettings({ source: "openrouter" })}
-                        />
-                        OpenRouter
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs text-fg">
-                        <input
-                          type="radio"
-                          name="assist-source"
-                          value="fireworks"
-                          checked={settings.source === "fireworks"}
-                          onChange={() => updateSettings({ source: "fireworks" })}
-                        />
-                        Fireworks AI
-                      </label>
-                      <label className="flex items-center gap-1.5 text-xs text-fg">
-                        <input
-                          type="radio"
-                          name="assist-source"
-                          value="gateway"
-                          checked={settings.source === "gateway"}
-                          onChange={() => updateSettings({ source: "gateway" })}
-                        />
-                        Vercel AI Gateway
-                      </label>
+                      <SourceChoice
+                        value="openrouter"
+                        label="OpenRouter"
+                        checked={settings.source === "openrouter"}
+                        onSelect={() => updateSettings({ source: "openrouter" })}
+                      />
+                      <SourceChoice
+                        value="fireworks"
+                        label="Fireworks AI"
+                        checked={settings.source === "fireworks"}
+                        onSelect={() => updateSettings({ source: "fireworks" })}
+                      />
+                      <SourceChoice
+                        value="gateway"
+                        label="Vercel AI Gateway"
+                        checked={settings.source === "gateway"}
+                        onSelect={() => updateSettings({ source: "gateway" })}
+                      />
                     </fieldset>
-                    <p className="text-xs text-fg-muted sm:col-span-2">{providerNote(settings.source, serverKey)}</p>
+                    <p className="text-sm text-fg-muted">{providerNote(settings.source, serverKey)}</p>
                     {settings.source === "openrouter" && (
-                      <>
+                      <div className="grid grid-cols-2 gap-3">
                         <SavedKeyField
                           label="OpenRouter API key"
                           stored={settings.openRouterKey}
+                          placeholder="sk-or-..."
                           onSave={(openRouterKey) => updateSettings({ openRouterKey })}
                         />
                         <label className="flex flex-col gap-1 text-xs text-fg-muted">
@@ -1004,7 +1038,7 @@ export function AiAssist() {
                             aria-label="OpenRouter model"
                             value={settings.openRouterModel}
                             onChange={(event) => updateSettings({ openRouterModel: event.target.value })}
-                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
                           >
                             {modelOptions.map((item) => (
                               <option key={item.id} value={item.id}>
@@ -1014,14 +1048,14 @@ export function AiAssist() {
                           </select>
                         </label>
                         {modelStatus === "failed" && (
-                          <output className="block text-xs text-fg-muted sm:col-span-2">
+                          <output className="col-span-2 block text-xs text-fg-muted">
                             The OpenRouter catalog could not be loaded.
                           </output>
                         )}
-                      </>
+                      </div>
                     )}
                     {settings.source === "fireworks" && (
-                      <>
+                      <div className="grid grid-cols-2 gap-3">
                         <SavedKeyField
                           label="Fireworks API key"
                           stored={settings.fireworksKey}
@@ -1034,13 +1068,13 @@ export function AiAssist() {
                             value={settings.fireworksModel}
                             placeholder="accounts/your-account/models/your-model"
                             onChange={(event) => updateSettings({ fireworksModel: event.target.value })}
-                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
                           />
                         </label>
-                      </>
+                      </div>
                     )}
                     {settings.source === "gateway" && (
-                      <>
+                      <div className="grid grid-cols-2 gap-3">
                         <SavedKeyField
                           label="Vercel AI Gateway API key"
                           stored={settings.gatewayKey}
@@ -1054,7 +1088,7 @@ export function AiAssist() {
                             value={settings.gatewayModel}
                             placeholder="provider/model"
                             onChange={(event) => updateSettings({ gatewayModel: event.target.value })}
-                            className="rounded-md border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
                           />
                           <datalist id="vercel-gateway-models">
                             {gatewayModels.map((item) => (
@@ -1065,11 +1099,11 @@ export function AiAssist() {
                           </datalist>
                         </label>
                         {gatewayStatus === "failed" && (
-                          <output className="block text-xs text-fg-muted sm:col-span-2">
+                          <output className="col-span-2 block text-xs text-fg-muted">
                             The Vercel AI Gateway catalog could not be loaded.
                           </output>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
