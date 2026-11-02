@@ -178,6 +178,8 @@ describe("writeAssistTranscript", () => {
           color: null,
           result: { fields, rows, rowCount: 201, executionTime: 8 },
           error: null,
+          view: { typeId: "line", variationId: "area", selection: { category: ["month"], values: ["revenue"] } },
+          code: '{ "title": { "text": "Edited" } }',
         },
       ],
     };
@@ -188,6 +190,67 @@ describe("writeAssistTranscript", () => {
     expect(read[0]?.cards[0]?.result?.rows).toHaveLength(200);
     expect(read[0]?.cards[0]?.result?.fields).toHaveLength(40);
     expect(read[0]?.cards[0]?.result?.rowCount).toBe(201);
+    expect(read[0]?.cards[0]?.view).toEqual({
+      typeId: "line",
+      variationId: "area",
+      selection: { category: ["month"], values: ["revenue"] },
+    });
+    expect(read[0]?.cards[0]?.code).toBe('{ "title": { "text": "Edited" } }');
+  });
+
+  test("keeps a chart type and its code, and drops a type or code it cannot trust", () => {
+    const raw = {
+      id: "assist-1",
+      role: "assistant",
+      text: "kept",
+      at: recent,
+      cards: [
+        {
+          id: "good",
+          sql: "SELECT 1",
+          view: { typeId: "line", variationId: "area", selection: { category: ["month"], values: ["revenue"] } },
+          code: '{ "title": { "text": "Edited" } }',
+        },
+        {
+          id: "empty-selection",
+          sql: "SELECT 2",
+          view: { typeId: "bar", variationId: "basic", selection: {} },
+          code: "",
+        },
+        { id: "bad-type", sql: "SELECT 3", view: { typeId: "missing", variationId: "basic", selection: {} } },
+        { id: "bad-selection", sql: "SELECT 4", view: { typeId: "line", variationId: "basic", selection: [] } },
+        {
+          id: "bad-column",
+          sql: "SELECT 5",
+          view: { typeId: "line", variationId: "basic", selection: { category: ["month", 4] } },
+          code: "x".repeat(100_001),
+        },
+        { id: "no-view", sql: "SELECT 6", view: "pie", code: 4 },
+      ],
+    };
+    const cards = readAssistTranscript(now, storeOf(JSON.stringify([raw])))[0]?.cards ?? [];
+    expect(cards.map((card) => card.id)).toEqual([
+      "good",
+      "empty-selection",
+      "bad-type",
+      "bad-selection",
+      "bad-column",
+      "no-view",
+    ]);
+    expect(cards[0]?.view).toEqual({
+      typeId: "line",
+      variationId: "area",
+      selection: { category: ["month"], values: ["revenue"] },
+    });
+    expect(cards[0]?.code).toContain("Edited");
+    expect(cards[1]?.view).toEqual({ typeId: "bar", variationId: "basic", selection: {} });
+    expect(cards[1]?.code).toBeNull();
+    expect(cards[2]?.view).toBeNull();
+    expect(cards[3]?.view).toBeNull();
+    expect(cards[4]?.view).toBeNull();
+    expect(cards[4]?.code).toBeNull();
+    expect(cards[5]?.view).toBeNull();
+    expect(cards[5]?.code).toBeNull();
   });
 
   test("drops the oldest turns until the saved copy fits, including one turn that is too big on its own", () => {

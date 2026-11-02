@@ -5,11 +5,15 @@
  * days, including the chart each answer drew, and drops anything older.
  */
 
+import type { AssistChartChoice } from "@/lib/ai/assist-chart";
 import { assistChartColor, ASSIST_CHART_TYPES, type AssistChart, type AssistChartType } from "@/lib/ai/assist-plan";
+import { slotsFor, type SlotSelection } from "@/lib/charts/echarts-catalog";
 import type { QueryResult } from "@/lib/types";
 
 export const ASSIST_TRANSCRIPT_KEY = "libredb_ai_assist_transcript";
 export const ASSIST_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+/** Chart JSON kept with a card. Longer text is dropped rather than stored cut in half. */
+export const ASSIST_CHART_CODE_CAP = 100_000;
 
 const TRANSCRIPT_CAP = 1_500_000;
 const STORED_ROWS = 200;
@@ -29,6 +33,10 @@ export interface AssistTranscriptCard {
   readonly color: string | null;
   readonly result: QueryResult | null;
   readonly error: string | null;
+  /** The type the user left open, so a later visit does not reseed a basic bar. */
+  readonly view: AssistChartChoice | null;
+  /** Chart JSON the user edited. Null keeps the generated chart. */
+  readonly code: string | null;
 }
 
 export interface AssistTranscriptTurn {
@@ -87,6 +95,28 @@ function chartOf(value: unknown): AssistChart | null {
   };
 }
 
+function viewOf(value: unknown): AssistChartChoice | null {
+  if (value === null || typeof value !== "object") return null;
+  const typeId = "typeId" in value && typeof value.typeId === "string" ? value.typeId : "";
+  const variationId = "variationId" in value && typeof value.variationId === "string" ? value.variationId : "";
+  if (slotsFor(typeId, variationId) === null) return null;
+  const selection = "selection" in value ? value.selection : null;
+  if (selection === null || typeof selection !== "object" || Array.isArray(selection)) return null;
+  const slots: SlotSelection = {};
+  for (const [key, item] of Object.entries(selection)) {
+    if (!Array.isArray(item)) return null;
+    const names = item.filter((entry): entry is string => typeof entry === "string");
+    if (names.length !== item.length) return null;
+    slots[key] = names;
+  }
+  return { typeId, variationId, selection: slots };
+}
+
+function codeOf(value: unknown): string | null {
+  if (typeof value !== "string" || value === "" || value.length > ASSIST_CHART_CODE_CAP) return null;
+  return value;
+}
+
 function cardOf(value: unknown): AssistTranscriptCard | null {
   if (value === null || typeof value !== "object") return null;
   const id = text("id" in value ? value.id : undefined);
@@ -108,6 +138,8 @@ function cardOf(value: unknown): AssistTranscriptCard | null {
     color,
     result: resultOf("result" in value ? value.result : undefined),
     error: "error" in value && typeof value.error === "string" ? value.error : null,
+    view: viewOf("view" in value ? value.view : undefined),
+    code: codeOf("code" in value ? value.code : undefined),
   };
 }
 
@@ -146,20 +178,7 @@ function limitTurn(turn: AssistTranscriptTurn): AssistTranscriptTurn {
   const cards = turn.cards.map((card) => {
     const result = limitResult(card.result);
     if (result === card.result) return card;
-    return {
-      id: card.id,
-      title: card.title,
-      titledSql: card.titledSql,
-      modelSql: card.modelSql,
-      locked: card.locked,
-      sql: card.sql,
-      connectionId: card.connectionId,
-      connectionName: card.connectionName,
-      chart: card.chart,
-      color: card.color,
-      result,
-      error: card.error,
-    };
+    return { ...card, result };
   });
   return { id: turn.id, role: turn.role, text: turn.text, at: turn.at, cards };
 }

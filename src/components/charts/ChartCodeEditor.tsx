@@ -65,6 +65,8 @@ export interface ChartCodeState {
   /** The parsed chart code, before the query's values are filled in. */
   readonly editedOption: Record<string, unknown> | null;
   readonly edited: boolean;
+  /** Text to keep with the chart. Null means the generated chart is showing. */
+  readonly persisted: string | null;
   readonly onChange: (text: string) => void;
   readonly reset: () => void;
 }
@@ -75,7 +77,8 @@ export interface ChartCodeState {
  * `refreshToken` is the query result. A new result drops values out of the text
  * and the canvas reads them from that result instead.
  * `storedText` is a look already saved on the chart. It is what the editor shows
- * until the user types, so a dashboard chart opens on its own code.
+ * until the user types, and a parsed copy is what the canvas draws, so opening
+ * the chart again matches the editor. Reset hides that saved text.
  */
 export function useChartCode(
   generated: Record<string, unknown> | null,
@@ -90,6 +93,7 @@ export function useChartCode(
   const [draft, setDraft] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editedOption, setEditedOption] = useState<Record<string, unknown> | null>(null);
+  const [ignoreStored, setIgnoreStored] = useState(false);
   const [seenSource, setSeenSource] = useState(source);
   const [seenRefresh, setSeenRefresh] = useState(refreshToken);
   if (seenSource !== source) {
@@ -98,6 +102,7 @@ export function useChartCode(
     setDraft(null);
     setError(null);
     setEditedOption(null);
+    setIgnoreStored(false);
   } else if (seenRefresh !== refreshToken) {
     setSeenRefresh(refreshToken);
     if (draft !== null && generated !== null) {
@@ -115,6 +120,7 @@ export function useChartCode(
   }
 
   const onChange = (text: string) => {
+    setIgnoreStored(false);
     setDraft(text);
     const parsed = parseChartCode(text);
     if (parsed.ok) {
@@ -129,24 +135,33 @@ export function useChartCode(
     setDraft(null);
     setError(null);
     setEditedOption(null);
+    setIgnoreStored(true);
   };
 
+  const storedOption = useMemo(() => {
+    if (ignoreStored || storedText === null) return null;
+    const parsed = parseChartCode(storedText);
+    return parsed.ok ? parsed.option : null;
+  }, [ignoreStored, storedText]);
+  const activeEdited = draft === null ? storedOption : (editedOption ?? storedOption);
   const option = useMemo(() => {
-    if (editedOption === null || generated === null) return null;
-    return withoutFilterLooks(applyChartValues(editedOption, generated));
-  }, [editedOption, generated]);
+    if (activeEdited === null || generated === null) return null;
+    return withoutFilterLooks(applyChartValues(activeEdited, generated));
+  }, [activeEdited, generated]);
 
   const text =
     draft ??
-    storedText ??
+    (ignoreStored ? null : storedText) ??
     (generated === null ? "" : formatChartCode(withFilterLooks(stripChartValues(generated), filterLooks)));
+  const persisted = draft ?? (ignoreStored ? null : storedText);
 
   return {
     text,
     error,
     option,
-    editedOption,
-    edited: draft !== null,
+    editedOption: activeEdited,
+    edited: persisted !== null,
+    persisted,
     onChange,
     reset,
   };

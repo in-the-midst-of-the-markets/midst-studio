@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Braces, Terminal, X, type LucideIcon } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
+import { ASSIST_CHART_CODE_CAP } from "@/lib/ai/assist-history";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
-import { stripChartValues } from "@/lib/charts/chart-code";
+import { chartSourceKey, stripChartValues } from "@/lib/charts/chart-code";
 import { chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
@@ -72,6 +73,10 @@ export interface ChartWithEditorProps {
   /** The series colour for this chart, when the model or a later answer set one. */
   readonly color?: string | null;
   readonly running: boolean;
+  /** The type and chart JSON from the last visit. Nulls open the generated chart. */
+  readonly savedView?: AssistChartChoice | null;
+  readonly savedCode?: string | null;
+  readonly onRemember?: (view: AssistChartChoice | null, code: string | null) => void;
   readonly onSqlChange: (sql: string) => void;
   readonly onRun: (sql: string) => void;
 }
@@ -152,12 +157,15 @@ export function ChartWithEditor({
   chart,
   color = null,
   running,
+  savedView = null,
+  savedCode = null,
+  onRemember,
   onSqlChange,
   onRun,
 }: ChartWithEditorProps) {
   const [tracked, setTracked] = useState({ result, error });
   const [face, setFace] = useState<"chart" | "code" | "query">("chart");
-  const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, null));
+  const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, savedView));
   const [seen, setSeen] = useState({ result, chart });
   const [typesOpen, setTypesOpen] = useState(false);
   const [browsingId, setBrowsingId] = useState<string | null>(null);
@@ -172,6 +180,21 @@ export function ChartWithEditor({
     setChoice(nextAssistChoice(chart, result, previous));
     setBrowsingId(null);
   }
+  const source = chartSourceKey(choice?.typeId ?? null, choice?.variationId ?? null, choice?.selection ?? null);
+  const [mountSource] = useState(source);
+  const [droppedCode, setDroppedCode] = useState(false);
+  const shelfMoved = droppedCode || source !== mountSource;
+  if (shelfMoved && !droppedCode) setDroppedCode(true);
+  const typeMatches =
+    savedView !== null &&
+    choice !== null &&
+    choice.typeId === savedView.typeId &&
+    choice.variationId === savedView.variationId;
+  const shownCode = !shelfMoved && typeMatches ? savedCode : null;
+  const rememberRef = useRef(onRemember);
+  useEffect(() => {
+    rememberRef.current = onRemember;
+  }, [onRemember]);
 
   useEffect(() => {
     if (face !== "query") return;
@@ -226,7 +249,13 @@ export function ChartWithEditor({
     choice?.selection ?? null,
     result,
     filterLooks,
+    shownCode,
   );
+  useEffect(() => {
+    if (choice === null && result === null) return;
+    const kept = code.persisted !== null && code.persisted.length <= ASSIST_CHART_CODE_CAP ? code.persisted : null;
+    rememberRef.current?.(choice, kept);
+  }, [choice, result, code.persisted]);
   const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
   const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const codeTitle = chartTitleText(code.option);
