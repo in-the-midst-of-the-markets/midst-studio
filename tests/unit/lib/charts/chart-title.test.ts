@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { applyChartTitle, chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
+import { applyChartTitle, chartTitleStyle, chartTitleText, omitDrawnChartTitle } from "@/lib/charts/chart-title";
 
 describe("chart title", () => {
   test("reads title text and nothing else", () => {
@@ -74,6 +74,29 @@ describe("chart title", () => {
     expect(next.legend).toEqual({ top: 28, type: "scroll" });
     expect(next.grid).toEqual({ top: 80 });
     expect((next.title as { textStyle: { color?: string } }).textStyle.color).toBeUndefined();
+  });
+
+  test("a dashboard plot drops its inner title and takes back that room", () => {
+    const untitled = { legend: { top: 4, type: "scroll" }, grid: { top: 40, left: 16 } };
+    const drawn = omitDrawnChartTitle(
+      {
+        title: { text: "Daily_Active_Users by date" },
+        legend: { top: 28, type: "scroll" },
+        grid: { top: 64, left: 16 },
+      },
+      untitled,
+    );
+    expect(drawn.title).toBeUndefined();
+    expect(drawn.legend).toEqual({ top: 4, type: "scroll" });
+    expect(drawn.grid).toEqual({ top: 40, left: 16 });
+    expect(omitDrawnChartTitle({ title: { text: "A" }, legend: [], grid: "full" }, {})).toEqual({
+      legend: [],
+      grid: "full",
+    });
+    expect(omitDrawnChartTitle({ legend: { type: "scroll" }, grid: { left: 8 } }, { legend: {}, grid: {} })).toEqual({
+      legend: { type: "scroll" },
+      grid: { left: 8 },
+    });
   });
 
   test("a title without a legend or a numeric grid top still draws", () => {

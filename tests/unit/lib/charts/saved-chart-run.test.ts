@@ -82,7 +82,9 @@ describe("saved chart run", () => {
       chartTheme("light"),
     );
     if (drawn === null) throw new Error("expected a chart");
-    expect((drawn.option.title as { text: string }).text).toBe("Revenue");
+    expect(drawn.option.title).toBeUndefined();
+    expect((drawn.option.legend as { top: number }).top).toBe(4);
+    expect((drawn.option.grid as { top: number }).top).toBe(40);
     expect(optionForSavedChart({ name: "Revenue", typeId: "bar", variationId: "basic" }, result)).toBeNull();
     const titled = optionForSavedChart(
       {
@@ -95,7 +97,7 @@ describe("saved chart run", () => {
       result,
     );
     if (titled === null) throw new Error("expected a titled chart");
-    expect((titled.option.title as { text: string }).text).toBe("By region");
+    expect(titled.option.title).toBeUndefined();
     expect(
       optionForSavedChart(
         { name: "Revenue", typeId: "bar", variationId: "nope", selection: { category: ["region"], values: ["total"] } },
@@ -117,6 +119,9 @@ describe("saved chart run", () => {
         look: {
           color: ["#9546de", ...palette.slice(1)],
           series: [{ itemStyle: { color: "#9546de" } }],
+          title: { text: "Daily_Active_Users by date", left: "center" },
+          legend: { top: 28 },
+          grid: { top: 64 },
           filters: { region: { control: "slider", min: 0, max: 10 } },
         },
       },
@@ -127,6 +132,9 @@ describe("saved chart run", () => {
     expect((painted.option.color as string[])[0]).toBe("#9546de");
     expect((painted.option.series as { itemStyle?: { color?: string } }[])[0]?.itemStyle?.color).toBe("#9546de");
     expect(painted.option.filters).toBeUndefined();
+    expect(painted.option.title).toBeUndefined();
+    expect((painted.option.legend as { top: number }).top).toBe(4);
+    expect((painted.option.grid as { top: number }).top).toBe(40);
     expect((painted.option.series as { data?: unknown }[])[0]?.data).toEqual(
       (plain.option.series as { data?: unknown }[])[0]?.data,
     );

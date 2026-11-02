@@ -1,5 +1,6 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
 import { applyChartValues } from "@/lib/charts/chart-code";
+import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
 import { withoutFilterLooks } from "@/lib/charts/filter-look";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
@@ -35,9 +36,12 @@ export async function loadSavedChart(
   return { kind: "result", result: outcome.result };
 }
 
-/** The option for a saved chart and a fresh result, or null when the shelves cannot draw it. */
+/**
+ * The option for a saved chart and a fresh result, or null when the shelves cannot draw it.
+ * The dashboard card already shows the chart name, so the plot draws no second title.
+ */
 export function optionForSavedChart(
-  chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "title" | "name" | "look">,
+  chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "look">,
   result: QueryResult,
   theme: ChartTheme = chartTheme("dark"),
 ): BuiltChart | null {
@@ -47,10 +51,11 @@ export function optionForSavedChart(
     variationId: chart.variationId,
     rows: result.rows,
     selection: chart.selection ?? {},
-    title: chart.title ?? chart.name,
+    title: "",
     theme,
   });
+  if (built === null) return null;
   const look = storedChartLook(chart.look);
-  if (built === null || look === undefined) return built;
-  return { option: withoutFilterLooks(applyChartValues(look, built.option)), notes: built.notes };
+  const drawn = look === undefined ? built.option : withoutFilterLooks(applyChartValues(look, built.option));
+  return { option: omitDrawnChartTitle(drawn, built.option), notes: built.notes };
 }
