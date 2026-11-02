@@ -63,7 +63,7 @@ describe("completeChat", () => {
     expect(seen?.body).toMatchObject({
       model: "openai/gpt-4o",
       stream: false,
-      reasoning: { effort: "low" },
+      reasoning: { effort: "high" },
     });
   });
 
