@@ -11,13 +11,15 @@ import {
   resolveAssistKey,
   type AssistModelOption,
 } from "@/lib/ai/assist-transport";
+import { refreshOpenRouterRankings } from "@/lib/ai/openrouter-rankings";
 import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 
 /**
  * AI Assist. POST plans queries, then reads the rows and may add more charted
- * queries on as many as three follow-ups, then writes the final analysis. GET lists the public catalogs. The model key is the browser's,
- * or OPENROUTER_API_KEY when the browser did not send one for OpenRouter.
+ * queries on as many as three follow-ups, then writes the final analysis. GET lists the public catalogs and the
+ * saved OpenRouter domain rankings. The model key is the browser's, or OPENROUTER_API_KEY when the browser did not
+ * send one for OpenRouter. The rankings pull uses only the server key.
  */
 export const dynamic = "force-dynamic";
 
@@ -121,6 +123,7 @@ export async function GET(req: NextRequest) {
   const guard = await guardRoute({ route: "GET /api/ai/assist", bucket: "ai", request: req });
   if ("response" in guard) return guard.response;
 
+  const rankingsPromise = refreshOpenRouterRankings();
   try {
     const models = await listOpenRouterModels();
     let gatewayModels: AssistModelOption[] = [];
@@ -130,8 +133,15 @@ export async function GET(req: NextRequest) {
     } catch {
       gatewayCatalog = false;
     }
-    return NextResponse.json({ models, gatewayModels, gatewayCatalog, serverKey: assistServerKeyConfigured() });
+    return NextResponse.json({
+      models,
+      gatewayModels,
+      gatewayCatalog,
+      serverKey: assistServerKeyConfigured(),
+      rankings: await rankingsPromise,
+    });
   } catch (error) {
+    await rankingsPromise;
     return createErrorResponse(error, { route: "api/ai/assist" });
   }
 }
