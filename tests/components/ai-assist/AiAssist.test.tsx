@@ -1,9 +1,10 @@
 import "../../setup-dom";
 import React, { useState } from "react";
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
+import { readAssistSettings, writeAssistSettings } from "@/lib/ai/assist-settings";
 import type { AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import type { QueryResult } from "@/lib/types";
@@ -1149,19 +1150,16 @@ describe("AiAssist page", () => {
     );
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
-    expect(view.getByRole("radio", { name: "OpenRouter" }).closest("label")?.className).toContain("bg-brand-tint/15");
-    expect(view.getByRole("radio", { name: "Fireworks AI" }).closest("label")?.className).not.toContain(
-      "bg-brand-tint/15",
-    );
+    expect(view.queryByRole("radio", { name: "OpenRouter" })).toBeNull();
+    expect(view.queryByRole("radio", { name: "Fireworks AI" })).toBeNull();
+    expect(view.queryByRole("radio", { name: "Vercel AI Gateway" })).toBeNull();
     expect(view.queryByLabelText("OpenRouter API key")).toBeNull();
-    expect(view.getByText(/Add an OpenRouter key under Connectors/)).toBeTruthy();
     expect(view.getByRole("option", { name: "missing/model" })).toBeTruthy();
     fireEvent.change(view.getByLabelText("OpenRouter model"), { target: { value: "other/model" } });
-    fireEvent.click(view.getByLabelText("Fireworks AI"));
+    writeAssistSettings({ ...readAssistSettings(), source: "fireworks" });
     fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
     fireEvent.keyDown(view.getByLabelText("How can I help?"), { key: "Enter" });
     expect(await view.findByRole("alert")).toHaveProperty("textContent", "Name the model to use.");
-    expect(view.getByText("A Fireworks model uses the key saved under Connectors.")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Fireworks model"), { target: { value: "accounts/acme/models/tuned" } });
     expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").fireworksModel).toBe(
       "accounts/acme/models/tuned",
@@ -1205,8 +1203,9 @@ describe("AiAssist page", () => {
     expect(view.queryByText("API key saved")).toBeNull();
     expect(view.container.textContent?.includes("ork-secret")).toBe(false);
 
-    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
-    expect(view.getByText("Vercel AI Gateway uses the key saved under Connectors.")).toBeTruthy();
+    act(() => {
+      writeAssistSettings({ ...readAssistSettings(), source: "gateway" });
+    });
     expect(view.queryByLabelText("Vercel AI Gateway API key")).toBeNull();
     expect(view.container.textContent?.includes("gw-secret")).toBe(false);
     const listed = document.querySelector("#vercel-gateway-models option");
@@ -1216,8 +1215,9 @@ describe("AiAssist page", () => {
     await typeAndSend(view, "What changed?");
     expect(await view.findByText("Routed.")).toBeTruthy();
 
-    fireEvent.click(view.getByLabelText("Fireworks AI"));
-    expect(view.getByText("A Fireworks model uses the key saved under Connectors.")).toBeTruthy();
+    act(() => {
+      writeAssistSettings({ ...readAssistSettings(), source: "fireworks" });
+    });
     fireEvent.change(view.getByLabelText("Fireworks model"), { target: { value: "accounts/acme/models/tuned" } });
     expect(view.queryByLabelText("Fireworks API key")).toBeNull();
     expect(view.container.textContent?.includes("fw-secret")).toBe(false);
@@ -1249,9 +1249,12 @@ describe("AiAssist page", () => {
       }
       return defaultFetch(url, init);
     };
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ ...readAssistSettings(), source: "gateway", gatewayModel: "alibaba/qwen-3-14b" }),
+    );
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
-    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     expect(view.getByLabelText("Vercel AI Gateway model")).toBeTruthy();
   });
@@ -1607,7 +1610,8 @@ describe("AiAssist page", () => {
     expect(await view.findByText("Using the server OpenRouter key.")).toBeTruthy();
     expect(view.queryByText(/This server has no OpenRouter key/)).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Model" }));
-    expect(view.getByText(/this server already has one/)).toBeTruthy();
+    expect(view.queryByRole("radio", { name: "OpenRouter" })).toBeNull();
+    expect(view.getByLabelText("OpenRouter model")).toBeTruthy();
   });
 
   test("says when the model list cannot be loaded", async () => {
@@ -1618,7 +1622,9 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
     expect(await view.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
-    fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
+    act(() => {
+      writeAssistSettings({ ...readAssistSettings(), source: "gateway" });
+    });
     expect(view.getByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     view.unmount();
 

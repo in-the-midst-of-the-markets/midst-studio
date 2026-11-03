@@ -355,49 +355,6 @@ function keyFor(settings: AssistSettings): string {
   return settings.openRouterKey;
 }
 
-function SourceChoice({
-  value,
-  checked,
-  label,
-  onSelect,
-}: {
-  value: AssistSettings["source"];
-  checked: boolean;
-  label: string;
-  onSelect: () => void;
-}) {
-  return (
-    <label
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-fg ${checked ? "bg-brand-tint/15" : ""}`}
-    >
-      <input
-        type="radio"
-        name="assist-source"
-        value={value}
-        checked={checked}
-        onChange={onSelect}
-        className="sr-only"
-      />
-      <span
-        aria-hidden="true"
-        className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${checked ? "border-brand" : "border-hairline-strong"}`}
-      >
-        {checked ? <span className="size-2 rounded-full bg-brand" /> : null}
-      </span>
-      {label}
-    </label>
-  );
-}
-
-function providerNote(source: AssistSettings["source"], serverKey: boolean | null): string {
-  if (source === "fireworks") return "A Fireworks model uses the key saved under Connectors.";
-  if (source === "gateway") return "Vercel AI Gateway uses the key saved under Connectors.";
-  if (serverKey === true) {
-    return "The OpenRouter key can stay blank under Connectors; this server already has one.";
-  }
-  return "Add an OpenRouter key under Connectors, or leave it blank to use the server's key.";
-}
-
 /** The AI Assist page: a chat that writes queries, draws charts, and explains them. Each chart keeps the SQL editor behind it. */
 export function AiAssist() {
   const settings = useSyncExternalStore(subscribeAssistSettings, readAssistSettings, () => DEFAULT_ASSIST_SETTINGS);
@@ -990,28 +947,6 @@ export function AiAssist() {
                 </button>
                 {settingsOpen && (
                   <div className="mt-3 flex flex-col gap-3">
-                    <fieldset className="m-0 flex flex-wrap gap-x-1 gap-y-1 border-0 p-0">
-                      <legend className="sr-only">Model provider</legend>
-                      <SourceChoice
-                        value="openrouter"
-                        label="OpenRouter"
-                        checked={settings.source === "openrouter"}
-                        onSelect={() => updateSettings({ source: "openrouter" })}
-                      />
-                      <SourceChoice
-                        value="fireworks"
-                        label="Fireworks AI"
-                        checked={settings.source === "fireworks"}
-                        onSelect={() => updateSettings({ source: "fireworks" })}
-                      />
-                      <SourceChoice
-                        value="gateway"
-                        label="Vercel AI Gateway"
-                        checked={settings.source === "gateway"}
-                        onSelect={() => updateSettings({ source: "gateway" })}
-                      />
-                    </fieldset>
-                    <p className="text-sm text-fg-muted">{providerNote(settings.source, serverKey)}</p>
                     <AssistModelFields
                       settings={settings}
                       models={models}
