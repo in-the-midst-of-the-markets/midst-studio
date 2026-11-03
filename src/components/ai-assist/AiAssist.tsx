@@ -34,7 +34,7 @@ import {
   followUpQueries,
   readAssistResults,
 } from "@/lib/ai/assist-reading";
-import { isReadOnlySql } from "@/lib/ai/assist-readonly";
+import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
@@ -299,7 +299,7 @@ async function groundResults(input: {
     });
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) return null;
-    return acceptAssistPlan(body);
+    return acceptAssistPlan(body, input.databaseType);
   } catch {
     return null;
   }
@@ -573,8 +573,8 @@ export function AiAssist() {
       updateCard(id, { running: false, error: "Connect a database in Traditional mode to run this query." }, true);
       return;
     }
-    const statement = applyQueryFilters(sql);
-    if (!isReadOnlySql(statement)) {
+    const statement = assistRunnableStatement(sql, target.type);
+    if (statement === null) {
       updateCard(id, { running: false, error: "AI Assist only runs read-only queries." }, true);
       return;
     }
@@ -603,6 +603,7 @@ export function AiAssist() {
     setNotice(null);
     setDraft("");
     const history = historyOf(turnsRef.current);
+    const databaseType = assistDatabaseType(connections.map((item) => item.type));
     const at = askedAt();
     commit([...turnsRef.current, { id: nextId(), role: "user", text: question, at, cards: [] }], true);
     try {
@@ -615,7 +616,7 @@ export function AiAssist() {
           apiKey,
           question,
           schemaContext,
-          databaseType: assistDatabaseType(connections.map((item) => item.type)),
+          databaseType,
           history,
         }),
       });
@@ -636,7 +637,7 @@ export function AiAssist() {
         );
         return;
       }
-      const plan = acceptAssistPlan(body);
+      const plan = acceptAssistPlan(body, databaseType);
       const prior = turnsRef.current.flatMap((turn) =>
         turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
       );
@@ -645,7 +646,6 @@ export function AiAssist() {
       const queries = questionOnlyRecolors(question) ? [] : follow.queries;
       const cards = plannedCards(queries, connections, schemas);
       const assistantId = nextId();
-      const databaseType = assistDatabaseType(connections.map((item) => item.type));
       commit(
         [
           ...paint(turnsRef.current, recolors),

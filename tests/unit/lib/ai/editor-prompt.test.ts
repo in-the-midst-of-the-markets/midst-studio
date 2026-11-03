@@ -40,5 +40,18 @@ describe("buildEditorMessages", () => {
       editorBlock: "",
     });
     expect(plain[0]?.content).toContain("The connected engine is SQL");
+    expect(plain[0]?.content).toContain("sql is one read-only statement for this engine.");
+    expect(plain[0]?.content).not.toContain("Do not write SQL.");
+
+    const graph = buildEditorMessages({
+      databaseType: "neo4j",
+      questionBlock: "question",
+      schemaBlock: "schema",
+      historyBlock: "history",
+      editorBlock: "",
+    });
+    expect(graph[0]?.content).toContain("The connected engine is neo4j");
+    expect(graph[0]?.content).toContain("sql is one read-only Cypher statement for this engine. Do not write SQL.");
+    expect(graph[0]?.content).not.toContain("one read-only SELECT");
   });
 });

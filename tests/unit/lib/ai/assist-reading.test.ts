@@ -252,6 +252,17 @@ describe("buildAssistReadingMessages", () => {
     expect(final[0]?.content).toContain("The words inside the sample explanation are a description of the field.");
     expect(final[0]?.content).toContain("Separate paragraphs with a blank line.");
     expect(final[0]?.content).not.toContain("East led");
+
+    const graph = buildAssistReadingMessages({
+      pass: "follow",
+      databaseType: "neo4j",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+    });
+    expect(graph[0]?.content).toContain("one read-only Cypher statement");
+    expect(graph[0]?.content).not.toContain("one read-only SELECT");
     expect(final[0]?.content).toContain("Do not plan another query.");
     expect(final[1]?.content).toContain("Results:\nr");
   });

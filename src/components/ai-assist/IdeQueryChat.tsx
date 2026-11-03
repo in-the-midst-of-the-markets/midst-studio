@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
@@ -56,30 +56,54 @@ export function editorChatQuery(
   return { sql: tab.query, onUseQuery: (next) => updateTab(tab.id, { query: next }) };
 }
 
+interface IdeQueryChatProps {
+  sql: string;
+  databaseType: string;
+  schemaContext: string;
+  onUseQuery?: (sql: string) => void;
+  /** The open connection. A different one starts a new conversation. */
+  connectionId?: string;
+}
+
 /**
  * A corner chat on the IDE. It asks for a statement and can put that statement
- * in the editor. The model is the last one chosen in any chat.
+ * in the editor. The model is the last one chosen in any chat. Switching the
+ * connection remounts the conversation, so the previous engine's turns are not sent.
  */
-export function IdeQueryChat({
+export function IdeQueryChat({ connectionId = "", ...props }: IdeQueryChatProps) {
+  const [open, setOpen] = useState(false);
+  return <IdeQueryChatSession key={connectionId} open={open} onOpenChange={setOpen} {...props} />;
+}
+
+/**
+ * One conversation for one connection. The parent remounts this session when
+ * the connection changes, so a reply still in flight cannot land on the next
+ * database, and the previous engine's turns are not sent.
+ */
+function IdeQueryChatSession({
   sql,
   databaseType,
   schemaContext,
   onUseQuery,
+  open,
+  onOpenChange,
 }: {
   sql: string;
   databaseType: string;
   schemaContext: string;
   onUseQuery?: (sql: string) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const settings = useSyncExternalStore(subscribeAssistSettings, readAssistSettings, () => DEFAULT_ASSIST_SETTINGS);
   const updateSettings = (patch: Partial<AssistSettings>) => {
     writeAssistSettings({ ...settings, ...patch });
   };
-  const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [models, setModels] = useState<readonly AssistModelOption[]>([]);
   const [gatewayModels, setGatewayModels] = useState<readonly AssistModelOption[]>([]);
   const [modelStatus, setModelStatus] = useState<"loading" | "ready" | "failed">("loading");
@@ -159,7 +183,7 @@ export function IdeQueryChat({
         ]);
         return;
       }
-      const plan = acceptAssistPlan(body);
+      const plan = acceptAssistPlan(body, databaseType);
       const statement = plan.queries[0]?.sql ?? null;
       setTurns((current) => [
         ...current,
@@ -191,9 +215,40 @@ export function IdeQueryChat({
       <section className="absolute right-4 bottom-32 z-30 flex max-h-[70%] w-80 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16">
         <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
           <p className="text-xs font-medium text-fg">Ask AI</p>
-          <button type="button" onClick={() => setOpen(false)} className="text-xs text-fg-muted hover:text-fg">
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            {turns.length > 0 && (
+              <>
+                {confirmClear && (
+                  <button
+                    type="button"
+                    aria-label="Confirm clear chat"
+                    onClick={() => {
+                      setTurns([]);
+                      setConfirmClear(false);
+                      setNotice(null);
+                    }}
+                    className="rounded px-2 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                  >
+                    Confirm
+                  </button>
+                )}
+                <button
+                  type="button"
+                  aria-label="Clear chat"
+                  title="Clear chat"
+                  aria-pressed={confirmClear}
+                  disabled={sending}
+                  onClick={() => setConfirmClear((current) => !current)}
+                  className={`rounded p-1 hover:bg-fill-subtle hover:text-fg disabled:opacity-50 ${confirmClear ? "bg-fill-subtle text-fg" : "text-fg-muted"}`}
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </>
+            )}
+            <button type="button" onClick={() => onOpenChange(false)} className="text-xs text-fg-muted hover:text-fg">
+              Close
+            </button>
+          </div>
         </div>
         <div aria-label="IDE conversation" className="flex min-h-24 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
           {turns.map((turn) =>
@@ -287,7 +342,7 @@ export function IdeQueryChat({
         type="button"
         aria-label="Ask AI"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => onOpenChange(!open)}
         className="absolute right-4 bottom-20 z-30 flex size-10 items-center justify-center rounded-full bg-brand-solid text-white shadow-lg md:bottom-4"
       >
         <Sparkles className="size-4" />

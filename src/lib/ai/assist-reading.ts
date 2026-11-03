@@ -7,6 +7,7 @@
  * answer the person sees.
  */
 
+import { assistStatementLanguage } from "@/lib/ai/assist-language";
 import {
   ASSIST_TEXT_CAP,
   QUERY_CAP,
@@ -214,7 +215,11 @@ export function buildAssistReadingMessages(
   prompt: AssistReadingPrompt,
 ): { role: "system" | "user"; content: string }[] {
   const engine = prompt.databaseType === "" ? "SQL" : prompt.databaseType;
-  const task = prompt.pass === "final" ? FINAL_TASK : FOLLOW_TASK;
+  const cypher = assistStatementLanguage(prompt.databaseType) === "cypher";
+  const task = (prompt.pass === "final" ? FINAL_TASK : FOLLOW_TASK).replace(
+    "one read-only SELECT with LIMIT 200",
+    cypher ? "one read-only Cypher statement" : "one read-only SELECT with LIMIT 200",
+  );
   const system = `You are the analyst inside Midst, a database studio. The connected engine is ${engine}.\n\n${task}`;
   const user = `Question:\n${prompt.questionBlock}\n\nResults:\n${prompt.resultsBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
