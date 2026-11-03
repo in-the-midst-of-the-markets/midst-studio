@@ -262,6 +262,7 @@ describe("POST /api/ai/assist", () => {
     const joined = messages.map((message) => message.content).join("\n");
     expect(system).toContain("The chart is required on every query.");
     expect(system).toContain("queries has up to 3 items");
+    expect(system).toContain("explanation is Markdown");
     expect(system).not.toContain("LEAK-CELL");
     expect(joined.split("LEAK-CELL").length - 1).toBe(1);
     expect(joined.split(UNTRUSTED_CONTENT_BEGIN).length - 1).toBe(4);
@@ -275,6 +276,7 @@ describe("POST /api/ai/assist", () => {
     expect(final.status).toBe(200);
     expect(messages[0]?.content).toContain("Do not plan another query.");
     expect(messages[0]?.content).toContain("queries is empty.");
+    expect(messages[0]?.content).toContain("explanation is Markdown the person reads");
 
     const badResults = await POST(
       createMockRequest("/api/ai/assist", {
