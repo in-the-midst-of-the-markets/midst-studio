@@ -27,15 +27,26 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
+import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
+import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import { JsCodeEditor } from "@/components/editor/JsCodeEditor";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
 import { appFetch } from "@/lib/config/base-path";
 import {
+  blockFrameSize,
+  dashboardAssistContext,
+  dashboardEditorSql,
   dashboardName,
   dashboardVariables,
+  DEFAULT_DASHBOARD_BLOCK_WIDTH,
+  DEFAULT_DASHBOARD_FILTER_HEIGHT,
+  DEFAULT_DASHBOARD_NOTE_HEIGHT,
+  dragBlockResize,
   dragResize,
+  schemaWithDashboard,
   CUSTOM_FILTER_SCRIPT,
   filterChoices,
   filterControlPatch,
@@ -57,6 +68,7 @@ import {
   withFrame,
   withName,
   withNote,
+  withNoteFrame,
   withNoteText,
   withoutChart,
   withoutFilter,
@@ -112,8 +124,9 @@ function ChartGlyph({ typeId }: { readonly typeId: string | undefined }) {
 
 /**
  * Compiles dashboards from saved charts.
- * Each chart keeps the size the user dragged it to, and a chart with a query can
- * rerun that query on its own schedule.
+ * Each chart, text box, and component keeps the size the user dragged it to, and a
+ * chart with a query can rerun that query on its own schedule. Ask AI can add a
+ * chart or a text box from the reply.
  */
 export function DashboardStudio() {
   const boardRef = useRef<HTMLDivElement>(null);
@@ -124,7 +137,22 @@ export function DashboardStudio() {
   const [connections] = useState<DatabaseConnection[]>(() => storage.getConnections());
   const [menu, setMenu] = useState<null | "root" | "charts" | "components">(null);
   const [components, setComponents] = useState<SavedDashboardComponent[]>(() => storage.getSavedComponents());
+  const [schemaContext, setSchemaContext] = useState("[]");
   const active = dashboards.find((item) => item.id === activeId) ?? null;
+
+  useEffect(() => {
+    if (connections.length === 0) return;
+    void loadAssistCatalog(connections, (connection) =>
+      loadAssistSchema(
+        connection,
+        storage.getDataDictionary(connection.id),
+        appFetch,
+        storage.getActiveCatalog(connection.id),
+      ),
+    ).then((loaded) => {
+      setSchemaContext(loaded.schemaContext);
+    });
+  }, [connections]);
 
   useEffect(() => {
     if (menu === null) return;
@@ -167,238 +195,295 @@ export function DashboardStudio() {
     return chart === undefined ? [] : [chart];
   });
 
+  const ensureDashboard = (): SavedDashboard => active ?? freshDashboard(dashboardName(dashboards));
+
+  const addChartFromAssistant = (sql: string) => {
+    const current = ensureDashboard();
+    const chart = freshDashboardChart(charts, connections[0]?.id);
+    const saved = { ...chart, query: sql };
+    storage.saveChart(saved);
+    setCharts(storage.getSavedCharts());
+    const next = withChart(current, saved.id, boardWidth(boardRef.current));
+    remember(next);
+    if (active === null) choose(next.id);
+  };
+
+  const addNoteFromAssistant = (text: string) => {
+    const noted = withNote(ensureDashboard());
+    const created = (noted.notes ?? [])[(noted.notes ?? []).length - 1];
+    const next = withNoteText(noted, created?.id ?? "", text);
+    remember(next);
+    if (active === null) choose(next.id);
+  };
+
   return (
-    <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-      <aside className="w-full shrink-0 lg:w-64 lg:border-r lg:border-hairline lg:pr-6">
-        <div className="flex items-center gap-2 text-sm font-semibold text-fg">
-          <LayoutDashboard className="size-4 text-fg-muted" />
-          Your dashboard
-        </div>
-        {dashboards.length > 0 && (
-          <label className="mt-4 block text-xs text-fg-muted">
-            Dashboard
-            <select
-              aria-label="Dashboard"
-              value={active?.id ?? ""}
-              onChange={(event) => choose(event.target.value === "" ? null : event.target.value)}
-              className={`mt-1.5 ${fieldClass}`}
-            >
-              {active === null && <option value="">Choose a dashboard</option>}
-              {dashboards.map((dashboard) => (
-                <option key={dashboard.id} value={dashboard.id}>
-                  {dashboard.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <button
-          type="button"
-          onClick={create}
-          className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand"
-        >
-          <Plus className="size-3.5" />
-          New dashboard
-        </button>
-        {active !== null && (
-          <>
-            <div className="mt-5 border-t border-hairline pt-5">
-              <label className="block text-xs text-fg-muted">
-                Dashboard name
-                <input
-                  aria-label="Dashboard name"
-                  value={active.name}
-                  onChange={(event) => remember(withName(active, event.target.value))}
-                  className={`mt-1.5 ${fieldClass}`}
-                />
-              </label>
-              <p className="mt-1.5 text-xs text-fg-muted">Choose a name to make this dashboard easy to find.</p>
-            </div>
-            <div className="mt-5 border-t border-hairline pt-5">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium tracking-wide text-fg-muted">ON THIS DASHBOARD</span>
-                <span className="text-xs text-fg-muted">{onDashboard.length}</span>
-              </div>
-              <ul className="mt-2 flex flex-col gap-1">
-                {onDashboard.map((chart) => (
-                  <li key={chart.id} className="flex items-center gap-2 rounded-md px-1 py-1 text-sm text-fg">
-                    <span className="flex size-6 items-center justify-center rounded bg-fill-subtle">
-                      <ChartGlyph typeId={chart.typeId} />
-                    </span>
-                    <span className="truncate">{chart.name}</span>
-                  </li>
+    <>
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        <aside className="w-full shrink-0 lg:w-64 lg:border-r lg:border-hairline lg:pr-6">
+          <div className="flex items-center gap-2 text-sm font-semibold text-fg">
+            <LayoutDashboard className="size-4 text-fg-muted" />
+            Your dashboard
+          </div>
+          {dashboards.length > 0 && (
+            <label className="mt-4 block text-xs text-fg-muted">
+              Dashboard
+              <select
+                aria-label="Dashboard"
+                value={active?.id ?? ""}
+                onChange={(event) => choose(event.target.value === "" ? null : event.target.value)}
+                className={`mt-1.5 ${fieldClass}`}
+              >
+                {active === null && <option value="">Choose a dashboard</option>}
+                {dashboards.map((dashboard) => (
+                  <option key={dashboard.id} value={dashboard.id}>
+                    {dashboard.name}
+                  </option>
                 ))}
-              </ul>
-            </div>
-            <div className="mt-5 rounded-xl bg-brand-tint/10 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-fg">
-                <LayoutGrid className="size-4 text-brand" />
-                Make it your own
-              </div>
-              <p className="mt-1 text-xs leading-5 text-fg-muted">
-                Add a saved chart, start one from scratch, or add a filter other queries can use. Save a component to
-                place it on another dashboard.
-              </p>
-            </div>
-            <div className="mt-5 border-t border-hairline pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  storage.deleteDashboard(active.id);
-                  const remaining = storage.getSavedDashboards();
-                  setDashboards(remaining);
-                  choose(remaining[0]?.id ?? null);
-                }}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-danger"
-              >
-                <Trash2 className="size-3.5" />
-                Delete dashboard
-              </button>
-            </div>
-          </>
-        )}
-      </aside>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight text-fg">Create</h1>
-          {active !== null && (
-            <span className="rounded-full bg-brand-tint/15 px-2 py-0.5 text-xs font-medium text-brand">
-              {active.name}
-            </span>
+              </select>
+            </label>
           )}
-        </div>
-        <p className="mt-1 text-sm text-fg-muted">
-          Compile a dashboard from saved charts. Save more than one, and switch when you want a different view.
-        </p>
-        {dashboards.length === 0 ? (
-          <p className="mt-6 text-sm text-fg-muted">You have no dashboards yet.</p>
-        ) : active === null ? (
-          <p className="mt-6 text-sm text-fg-muted">Choose a dashboard.</p>
-        ) : (
-          <div className="mt-8 flex flex-col items-start gap-6">
-            <div ref={menuRef} className="relative">
-              <button
-                type="button"
-                aria-label="Add content"
-                aria-haspopup="menu"
-                aria-expanded={menu !== null}
-                onClick={() => setMenu((current) => (current === null ? "root" : null))}
-                className="text-brand"
-              >
-                <Plus className="size-16" strokeWidth={1.5} />
-              </button>
-              {menu !== null && (
-                <AddContentMenu
-                  menu={menu}
-                  charts={available}
-                  onCharts={() => setMenu("charts")}
-                  onBack={() => setMenu("root")}
-                  onAddChart={(chartId) => {
-                    remember(withChart(active, chartId, boardWidth(boardRef.current)));
-                    setMenu(null);
+          <button
+            type="button"
+            onClick={create}
+            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand"
+          >
+            <Plus className="size-3.5" />
+            New dashboard
+          </button>
+          {active !== null && (
+            <>
+              <div className="mt-5 border-t border-hairline pt-5">
+                <label className="block text-xs text-fg-muted">
+                  Dashboard name
+                  <input
+                    aria-label="Dashboard name"
+                    value={active.name}
+                    onChange={(event) => remember(withName(active, event.target.value))}
+                    className={`mt-1.5 ${fieldClass}`}
+                  />
+                </label>
+                <p className="mt-1.5 text-xs text-fg-muted">Choose a name to make this dashboard easy to find.</p>
+              </div>
+              <div className="mt-5 border-t border-hairline pt-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium tracking-wide text-fg-muted">ON THIS DASHBOARD</span>
+                  <span className="text-xs text-fg-muted">{onDashboard.length}</span>
+                </div>
+                <ul className="mt-2 flex flex-col gap-1">
+                  {onDashboard.map((chart) => (
+                    <li key={chart.id} className="flex items-center gap-2 rounded-md px-1 py-1 text-sm text-fg">
+                      <span className="flex size-6 items-center justify-center rounded bg-fill-subtle">
+                        <ChartGlyph typeId={chart.typeId} />
+                      </span>
+                      <span className="truncate">{chart.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="mt-5 rounded-xl bg-brand-tint/10 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-fg">
+                  <LayoutGrid className="size-4 text-brand" />
+                  Make it your own
+                </div>
+                <p className="mt-1 text-xs leading-5 text-fg-muted">
+                  Add a saved chart, start one from scratch, or add a filter other queries can use. Save a component to
+                  place it on another dashboard.
+                </p>
+              </div>
+              <div className="mt-5 border-t border-hairline pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    storage.deleteDashboard(active.id);
+                    const remaining = storage.getSavedDashboards();
+                    setDashboards(remaining);
+                    choose(remaining[0]?.id ?? null);
                   }}
-                  onMakeChart={() => {
-                    const chart = freshDashboardChart(charts, connections[0]?.id);
-                    storage.saveChart(chart);
-                    setCharts(storage.getSavedCharts());
-                    remember(withChart(active, chart.id, boardWidth(boardRef.current)));
-                    setMenu(null);
-                  }}
-                  onText={() => {
-                    remember(withNote(active));
-                    setMenu(null);
-                  }}
-                  onFilter={() => {
-                    remember(withFilter(active, connections[0]?.id));
-                    setMenu(null);
-                  }}
-                  components={components}
-                  onComponents={() => setMenu("components")}
-                  onAddComponent={(component) => {
-                    remember(placeSavedComponent(active, component));
-                    setMenu(null);
-                  }}
-                />
-              )}
-            </div>
-            <div ref={boardRef} className="flex w-full flex-col items-start gap-4">
-              {(active.filters ?? []).map((filter) => (
-                <DashboardFilterCard
-                  key={filter.id}
-                  filter={filter}
-                  connections={connections}
-                  onChange={(patch) => remember(withFilterFields(active, filter.id, patch))}
-                  onRemove={() => remember(withoutFilter(active, filter.id))}
-                  onSave={() => {
-                    const libraryId = filter.componentId ?? crypto.randomUUID();
-                    storage.saveComponent(savedComponentFromFilter(filter, libraryId));
-                    setComponents(storage.getSavedComponents());
-                    if (filter.componentId !== libraryId) {
-                      remember(withFilterFields(active, filter.id, { componentId: libraryId }));
-                    }
-                  }}
-                />
-              ))}
-              {(active.notes ?? []).map((note) => (
-                <DashboardNoteCard
-                  key={note.id}
-                  note={note}
-                  onText={(text) => remember(withNoteText(active, note.id, text))}
-                  onRemove={() => remember(withoutNote(active, note.id))}
-                />
-              ))}
-              {placed.map((frame) => {
-                const chart = charts.find((item) => item.id === frame.chartId);
-                if (chart === undefined) return null;
-                return (
-                  <DashboardChart
-                    key={chart.id}
-                    chart={chart}
-                    width={frame.width}
-                    height={frame.height}
-                    connections={connections}
-                    filters={active.filters ?? []}
-                    onRemove={() => remember(withoutChart(active, chart.id))}
-                    onResize={(size) => remember(withFrame(active, chart.id, size))}
-                    onQuery={(query) => {
-                      storage.saveChart({ ...chart, query });
-                      setCharts(storage.getSavedCharts());
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-danger"
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete dashboard
+                </button>
+              </div>
+            </>
+          )}
+        </aside>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">Create</h1>
+            {active !== null && (
+              <span className="rounded-full bg-brand-tint/15 px-2 py-0.5 text-xs font-medium text-brand">
+                {active.name}
+              </span>
+            )}
+          </div>
+          <p className="mt-1 text-sm text-fg-muted">
+            Compile a dashboard from saved charts. Save more than one, and switch when you want a different view.
+          </p>
+          {dashboards.length === 0 ? (
+            <p className="mt-6 text-sm text-fg-muted">You have no dashboards yet.</p>
+          ) : active === null ? (
+            <p className="mt-6 text-sm text-fg-muted">Choose a dashboard.</p>
+          ) : (
+            <div className="mt-8 flex flex-col items-start gap-6">
+              <div ref={menuRef} className="relative">
+                <button
+                  type="button"
+                  aria-label="Add content"
+                  aria-haspopup="menu"
+                  aria-expanded={menu !== null}
+                  onClick={() => setMenu((current) => (current === null ? "root" : null))}
+                  className="text-brand"
+                >
+                  <Plus className="size-16" strokeWidth={1.5} />
+                </button>
+                {menu !== null && (
+                  <AddContentMenu
+                    menu={menu}
+                    charts={available}
+                    onCharts={() => setMenu("charts")}
+                    onBack={() => setMenu("root")}
+                    onAddChart={(chartId) => {
+                      remember(withChart(active, chartId, boardWidth(boardRef.current)));
+                      setMenu(null);
                     }}
-                    onLook={(look) => {
-                      const next = { ...chart };
-                      if (look === undefined) delete next.look;
-                      else next.look = look;
-                      storage.saveChart(next);
+                    onMakeChart={() => {
+                      const chart = freshDashboardChart(charts, connections[0]?.id);
+                      storage.saveChart(chart);
                       setCharts(storage.getSavedCharts());
+                      remember(withChart(active, chart.id, boardWidth(boardRef.current)));
+                      setMenu(null);
                     }}
-                    onShape={(patch) => {
-                      storage.saveChart({ ...chart, ...patch });
-                      setCharts(storage.getSavedCharts());
+                    onText={() => {
+                      remember(withNote(active));
+                      setMenu(null);
                     }}
-                    onConnection={(connectionId) => {
-                      const next = { ...chart };
-                      if (connectionId === undefined) delete next.connectionId;
-                      else next.connectionId = connectionId;
-                      storage.saveChart(next);
-                      setCharts(storage.getSavedCharts());
+                    onFilter={() => {
+                      remember(withFilter(active, connections[0]?.id));
+                      setMenu(null);
                     }}
-                    onTitle={(name) => {
-                      storage.saveChart({ ...chart, name });
-                      setCharts(storage.getSavedCharts());
-                    }}
-                    onUnsave={() => {
-                      storage.deleteChart(chart.id);
-                      setCharts(storage.getSavedCharts());
-                      setDashboards(storage.getSavedDashboards());
+                    components={components}
+                    onComponents={() => setMenu("components")}
+                    onAddComponent={(component) => {
+                      remember(placeSavedComponent(active, component));
+                      setMenu(null);
                     }}
                   />
-                );
-              })}
+                )}
+              </div>
+              <div ref={boardRef} className="flex w-full flex-col items-start gap-4">
+                {(active.filters ?? []).map((filter) => {
+                  const size = blockFrameSize(
+                    filter.width ?? DEFAULT_DASHBOARD_BLOCK_WIDTH,
+                    filter.height ?? DEFAULT_DASHBOARD_FILTER_HEIGHT,
+                    window.innerWidth,
+                  );
+                  return (
+                    <DashboardFilterCard
+                      key={filter.id}
+                      filter={filter}
+                      width={size.width}
+                      height={size.height}
+                      connections={connections}
+                      onChange={(patch) => remember(withFilterFields(active, filter.id, patch))}
+                      onResize={(next) => remember(withFilterFields(active, filter.id, next))}
+                      onRemove={() => remember(withoutFilter(active, filter.id))}
+                      onSave={() => {
+                        const libraryId = filter.componentId ?? crypto.randomUUID();
+                        storage.saveComponent(savedComponentFromFilter(filter, libraryId));
+                        setComponents(storage.getSavedComponents());
+                        if (filter.componentId !== libraryId) {
+                          remember(withFilterFields(active, filter.id, { componentId: libraryId }));
+                        }
+                      }}
+                    />
+                  );
+                })}
+                {(active.notes ?? []).map((note) => {
+                  const size = blockFrameSize(
+                    note.width ?? DEFAULT_DASHBOARD_BLOCK_WIDTH,
+                    note.height ?? DEFAULT_DASHBOARD_NOTE_HEIGHT,
+                    window.innerWidth,
+                  );
+                  return (
+                    <DashboardNoteCard
+                      key={note.id}
+                      note={note}
+                      width={size.width}
+                      height={size.height}
+                      onText={(text) => remember(withNoteText(active, note.id, text))}
+                      onRemove={() => remember(withoutNote(active, note.id))}
+                      onResize={(next) => remember(withNoteFrame(active, note.id, next))}
+                    />
+                  );
+                })}
+                {placed.map((frame) => {
+                  const chart = charts.find((item) => item.id === frame.chartId);
+                  if (chart === undefined) return null;
+                  return (
+                    <DashboardChart
+                      key={chart.id}
+                      chart={chart}
+                      width={frame.width}
+                      height={frame.height}
+                      connections={connections}
+                      filters={active.filters ?? []}
+                      onRemove={() => remember(withoutChart(active, chart.id))}
+                      onResize={(size) => remember(withFrame(active, chart.id, size))}
+                      onQuery={(query) => {
+                        storage.saveChart({ ...chart, query });
+                        setCharts(storage.getSavedCharts());
+                      }}
+                      onLook={(look) => {
+                        const next = { ...chart };
+                        if (look === undefined) delete next.look;
+                        else next.look = look;
+                        storage.saveChart(next);
+                        setCharts(storage.getSavedCharts());
+                      }}
+                      onShape={(patch) => {
+                        storage.saveChart({ ...chart, ...patch });
+                        setCharts(storage.getSavedCharts());
+                      }}
+                      onConnection={(connectionId) => {
+                        const next = { ...chart };
+                        if (connectionId === undefined) delete next.connectionId;
+                        else next.connectionId = connectionId;
+                        storage.saveChart(next);
+                        setCharts(storage.getSavedCharts());
+                      }}
+                      onTitle={(name) => {
+                        storage.saveChart({ ...chart, name });
+                        setCharts(storage.getSavedCharts());
+                      }}
+                      onUnsave={() => {
+                        storage.deleteChart(chart.id);
+                        setCharts(storage.getSavedCharts());
+                        setDashboards(storage.getSavedDashboards());
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+      <IdeQueryChat
+        placement="fixed"
+        conversationLabel="Dashboard conversation"
+        useQueryLabel="Add as chart"
+        noteLabel="Add as text"
+        sql={dashboardEditorSql(active, charts)}
+        databaseType={assistDatabaseType(connections.map((item) => item.type))}
+        schemaContext={schemaWithDashboard(
+          schemaContext,
+          active === null ? "" : dashboardAssistContext(active, charts),
+        )}
+        onUseQuery={addChartFromAssistant}
+        onUseNote={addNoteFromAssistant}
+      />
+    </>
   );
 }
 
@@ -459,6 +544,67 @@ function FaceButton({
     >
       <Icon className="size-3.5" aria-hidden="true" />
     </button>
+  );
+}
+
+function ResizeHandle({
+  label,
+  width,
+  height,
+  onResize,
+  resize,
+}: {
+  readonly label: string;
+  readonly width: number;
+  readonly height: number;
+  readonly onResize: (size: { width: number; height: number }) => void;
+  readonly resize: (
+    start: { width: number; height: number },
+    dx: number,
+    dy: number,
+    maxWidth: number,
+  ) => { width: number; height: number };
+}) {
+  const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus();
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const start = { width, height };
+    const move = (ev: PointerEvent) => {
+      onResize(resize(start, ev.clientX - startX, ev.clientY - startY, window.innerWidth));
+    };
+    const up = (ev: PointerEvent) => {
+      move(ev);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const step = event.shiftKey ? 48 : 16;
+    const delta: Record<string, [number, number]> = {
+      ArrowRight: [step, 0],
+      ArrowLeft: [-step, 0],
+      ArrowDown: [0, step],
+      ArrowUp: [0, -step],
+    };
+    const next = delta[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    onResize(resize({ width, height }, next[0], next[1], window.innerWidth));
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onPointerDown={onPointerDown}
+      onKeyDown={onKeyDown}
+      className="absolute right-1 bottom-1 z-10 size-3 cursor-se-resize border-r-2 border-b-2 border-fg-muted"
+    />
   );
 }
 
@@ -577,38 +723,6 @@ function DashboardChart({
     const parsed = parseChartCode(text);
     if (!parsed.ok) return;
     onLook(storedChartLook(stripChartValues(parsed.option)));
-  };
-
-  const onPointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.currentTarget.focus();
-    event.preventDefault();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const start = { width, height };
-    const move = (ev: PointerEvent) => {
-      onResize(dragResize(start, ev.clientX - startX, ev.clientY - startY, window.innerWidth));
-    };
-    const up = (ev: PointerEvent) => {
-      move(ev);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const step = event.shiftKey ? 48 : 16;
-    const delta: Record<string, [number, number]> = {
-      ArrowRight: [step, 0],
-      ArrowLeft: [-step, 0],
-      ArrowDown: [0, step],
-      ArrowUp: [0, -step],
-    };
-    const next = delta[event.key];
-    if (next === undefined) return;
-    event.preventDefault();
-    onResize(dragResize({ width, height }, next[0], next[1], window.innerWidth));
   };
 
   return (
@@ -774,12 +888,12 @@ function DashboardChart({
           <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
         )}
       </div>
-      <button
-        type="button"
-        aria-label={`Resize ${chart.name}`}
-        onPointerDown={onPointerDown}
-        onKeyDown={onKeyDown}
-        className="absolute right-0 bottom-0 h-4 w-4 cursor-se-resize"
+      <ResizeHandle
+        label={`Resize ${chart.name}`}
+        width={width}
+        height={height}
+        onResize={onResize}
+        resize={dragResize}
       />
     </article>
   );
@@ -945,16 +1059,25 @@ function ChartTypePicker({
 
 function DashboardNoteCard({
   note,
+  width,
+  height,
   onText,
   onRemove,
+  onResize,
 }: {
   readonly note: DashboardNote;
+  readonly width: number;
+  readonly height: number;
   readonly onText: (text: string) => void;
   readonly onRemove: () => void;
+  readonly onResize: (size: { width: number; height: number }) => void;
 }) {
   return (
-    <article className="w-full max-w-xl rounded-xl border border-hairline bg-raised p-4 shadow-sm">
-      <div className="mb-2 flex justify-end">
+    <article
+      style={{ width, height }}
+      className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
+    >
+      <div className="flex justify-end px-4 pt-3">
         <button
           type="button"
           aria-label="Remove text"
@@ -964,12 +1087,21 @@ function DashboardNoteCard({
           <X className="size-3.5" aria-hidden="true" />
         </button>
       </div>
-      <textarea
-        aria-label="Text box"
-        value={note.text}
-        placeholder="Add a note or context"
-        onChange={(event) => onText(event.target.value)}
-        className="min-h-24 w-full resize-y rounded-lg border border-hairline-strong bg-canvas px-3 py-2 text-sm text-fg"
+      <div className="min-h-0 flex-1 px-4 pb-4">
+        <textarea
+          aria-label="Text box"
+          value={note.text}
+          placeholder="Add a note or context"
+          onChange={(event) => onText(event.target.value)}
+          className="h-full w-full resize-none rounded-lg border border-hairline-strong bg-canvas px-3 py-2 text-sm text-fg"
+        />
+      </div>
+      <ResizeHandle
+        label="Resize text box"
+        width={width}
+        height={height}
+        onResize={onResize}
+        resize={dragBlockResize}
       />
     </article>
   );
@@ -997,14 +1129,20 @@ const FILTER_CONTROLS: readonly {
 
 function DashboardFilterCard({
   filter,
+  width,
+  height,
   connections,
   onChange,
+  onResize,
   onRemove,
   onSave,
 }: {
   readonly filter: DashboardFilter;
+  readonly width: number;
+  readonly height: number;
   readonly connections: readonly DatabaseConnection[];
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
+  readonly onResize: (size: { width: number; height: number }) => void;
   readonly onRemove: () => void;
   readonly onSave: () => void;
 }) {
@@ -1066,9 +1204,10 @@ function DashboardFilterCard({
   return (
     <article
       data-testid={`dashboard-filter-${filter.id}`}
-      className="w-full max-w-xl rounded-xl border border-hairline bg-raised p-4 shadow-sm"
+      style={{ width, height }}
+      className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
-      <div className="mb-3 flex flex-wrap items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-3 px-4 pt-4">
         <input
           aria-label="Component title"
           value={caption}
@@ -1113,28 +1252,37 @@ function DashboardFilterCard({
           <X className="size-3.5" aria-hidden="true" />
         </button>
       </div>
-      {filter.control === undefined || face === "design" ? (
-        <FilterDesign filter={filter} reference={reference} onChange={onChange} />
-      ) : null}
-      {filter.control !== undefined && face === "choices" && (
-        <FilterChoices
-          filter={filter}
-          draft={draft}
-          connections={connections}
-          status={status}
-          onDraft={setDraft}
-          onChange={onChange}
-          onRun={runChoices}
-        />
-      )}
-      {filter.control !== undefined && face === "filter" && (
-        <FilterSurface filter={filter} choices={listed ?? choices} onChange={onChange} />
-      )}
-      {shownStatus !== null && face !== "choices" && (
-        <p role="alert" className="mt-2 text-xs text-danger">
-          {shownStatus}
-        </p>
-      )}
+      <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-4">
+        {filter.control === undefined || face === "design" ? (
+          <FilterDesign filter={filter} reference={reference} onChange={onChange} />
+        ) : null}
+        {filter.control !== undefined && face === "choices" && (
+          <FilterChoices
+            filter={filter}
+            draft={draft}
+            connections={connections}
+            status={status}
+            onDraft={setDraft}
+            onChange={onChange}
+            onRun={runChoices}
+          />
+        )}
+        {filter.control !== undefined && face === "filter" && (
+          <FilterSurface filter={filter} choices={listed ?? choices} onChange={onChange} />
+        )}
+        {shownStatus !== null && face !== "choices" && (
+          <p role="alert" className="mt-2 text-xs text-danger">
+            {shownStatus}
+          </p>
+        )}
+      </div>
+      <ResizeHandle
+        label={`Resize ${caption}`}
+        width={width}
+        height={height}
+        onResize={onResize}
+        resize={dragBlockResize}
+      />
     </article>
   );
 }
@@ -1400,7 +1548,7 @@ function FilterSurface({
         title="Custom filter"
         sandbox="allow-scripts"
         srcDoc={filterFrameDocument(filter.id, filter.script ?? CUSTOM_FILTER_SCRIPT, filter.value, choices)}
-        className="h-28 w-full rounded-lg border border-hairline bg-canvas"
+        className="h-full min-h-28 w-full rounded-lg border border-hairline bg-canvas"
       />
     );
   }

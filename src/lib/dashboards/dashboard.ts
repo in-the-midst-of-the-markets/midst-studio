@@ -1,3 +1,4 @@
+import { ASSIST_SCHEMA_CAP } from "@/lib/ai/assist-plan";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
 import type {
   DashboardFilter,
@@ -23,22 +24,70 @@ export const MIN_DASHBOARD_CHART_WIDTH = 280;
 export const MIN_DASHBOARD_CHART_HEIGHT = 220;
 export const MAX_DASHBOARD_CHART_HEIGHT = 900;
 
+/** The size a new text box uses until the user drags it. */
+export const DEFAULT_DASHBOARD_BLOCK_WIDTH = 576;
+export const DEFAULT_DASHBOARD_NOTE_HEIGHT = 220;
+/** The size a new component uses until the user drags it. */
+export const DEFAULT_DASHBOARD_FILTER_HEIGHT = 420;
+export const MIN_DASHBOARD_BLOCK_WIDTH = 240;
+export const MIN_DASHBOARD_BLOCK_HEIGHT = 120;
+export const MAX_DASHBOARD_BLOCK_HEIGHT = 900;
+
 /** A width the chart may grow to when the board has not been measured yet. */
 const UNMEASURED_MAX_WIDTH = 1600;
 
+interface FrameBounds {
+  minWidth: number;
+  minHeight: number;
+  maxHeight: number;
+  fallbackWidth: number;
+  fallbackHeight: number;
+}
+
 /**
- * A chart size that fits the board.
+ * A size that fits the board.
  * A width that is not a number, or a board that is narrower than the minimum, falls back
- * so a drag cannot collapse the chart or stretch it past the screen.
+ * so a drag cannot collapse the frame or stretch it past the screen.
  */
-export function chartFrameSize(width: number, height: number, maxWidth: number): { width: number; height: number } {
-  const cap = Number.isFinite(maxWidth) && maxWidth >= MIN_DASHBOARD_CHART_WIDTH ? maxWidth : UNMEASURED_MAX_WIDTH;
-  const nextWidth = Number.isFinite(width) ? Math.round(width) : MIN_DASHBOARD_CHART_WIDTH;
-  const nextHeight = Number.isFinite(height) ? Math.round(height) : MIN_DASHBOARD_CHART_HEIGHT;
+function frameSize(
+  width: number,
+  height: number,
+  maxWidth: number,
+  bounds: FrameBounds,
+): { width: number; height: number } {
+  const cap = Number.isFinite(maxWidth) && maxWidth >= bounds.minWidth ? maxWidth : UNMEASURED_MAX_WIDTH;
+  const nextWidth = Number.isFinite(width) ? Math.round(width) : bounds.fallbackWidth;
+  const nextHeight = Number.isFinite(height) ? Math.round(height) : bounds.fallbackHeight;
   return {
-    width: Math.min(cap, Math.max(MIN_DASHBOARD_CHART_WIDTH, nextWidth)),
-    height: Math.min(MAX_DASHBOARD_CHART_HEIGHT, Math.max(MIN_DASHBOARD_CHART_HEIGHT, nextHeight)),
+    width: Math.min(cap, Math.max(bounds.minWidth, nextWidth)),
+    height: Math.min(bounds.maxHeight, Math.max(bounds.minHeight, nextHeight)),
   };
+}
+
+const CHART_BOUNDS: FrameBounds = {
+  minWidth: MIN_DASHBOARD_CHART_WIDTH,
+  minHeight: MIN_DASHBOARD_CHART_HEIGHT,
+  maxHeight: MAX_DASHBOARD_CHART_HEIGHT,
+  fallbackWidth: MIN_DASHBOARD_CHART_WIDTH,
+  fallbackHeight: MIN_DASHBOARD_CHART_HEIGHT,
+};
+
+const BLOCK_BOUNDS: FrameBounds = {
+  minWidth: MIN_DASHBOARD_BLOCK_WIDTH,
+  minHeight: MIN_DASHBOARD_BLOCK_HEIGHT,
+  maxHeight: MAX_DASHBOARD_BLOCK_HEIGHT,
+  fallbackWidth: DEFAULT_DASHBOARD_BLOCK_WIDTH,
+  fallbackHeight: DEFAULT_DASHBOARD_NOTE_HEIGHT,
+};
+
+/** A chart size that fits the board. */
+export function chartFrameSize(width: number, height: number, maxWidth: number): { width: number; height: number } {
+  return frameSize(width, height, maxWidth, CHART_BOUNDS);
+}
+
+/** A text box or component size that fits the board. */
+export function blockFrameSize(width: number, height: number, maxWidth: number): { width: number; height: number } {
+  return frameSize(width, height, maxWidth, BLOCK_BOUNDS);
 }
 
 /** The size after a drag from `start` by `dx` and `dy` pixels. */
@@ -49,6 +98,16 @@ export function dragResize(
   maxWidth: number,
 ): { width: number; height: number } {
   return chartFrameSize(start.width + dx, start.height + dy, maxWidth);
+}
+
+/** The text box or component size after a drag from `start` by `dx` and `dy` pixels. */
+export function dragBlockResize(
+  start: { width: number; height: number },
+  dx: number,
+  dy: number,
+  maxWidth: number,
+): { width: number; height: number } {
+  return blockFrameSize(start.width + dx, start.height + dy, maxWidth);
 }
 
 /** The next "Dashboard N" that is not already used. */
@@ -165,6 +224,67 @@ export function withNoteText(dashboard: SavedDashboard, id: string, text: string
     updatedAt: new Date(),
     notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, text } : item)),
   };
+}
+
+export function withNoteFrame(
+  dashboard: SavedDashboard,
+  id: string,
+  size: { width: number; height: number },
+): SavedDashboard {
+  return {
+    ...dashboard,
+    updatedAt: new Date(),
+    notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, ...size } : item)),
+  };
+}
+
+/** The query the dashboard assistant revises: the latest chart that is still saved. */
+export function dashboardEditorSql(
+  dashboard: SavedDashboard | null,
+  charts: readonly { id: string; query?: string }[],
+): string {
+  if (dashboard === null) return "";
+  for (let index = dashboard.charts.length - 1; index >= 0; index -= 1) {
+    const frame = dashboard.charts[index];
+    const chart = charts.find((item) => item.id === frame?.chartId);
+    if (chart === undefined) continue;
+    return chart.query ?? "";
+  }
+  return "";
+}
+
+/** Charts, text, and components on the board, so the assistant can see what is already there. */
+export function dashboardAssistContext(
+  dashboard: SavedDashboard,
+  charts: readonly { id: string; name: string; query?: string }[],
+): string {
+  const lines = [`Dashboard: ${dashboard.name}`];
+  for (const frame of dashboard.charts) {
+    const chart = charts.find((item) => item.id === frame.chartId);
+    if (chart === undefined) continue;
+    const query = chart.query?.trim() ?? "";
+    lines.push(`Chart ${chart.name}: ${query === "" ? "(no query)" : query}`);
+  }
+  for (const note of dashboard.notes ?? []) {
+    const text = note.text.trim();
+    if (text !== "") lines.push(`Text: ${text}`);
+  }
+  for (const filter of dashboard.filters ?? []) {
+    const label = filter.label?.trim() || filter.name.trim() || "Component";
+    lines.push(`Component ${label} (${filter.control ?? "unset"}) = ${filter.value}`);
+  }
+  return lines.join("\n");
+}
+
+/** The schema text plus the board, kept inside the size a question allows. */
+export function schemaWithDashboard(schemaContext: string, board: string): string {
+  const trimmed = board.trim();
+  if (trimmed === "") return schemaContext;
+  const extra = `\n\nDashboard:\n${trimmed}`;
+  const room = ASSIST_SCHEMA_CAP - schemaContext.length;
+  if (room <= 0) return schemaContext;
+  if (extra.length <= room) return schemaContext + extra;
+  return schemaContext + extra.slice(0, room);
 }
 
 export function withFilter(dashboard: SavedDashboard, connectionId?: string, id = crypto.randomUUID()): SavedDashboard {

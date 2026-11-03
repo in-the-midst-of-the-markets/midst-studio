@@ -1230,10 +1230,12 @@ export interface DashboardChartFrame {
   height: number;
 }
 
-/** A title or note on a dashboard. */
+/** A title or note on a dashboard. Width and height are absent until the user resizes it. */
 export interface DashboardNote {
   id: string;
   text: string;
+  width?: number;
+  height?: number;
 }
 
 /** How a dashboard filter is drawn. Absent until the user picks one. */
@@ -1266,6 +1268,9 @@ export interface DashboardFilter {
   script?: string;
   /** The saved component this filter was stored as. Absent until the user saves it. */
   componentId?: string;
+  /** Absent until the user resizes this component. The size stays on the placement. */
+  width?: number;
+  height?: number;
 }
 
 /**
@@ -1280,8 +1285,8 @@ export interface SavedDashboardComponent {
   filter: DashboardFilterDesign;
 }
 
-/** The design of a dashboard filter, without the id of one placement. */
-export type DashboardFilterDesign = Omit<DashboardFilter, "id" | "componentId">;
+/** The design of a dashboard filter, without the id or the size of one placement. */
+export type DashboardFilterDesign = Omit<DashboardFilter, "id" | "componentId" | "width" | "height">;
 
 /** A named arrangement of saved charts. The user can keep more than one and switch. */
 export interface SavedDashboard {

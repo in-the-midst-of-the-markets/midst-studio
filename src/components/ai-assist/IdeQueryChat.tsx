@@ -63,8 +63,15 @@ interface IdeQueryChatProps {
   databaseType: string;
   schemaContext: string;
   onUseQuery?: (sql: string) => void;
+  /** Puts the reply's explanation on the page, when the surface has a text box. */
+  onUseNote?: (text: string) => void;
   /** The open connection. A different one starts a new conversation. */
   connectionId?: string;
+  /** `fixed` keeps the button on the screen while the page scrolls. */
+  placement?: "absolute" | "fixed";
+  conversationLabel?: string;
+  useQueryLabel?: string;
+  noteLabel?: string;
 }
 
 /**
@@ -87,16 +94,27 @@ function IdeQueryChatSession({
   databaseType,
   schemaContext,
   onUseQuery,
+  onUseNote,
   open,
   onOpenChange,
+  placement = "absolute",
+  conversationLabel = "IDE conversation",
+  useQueryLabel = "Use this query",
+  noteLabel = "Add as text",
 }: {
   sql: string;
   databaseType: string;
   schemaContext: string;
   onUseQuery?: (sql: string) => void;
+  onUseNote?: (text: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  placement?: "absolute" | "fixed";
+  conversationLabel?: string;
+  useQueryLabel?: string;
+  noteLabel?: string;
 }) {
+  const anchored = placement === "fixed" ? "fixed" : "absolute";
   const settings = useSyncExternalStore(subscribeAssistSettings, readAssistSettings, () => DEFAULT_ASSIST_SETTINGS);
   const updateSettings = (patch: Partial<AssistSettings>) => {
     writeAssistSettings({ ...settings, ...patch });
@@ -216,7 +234,9 @@ function IdeQueryChatSession({
   let panel: ReactNode = null;
   if (open) {
     panel = (
-      <section className="absolute right-4 bottom-32 z-30 flex max-h-[70%] w-80 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16">
+      <section
+        className={`${anchored} right-4 bottom-32 z-30 flex max-h-[70%] w-80 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16`}
+      >
         <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
           <p className="text-xs font-medium text-fg">Ask AI</p>
           <div className="flex items-center gap-2">
@@ -254,7 +274,7 @@ function IdeQueryChatSession({
             </button>
           </div>
         </div>
-        <div aria-label="IDE conversation" className="flex min-h-24 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+        <div aria-label={conversationLabel} className="flex min-h-24 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
           {turns.map((turn) =>
             turn.role === "user" ? (
               <p key={turn.id} className="text-sm text-fg">
@@ -269,7 +289,16 @@ function IdeQueryChatSession({
                     onClick={() => onUseQuery(turn.sql ?? "")}
                     className="mt-2 rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
                   >
-                    Use this query
+                    {useQueryLabel}
+                  </button>
+                )}
+                {turn.text !== "" && onUseNote !== undefined && (
+                  <button
+                    type="button"
+                    onClick={() => onUseNote(turn.text)}
+                    className="mt-2 rounded-md border border-hairline px-2 py-1 text-xs font-medium text-fg"
+                  >
+                    {noteLabel}
                   </button>
                 )}
               </div>
@@ -354,7 +383,7 @@ function IdeQueryChatSession({
         aria-label="Ask AI"
         aria-expanded={open}
         onClick={() => onOpenChange(!open)}
-        className="absolute right-4 bottom-20 z-30 flex size-10 items-center justify-center rounded-full bg-brand-solid text-white shadow-lg md:bottom-4"
+        className={`${anchored} right-4 bottom-20 z-30 flex size-10 items-center justify-center rounded-full bg-brand-solid text-white shadow-lg md:bottom-4`}
       >
         <Sparkles className="size-4" />
       </button>
