@@ -12,7 +12,8 @@ import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks 
 import { chartSaveDraft } from "@/lib/charts/save-chart";
 import { ChartFilterShelf, QueryFilterBar } from "@/components/charts/QueryFilterBar";
 import { QueryEditor } from "@/components/QueryEditor";
-import { assistChoiceForVariation, nextAssistChoice, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { assistChoiceForVariation, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { assistDrawRows, openAssistChart } from "@/lib/ai/assist-graph-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
 import {
   clearQueryFilters,
@@ -165,7 +166,12 @@ export function ChartWithEditor({
 }: ChartWithEditorProps) {
   const [tracked, setTracked] = useState({ result, error });
   const [face, setFace] = useState<"chart" | "code" | "query">("chart");
-  const [choice, setChoice] = useState<AssistChartChoice | null>(() => nextAssistChoice(chart, result, savedView));
+  const [choice, setChoice] = useState<AssistChartChoice | null>(
+    () => openAssistChart(chart, result, savedView ?? null).choice,
+  );
+  const [projectedRows, setProjectedRows] = useState<readonly Record<string, unknown>[] | null>(
+    () => openAssistChart(chart, result, savedView ?? null).projected,
+  );
   const [seen, setSeen] = useState({ result, chart });
   const [typesOpen, setTypesOpen] = useState(false);
   const [browsingId, setBrowsingId] = useState<string | null>(null);
@@ -176,8 +182,10 @@ export function ChartWithEditor({
   }
   if (seen.result !== result || seen.chart !== chart) {
     const previous = sameChartPlan(seen.chart, chart) ? choice : null;
+    const opened = openAssistChart(chart, result, previous);
     setSeen({ result, chart });
-    setChoice(nextAssistChoice(chart, result, previous));
+    setChoice(opened.choice);
+    setProjectedRows(opened.projected);
     setBrowsingId(null);
   }
   const source = chartSourceKey(choice?.typeId ?? null, choice?.variationId ?? null, choice?.selection ?? null);
@@ -234,13 +242,13 @@ export function ChartWithEditor({
     return buildChartOption({
       typeId: choice.typeId,
       variationId: choice.variationId,
-      rows: result.rows,
+      rows: assistDrawRows(choice, result, projectedRows),
       selection: choice.selection,
       theme,
       color,
       title,
     });
-  }, [result, choice, theme, color, title]);
+  }, [result, choice, projectedRows, theme, color, title]);
   const filterLooks = defaultFilterLooks(filters, metricNames);
   const code = useChartCode(
     built?.option ?? null,
