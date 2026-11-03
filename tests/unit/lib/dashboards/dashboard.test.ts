@@ -1,16 +1,33 @@
 import { describe, expect, test } from "bun:test";
 import {
   chartFrameSize,
+  chartLabel,
+  CUSTOM_FILTER_SCRIPT,
   dashboardName,
   dragResize,
+  filterChoices,
+  filterControlPatch,
+  filterFrameDocument,
+  filterFrameMessage,
+  filterLabel,
+  filterReference,
+  filterSlider,
   freshDashboard,
+  freshDashboardChart,
   MAX_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_WIDTH,
+  queryWithDashboardFilters,
   withChart,
+  withFilter,
+  withFilterFields,
   withFrame,
   withName,
+  withNote,
+  withNoteText,
   withoutChart,
+  withoutFilter,
+  withoutNote,
 } from "@/lib/dashboards/dashboard";
 import type { SavedDashboard } from "@/lib/types";
 
@@ -55,5 +72,115 @@ describe("dashboard layout", () => {
     expect(sized.charts[0]).toEqual({ chartId: "c1", width: 500, height: 280 });
     expect(withFrame(sized, "missing", { width: 1, height: 1 }).charts).toHaveLength(1);
     expect(withoutChart(sized, "c1").charts).toEqual([]);
+  });
+
+  test("names a new chart and a new filter without repeating a name", () => {
+    expect(chartLabel([])).toBe("Chart");
+    expect(chartLabel([{ name: "Chart" }])).toBe("Chart 2");
+    expect(chartLabel([{ name: "Chart" }, { name: "Chart 2" }])).toBe("Chart 3");
+    expect(filterLabel([])).toBe("filter");
+    expect(filterLabel([{ name: "filter" }, { name: "filter2" }])).toBe("filter3");
+  });
+
+  test("starts a chart from scratch and keeps a connection when one is given", () => {
+    const blank = freshDashboardChart([], undefined, "chart-1");
+    expect(blank).toMatchObject({ id: "chart-1", name: "Chart", query: "", xAxis: "", yAxis: [] });
+    expect(blank.connectionId).toBeUndefined();
+    expect(freshDashboardChart([{ name: "Chart" }], "c1", "chart-2").connectionId).toBe("c1");
+    expect(freshDashboardChart([], "").connectionId).toBeUndefined();
+  });
+
+  test("adds, edits, and removes a note and a filter", () => {
+    const noted = withNote(board(), "n1");
+    expect(noted.notes).toEqual([{ id: "n1", text: "" }]);
+    const written = withNoteText(noted, "n1", "Hello");
+    expect(written.notes?.[0]?.text).toBe("Hello");
+    expect(withNoteText(written, "missing", "x").notes).toEqual(written.notes);
+    expect(withoutNote(written, "n1").notes).toEqual([]);
+    expect(withoutNote(board(), "n1").notes).toEqual([]);
+    const filtered = withFilter(board(), "c1", "f1");
+    expect(filtered.filters).toEqual([{ id: "f1", name: "filter", query: "", value: "", connectionId: "c1" }]);
+    expect(withFilter(board(), "").filters?.[0]?.connectionId).toBeUndefined();
+    const renamed = withFilterFields(filtered, "f1", {
+      name: "region",
+      query: "SELECT region FROM sales",
+      value: "east",
+    });
+    expect(renamed.filters?.[0]).toMatchObject({ name: "region", value: "east" });
+    expect(withFilterFields(renamed, "missing", { value: "west" }).filters).toEqual(renamed.filters);
+    expect(withoutFilter(renamed, "f1").filters).toEqual([]);
+    expect(withoutFilter(board(), "f1").filters).toEqual([]);
+  });
+
+  test("reads filter choices and writes a selection into a query placeholder", () => {
+    expect(filterReference(" region ")).toBe("{{region}}");
+    expect(filterReference("1region")).toBeNull();
+    expect(filterReference("")).toBeNull();
+    const rows = [
+      { region: " east " },
+      { region: "east" },
+      { region: "" },
+      { region: "   " },
+      { region: 4 },
+      { region: Number.NaN },
+      { region: true },
+      { region: false },
+      { region: null },
+      { region: { city: "east" } },
+    ];
+    expect(filterChoices(rows, ["region"])).toEqual(["east", "4", "true", "false"]);
+    expect(filterChoices(rows, [])).toEqual([]);
+    expect(filterChoices(rows, [""])).toEqual([]);
+    expect(
+      filterChoices(
+        Array.from({ length: 30 }, (_, index) => ({ region: `r${index}` })),
+        ["region"],
+      ),
+    ).toHaveLength(24);
+    const sql = "SELECT * FROM sales WHERE region = {{region}} AND kind = {{kind:book}}";
+    expect(queryWithDashboardFilters(sql, [{ name: "region", value: "east" }])).toBe(
+      "SELECT * FROM sales WHERE region = {{region:east}} AND kind = {{kind:book}}",
+    );
+    expect(queryWithDashboardFilters(sql, [{ name: "missing", value: "east" }])).toBe(sql);
+    expect(queryWithDashboardFilters(sql, [{ name: "region", value: "  " }])).toBe(sql);
+    expect(queryWithDashboardFilters(sql, [{ name: "bad name", value: "east" }])).toBe(sql);
+  });
+
+  test("sizes a slider and starts a custom filter from the stock script", () => {
+    expect(filterSlider({ value: "12", min: 5, max: 5, step: 0 })).toEqual({ min: 5, max: 105, step: 1, value: "12" });
+    expect(filterSlider({ value: "nope" })).toEqual({ min: 0, max: 100, step: 1, value: "0" });
+    expect(filterSlider({ value: "3", min: Number.NaN, max: Number.POSITIVE_INFINITY, step: -2 })).toEqual({
+      min: 0,
+      max: 100,
+      step: 1,
+      value: "3",
+    });
+    expect(filterControlPatch("slider", { value: "east" })).toEqual({
+      control: "slider",
+      min: 0,
+      max: 100,
+      step: 1,
+      value: "0",
+    });
+    expect(filterControlPatch("search", { value: "" })).toEqual({ control: "search" });
+    expect(filterControlPatch("custom", { value: "", script: "  " }).script).toBe(CUSTOM_FILTER_SCRIPT);
+    expect(filterControlPatch("custom", { value: "", script: "setValue(value);" })).toEqual({ control: "custom" });
+  });
+
+  test("builds a sandboxed filter document and reads only its own messages", () => {
+    const document = filterFrameDocument("f1", 'setValue("</script>")', "east", ["a<b"]);
+    expect(document).toContain("\\u003c");
+    expect(document.match(/<\/script>/g)?.length).toBe(2);
+    expect(document).toContain(String.raw`<\/script>`);
+    expect(document).toContain('"id":"f1"');
+    expect(filterFrameMessage(null)).toBeNull();
+    expect(filterFrameMessage("nope")).toBeNull();
+    expect(filterFrameMessage({ source: "other", id: "f1", value: "east" })).toBeNull();
+    expect(filterFrameMessage({ source: "libredb-filter", id: "", value: "east" })).toBeNull();
+    expect(filterFrameMessage({ source: "libredb-filter", id: "f1", value: 1 })).toBeNull();
+    expect(filterFrameMessage({ source: "libredb-filter", id: "f1", value: "east" })).toEqual({
+      id: "f1",
+      value: "east",
+    });
   });
 });

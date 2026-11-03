@@ -227,7 +227,9 @@ export function securityHeaders(options: SecurityHeaderOptions = {}): Record<str
     "Referrer-Policy": "same-origin",
     "Permissions-Policy": permissionsPolicy(options),
     // Duplicates frame-ancestors 'none' deliberately, for engines that predate CSP Level 2.
-    // Verified safe: zero <iframe> in src, and the desktop shell navigates rather than frames.
+    // Verified safe: the desktop shell navigates rather than frames this document. The one
+    // frame we embed is the sandboxed srcdoc custom-filter editor, which this header does
+    // not govern.
     "X-Frame-Options": "DENY",
     // `same-origin`, not `same-origin-allow-popups`: the weaker value exists for a page that opens
     // a popup and then scripts it, and nothing here does. The OIDC flow is a top-level redirect in

@@ -128,9 +128,12 @@ describe("DashboardStudio", () => {
       "/api/db/query": { json: rows },
     });
     const view = render(<DashboardStudio />);
-    expect(view.getByText("Add a saved chart to this dashboard.")).toBeTruthy();
-    fireEvent.change(view.getByLabelText("Saved chart"), { target: { value: "revenue" } });
-    fireEvent.click(view.getByRole("button", { name: "Add chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Add chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Back" }));
+    expect(view.getByRole("menuitem", { name: "Make a chart" })).toBeTruthy();
+    fireEvent.click(view.getByRole("menuitem", { name: "Add chart" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Revenue" }));
     const tile = await view.findByTestId("dashboard-chart-revenue");
     const heading = view.getByRole("heading", { name: "Revenue" });
     expect(heading.className).not.toContain("truncate");
@@ -187,7 +190,7 @@ describe("DashboardStudio", () => {
     expect(await view.findByText("That connection is no longer available.")).toBeTruthy();
     expect(await view.findByText("refused")).toBeTruthy();
     expect(await view.findByText("Those columns do not have numbers to chart.")).toBeTruthy();
-    expect(await view.findByText("Save this chart again from the chart view.")).toBeTruthy();
+    expect(await view.findByRole("button", { name: "Use Bar chart" })).toBeTruthy();
   });
 
   test("reruns a chart on its schedule and ignores a result after the chart is gone", async () => {
@@ -322,6 +325,172 @@ describe("DashboardStudio", () => {
   test("a new dashboard with no saved charts says so", () => {
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "New dashboard" }));
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Add chart" }));
     expect(view.getByText("Save a chart from the editor or AI Assist, then add it here.")).toBeTruthy();
+    fireEvent.pointerDown(document.body);
+    expect(view.queryByRole("menu", { name: "Add content" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.keyDown(window, { key: "Enter" });
+    expect(view.getByRole("menu", { name: "Add content" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(view.queryByRole("menu", { name: "Add content" })).toBeNull();
+  });
+
+  test("makes a chart from scratch and picks a type", async () => {
+    storage.saveConnection(connection);
+    storage.saveDashboard(board("sales", []));
+    storage.setActiveDashboardId("sales");
+    mockGlobalFetch({ "/api/db/query": { json: rows } });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Make a chart" }));
+    const sql = view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement;
+    fireEvent.change(sql, { target: { value: "SELECT region, total FROM sales" } });
+    fireEvent.click(view.getByRole("button", { name: "Run Chart" }));
+    fireEvent.click(await view.findByRole("button", { name: "Use Bar chart" }));
+    await view.findByTestId("assist-chart");
+    expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "bar", variationId: "basic", connectionId: "c1" });
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    fireEvent.change(view.getByLabelText("Connection for Chart"), { target: { value: "" } });
+    expect(storage.getSavedCharts()[0]?.connectionId).toBeUndefined();
+    fireEvent.change(view.getByLabelText("Connection for Chart"), { target: { value: "c1" } });
+    expect(storage.getSavedCharts()[0]?.connectionId).toBe("c1");
+  });
+
+  test("adds a text box", () => {
+    storage.saveDashboard(board("sales", []));
+    storage.setActiveDashboardId("sales");
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Text box" }));
+    fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello" } });
+    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("Hello");
+    fireEvent.click(view.getByRole("button", { name: "Remove text" }));
+    expect(storage.getSavedDashboards()[0]?.notes).toEqual([]);
+  });
+
+  test("designs a filter as a dropdown, slider, search box, or custom JavaScript", async () => {
+    storage.saveConnection(connection);
+    const query = "SELECT region, total FROM sales WHERE region = {{region}}";
+    storage.saveChart(chart({ query }));
+    storage.saveDashboard(board("sales", ["revenue"]));
+    storage.setActiveDashboardId("sales");
+    const posted: string[] = [];
+    mockGlobalFetch({
+      "/api/db/query": async (req) => {
+        const body = (await req.json()) as { sql?: string };
+        posted.push(body.sql ?? "");
+        if (body.sql === "FAIL") return { status: 400, json: { error: "refused" } };
+        if (body.sql === "SELECT blank FROM sales")
+          return { json: { ...rows, rows: [{ region: "" }, { region: null }] } };
+        if (body.sql?.startsWith("SELECT region FROM")) {
+          return { json: { ...rows, rows: [{ region: "east" }, { region: "west" }] } };
+        }
+        return { json: rows };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Component" }));
+    fireEvent.click(view.getByRole("button", { name: "Dropdown" }));
+    expect(view.getByLabelText("Filter selection")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Region" } });
+    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
+    expect(view.getByText("Reference this selection in a query as {{region}}.")).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "1bad" } });
+    expect(view.getByText("Use a name like region so a query can reference it.")).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "" } });
+    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "" } });
+    expect(view.getByRole("heading", { name: "Filter" })).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
+    fireEvent.click(view.getByRole("button", { name: "Choices" }));
+    fireEvent.click(view.getByRole("button", { name: "Run choices" }));
+    expect(view.getByRole("alert").textContent).toBe("Add a connection and a query to fill the choices.");
+    fireEvent.change(view.getByLabelText("Filter connection"), { target: { value: "" } });
+    fireEvent.change(view.getByLabelText("Filter query"), { target: { value: "SELECT region FROM sales" } });
+    fireEvent.change(view.getByLabelText("Filter connection"), { target: { value: "c1" } });
+    fireEvent.click(view.getByRole("button", { name: "Run choices" }));
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    await waitFor(() =>
+      expect((view.getByLabelText("Filter selection") as HTMLSelectElement).options.length).toBeGreaterThan(1),
+    );
+    fireEvent.change(view.getByLabelText("Filter selection"), { target: { value: "west" } });
+    await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'west'") && !sql.includes("{"))).toBe(true));
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.click(view.getByRole("button", { name: "Slider" }));
+    expect(view.getByLabelText("Filter slider")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.change(view.getByLabelText("Filter minimum"), { target: { value: "1" } });
+    fireEvent.change(view.getByLabelText("Filter maximum"), { target: { value: "9" } });
+    fireEvent.change(view.getByLabelText("Filter step"), { target: { value: "2" } });
+    fireEvent.click(view.getByRole("button", { name: "Search" }));
+    fireEvent.change(view.getByLabelText("Filter search"), { target: { value: "east" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("east");
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.change(view.getByLabelText("Filter placeholder"), { target: { value: "Find" } });
+    fireEvent.click(view.getByRole("button", { name: "Custom" }));
+    const script = view.getByRole("textbox", { name: "JavaScript" }) as HTMLTextAreaElement;
+    fireEvent.change(script, { target: { value: script.value } });
+    fireEvent.change(script, { target: { value: 'setValue("north");' } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.script).toContain('setValue("north")');
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    const frame = view.getByTitle("Custom filter") as HTMLIFrameElement;
+    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(frame.getAttribute("srcdoc")).toContain("setValue");
+    const filterId = storage.getSavedDashboards()[0]?.filters?.[0]?.id ?? "";
+    const message = (data: unknown) => window.dispatchEvent(new window.MessageEvent("message", { data }));
+    message({ source: "libredb-filter", id: "other", value: "nope" });
+    message({ source: "libredb-filter", id: filterId, value: "east" });
+    message({ source: "libredb-filter", id: filterId, value: "north" });
+    await waitFor(() => expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("north"));
+    fireEvent.click(view.getByRole("button", { name: "Remove region filter" }));
+    expect(storage.getSavedDashboards()[0]?.filters).toEqual([]);
+  });
+
+  test("a filter query reports an empty list, a failure, and a late answer", async () => {
+    storage.saveConnection(connection);
+    const gate: { release: (() => void) | null } = { release: null };
+    mockGlobalFetch({
+      "/api/db/query": (req) =>
+        new Promise((resolve) => {
+          void req.json().then((body: { sql?: string }) => {
+            if (body.sql === "WAIT") {
+              gate.release = () => resolve({ json: rows });
+              return;
+            }
+            if (body.sql === "FAIL") {
+              resolve({ status: 400, json: { error: "refused" } });
+              return;
+            }
+            resolve({ json: { ...rows, rows: [{ region: "" }] } });
+          });
+        }),
+    });
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [
+        {
+          id: "blank",
+          name: "blank",
+          query: "SELECT blank FROM sales",
+          connectionId: "c1",
+          value: "kept",
+          control: "select",
+        },
+        { id: "bad", name: "bad", query: "FAIL", connectionId: "c1", value: "", control: "select" },
+        { id: "wait", name: "wait", query: "WAIT", connectionId: "c1", value: "", control: "select" },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    const view = render(<DashboardStudio />);
+    expect(await view.findByText("That query did not return any choices.")).toBeTruthy();
+    expect(await view.findByText("refused")).toBeTruthy();
+    const kept = view.getAllByLabelText("Filter selection")[0] as HTMLSelectElement;
+    expect(Array.from(kept.options).some((option) => option.value === "kept")).toBe(true);
+    await waitFor(() => expect(gate.release).not.toBeNull());
+    view.unmount();
+    gate.release?.();
   });
 });

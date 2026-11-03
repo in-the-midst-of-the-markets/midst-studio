@@ -1230,11 +1230,46 @@ export interface DashboardChartFrame {
   height: number;
 }
 
+/** A title or note on a dashboard. */
+export interface DashboardNote {
+  id: string;
+  text: string;
+}
+
+/** How a dashboard filter is drawn. Absent until the user picks one. */
+export type DashboardFilterControl = "select" | "slider" | "search" | "custom";
+
+/**
+ * A dashboard filter. `query` fills the choices, and a chart query references the
+ * selection with `{{name}}`. A custom filter's `script` is JavaScript edited in Monaco.
+ */
+export interface DashboardFilter {
+  id: string;
+  name: string;
+  /** Words on the component. Absent uses the name. */
+  label?: string;
+  /** Hint inside a search box or a custom filter. */
+  placeholder?: string;
+  query: string;
+  connectionId?: string;
+  value: string;
+  control?: DashboardFilterControl;
+  min?: number;
+  max?: number;
+  step?: number;
+  /** JavaScript for a custom filter. It may call `setValue` and draw into `#root`. */
+  script?: string;
+}
+
 /** A named arrangement of saved charts. The user can keep more than one and switch. */
 export interface SavedDashboard {
   id: string;
   name: string;
   charts: DashboardChartFrame[];
+  /** Absent on a dashboard saved before notes existed. */
+  notes?: DashboardNote[];
+  /** Absent on a dashboard saved before filters existed. */
+  filters?: DashboardFilter[];
   createdAt: Date;
   updatedAt: Date;
 }

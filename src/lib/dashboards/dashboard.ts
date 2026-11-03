@@ -1,4 +1,19 @@
-import type { SavedDashboard } from "@/lib/types";
+import { writeQueryFilter } from "@/lib/charts/query-filters";
+import type {
+  DashboardFilter,
+  DashboardFilterControl,
+  DashboardNote,
+  SavedChartConfig,
+  SavedDashboard,
+} from "@/lib/types";
+
+/** The script a new custom filter opens with. `value` and `choices` are in scope, and `setValue` publishes the selection. */
+export const CUSTOM_FILTER_SCRIPT = [
+  'const root = document.getElementById("root");',
+  "if (root !== null) root.textContent = value;",
+  "setValue(value);",
+  "",
+].join("\n");
 
 export const DEFAULT_DASHBOARD_CHART_WIDTH = 480;
 export const DEFAULT_DASHBOARD_CHART_HEIGHT = 320;
@@ -84,4 +99,201 @@ export function withFrame(
 
 export function withName(dashboard: SavedDashboard, name: string): SavedDashboard {
   return { ...dashboard, name, updatedAt: new Date() };
+}
+
+const FILTER_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
+const CHOICE_CAP = 24;
+
+function nextLabel(existing: readonly { name: string }[], base: string, gap: string): string {
+  const taken = new Set(existing.map((item) => item.name));
+  if (!taken.has(base)) return base;
+  let index = 2;
+  let name = `${base}${gap}${index}`;
+  while (taken.has(name)) {
+    index += 1;
+    name = `${base}${gap}${index}`;
+  }
+  return name;
+}
+
+/** The next "Chart" or "Chart N" that is not already used. */
+export function chartLabel(existing: readonly { name: string }[]): string {
+  return nextLabel(existing, "Chart", " ");
+}
+
+/** The next `filter` or `filterN` that is a placeholder name and is not already used. */
+export function filterLabel(existing: readonly { name: string }[]): string {
+  return nextLabel(existing, "filter", "");
+}
+
+/** A saved chart with an empty query, ready for the user to write one. */
+export function freshDashboardChart(
+  existing: readonly { name: string }[],
+  connectionId?: string,
+  id = crypto.randomUUID(),
+): SavedChartConfig {
+  return {
+    id,
+    name: chartLabel(existing),
+    chartType: "bar",
+    xAxis: "",
+    yAxis: [],
+    query: "",
+    createdAt: new Date(),
+    ...(connectionId !== undefined && connectionId !== "" ? { connectionId } : {}),
+  };
+}
+
+export function withNote(dashboard: SavedDashboard, id = crypto.randomUUID()): SavedDashboard {
+  const note: DashboardNote = { id, text: "" };
+  return { ...dashboard, updatedAt: new Date(), notes: [...(dashboard.notes ?? []), note] };
+}
+
+export function withoutNote(dashboard: SavedDashboard, id: string): SavedDashboard {
+  return {
+    ...dashboard,
+    updatedAt: new Date(),
+    notes: (dashboard.notes ?? []).filter((item) => item.id !== id),
+  };
+}
+
+export function withNoteText(dashboard: SavedDashboard, id: string, text: string): SavedDashboard {
+  return {
+    ...dashboard,
+    updatedAt: new Date(),
+    notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, text } : item)),
+  };
+}
+
+export function withFilter(dashboard: SavedDashboard, connectionId?: string, id = crypto.randomUUID()): SavedDashboard {
+  const filters = dashboard.filters ?? [];
+  const filter: DashboardFilter = {
+    id,
+    name: filterLabel(filters),
+    query: "",
+    value: "",
+    ...(connectionId !== undefined && connectionId !== "" ? { connectionId } : {}),
+  };
+  return { ...dashboard, updatedAt: new Date(), filters: [...filters, filter] };
+}
+
+export function withoutFilter(dashboard: SavedDashboard, id: string): SavedDashboard {
+  return {
+    ...dashboard,
+    updatedAt: new Date(),
+    filters: (dashboard.filters ?? []).filter((item) => item.id !== id),
+  };
+}
+
+export function withFilterFields(
+  dashboard: SavedDashboard,
+  id: string,
+  patch: Partial<DashboardFilter>,
+): SavedDashboard {
+  return {
+    ...dashboard,
+    updatedAt: new Date(),
+    filters: (dashboard.filters ?? []).map((item) => (item.id === id ? { ...item, ...patch } : item)),
+  };
+}
+
+/** `{{name}}` when `name` can be a query placeholder, otherwise null. */
+export function filterReference(name: string): string | null {
+  const trimmed = name.trim();
+  return FILTER_NAME.test(trimmed) ? `{{${trimmed}}}` : null;
+}
+
+function choiceText(value: unknown): string | null {
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text === "" ? null : text.slice(0, 80);
+  }
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "boolean") return value ? "true" : "false";
+  return null;
+}
+
+/** Distinct values of the first column, in the order they appear. */
+export function filterChoices(rows: readonly Record<string, unknown>[], fields: readonly string[]): string[] {
+  const field = fields[0];
+  if (field === undefined || field === "") return [];
+  const seen = new Set<string>();
+  const choices: string[] = [];
+  for (const row of rows) {
+    const text = choiceText(row[field]);
+    if (text === null || seen.has(text)) continue;
+    seen.add(text);
+    choices.push(text);
+    if (choices.length === CHOICE_CAP) break;
+  }
+  return choices;
+}
+
+/** The numbers a slider can use. A missing bound falls back, and the max stays above the min. */
+export function filterSlider(filter: Pick<DashboardFilter, "min" | "max" | "step" | "value">): {
+  min: number;
+  max: number;
+  step: number;
+  value: string;
+} {
+  const min = typeof filter.min === "number" && Number.isFinite(filter.min) ? filter.min : 0;
+  let max = typeof filter.max === "number" && Number.isFinite(filter.max) ? filter.max : 100;
+  if (!(max > min)) max = min + 100;
+  const step = typeof filter.step === "number" && Number.isFinite(filter.step) && filter.step > 0 ? filter.step : 1;
+  const current = Number(filter.value);
+  return { min, max, step, value: Number.isFinite(current) ? String(current) : String(min) };
+}
+
+/** The document a custom filter runs in a sandboxed frame. The script can call `setValue` and draw into `#root`. */
+export function filterFrameDocument(id: string, script: string, value: string, choices: readonly string[]): string {
+  const host = JSON.stringify({ id, value, choices }).replace(/</g, "\\u003c");
+  const source = script.replace(/<\/script/gi, "<\\/script");
+  return [
+    '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>',
+    '<div id="root"></div>',
+    `<script>const host = ${host};const value = host.value;const choices = host.choices;`,
+    'function setValue(next){parent.postMessage({source:"libredb-filter",id:host.id,value:next==null?"":String(next)},"*");}',
+    "</script>",
+    `<script>${source}</script>`,
+    "</body></html>",
+  ].join("");
+}
+
+/** The selection a custom filter published, or null when the message is not one of ours. */
+export function filterFrameMessage(data: unknown): { id: string; value: string } | null {
+  if (typeof data !== "object" || data === null) return null;
+  const source = "source" in data ? data.source : undefined;
+  const id = "id" in data ? data.id : undefined;
+  const value = "value" in data ? data.value : undefined;
+  if (source !== "libredb-filter" || typeof id !== "string" || id === "" || typeof value !== "string") return null;
+  return { id, value };
+}
+
+/** Fields stored when the user picks a control. A slider starts at 0 to 100. */
+export function filterControlPatch(
+  control: DashboardFilterControl,
+  filter: Pick<DashboardFilter, "script" | "value">,
+): Partial<DashboardFilter> {
+  if (control === "slider") {
+    const slider = filterSlider(filter);
+    return { control, min: slider.min, max: slider.max, step: slider.step, value: slider.value };
+  }
+  if (control === "custom" && (filter.script === undefined || filter.script.trim() === "")) {
+    return { control, script: CUSTOM_FILTER_SCRIPT };
+  }
+  return { control };
+}
+
+/**
+ * The statement a chart runs, with each dashboard filter written into the placeholder
+ * of the same name. A filter with no selection leaves the query's own default.
+ */
+export function queryWithDashboardFilters(
+  sql: string,
+  filters: readonly Pick<DashboardFilter, "name" | "value">[],
+): string {
+  return filters.reduce((current, filter) => {
+    if (filterReference(filter.name) === null || filter.value.trim() === "") return current;
+    return writeQueryFilter(current, filter.name.trim(), filter.value);
+  }, sql);
 }
