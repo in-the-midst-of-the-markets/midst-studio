@@ -7,6 +7,7 @@ import {
   dashboardVariables,
   dragResize,
   filterChoices,
+  filterValueList,
   filterControlPatch,
   filterFrameDocument,
   filterFrameMessage,
@@ -133,6 +134,9 @@ describe("dashboard layout", () => {
       { region: { city: "east" } },
     ];
     expect(filterChoices(rows, ["region"])).toEqual(["east", "4", "true", "false"]);
+    expect(filterValueList(" east \n\nwest\neast\n")).toEqual(["east", "west"]);
+    expect(filterValueList("")).toEqual([]);
+    expect(filterValueList(Array.from({ length: 30 }, (_, index) => `r${index}`).join("\n"))).toHaveLength(24);
     expect(filterChoices(rows, [])).toEqual([]);
     expect(filterChoices(rows, [""])).toEqual([]);
     expect(
@@ -223,6 +227,8 @@ describe("dashboard layout", () => {
         connectionId: "c1",
         value: "east",
         control: "search",
+        choiceSource: "values",
+        valuesText: "east\nwest",
         min: 1,
         max: 9,
         step: 2,
@@ -239,6 +245,8 @@ describe("dashboard layout", () => {
       connectionId: "c1",
       value: "east",
       control: "search",
+      choiceSource: "values",
+      valuesText: "east\nwest",
       min: 1,
       max: 9,
       step: 2,

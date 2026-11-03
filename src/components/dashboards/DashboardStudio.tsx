@@ -43,6 +43,7 @@ import {
   filterFrameMessage,
   filterReference,
   filterSlider,
+  filterValueList,
   freshDashboard,
   freshDashboardChart,
   insertQueryVariable,
@@ -996,8 +997,11 @@ function DashboardFilterCard({
   }
   const reference = filterReference(filter.name);
   const caption = filter.label?.trim() || filter.name || "Filter";
+  const listed = filter.choiceSource === "values" ? filterValueList(filter.valuesText ?? "") : null;
+  const shownStatus = listed === null ? status : null;
 
   useEffect(() => {
+    if (filter.choiceSource === "values") return;
     const query = filter.query.trim();
     const connectionId = filter.connectionId;
     if (query === "" || connectionId === undefined || connectionId === "") return;
@@ -1016,7 +1020,7 @@ function DashboardFilterCard({
     return () => {
       stopped = true;
     };
-  }, [connections, filter.connectionId, filter.query]);
+  }, [connections, filter.choiceSource, filter.connectionId, filter.query]);
 
   useEffect(() => {
     if (filter.control !== "custom") return;
@@ -1098,11 +1102,11 @@ function DashboardFilterCard({
         />
       )}
       {filter.control !== undefined && face === "filter" && (
-        <FilterSurface filter={filter} choices={choices} caption={caption} onChange={onChange} />
+        <FilterSurface filter={filter} choices={listed ?? choices} caption={caption} onChange={onChange} />
       )}
-      {status !== null && face !== "choices" && (
+      {shownStatus !== null && face !== "choices" && (
         <p role="alert" className="mt-2 text-xs text-danger">
-          {status}
+          {shownStatus}
         </p>
       )}
     </article>
@@ -1245,44 +1249,89 @@ function FilterChoices({
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
   readonly onRun: () => void;
 }) {
+  const fromValues = filter.choiceSource === "values";
+  const databaseType = connections.find((item) => item.id === filter.connectionId)?.type;
   return (
     <div>
-      <label className="block text-xs text-fg-muted">
-        Connection
-        <select
-          aria-label="Filter connection"
-          value={filter.connectionId ?? ""}
-          onChange={(event) => onChange({ connectionId: event.target.value === "" ? undefined : event.target.value })}
-          className={`mt-1.5 ${fieldClass}`}
+      <div className="mb-3 flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+        <button
+          type="button"
+          aria-pressed={!fromValues}
+          onClick={() => onChange({ choiceSource: "query" })}
+          className={cn(
+            "rounded-md px-2 py-1 text-xs font-medium",
+            fromValues ? "text-fg-muted" : "bg-brand-solid text-white",
+          )}
         >
-          <option value="">Choose a connection</option>
-          {connections.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="mt-3 block text-xs text-fg-muted">
-        Choices query
-        <textarea
-          aria-label="Filter query"
-          value={draft}
-          onChange={(event) => onDraft(event.target.value)}
-          className="mt-1.5 min-h-20 w-full rounded-lg border border-hairline-strong bg-canvas px-2 py-1.5 font-mono text-xs text-fg"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={onRun}
-        className="mt-2 rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
-      >
-        Run choices
-      </button>
-      {status !== null && (
-        <p role="alert" className="mt-2 text-xs text-danger">
-          {status}
-        </p>
+          From a query
+        </button>
+        <button
+          type="button"
+          aria-pressed={fromValues}
+          onClick={() => onChange({ choiceSource: "values" })}
+          className={cn(
+            "rounded-md px-2 py-1 text-xs font-medium",
+            fromValues ? "bg-brand-solid text-white" : "text-fg-muted",
+          )}
+        >
+          Hardcoded values
+        </button>
+      </div>
+      {fromValues ? (
+        <label className="block text-xs text-fg-muted">
+          One value per line
+          <textarea
+            aria-label="Value list"
+            value={filter.valuesText ?? ""}
+            onChange={(event) => onChange({ valuesText: event.target.value })}
+            className="mt-1.5 min-h-20 w-full rounded-lg border border-hairline-strong bg-canvas px-2 py-1.5 font-mono text-xs text-fg"
+          />
+        </label>
+      ) : (
+        <>
+          <label className="block text-xs text-fg-muted">
+            Connection
+            <select
+              aria-label="Filter connection"
+              value={filter.connectionId ?? ""}
+              onChange={(event) =>
+                onChange({ connectionId: event.target.value === "" ? undefined : event.target.value })
+              }
+              className={`mt-1.5 ${fieldClass}`}
+            >
+              <option value="">Choose a connection</option>
+              {connections.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-3">
+            <p className="text-xs text-fg-muted">Choices query</p>
+            <div className="mt-1.5 h-40 overflow-hidden rounded-lg border border-hairline-strong">
+              <QueryEditor
+                value={draft}
+                documentId={filter.id}
+                databaseType={databaseType}
+                wordWrap
+                onContentChange={onDraft}
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onRun}
+            className="mt-2 rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+          >
+            Run choices
+          </button>
+          {status !== null && (
+            <p role="alert" className="mt-2 text-xs text-danger">
+              {status}
+            </p>
+          )}
+        </>
       )}
     </div>
   );

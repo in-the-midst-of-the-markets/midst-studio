@@ -1240,8 +1240,9 @@ export interface DashboardNote {
 export type DashboardFilterControl = "select" | "slider" | "search" | "custom";
 
 /**
- * A dashboard filter. `query` fills the choices, and a chart query references the
- * selection with `{{name}}`. A custom filter's `script` is JavaScript edited in Monaco.
+ * A dashboard filter. `query` fills the choices, unless `choiceSource` is `values`
+ * and the list is typed in. A chart query references the selection with `{{name}}`.
+ * A custom filter's `script` is JavaScript edited in Monaco.
  */
 export interface DashboardFilter {
   id: string;
@@ -1250,6 +1251,10 @@ export interface DashboardFilter {
   label?: string;
   /** Hint inside a search box or a custom filter. */
   placeholder?: string;
+  /** Where the choices come from. Absent means a query, so an older filter still runs one. */
+  choiceSource?: "query" | "values";
+  /** Hardcoded choices, one value per line. Used when `choiceSource` is `values`. */
+  valuesText?: string;
   query: string;
   connectionId?: string;
   value: string;
