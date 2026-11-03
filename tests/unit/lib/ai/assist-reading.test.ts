@@ -247,7 +247,9 @@ describe("buildAssistReadingMessages", () => {
     expect(final[0]?.content).toContain("The connected engine is SQL.");
     expect(final[0]?.content).toContain("queries is empty.");
     expect(final[0]?.content).toContain("explanation is Markdown the person reads");
+    expect(final[0]?.content).toContain("The words inside the sample explanation are a description of the field.");
     expect(final[0]?.content).toContain("Separate paragraphs with a blank line.");
+    expect(final[0]?.content).not.toContain("East led");
     expect(final[0]?.content).toContain("Do not plan another query.");
     expect(final[1]?.content).toContain("Results:\nr");
   });
