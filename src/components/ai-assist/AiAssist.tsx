@@ -38,7 +38,8 @@ import {
 } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
-import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
+import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
+import { queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
@@ -301,7 +302,7 @@ async function groundResults(input: {
     });
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) return null;
-    return acceptAssistPlan(body, input.databaseType);
+    return acceptAssistPlan(body, input.databaseType, input.schemaContext);
   } catch {
     return null;
   }
@@ -368,6 +369,7 @@ export function AiAssist() {
   const [gatewayModels, setGatewayModels] = useState<readonly AssistModelOption[]>([]);
   const [modelStatus, setModelStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [gatewayStatus, setGatewayStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [rankings, setRankings] = useState<AssistRankings | null>(null);
   const [serverKey, setServerKey] = useState<boolean | null>(null);
   const hydrated = useHydrated();
   const connections = useSyncExternalStore(subscribeConnection, readConnections, () => EMPTY_CONNECTIONS);
@@ -454,9 +456,11 @@ export function AiAssist() {
         const listedGateway = record !== null && "gatewayModels" in record ? normalizeModels(record.gatewayModels) : [];
         const hasServerKey = record !== null && "serverKey" in record ? record.serverKey === true : false;
         const gatewayFailed = record !== null && "gatewayCatalog" in record && record.gatewayCatalog === false;
+        const listedRankings = readAssistRankings(record !== null && "rankings" in record ? record.rankings : null);
         if (cancelled) return;
         setModels(listed);
         setGatewayModels(listedGateway);
+        setRankings(listedRankings);
         setServerKey(hasServerKey);
         setModelStatus("ready");
         setGatewayStatus(gatewayFailed ? "failed" : "ready");
@@ -596,7 +600,7 @@ export function AiAssist() {
         );
         return;
       }
-      const plan = acceptAssistPlan(body, databaseType);
+      const plan = acceptAssistPlan(body, databaseType, schemaContext);
       const prior = turnsRef.current.flatMap((turn) =>
         turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
       );
@@ -624,7 +628,12 @@ export function AiAssist() {
             const target =
               card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
             if (target === null) return;
-            const outcome = await runAssistQuery(target, applyQueryFilters(card.sql), appFetch);
+            const statement = assistRunnableStatement(card.sql, target.type);
+            if (statement === null) {
+              updateCard(card.id, { running: false, error: "AI Assist only runs read-only queries." }, true);
+              return;
+            }
+            const outcome = await runAssistQuery(target, statement, appFetch);
             updateCard(
               card.id,
               {
@@ -961,6 +970,7 @@ export function AiAssist() {
                       gatewayModels={gatewayModels}
                       modelStatus={modelStatus}
                       gatewayStatus={gatewayStatus}
+                      rankings={rankings}
                       onChange={updateSettings}
                     />
                   </div>

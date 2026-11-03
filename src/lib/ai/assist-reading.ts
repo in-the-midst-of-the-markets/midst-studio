@@ -16,6 +16,13 @@ import {
   type AssistRequest,
 } from "@/lib/ai/assist-plan";
 import { queryIdentity } from "@/lib/charts/query-filters";
+import { captionOf } from "@/lib/db/graph/result-graph";
+import {
+  isGraphValueJson,
+  type GraphNodeJson,
+  type GraphPathJson,
+  type GraphRelationshipJson,
+} from "@/lib/db/graph/values";
 
 /** Follow-up looks after the first queries. The first look, plus two more while a look still adds a query. */
 export const FOLLOW_RUNS = 3;
@@ -54,9 +61,71 @@ function clipped(value: unknown, cap: number): string {
   return text.length > cap ? text.slice(0, cap) : text;
 }
 
+function primitiveText(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  return "";
+}
+
+function propertyText(properties: Record<string, unknown>): string {
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(properties)) {
+    const text = primitiveText(value);
+    if (text === "") continue;
+    parts.push(`${key}: ${text}`);
+    if (parts.length === 3) break;
+  }
+  return parts.join(", ");
+}
+
+function nodeText(node: GraphNodeJson): string {
+  const label = node.labels[0] ?? "";
+  const caption = captionOf(node);
+  if (label === "" || caption === label) return `(:${caption})`;
+  return `(:${label} ${caption})`;
+}
+
+function relationshipText(relationship: GraphRelationshipJson): string {
+  const props = propertyText(relationship.properties);
+  return props === "" ? `[:${relationship.type}]` : `[:${relationship.type} ${props}]`;
+}
+
+function pathText(path: GraphPathJson): string {
+  const nodes = path.nodes.filter((node): node is GraphNodeJson => isGraphValueJson(node) && node["~graph"] === "node");
+  const relationships = path.relationships.filter(
+    (relationship): relationship is GraphRelationshipJson =>
+      isGraphValueJson(relationship) && relationship["~graph"] === "relationship",
+  );
+  const first = nodes[0];
+  if (first === undefined) return "path";
+  let text = nodeText(first);
+  for (let index = 0; index < relationships.length; index += 1) {
+    const relationship = relationships[index];
+    const next = nodes[index + 1];
+    text += `-${relationship?.type ?? ""}->`;
+    if (next !== undefined) text += nodeText(next);
+  }
+  return text;
+}
+
 function cellText(value: unknown): string {
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
     return clipped(String(value), CELL_CAP);
+  }
+  if (isGraphValueJson(value)) {
+    if (value["~graph"] === "node") return clipped(nodeText(value), CELL_CAP);
+    if (value["~graph"] === "relationship") return clipped(relationshipText(value), CELL_CAP);
+    return clipped(pathText(value), CELL_CAP);
+  }
+  if (Array.isArray(value)) {
+    const parts = value.map((item) => cellText(item)).filter((item) => item !== "");
+    return clipped(parts.join(", "), CELL_CAP);
+  }
+  if (value !== null && typeof value === "object") {
+    try {
+      return clipped(JSON.stringify(value), CELL_CAP);
+    } catch {
+      return "";
+    }
   }
   return "";
 }
@@ -220,7 +289,12 @@ export function buildAssistReadingMessages(
     "one read-only SELECT with LIMIT 200",
     cypher ? "one read-only Cypher statement" : "one read-only SELECT with LIMIT 200",
   );
-  const system = `You are the analyst inside Midst, a database studio. The connected engine is ${engine}.\n\n${task}`;
+  const graphCells = cypher
+    ? prompt.pass === "final"
+      ? "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Cite those names."
+      : "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Use those names. Add a query only for a number the rows do not already show."
+    : "";
+  const system = `You are the analyst inside Midst, a database studio. The connected engine is ${engine}.\n\n${task}${graphCells}`;
   const user = `Question:\n${prompt.questionBlock}\n\nResults:\n${prompt.resultsBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },

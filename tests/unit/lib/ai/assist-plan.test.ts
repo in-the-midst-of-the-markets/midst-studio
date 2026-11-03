@@ -300,8 +300,55 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("The connected engine is neo4j.");
     expect(messages[0]?.content).toContain("one read-only Cypher statement");
     expect(messages[0]?.content).toContain("Do not write SQL or a placeholder.");
+    expect(messages[0]?.content).toContain("the studio draws the graph");
     expect(messages[0]?.content).not.toContain("one read-only SELECT");
     expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
+  });
+
+  test("keeps Cypher for the Neo4j connection when other databases are connected", () => {
+    const schema = JSON.stringify([
+      { connection: "Graph", engine: "neo4j" },
+      { connection: "Orders", engine: "postgres" },
+      null,
+      { connection: 4, engine: "mysql" },
+      { connection: "Ghost", engine: "" },
+      { note: "missing" },
+    ]);
+    const people = { title: "People", connection: "Graph", sql: "MATCH (n:Person) RETURN n", chart: null };
+    const plan = acceptAssistPlan(
+      {
+        queries: [
+          people,
+          { connection: "Orders", sql: "MATCH (n) RETURN n" },
+          { connection: "Orders", sql: "SELECT 1" },
+        ],
+      },
+      "",
+      schema,
+    );
+    expect(plan.queries.map((query) => query.sql)).toEqual(["MATCH (n:Person) RETURN n", "SELECT 1"]);
+    expect(plan.queries[0]).toEqual(people);
+    const only = JSON.stringify([{ connection: "Graph", engine: "neo4j" }]);
+    expect(acceptAssistPlan({ queries: [{ sql: "MATCH (n) RETURN n" }] }, "", only).queries).toHaveLength(1);
+    expect(
+      acceptAssistPlan(
+        { queries: [{ sql: "MATCH (n) RETURN n" }] },
+        "",
+        JSON.stringify([
+          { connection: "A", engine: "postgres" },
+          { connection: "B", engine: "mysql" },
+        ]),
+      ).queries,
+    ).toEqual([]);
+    expect(
+      acceptAssistPlan({ queries: [{ connection: "Graph", sql: "MATCH (n) RETURN n" }] }, "neo4j", "{").queries,
+    ).toHaveLength(1);
+    expect(
+      acceptAssistPlan({ queries: [{ connection: "Graph", sql: "MATCH (n) RETURN n" }] }, "", "{}").queries,
+    ).toEqual([]);
+    expect(
+      acceptAssistPlan({ queries: [{ connection: "Graph", sql: "MATCH (n) RETURN n" }] }, "", "[]").queries,
+    ).toEqual([]);
   });
 });
 

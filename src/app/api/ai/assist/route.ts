@@ -37,11 +37,12 @@ async function answerWith(
   model: string,
   messages: { role: "system" | "user"; content: string }[],
   databaseType: string,
+  schemaContext: string,
 ): Promise<NextResponse> {
   const key = resolveAssistKey(source, apiKey);
   if (key === null) return NextResponse.json({ error: missingKeyMessage(source) }, { status: 400 });
   const answer = await completeChat({ source, apiKey: key, model, messages });
-  return NextResponse.json(parseAssistPlan(answer, databaseType));
+  return NextResponse.json(parseAssistPlan(answer, databaseType, schemaContext));
 }
 
 export async function POST(req: NextRequest) {
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
           resultsBlock: fenceForPrompt(formatAssistResults(reading.value.results), "assist"),
         }),
         reading.value.databaseType,
+        reading.value.schemaContext,
       );
     }
 
@@ -101,6 +103,7 @@ export async function POST(req: NextRequest) {
           editorBlock: fenceForPrompt(editorSql.value, "assist"),
         }),
         editorRequest.value.databaseType,
+        editorRequest.value.schemaContext,
       );
     }
 
@@ -117,6 +120,7 @@ export async function POST(req: NextRequest) {
         historyBlock: fenceForPrompt(JSON.stringify(request.value.history), "assist"),
       }),
       request.value.databaseType,
+      request.value.schemaContext,
     );
   } catch (error) {
     return createErrorResponse(error, { route: "api/ai/assist" });

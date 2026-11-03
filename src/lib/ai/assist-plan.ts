@@ -156,33 +156,68 @@ function chartOf(value: unknown): AssistChart | null {
   };
 }
 
-function queryOf(value: unknown, databaseType: string): AssistQueryPlan | null {
+function recordString(value: unknown, key: string): string {
+  if (value === null || typeof value !== "object" || !(key in value)) return "";
+  const item = (value as Record<string, unknown>)[key];
+  return typeof item === "string" ? item : "";
+}
+
+/**
+ * The engine of the connection a planned statement names.
+ * An empty name uses the engine when the schema lists exactly one. A schema that
+ * cannot be read leaves the page's engine in charge.
+ */
+export function assistEngineForConnection(schemaContext: string, connectionName: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(schemaContext);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed)) return null;
+  const wanted = connectionName.trim().toLowerCase();
+  const engines: string[] = [];
+  let match = "";
+  for (const item of parsed) {
+    const engine = recordString(item, "engine");
+    const name = recordString(item, "connection");
+    if (engine !== "") engines.push(engine);
+    if (wanted !== "" && name.toLowerCase() === wanted && engine !== "") match = engine;
+  }
+  if (match !== "") return match;
+  if (wanted === "" && engines.length === 1) return engines[0] ?? null;
+  return null;
+}
+
+function queryOf(value: unknown, databaseType: string, schemaContext: string): AssistQueryPlan | null {
   if (value === null || typeof value !== "object") return null;
   // A plain comparison becomes a filter, so the chart shows a control even when the
   // model wrote an ordinary literal. The check below sees the literal that will run.
   // Cypher is kept as written: a SQL placeholder is not a Cypher value.
   const raw = textOf("sql" in value ? value.sql : undefined, SQL_CAP);
-  const cypher = assistStatementLanguage(databaseType) === "cypher";
+  const connection = textOf("connection" in value ? value.connection : undefined, CONNECTION_CAP);
+  const engine = assistEngineForConnection(schemaContext, connection) ?? databaseType;
+  const cypher = assistStatementLanguage(engine) === "cypher";
   const sql = cypher ? raw : promoteQueryFilters(raw);
-  if (sql === "" || !isAssistRead(cypher ? sql : applyQueryFilters(sql), databaseType)) return null;
+  if (sql === "" || !isAssistRead(cypher ? sql : applyQueryFilters(sql), engine)) return null;
   const title = textOf("title" in value ? value.title : undefined, TITLE_CAP);
   return {
     title: title === "" ? "Query" : title,
     sql,
-    connection: textOf("connection" in value ? value.connection : undefined, CONNECTION_CAP),
+    connection,
     chart: chartOf("chart" in value ? value.chart : undefined),
   };
 }
 
 /** A plan the route already parsed, checked again before the page draws or runs it. */
-export function acceptAssistPlan(value: unknown, databaseType = ""): AssistPlan {
-  if (typeof value === "string") return parseAssistPlan(value, databaseType);
+export function acceptAssistPlan(value: unknown, databaseType = "", schemaContext = ""): AssistPlan {
+  if (typeof value === "string") return parseAssistPlan(value, databaseType, schemaContext);
   if (value === null || typeof value !== "object") return { explanation: "", queries: [] };
-  return parseAssistPlan(JSON.stringify(value), databaseType);
+  return parseAssistPlan(JSON.stringify(value), databaseType, schemaContext);
 }
 
 /** The plan inside a model answer. Prose with no JSON object is kept as the explanation. */
-export function parseAssistPlan(text: string, databaseType = ""): AssistPlan {
+export function parseAssistPlan(text: string, databaseType = "", schemaContext = ""): AssistPlan {
   const json = extractJsonObject(text);
   if (json === null) return prosePlan(text);
   let parsed: unknown;
@@ -196,7 +231,7 @@ export function parseAssistPlan(text: string, databaseType = ""): AssistPlan {
   const queries = "queries" in parsed && Array.isArray(parsed.queries) ? parsed.queries : [];
   const kept: AssistQueryPlan[] = [];
   for (const item of queries) {
-    const query = queryOf(item, databaseType);
+    const query = queryOf(item, databaseType, schemaContext);
     if (query !== null) kept.push(query);
     if (kept.length === QUERY_CAP) break;
   }
@@ -401,8 +436,8 @@ queries has at most 3 items. connection is the name of the database that owns th
 
 ${
   cypher
-    ? "Write each Cypher statement with its values in place. Do not write SQL or a placeholder."
-    : "Every comparison in WHERE or HAVING is a placeholder the chart can edit, even when the question did not ask for a filter. Write it where the literal would go, with no quotes around it: region = {{region:east|east,west,north}}. The default follows the colon. Category choices follow a pipe and are separated by commas. A comparison on a numeric column uses >=, <=, or =, a numeric default, and no choices. The placeholder name is the original column, as in total >= {{total:10}}. A renamed column is not that name: region AS area is filtered as region = {{region:east}}, not area. The studio substitutes a SQL literal before running and shows a Filters control for each placeholder."
+    ? "Write each Cypher statement with its values in place. Do not write SQL or a placeholder. A question about an amount returns one category column and one number, and chart.type is bar or line. A question about how records connect returns the relationship or the path. chart may be null for that query; the studio draws the graph from the records that come back."
+    : "Every comparison in WHERE or HAVING is a placeholder the chart can edit, even when the question did not ask for a filter. Write it where the literal would go, with no quotes around it: region = {{region:east|east,west,north}}. The default follows the colon. Category choices follow a pipe and are separated by commas. A comparison on a numeric column uses >=, <=, or =, a numeric default, and no choices. The placeholder name is the original column, as in total >= {{total:10}}. A renamed column is not that name: region AS area is filtered as region = {{region:east}}, not area. The studio substitutes a SQL literal before running and shows a Filters control for each placeholder. A connection whose engine is neo4j takes one read-only Cypher statement with its values in place. Do not write SQL or a placeholder on that connection. A question about an amount returns one category column and one number. A question about how records connect returns the relationship or the path."
 }
 
 A line in an earlier turn that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour. A later question may add a different query and chart.`;

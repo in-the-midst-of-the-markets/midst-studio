@@ -6,6 +6,7 @@ import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
 import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
+import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { acceptAssistPlan, recentAssistHistory, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
 import {
   DEFAULT_ASSIST_SETTINGS,
@@ -109,6 +110,7 @@ function IdeQueryChatSession({
   const [gatewayModels, setGatewayModels] = useState<readonly AssistModelOption[]>([]);
   const [modelStatus, setModelStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [gatewayStatus, setGatewayStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [rankings, setRankings] = useState<AssistRankings | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const loadCatalog = () => {
@@ -126,6 +128,7 @@ function IdeQueryChatSession({
         const gatewayFailed = record !== null && "gatewayCatalog" in record && record.gatewayCatalog === false;
         setModels(listed);
         setGatewayModels(listedGateway);
+        setRankings(readAssistRankings(record !== null && "rankings" in record ? record.rankings : null));
         setModelStatus("ready");
         setGatewayStatus(gatewayFailed ? "failed" : "ready");
       })
@@ -333,6 +336,7 @@ function IdeQueryChatSession({
                 gatewayModels={gatewayModels}
                 modelStatus={modelStatus}
                 gatewayStatus={gatewayStatus}
+                rankings={rankings}
                 onChange={updateSettings}
               />
             </div>
