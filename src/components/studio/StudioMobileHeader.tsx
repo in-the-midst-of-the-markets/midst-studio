@@ -5,6 +5,7 @@ import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { QueryEditorRef } from "@/components/QueryEditor";
 import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
+import { AssistConnectors } from "@/components/ai-assist/AssistConnectors";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ import {
   PenLine,
   Gauge,
   KeyRound,
+  Plug,
   ShieldCheck,
   LogOut,
   EllipsisVertical,
@@ -141,6 +143,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
   onAskAgent,
 }: StudioMobileHeaderProps) {
   const router = useRouter();
+  const [connectorsOpen, setConnectorsOpen] = React.useState(false);
   // Bundled so the three cannot be half-supplied, the rule QueryToolbar follows: an
   // item that BEGINs without one that COMMITs would strand the user inside a
   // transaction it cannot close.
@@ -272,6 +275,9 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push("/settings/authenticator")} className="cursor-pointer">
                   <ShieldCheck strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Sign-in security
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setConnectorsOpen(true)} className="cursor-pointer">
+                  <Plug strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Connectors
                 </DropdownMenuItem>
                 <div className="border-t border-hairline my-1" />
                 {/*
@@ -439,6 +445,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
           )}
         </div>
       )}
+      {connectorsOpen && <AssistConnectors onClose={() => setConnectorsOpen(false)} />}
     </header>
   );
 });

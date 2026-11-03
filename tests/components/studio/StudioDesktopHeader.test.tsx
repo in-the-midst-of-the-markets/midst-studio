@@ -353,6 +353,24 @@ describe("StudioDesktopHeader", () => {
       expect(mockRouterPush).toHaveBeenCalledWith("/settings/authenticator");
     });
 
+    test("opens Connectors from the profile menu", () => {
+      const original = globalThis.fetch;
+      globalThis.fetch = (async () =>
+        new Response(JSON.stringify({ serverKey: false }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })) as unknown as typeof fetch;
+      try {
+        const view = render(<StudioDesktopHeader {...defaultProps} />);
+        fireEvent.click(view.getByText("Connectors"));
+        expect(view.getByRole("dialog", { name: "Connectors" })).toBeTruthy();
+        fireEvent.click(view.getByRole("button", { name: "Close" }));
+        expect(view.queryByRole("dialog", { name: "Connectors" })).toBeNull();
+      } finally {
+        globalThis.fetch = original;
+      }
+    });
+
     test("Logout menu item has danger-token styling", () => {
       const { getByText } = render(<StudioDesktopHeader {...defaultProps} />);
       const logoutItem = getByText("Logout").closest('[role="menuitem"]');

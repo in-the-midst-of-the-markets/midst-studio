@@ -1,6 +1,6 @@
 import React from "react";
 import { DatabaseConnection, ENVIRONMENT_LABELS } from "@/lib/types";
-import { Lock, Trash2, Pencil, Copy, Star, GripVertical, FolderInput, Check } from "lucide-react";
+import { Lock, Trash2, Pencil, Copy, Star, GripVertical, FolderInput, Check, StickyNote } from "lucide-react";
 import { getDBIcon } from "@/lib/db-ui-config";
 import {
   DropdownMenu,
@@ -146,7 +146,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
               aria-label={`Notes for ${conn.name}`}
               title="Table notes"
               className={cn(
-                "shrink-0 rounded px-1 py-0.5 text-[10px] font-medium transition-colors",
+                "shrink-0 rounded p-0.5 transition-colors",
                 notesOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
               onClick={(event) => {
@@ -154,7 +154,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
                 onOpenNotes(conn);
               }}
             >
-              Notes
+              <StickyNote strokeWidth={1.5} className="h-3.5 w-3.5" />
             </button>
           )}
           {conn.environment && conn.environment !== "other" && (

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
+import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
@@ -39,7 +40,6 @@ import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
-  COMMON_OPENROUTER_MODELS,
   DEFAULT_ASSIST_SETTINGS,
   normalizeModels,
   readAssistSettings,
@@ -390,87 +390,15 @@ function SourceChoice({
 }
 
 function providerNote(source: AssistSettings["source"], serverKey: boolean | null): string {
-  if (source === "fireworks") return "Saved in this browser. A Fireworks model uses the key you save here.";
-  if (source === "gateway") return "Saved in this browser. Vercel AI Gateway uses the key you save here.";
+  if (source === "fireworks") return "A Fireworks model uses the key saved under Connectors.";
+  if (source === "gateway") return "Vercel AI Gateway uses the key saved under Connectors.";
   if (serverKey === true) {
-    return "Saved in this browser. The OpenRouter key can stay blank; this server already has one.";
+    return "The OpenRouter key can stay blank under Connectors; this server already has one.";
   }
-  return "Saved in this browser. Leave the OpenRouter key blank to use the server's key.";
+  return "Add an OpenRouter key under Connectors, or leave it blank to use the server's key.";
 }
 
-function SavedKeyField({
-  label,
-  stored,
-  placeholder,
-  onSave,
-}: {
-  label: string;
-  stored: string;
-  placeholder?: string;
-  onSave: (key: string) => void;
-}) {
-  const [draft, setDraft] = useState("");
-  const [replacing, setReplacing] = useState(false);
-  const saved = stored.trim() !== "";
-  const showInput = !saved || replacing;
-  let action: ReactNode = null;
-  if (!showInput) {
-    action = (
-      <button
-        type="button"
-        aria-label={`Replace ${label}`}
-        onClick={() => {
-          setDraft("");
-          setReplacing(true);
-        }}
-        className="text-xs font-medium text-fg-muted hover:text-fg"
-      >
-        Replace
-      </button>
-    );
-  } else if (draft.trim() !== "" || saved) {
-    action = (
-      <button
-        type="button"
-        aria-label={`Save ${label}`}
-        onClick={() => {
-          onSave(draft.trim());
-          setDraft("");
-          setReplacing(false);
-        }}
-        className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
-      >
-        Save
-      </button>
-    );
-  }
-  return (
-    <div className="flex flex-col gap-1 text-xs text-fg-muted">
-      <span>{label}</span>
-      <span className="flex items-center gap-2">
-        {showInput ? (
-          <input
-            type="password"
-            aria-label={label}
-            autoComplete="off"
-            placeholder={placeholder}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            className="min-w-0 flex-1 rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
-          />
-        ) : (
-          <output className="text-sm text-fg">API key saved</output>
-        )}
-        {action}
-      </span>
-    </div>
-  );
-}
-
-/**
- * The AI Assist page: a chat that writes queries, draws charts, and explains them.
- * Each chart keeps the SQL editor behind it.
- */
+/** The AI Assist page: a chat that writes queries, draws charts, and explains them. Each chart keeps the SQL editor behind it. */
 export function AiAssist() {
   const settings = useSyncExternalStore(subscribeAssistSettings, readAssistSettings, () => DEFAULT_ASSIST_SETTINGS);
   const updateSettings = (patch: Partial<AssistSettings>) => {
@@ -817,10 +745,6 @@ export function AiAssist() {
     }
   };
 
-  const catalog = modelStatus === "ready" && models.length > 0 ? models : COMMON_OPENROUTER_MODELS;
-  const modelOptions = catalog.some((item) => item.id === settings.openRouterModel)
-    ? catalog
-    : [{ id: settings.openRouterModel, name: settings.openRouterModel }, ...catalog];
   const canSend = draft.trim() !== "" && !sending && modelFor(settings) !== "";
 
   const queries = turns.flatMap((turn) => turn.cards);
@@ -1027,7 +951,7 @@ export function AiAssist() {
               {serverKey === false && settings.source === "openrouter" && settings.openRouterKey.trim() === "" && (
                 <p className="text-xs text-fg-muted">
                   This server has no OpenRouter key. Set OPENROUTER_API_KEY on the running app and redeploy, or add a
-                  key under Model.
+                  key under Connectors.
                 </p>
               )}
               <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-canvas p-2">
@@ -1088,87 +1012,14 @@ export function AiAssist() {
                       />
                     </fieldset>
                     <p className="text-sm text-fg-muted">{providerNote(settings.source, serverKey)}</p>
-                    {settings.source === "openrouter" && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <SavedKeyField
-                          label="OpenRouter API key"
-                          stored={settings.openRouterKey}
-                          placeholder="sk-or-..."
-                          onSave={(openRouterKey) => updateSettings({ openRouterKey })}
-                        />
-                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                          Model
-                          <select
-                            aria-label="OpenRouter model"
-                            value={settings.openRouterModel}
-                            onChange={(event) => updateSettings({ openRouterModel: event.target.value })}
-                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
-                          >
-                            {modelOptions.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        {modelStatus === "failed" && (
-                          <output className="col-span-2 block text-xs text-fg-muted">
-                            The OpenRouter catalog could not be loaded.
-                          </output>
-                        )}
-                      </div>
-                    )}
-                    {settings.source === "fireworks" && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <SavedKeyField
-                          label="Fireworks API key"
-                          stored={settings.fireworksKey}
-                          onSave={(fireworksKey) => updateSettings({ fireworksKey })}
-                        />
-                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                          Fine-tuned model
-                          <input
-                            aria-label="Fireworks model"
-                            value={settings.fireworksModel}
-                            placeholder="accounts/your-account/models/your-model"
-                            onChange={(event) => updateSettings({ fireworksModel: event.target.value })}
-                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
-                          />
-                        </label>
-                      </div>
-                    )}
-                    {settings.source === "gateway" && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <SavedKeyField
-                          label="Vercel AI Gateway API key"
-                          stored={settings.gatewayKey}
-                          onSave={(gatewayKey) => updateSettings({ gatewayKey })}
-                        />
-                        <label className="flex flex-col gap-1 text-xs text-fg-muted">
-                          Model
-                          <input
-                            aria-label="Vercel AI Gateway model"
-                            list="vercel-gateway-models"
-                            value={settings.gatewayModel}
-                            placeholder="provider/model"
-                            onChange={(event) => updateSettings({ gatewayModel: event.target.value })}
-                            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
-                          />
-                          <datalist id="vercel-gateway-models">
-                            {gatewayModels.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </datalist>
-                        </label>
-                        {gatewayStatus === "failed" && (
-                          <output className="col-span-2 block text-xs text-fg-muted">
-                            The Vercel AI Gateway catalog could not be loaded.
-                          </output>
-                        )}
-                      </div>
-                    )}
+                    <AssistModelFields
+                      settings={settings}
+                      models={models}
+                      gatewayModels={gatewayModels}
+                      modelStatus={modelStatus}
+                      gatewayStatus={gatewayStatus}
+                      onChange={updateSettings}
+                    />
                   </div>
                 )}
               </div>

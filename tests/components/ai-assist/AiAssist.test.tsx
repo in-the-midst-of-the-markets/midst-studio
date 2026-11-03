@@ -1153,15 +1153,15 @@ describe("AiAssist page", () => {
     expect(view.getByRole("radio", { name: "Fireworks AI" }).closest("label")?.className).not.toContain(
       "bg-brand-tint/15",
     );
-    expect((view.getByLabelText("OpenRouter API key") as HTMLInputElement).placeholder).toBe("sk-or-...");
+    expect(view.queryByLabelText("OpenRouter API key")).toBeNull();
+    expect(view.getByText(/Add an OpenRouter key under Connectors/)).toBeTruthy();
     expect(view.getByRole("option", { name: "missing/model" })).toBeTruthy();
-    fireEvent.change(view.getByLabelText("OpenRouter API key"), { target: { value: "ork" } });
     fireEvent.change(view.getByLabelText("OpenRouter model"), { target: { value: "other/model" } });
     fireEvent.click(view.getByLabelText("Fireworks AI"));
     fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
     fireEvent.keyDown(view.getByLabelText("How can I help?"), { key: "Enter" });
     expect(await view.findByRole("alert")).toHaveProperty("textContent", "Name the model to use.");
-    fireEvent.change(view.getByLabelText("Fireworks API key"), { target: { value: "fwk" } });
+    expect(view.getByText("A Fireworks model uses the key saved under Connectors.")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Fireworks model"), { target: { value: "accounts/acme/models/tuned" } });
     expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").fireworksModel).toBe(
       "accounts/acme/models/tuned",
@@ -1170,7 +1170,7 @@ describe("AiAssist page", () => {
     expect(readStored().source).toBe("fireworks");
   });
 
-  test("hides a saved API key and asks Vercel AI Gateway", async () => {
+  test("asks Vercel AI Gateway with the key saved under Connectors", async () => {
     localStorage.setItem(
       "libredb_ai_assist",
       JSON.stringify({
@@ -1178,9 +1178,9 @@ describe("AiAssist page", () => {
         openRouterModel: "openai/gpt-4o",
         openRouterKey: "ork-secret",
         fireworksModel: "",
-        fireworksKey: "",
+        fireworksKey: "fw-secret",
         gatewayModel: "",
-        gatewayKey: "",
+        gatewayKey: "gw-secret",
       }),
     );
     handler = (url, init) => {
@@ -1202,21 +1202,12 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
     expect(view.queryByLabelText("OpenRouter API key")).toBeNull();
-    expect(view.getByText("API key saved")).toBeTruthy();
+    expect(view.queryByText("API key saved")).toBeNull();
     expect(view.container.textContent?.includes("ork-secret")).toBe(false);
-    fireEvent.click(view.getByRole("button", { name: "Replace OpenRouter API key" }));
-    expect((view.getByLabelText("OpenRouter API key") as HTMLInputElement).value).toBe("");
-    fireEvent.click(view.getByRole("button", { name: "Save OpenRouter API key" }));
-    expect(view.getByLabelText("OpenRouter API key")).toBeTruthy();
-    expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").openRouterKey).toBe("");
 
     fireEvent.click(view.getByLabelText("Vercel AI Gateway"));
-    expect(view.getByText(/Vercel AI Gateway uses the key you save here/)).toBeTruthy();
-    fireEvent.change(view.getByLabelText("Vercel AI Gateway API key"), { target: { value: "gw-secret" } });
-    expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").gatewayKey).toBe("");
-    fireEvent.click(view.getByRole("button", { name: "Save Vercel AI Gateway API key" }));
+    expect(view.getByText("Vercel AI Gateway uses the key saved under Connectors.")).toBeTruthy();
     expect(view.queryByLabelText("Vercel AI Gateway API key")).toBeNull();
-    expect(view.getByText("API key saved")).toBeTruthy();
     expect(view.container.textContent?.includes("gw-secret")).toBe(false);
     const listed = document.querySelector("#vercel-gateway-models option");
     expect(listed?.getAttribute("value")).toBe("alibaba/qwen-3-14b");
@@ -1226,10 +1217,8 @@ describe("AiAssist page", () => {
     expect(await view.findByText("Routed.")).toBeTruthy();
 
     fireEvent.click(view.getByLabelText("Fireworks AI"));
-    expect(view.getByText(/A Fireworks model uses the key you save here/)).toBeTruthy();
+    expect(view.getByText("A Fireworks model uses the key saved under Connectors.")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Fireworks model"), { target: { value: "accounts/acme/models/tuned" } });
-    fireEvent.change(view.getByLabelText("Fireworks API key"), { target: { value: "fw-secret" } });
-    fireEvent.click(view.getByRole("button", { name: "Save Fireworks API key" }));
     expect(view.queryByLabelText("Fireworks API key")).toBeNull();
     expect(view.container.textContent?.includes("fw-secret")).toBe(false);
     await typeAndSend(view, "And cost?");

@@ -65,7 +65,7 @@ describe("POST /api/ai/assist", () => {
     );
     expect(response.status).toBe(400);
     expect(((await response.json()) as { error: string }).error).toBe(
-      "No OpenRouter key is available. Set OPENROUTER_API_KEY on the running app, or paste a key under Model.",
+      "No OpenRouter key is available. Set OPENROUTER_API_KEY on the running app, or paste a key under Connectors.",
     );
 
     const fireworks = await POST(
@@ -75,7 +75,7 @@ describe("POST /api/ai/assist", () => {
       }) as never,
     );
     expect(fireworks.status).toBe(400);
-    expect(((await fireworks.json()) as { error: string }).error).toBe("Add a Fireworks API key under Model.");
+    expect(((await fireworks.json()) as { error: string }).error).toBe("Add a Fireworks API key under Connectors.");
 
     const gateway = await POST(
       createMockRequest("/api/ai/assist", {
@@ -84,7 +84,9 @@ describe("POST /api/ai/assist", () => {
       }) as never,
     );
     expect(gateway.status).toBe(400);
-    expect(((await gateway.json()) as { error: string }).error).toBe("Add a Vercel AI Gateway API key under Model.");
+    expect(((await gateway.json()) as { error: string }).error).toBe(
+      "Add a Vercel AI Gateway API key under Connectors.",
+    );
   });
 
   test("fences the schema, drops a write, and does not echo the key", async () => {
@@ -311,7 +313,74 @@ describe("POST /api/ai/assist", () => {
       }) as never,
     );
     expect(missing.status).toBe(400);
-    expect(((await missing.json()) as { error: string }).error).toBe("Add a Fireworks API key under Model.");
+    expect(((await missing.json()) as { error: string }).error).toBe("Add a Fireworks API key under Connectors.");
+  });
+
+  test("revises the statement in the editor", async () => {
+    let authorization = "";
+    let messages: { role: string; content: string }[] = [];
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      authorization = new Headers(init?.headers).get("Authorization") ?? "";
+      messages = (JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }).messages;
+      return jsonResponse({
+        choices: [{ message: { content: JSON.stringify({ explanation: "Limited.", queries: [] }) } }],
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "fireworks",
+          model: "accounts/acme/models/tuned",
+          apiKey: "fw-secret",
+          question: "Add a limit",
+          schemaContext: "orders",
+          databaseType: "",
+          history: [],
+          editorSql: "SELECT 1",
+        },
+      }) as never,
+    );
+    expect(response.status).toBe(200);
+    expect(messages[0]?.content).toContain("queries has one item");
+    expect(messages[0]?.content).toContain("The connected engine is SQL");
+    expect(messages[1]?.content).toContain("Current statement:");
+    expect(messages[1]?.content).toContain("SELECT 1");
+    expect(JSON.stringify(messages)).not.toContain("fw-secret");
+    expect(authorization).toContain("fw-secret");
+
+    const invalid = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { source: "openrouter", model: "openai/gpt-4o", question: "Add a limit", editorSql: 4 },
+      }) as never,
+    );
+    expect(invalid.status).toBe(400);
+    expect(((await invalid.json()) as { error: string }).error).toBe("The current query is not valid.");
+
+    const tooLong = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "openai/gpt-4o",
+          question: "Add a limit",
+          editorSql: "x".repeat(8_001),
+        },
+      }) as never,
+    );
+    expect(tooLong.status).toBe(400);
+    expect(((await tooLong.json()) as { error: string }).error).toBe("The current query is too long.");
+
+    const nameless = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { source: "openrouter", question: "Add a limit", editorSql: "SELECT 1" },
+      }) as never,
+    );
+    expect(nameless.status).toBe(400);
+    expect(((await nameless.json()) as { error: string }).error).toBe("Name the model to use.");
   });
 });
 
