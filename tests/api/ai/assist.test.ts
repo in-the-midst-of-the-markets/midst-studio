@@ -277,6 +277,7 @@ describe("POST /api/ai/assist", () => {
     expect(messages[0]?.content).toContain("Do not plan another query.");
     expect(messages[0]?.content).toContain("queries is empty.");
     expect(messages[0]?.content).toContain("explanation is Markdown the person reads");
+    expect(messages[0]?.content).toContain("several paragraphs, long enough to cover every result");
     expect(messages[0]?.content).toContain("a description of the field");
     expect(messages[0]?.content).not.toContain("East led");
 
