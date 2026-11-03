@@ -6,10 +6,14 @@ import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { mockGlobalFetch, restoreGlobalFetch } from "../../helpers/mock-fetch";
 import type { DatabaseConnection, SavedChartConfig, SavedDashboard } from "@/lib/types";
 
+const drawnOptions: Record<string, unknown>[] = [];
+
 mock.module("echarts/core", () => ({
   use: () => {},
   init: () => ({
-    setOption() {},
+    setOption(option: Record<string, unknown>) {
+      drawnOptions.push(option);
+    },
     resize() {},
     dispose() {},
   }),
@@ -135,6 +139,8 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("menuitem", { name: "Add chart" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Revenue" }));
     const tile = await view.findByTestId("dashboard-chart-revenue");
+    expect(tile.className).toContain("bg-transparent");
+    expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent");
     const heading = view.getByLabelText("Chart title") as HTMLInputElement;
     expect(heading.value).toBe("Revenue");
     expect(heading.className).not.toContain("truncate");
@@ -318,6 +324,18 @@ describe("DashboardStudio", () => {
     await waitFor(() =>
       expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.look).toEqual({ color: ["#112233"] }),
     );
+    fireEvent.change(code, {
+      target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "#112233" }) },
+    });
+    await waitFor(() => expect(drawnOptions.at(-1)?.backgroundColor).toBe("#112233"));
+    expect((drawnOptions.at(-1)?.color as string[])[0]).toBe("#112233");
+    fireEvent.change(code, {
+      target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "transparent" }) },
+    });
+    await waitFor(() => expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent"));
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
     fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
     expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.look).toBeUndefined();
     expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
