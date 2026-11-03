@@ -52,6 +52,13 @@ describe("the type list", () => {
     expect(bubbles?.find((slot) => slot.id === "value")?.required).toBe(true);
     expect(slotsFor("geo", "heat")?.find((slot) => slot.id === "value")?.required).toBe(true);
     expect(slotsFor("scatter", "bubble")?.map((slot) => slot.id)).toEqual(["x", "y", "series", "size"]);
+    expect(slotsFor("graph", "force")?.map((slot) => slot.id)).toEqual(["source", "target", "weight", "size"]);
+    expect(slotsFor("graph", "force")?.find((slot) => slot.id === "size")).toMatchObject({
+      label: "Node size",
+      kind: "metric",
+      required: false,
+    });
+    expect(defaultSelection("graph", "force", columns).size).toEqual([]);
     expect(slotsFor("candlestick", "volume")?.map((slot) => slot.id)).toEqual([
       "time",
       "open",
