@@ -547,6 +547,24 @@ describe("StudioMobileHeader", () => {
     expect(mockRouterPush).toHaveBeenCalledWith("/settings/authenticator");
   });
 
+  test("opens Connectors from the profile menu", () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ serverKey: false }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as unknown as typeof fetch;
+    try {
+      const view = render(<StudioMobileHeader {...defaults} isAdmin={false} />);
+      fireEvent.click(view.getByText("Connectors"));
+      expect(view.getByRole("dialog", { name: "Connectors" })).toBeTruthy();
+      fireEvent.click(view.getByRole("button", { name: "Close" }));
+      expect(view.queryByRole("dialog", { name: "Connectors" })).toBeNull();
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
   test("the user menu carries a theme control", () => {
     const { queryByText } = render(<StudioMobileHeader {...defaults} />);
     expect(queryByText("Switch to light theme")).not.toBeNull();

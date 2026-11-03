@@ -20,6 +20,7 @@ import { cancelControlMode } from "@/components/studio/QueryToolbar";
 import { StudioModals } from "@/components/studio/StudioModals";
 import { StudioOverlays } from "@/components/studio/StudioOverlays";
 import { AgentRail } from "@/components/agent/AgentRail";
+import { editorChatQuery, IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
 import { DatabaseConnection, type ColumnSchema, SavedQuery } from "@/lib/types";
 import type { DatabaseObject } from "@/lib/db/types";
 import { splitMaskedColumns } from "@/lib/db/masking-exemption";
@@ -1432,7 +1433,7 @@ export default function Studio() {
           </>
         )}
         <ResizablePanel id="studio-body" defaultSize={agentEnabled ? "54" : "78"}>
-          <div className="flex-1 flex flex-col min-w-0 h-full bg-surface pb-16 md:pb-0">
+          <div className="relative flex-1 flex flex-col min-w-0 h-full bg-surface pb-16 md:pb-0">
             <StudioMobileHeader
               connections={conn.connections}
               activeConnection={conn.activeConnection}
@@ -1785,6 +1786,11 @@ export default function Studio() {
                 </div>
               </div>
             </main>
+            <IdeQueryChat
+              {...editorChatQuery(tabMgr.currentTab, tabMgr.updateTabById)}
+              databaseType={conn.activeConnection?.type ?? ""}
+              schemaContext={conn.schemaContext}
+            />
           </div>
         </ResizablePanel>
 

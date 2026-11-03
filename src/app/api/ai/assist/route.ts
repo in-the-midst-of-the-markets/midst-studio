@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fenceForPrompt } from "@/lib/ai/prompt-fence";
 import { buildAssistMessages, parseAssistPlan, readAssistRequest, type AssistSource } from "@/lib/ai/assist-plan";
+import { buildEditorMessages, readEditorSql } from "@/lib/ai/editor-prompt";
 import { buildAssistReadingMessages, formatAssistResults, readAssistReading } from "@/lib/ai/assist-reading";
 import {
   assistServerKeyConfigured,
@@ -22,10 +23,10 @@ export const dynamic = "force-dynamic";
 
 function missingKeyMessage(source: AssistSource): string {
   if (source === "openrouter") {
-    return "No OpenRouter key is available. Set OPENROUTER_API_KEY on the running app, or paste a key under Model.";
+    return "No OpenRouter key is available. Set OPENROUTER_API_KEY on the running app, or paste a key under Connectors.";
   }
-  if (source === "fireworks") return "Add a Fireworks API key under Model.";
-  return "Add a Vercel AI Gateway API key under Model.";
+  if (source === "fireworks") return "Add a Fireworks API key under Connectors.";
+  return "Add a Vercel AI Gateway API key under Connectors.";
 }
 
 async function answerWith(
@@ -75,6 +76,25 @@ export async function POST(req: NextRequest) {
           schemaBlock: fenceForPrompt(reading.value.schemaContext, "assist"),
           historyBlock: fenceForPrompt(JSON.stringify(reading.value.history), "assist"),
           resultsBlock: fenceForPrompt(formatAssistResults(reading.value.results), "assist"),
+        }),
+      );
+    }
+
+    if ("editorSql" in record) {
+      const editorSql = readEditorSql(record.editorSql);
+      if (!editorSql.ok) return NextResponse.json({ error: editorSql.error }, { status: 400 });
+      const editorRequest = readAssistRequest(posted);
+      if (!editorRequest.ok) return NextResponse.json({ error: editorRequest.error }, { status: 400 });
+      return await answerWith(
+        editorRequest.value.source,
+        editorRequest.value.apiKey,
+        editorRequest.value.model,
+        buildEditorMessages({
+          databaseType: editorRequest.value.databaseType,
+          questionBlock: fenceForPrompt(editorRequest.value.question, "assist"),
+          schemaBlock: fenceForPrompt(editorRequest.value.schemaContext, "assist"),
+          historyBlock: fenceForPrompt(JSON.stringify(editorRequest.value.history), "assist"),
+          editorBlock: fenceForPrompt(editorSql.value, "assist"),
         }),
       );
     }

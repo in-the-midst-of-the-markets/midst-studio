@@ -552,6 +552,8 @@ describe("ConnectionItem", () => {
         />,
       );
       const notes = view.getByRole("button", { name: "Notes for Test PostgreSQL" });
+      expect(notes.querySelector("svg")).toBeTruthy();
+      expect(notes.textContent).toBe("");
       expect(notes.getAttribute("aria-pressed")).toBe("false");
       fireEvent.click(notes);
       expect(onOpenNotes).toHaveBeenCalledWith(mockPostgresConnection);

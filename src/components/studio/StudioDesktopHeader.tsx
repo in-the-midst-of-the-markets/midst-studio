@@ -5,7 +5,7 @@ import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Database, Gauge, KeyRound, LogOut, Settings, ShieldCheck, User } from "lucide-react";
+import { Database, Gauge, KeyRound, LogOut, Plug, Settings, ShieldCheck, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
+import { AssistConnectors } from "@/components/ai-assist/AssistConnectors";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
 
 /** What the pulse indicator reads for each state. Only Online animates: the others are not live. */
@@ -41,6 +42,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
   onLogout,
 }: StudioDesktopHeaderProps) {
   const router = useRouter();
+  const [connectorsOpen, setConnectorsOpen] = React.useState(false);
 
   return (
     <header className="hidden md:flex h-14 items-center justify-between gap-3 border-b border-hairline px-4 bg-surface/80 backdrop-blur-xl sticky top-0 z-30">
@@ -125,6 +127,9 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
               <DropdownMenuItem onClick={() => router.push("/settings/authenticator")} className="cursor-pointer">
                 <ShieldCheck strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Sign-in security
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConnectorsOpen(true)} className="cursor-pointer">
+                <Plug strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Connectors
+              </DropdownMenuItem>
               <div className="border-t border-hairline my-1" />
               <DropdownMenuItem onClick={onLogout} className="text-danger cursor-pointer">
                 <LogOut strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Logout
@@ -136,6 +141,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
         <ThemeToggle className="mr-1" />
         <ModeLinks page="ide" className={IDE_MODE_LINK_CLASS} />
       </div>
+      {connectorsOpen && <AssistConnectors onClose={() => setConnectorsOpen(false)} />}
     </header>
   );
 });
