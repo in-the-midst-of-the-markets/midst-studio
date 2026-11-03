@@ -23,6 +23,7 @@ export interface AssistSettings {
 }
 
 export const COMMON_OPENROUTER_MODELS: readonly AssistModelOption[] = [
+  { id: "deepseek/deepseek-v4.1-flash-1017", name: "DeepSeek V4.1 Flash" },
   { id: "z-ai/glm-5.3", name: "GLM 5.3" },
   { id: "openai/gpt-4o", name: "GPT-4o" },
   { id: "openai/gpt-4o-mini", name: "GPT-4o mini" },
@@ -42,6 +43,13 @@ export const DEFAULT_ASSIST_SETTINGS: AssistSettings = {
 };
 
 const STORAGE_KEY = "libredb_ai_assist";
+/** The OpenRouter model this browser used before DeepSeek V4.1 Flash became the default. */
+const PREVIOUS_OPENROUTER_MODEL = "z-ai/glm-5.3";
+
+function chosenOpenRouterModel(value: string): string {
+  if (value === "" || value === PREVIOUS_OPENROUTER_MODEL) return DEFAULT_ASSIST_SETTINGS.openRouterModel;
+  return value;
+}
 
 let cachedRaw: string | null | undefined;
 let cachedSettings: AssistSettings = DEFAULT_ASSIST_SETTINGS;
@@ -93,7 +101,7 @@ function settingsFrom(raw: string | null): AssistSettings {
     const gatewayModel = text("gatewayModel" in parsed ? parsed.gatewayModel : undefined, 200);
     return {
       source,
-      openRouterModel: openRouterModel === "" ? DEFAULT_ASSIST_SETTINGS.openRouterModel : openRouterModel,
+      openRouterModel: chosenOpenRouterModel(openRouterModel),
       fireworksModel,
       gatewayModel,
       openRouterKey: text("openRouterKey" in parsed ? parsed.openRouterKey : undefined, 500),

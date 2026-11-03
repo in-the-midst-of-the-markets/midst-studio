@@ -36,7 +36,23 @@ describe("normalizeModels", () => {
 describe("assist settings storage", () => {
   test("returns the default when nothing is stored", () => {
     expect(readAssistSettings()).toEqual(DEFAULT_ASSIST_SETTINGS);
-    expect(DEFAULT_ASSIST_SETTINGS.openRouterModel).toBe("z-ai/glm-5.3");
+    expect(DEFAULT_ASSIST_SETTINGS.openRouterModel).toBe("deepseek/deepseek-v4.1-flash-1017");
+  });
+
+  test("moves a browser that saved the previous default onto DeepSeek V4.1 Flash", () => {
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ source: "openrouter", openRouterModel: "z-ai/glm-5.3", openRouterKey: "ork" }),
+    );
+    expect(readAssistSettings()).toMatchObject({
+      openRouterModel: "deepseek/deepseek-v4.1-flash-1017",
+      openRouterKey: "ork",
+    });
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ source: "openrouter", openRouterModel: "openai/gpt-4o" }),
+    );
+    expect(readAssistSettings().openRouterModel).toBe("openai/gpt-4o");
   });
 
   test("reads a saved Fireworks choice and ignores a bad record", () => {
