@@ -64,6 +64,7 @@ import {
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
+import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
 import { classifyColumns, defaultSelection, ECHART_TYPES } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
@@ -78,6 +79,7 @@ import { axesFromSelection, storedChartLook } from "@/lib/charts/save-chart";
 import { loadSavedChart, optionForSavedChart, type SavedChartView } from "@/lib/charts/saved-chart-run";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import { chartTheme } from "@/lib/charts/palette";
+import { restampThemeChrome } from "@/lib/charts/theme-chrome";
 import { storage } from "@/lib/storage";
 import type {
   DashboardFilter,
@@ -560,6 +562,12 @@ function DashboardChart({
     storedLook === undefined ? null : formatChartCode(storedLook),
   );
   const databaseType: DatabaseType | undefined = connections.find((item) => item.id === connectionId)?.type;
+  // The code the user is editing is the chart. A saved look is that code, so a
+  // background they set — including transparent — is what gets drawn.
+  const painted =
+    code.option !== null && shelf !== null
+      ? restampThemeChrome(omitDrawnChartTitle(code.option, shelf.option), theme)
+      : (built?.option ?? null);
   const runDraft = () => {
     onQuery(sqlDraft);
     setFace("chart");
@@ -607,7 +615,7 @@ function DashboardChart({
     <article
       data-testid={`dashboard-chart-${chart.id}`}
       style={{ width, height }}
-      className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
+      className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-transparent shadow-sm"
     >
       {/*
         The name keeps its own width, up to the card. When that no longer fits
@@ -701,9 +709,12 @@ function DashboardChart({
           onClear={() => onQuery(clearQueryFilters(sql))}
         />
       )}
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
+        {painted !== null && (
+          <AssistChartCanvas option={painted} notes={code.option === null ? (built?.notes ?? []) : []} />
+        )}
         {face === "query" && (
-          <div className="flex h-full min-h-0 flex-col">
+          <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
             <label className="px-4 pt-3 text-xs text-fg-muted">
               Connection
               <select
@@ -736,16 +747,18 @@ function DashboardChart({
           </div>
         )}
         {face === "code" && (
-          <ChartCodeEditor
-            value={code.text}
-            error={code.error}
-            edited={code.edited || storedLook !== undefined}
-            onChange={onCodeChange}
-            onReset={() => {
-              code.reset();
-              onLook(undefined);
-            }}
-          />
+          <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
+            <ChartCodeEditor
+              value={code.text}
+              error={code.error}
+              edited={code.edited || storedLook !== undefined}
+              onChange={onCodeChange}
+              onReset={() => {
+                code.reset();
+                onLook(undefined);
+              }}
+            />
+          </div>
         )}
         {face === "chart" && view.kind === "loading" && <p className="p-3 text-xs text-fg-muted">Running the query…</p>}
         {face === "chart" && view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
@@ -760,7 +773,6 @@ function DashboardChart({
         {face === "chart" && view.kind === "result" && !missingShelves && built === null && (
           <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
         )}
-        {face === "chart" && built !== null && <AssistChartCanvas option={built.option} notes={built.notes} />}
       </div>
       <button
         type="button"

@@ -267,7 +267,7 @@ export function ChartWithEditor({
       <h3 className="text-2xl font-semibold tracking-tight text-fg" style={chartTitleStyle(code.editedOption)}>
         {heading}
       </h3>
-      <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
+      <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-transparent shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
         {!showingTable && (
           <div className="flex flex-wrap items-center justify-end gap-2 border-b border-hairline px-4 py-3">
             <div className="flex items-center gap-1.5">
