@@ -87,7 +87,16 @@ export const QUERY_CAP = 3;
 const TITLE_CAP = 120;
 const CONNECTION_CAP = 200;
 const CAPTION_CAP = 240;
-const HISTORY_CAP = 6;
+/** How many earlier questions one new question may include. The chat defaults to five and can be raised to this. */
+export const ASSIST_HISTORY_MAX = 10;
+export const ASSIST_HISTORY_DEFAULT = 5;
+const HISTORY_CAP = ASSIST_HISTORY_MAX;
+
+/** The earlier questions a new question takes with it. Zero sends none. A count above the maximum is cut down to it. */
+export function recentAssistHistory<T>(pairs: readonly T[], limit: number): T[] {
+  if (!Number.isInteger(limit) || limit <= 0) return [];
+  return pairs.slice(-Math.min(limit, ASSIST_HISTORY_MAX));
+}
 
 function textOf(value: unknown, cap: number): string {
   if (typeof value !== "string") return "";

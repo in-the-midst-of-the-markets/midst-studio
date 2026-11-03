@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
+import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
@@ -20,6 +21,7 @@ import {
   explanationWithEdits,
   questionOnlyRecolors,
   recolorsFromQuestion,
+  recentAssistHistory,
   splitAssistFollowUp,
   type AssistChart,
   type AssistHistoryTurn,
@@ -233,7 +235,7 @@ function resultPayload(card: AssistCard): {
   };
 }
 
-function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
+function historyOf(turns: readonly Turn[], limit: number): AssistHistoryTurn[] {
   const pairs: AssistHistoryTurn[] = [];
   for (let index = 0; index < turns.length; index += 1) {
     const turn = turns[index];
@@ -248,7 +250,7 @@ function historyOf(turns: readonly Turn[]): AssistHistoryTurn[] {
       pairs.push({ question: turn.text, explanation });
     }
   }
-  return pairs.slice(-6);
+  return recentAssistHistory(pairs, limit);
 }
 
 function plannedCards(
@@ -563,7 +565,7 @@ export function AiAssist() {
     setSending(true);
     setNotice(null);
     setDraft("");
-    const history = historyOf(turnsRef.current);
+    const history = historyOf(turnsRef.current, settings.historyMessages);
     const databaseType = assistDatabaseType(connections.map((item) => item.type));
     const at = askedAt();
     commit([...turnsRef.current, { id: nextId(), role: "user", text: question, at, cards: [] }], true);
@@ -946,14 +948,20 @@ export function AiAssist() {
                 </button>
               </div>
               <div>
-                <button
-                  type="button"
-                  aria-expanded={settingsOpen}
-                  onClick={() => setSettingsOpen((current) => !current)}
-                  className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
-                >
-                  Model
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-expanded={settingsOpen}
+                    onClick={() => setSettingsOpen((current) => !current)}
+                    className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
+                  >
+                    Model
+                  </button>
+                  <HistoryLimitButton
+                    value={settings.historyMessages}
+                    onChange={(historyMessages) => updateSettings({ historyMessages })}
+                  />
+                </div>
                 {settingsOpen && (
                   <div className="mt-3 flex flex-col gap-3">
                     <AssistModelFields
