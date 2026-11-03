@@ -11,6 +11,7 @@ import {
   requestedChartColor,
   splitAssistFollowUp,
   readAssistRequest,
+  recentAssistHistory,
   type AssistQueryPlan,
 } from "@/lib/ai/assist-plan";
 
@@ -204,6 +205,19 @@ describe("readAssistRequest", () => {
     if (!parsed.ok) return;
     expect(parsed.value.apiKey).toBe("secret");
     expect(parsed.value.history).toEqual([{ question: "a", explanation: "b" }]);
+    const ten = request({ history: new Array(10).fill({ question: "a", explanation: "b" }) });
+    expect(ten.ok).toBe(true);
+    if (!ten.ok) return;
+    expect(ten.value.history).toHaveLength(10);
+  });
+
+  test("keeps only the chosen number of earlier questions", () => {
+    const pairs = ["a", "b", "c"].map((question) => ({ question }));
+    expect(recentAssistHistory(pairs, 2)).toEqual([{ question: "b" }, { question: "c" }]);
+    expect(recentAssistHistory(pairs, 0)).toEqual([]);
+    expect(recentAssistHistory(pairs, -3)).toEqual([]);
+    expect(recentAssistHistory(pairs, 1.5)).toEqual([]);
+    expect(recentAssistHistory(pairs, 40)).toEqual(pairs);
   });
 
   test.each([
@@ -220,7 +234,7 @@ describe("readAssistRequest", () => {
     [{ databaseType: "post\ngres" }, "The database type is not valid."],
     [{ history: {} }, "The earlier conversation is not valid."],
     [{ history: [{ question: 1, explanation: "b" }] }, "The earlier conversation is not valid."],
-    [{ history: new Array(7).fill({ question: "a", explanation: "b" }) }, "The earlier conversation is not valid."],
+    [{ history: new Array(11).fill({ question: "a", explanation: "b" }) }, "The earlier conversation is not valid."],
   ])("rejects %j", (overrides, error) => {
     const parsed = request(overrides);
     expect(parsed.ok).toBe(false);

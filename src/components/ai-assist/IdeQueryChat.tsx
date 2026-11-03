@@ -3,9 +3,10 @@
 import { useState, type ReactNode } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
+import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
-import { acceptAssistPlan, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
+import { acceptAssistPlan, recentAssistHistory, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
 import {
   DEFAULT_ASSIST_SETTINGS,
   normalizeModels,
@@ -166,7 +167,7 @@ function IdeQueryChatSession({
           question,
           schemaContext: schemaContext.replace(/[\r\n]+/g, " ").slice(0, 30_000),
           databaseType,
-          history: history.slice(-6),
+          history: recentAssistHistory(history, settings.historyMessages),
           editorSql: sql,
         }),
       });
@@ -307,17 +308,23 @@ function IdeQueryChatSession({
               {sending ? "Sending…" : "Send"}
             </button>
           </div>
-          <button
-            type="button"
-            aria-expanded={settingsOpen}
-            onClick={() => {
-              setSettingsOpen((current) => !current);
-              if (!settingsOpen) loadCatalog();
-            }}
-            className="mt-2 text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
-          >
-            Model
-          </button>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              aria-expanded={settingsOpen}
+              onClick={() => {
+                setSettingsOpen((current) => !current);
+                if (!settingsOpen) loadCatalog();
+              }}
+              className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
+            >
+              Model
+            </button>
+            <HistoryLimitButton
+              value={settings.historyMessages}
+              onChange={(historyMessages) => updateSettings({ historyMessages })}
+            />
+          </div>
           {settingsOpen && (
             <div className="mt-2">
               <AssistModelFields

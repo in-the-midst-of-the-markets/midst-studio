@@ -5,7 +5,7 @@
  * collection, so the storage sync does not copy them to the server.
  */
 
-import { ASSIST_SOURCES, type AssistSource } from "@/lib/ai/assist-plan";
+import { ASSIST_HISTORY_DEFAULT, ASSIST_HISTORY_MAX, ASSIST_SOURCES, type AssistSource } from "@/lib/ai/assist-plan";
 
 export interface AssistModelOption {
   readonly id: string;
@@ -20,6 +20,8 @@ export interface AssistSettings {
   readonly openRouterKey: string;
   readonly fireworksKey: string;
   readonly gatewayKey: string;
+  /** How many earlier questions the next message sends with it. */
+  readonly historyMessages: number;
 }
 
 export const COMMON_OPENROUTER_MODELS: readonly AssistModelOption[] = [
@@ -40,6 +42,7 @@ export const DEFAULT_ASSIST_SETTINGS: AssistSettings = {
   openRouterKey: "",
   fireworksKey: "",
   gatewayKey: "",
+  historyMessages: ASSIST_HISTORY_DEFAULT,
 };
 
 const STORAGE_KEY = "libredb_ai_assist";
@@ -67,6 +70,13 @@ function remember(raw: string | null, settings: AssistSettings): AssistSettings 
   cachedRaw = raw;
   cachedSettings = settings;
   return settings;
+}
+
+function historyMessagesOf(value: unknown): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > ASSIST_HISTORY_MAX) {
+    return ASSIST_HISTORY_DEFAULT;
+  }
+  return value;
 }
 
 function text(value: unknown, cap: number): string {
@@ -107,6 +117,7 @@ function settingsFrom(raw: string | null): AssistSettings {
       openRouterKey: text("openRouterKey" in parsed ? parsed.openRouterKey : undefined, 500),
       fireworksKey: text("fireworksKey" in parsed ? parsed.fireworksKey : undefined, 500),
       gatewayKey: text("gatewayKey" in parsed ? parsed.gatewayKey : undefined, 500),
+      historyMessages: historyMessagesOf("historyMessages" in parsed ? parsed.historyMessages : undefined),
     };
   } catch {
     return DEFAULT_ASSIST_SETTINGS;

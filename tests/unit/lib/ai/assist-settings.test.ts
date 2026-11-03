@@ -110,6 +110,20 @@ describe("assist settings storage", () => {
     expect(settings.fireworksKey).toHaveLength(500);
     expect(settings.gatewayModel).toHaveLength(200);
     expect(settings.gatewayKey).toHaveLength(500);
+    expect(settings.historyMessages).toBe(DEFAULT_ASSIST_SETTINGS.historyMessages);
+  });
+
+  test("keeps a chosen number of earlier messages and replaces one outside 0 to 10", () => {
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ historyMessages: 0 }));
+    expect(readAssistSettings().historyMessages).toBe(0);
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ historyMessages: 10 }));
+    expect(readAssistSettings().historyMessages).toBe(10);
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ historyMessages: 11 }));
+    expect(readAssistSettings().historyMessages).toBe(5);
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ historyMessages: -1 }));
+    expect(readAssistSettings().historyMessages).toBe(5);
+    localStorage.setItem("libredb_ai_assist", JSON.stringify({ historyMessages: 1.5 }));
+    expect(readAssistSettings().historyMessages).toBe(5);
   });
 
   test("writes the choice and ignores a storage failure", () => {

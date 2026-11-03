@@ -158,9 +158,9 @@ describe("IdeQueryChat", () => {
     expect(view.container.textContent).toContain("<b>not bold</b>");
     expect(view.getByText("<b>not bold</b>").tagName).toBe("P");
 
-    const history = (calls.at(-1)?.body as { history: { question: string }[] }).history;
-    expect(history).toHaveLength(6);
-    expect(history[0]?.question).toBe("Third");
+    const history = (calls.at(-1)?.body as { history?: { question: string }[] } | undefined)?.history ?? [];
+    expect(history).toHaveLength(5);
+    expect(history[0]?.question).toBe("Fourth");
   });
 
   test("asks for a model name and loads each catalog", async () => {
@@ -328,8 +328,9 @@ describe("IdeQueryChat", () => {
     expect(await view.findByText("Nodes named Ada.")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Use this query" }));
     expect(onUseQuery).toHaveBeenCalledWith("MATCH (n) WHERE n.name = 'Ada' RETURN n LIMIT 5");
-    expect((calls.at(-1)?.body as { history: unknown[]; databaseType: string }).history).toEqual([]);
-    expect((calls.at(-1)?.body as { databaseType: string }).databaseType).toBe("neo4j");
+    const sent = calls.at(-1)?.body as { history?: unknown[]; databaseType?: string } | undefined;
+    expect(sent?.history).toEqual([]);
+    expect(sent?.databaseType).toBe("neo4j");
 
     fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
     expect(view.getByRole("button", { name: "Clear chat" }).getAttribute("aria-pressed")).toBe("true");

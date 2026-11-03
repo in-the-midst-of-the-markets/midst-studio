@@ -1137,6 +1137,36 @@ describe("AiAssist page", () => {
     await waitFor(() => expect(calls.filter((call) => call.url.includes("provider-meta")).length).toBeGreaterThan(1));
   });
 
+  test("sends only the chosen number of earlier messages", async () => {
+    saveConnection();
+    const view = render(<AiAssist />);
+    fireEvent.click(view.getByRole("button", { name: "Earlier messages, 5" }));
+    const count = view.getByLabelText("Number of earlier messages") as HTMLSelectElement;
+    expect([...count.options].map((option) => option.value)).toEqual([
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+    ]);
+    fireEvent.change(count, { target: { value: "1" } });
+    expect(readAssistSettings().historyMessages).toBe(1);
+    await typeAndSend(view, "First");
+    expect(await view.findByText("Revenue rose.")).toBeTruthy();
+    await typeAndSend(view, "Second");
+    await waitFor(() => expect(view.getAllByText("Revenue rose.")).toHaveLength(2));
+    await typeAndSend(view, "Third");
+    await waitFor(() => expect(planPosts()).toHaveLength(3));
+    const history = (planPosts()[2]?.body as { history?: { question: string }[] } | undefined)?.history;
+    expect(history?.map((turn) => turn.question)).toEqual(["Second"]);
+  });
+
   test("saves an OpenRouter model that is not in the catalog and a Fireworks account", async () => {
     localStorage.setItem(
       "libredb_ai_assist",
