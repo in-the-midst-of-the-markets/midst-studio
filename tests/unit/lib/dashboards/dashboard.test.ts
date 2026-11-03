@@ -4,6 +4,7 @@ import {
   chartLabel,
   CUSTOM_FILTER_SCRIPT,
   dashboardName,
+  dashboardVariables,
   dragResize,
   filterChoices,
   filterControlPatch,
@@ -14,10 +15,13 @@ import {
   filterSlider,
   freshDashboard,
   freshDashboardChart,
+  insertQueryVariable,
   MAX_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_WIDTH,
+  placeSavedComponent,
   queryWithDashboardFilters,
+  savedComponentFromFilter,
   withChart,
   withFilter,
   withFilterFields,
@@ -182,5 +186,72 @@ describe("dashboard layout", () => {
       id: "f1",
       value: "east",
     });
+  });
+
+  test("lists a dashboard's variable ids and writes one into a query", () => {
+    expect(
+      dashboardVariables(
+        [
+          { id: "a", name: "region", label: " Region ", query: "", value: "" },
+          { id: "b", name: "1bad", query: "", value: "" },
+          { id: "c", name: "kind", query: "", value: "" },
+          { id: "d", name: "city", query: "", value: "" },
+        ],
+        "c",
+      ),
+    ).toEqual([
+      { id: "a", label: "Region", token: "{{region}}" },
+      { id: "d", label: "city", token: "{{city}}" },
+    ]);
+    expect(dashboardVariables([])).toEqual([]);
+    expect(insertQueryVariable("", "{{region}}")).toBe("{{region}}");
+    expect(insertQueryVariable("   ", "{{region}}")).toBe("{{region}}");
+    expect(insertQueryVariable("SELECT ", "{{region}}")).toBe("SELECT {{region}}");
+    expect(insertQueryVariable("SELECT\n", "{{region}}")).toBe("SELECT\n{{region}}");
+    expect(insertQueryVariable("SELECT", "{{region}}")).toBe("SELECT {{region}}");
+  });
+
+  test("saves a component design and places a fresh copy", () => {
+    const full = savedComponentFromFilter(
+      {
+        id: "f1",
+        componentId: "lib",
+        name: " region ",
+        label: " Region ",
+        placeholder: "Find",
+        query: "SELECT 1",
+        connectionId: "c1",
+        value: "east",
+        control: "search",
+        min: 1,
+        max: 9,
+        step: 2,
+        script: "setValue(value);",
+      },
+      "lib",
+    );
+    expect(full.name).toBe("Region");
+    expect(full.filter).toEqual({
+      name: " region ",
+      label: " Region ",
+      placeholder: "Find",
+      query: "SELECT 1",
+      connectionId: "c1",
+      value: "east",
+      control: "search",
+      min: 1,
+      max: 9,
+      step: 2,
+      script: "setValue(value);",
+    });
+    const named = savedComponentFromFilter({ id: "f", name: "region", label: "  ", query: "", value: "" }, "c");
+    expect(named.name).toBe("region");
+    expect(named.filter).toEqual({ name: "region", label: "  ", query: "", value: "" });
+    const blank = savedComponentFromFilter({ id: "f", name: "  ", query: "", value: "" }, "lib2");
+    expect(blank.name).toBe("Component");
+    const placed = placeSavedComponent(board(), full, "new");
+    expect(placed.filters?.[0]).toMatchObject({ id: "new", name: "region", query: "SELECT 1", componentId: "lib" });
+    expect(placeSavedComponent(placed, full, "newer").filters?.[1]?.name).toBe("region2");
+    expect(placeSavedComponent(board(), blank, "b").filters?.[0]?.name).toBe("filter");
   });
 });

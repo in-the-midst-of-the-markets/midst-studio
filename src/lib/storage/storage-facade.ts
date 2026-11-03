@@ -11,6 +11,7 @@ import {
   SchemaSnapshot,
   SavedChartConfig,
   SavedDashboard,
+  SavedDashboardComponent,
 } from "../types";
 import type { DataDictionary } from "../data-dictionary";
 import { type AuditEvent } from "../audit";
@@ -361,6 +362,24 @@ export const storage = {
 
   getActiveDashboardId: (): string | null => {
     return readString("active_dashboard_id");
+  },
+
+  getSavedComponents: (): SavedDashboardComponent[] => {
+    const data = readJSON<SavedDashboardComponent[]>("saved_components");
+    if (!data) return [];
+    return reviveDates(data, "createdAt");
+  },
+
+  saveComponent: (component: SavedDashboardComponent) => {
+    const components = storage.getSavedComponents();
+    const index = components.findIndex((item) => item.id === component.id);
+    if (index > -1) {
+      components[index] = { ...component, createdAt: components[index]?.createdAt ?? new Date() };
+    } else {
+      components.push({ ...component, createdAt: new Date() });
+    }
+    writeJSON("saved_components", components);
+    dispatchChange("saved_components", components);
   },
 
   setActiveDashboardId: (id: string | null) => {

@@ -1259,7 +1259,24 @@ export interface DashboardFilter {
   step?: number;
   /** JavaScript for a custom filter. It may call `setValue` and draw into `#root`. */
   script?: string;
+  /** The saved component this filter was stored as. Absent until the user saves it. */
+  componentId?: string;
 }
+
+/**
+ * A filter design kept outside any one dashboard, so it can be placed again.
+ * `filter` has no id: placing the component gives the new copy its own.
+ */
+export interface SavedDashboardComponent {
+  id: string;
+  /** Words in the saved-component list. The filter's label, or its name. */
+  name: string;
+  createdAt: Date;
+  filter: DashboardFilterDesign;
+}
+
+/** The design of a dashboard filter, without the id of one placement. */
+export type DashboardFilterDesign = Omit<DashboardFilter, "id" | "componentId">;
 
 /** A named arrangement of saved charts. The user can keep more than one and switch. */
 export interface SavedDashboard {
