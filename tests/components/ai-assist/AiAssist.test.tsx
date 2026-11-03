@@ -1775,8 +1775,10 @@ describe("AiAssist page", () => {
     };
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
-    expect((view.getByLabelText("OpenRouter model") as HTMLSelectElement).value).toBe("z-ai/glm-5.3");
-    expect(view.getByRole("option", { name: "GLM 5.3" })).toBeTruthy();
+    expect((view.getByLabelText("OpenRouter model") as HTMLSelectElement).value).toBe(
+      "deepseek/deepseek-v4.1-flash-1017",
+    );
+    expect(view.getByRole("option", { name: "DeepSeek V4.1 Flash" })).toBeTruthy();
     view.unmount();
 
     handler = (url) => {
