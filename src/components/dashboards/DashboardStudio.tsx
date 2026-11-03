@@ -380,6 +380,10 @@ export function DashboardStudio() {
                       storage.saveChart(next);
                       setCharts(storage.getSavedCharts());
                     }}
+                    onTitle={(name) => {
+                      storage.saveChart({ ...chart, name });
+                      setCharts(storage.getSavedCharts());
+                    }}
                     onUnsave={() => {
                       storage.deleteChart(chart.id);
                       setCharts(storage.getSavedCharts());
@@ -469,6 +473,7 @@ function DashboardChart({
   onShape,
   onConnection,
   onUnsave,
+  onTitle,
 }: {
   readonly chart: SavedChartConfig;
   readonly width: number;
@@ -484,6 +489,7 @@ function DashboardChart({
   ) => void;
   readonly onConnection: (connectionId: string | undefined) => void;
   readonly onUnsave: () => void;
+  readonly onTitle: (name: string) => void;
 }) {
   const theme = chartTheme(useEffectiveTheme());
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
@@ -608,7 +614,12 @@ function DashboardChart({
         beside the actions, the actions wrap onto the line below it.
       */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4">
-        <h2 className="min-w-[min(100%,max-content)] flex-1 break-words text-sm font-semibold text-fg">{chart.name}</h2>
+        <input
+          aria-label="Chart title"
+          value={chart.name}
+          onChange={(event) => onTitle(event.target.value)}
+          className="min-w-[min(100%,max-content)] flex-1 break-words bg-transparent text-sm font-semibold text-fg outline-none"
+        />
         <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
           <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
             <FaceButton pressed={face === "chart"} label="Chart" icon={BarChart3} onClick={() => setFace("chart")} />
@@ -770,7 +781,7 @@ const ADD_ITEMS: readonly {
 }[] = [
   { id: "chart", label: "Add chart", detail: "Choose from your saved charts", icon: BarChart3 },
   { id: "make", label: "Make a chart", detail: "Create a new chart from your data", icon: ChartColumn },
-  { id: "text", label: "Text box", detail: "Add a title, note, or context", icon: Type },
+  { id: "text", label: "Text box", detail: "Add a note or context", icon: Type },
   { id: "filter", label: "Component", detail: "Dropdown, slider, search, or custom", icon: ListFilter },
   { id: "saved", label: "Saved component", detail: "Place a component you saved", icon: Bookmark },
 ];
@@ -931,8 +942,7 @@ function DashboardNoteCard({
 }) {
   return (
     <article className="w-full max-w-xl rounded-xl border border-hairline bg-raised p-4 shadow-sm">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-fg">Text</h2>
+      <div className="mb-2 flex justify-end">
         <button
           type="button"
           aria-label="Remove text"
@@ -945,7 +955,7 @@ function DashboardNoteCard({
       <textarea
         aria-label="Text box"
         value={note.text}
-        placeholder="Add a title, note, or context"
+        placeholder="Add a note or context"
         onChange={(event) => onText(event.target.value)}
         className="min-h-24 w-full resize-y rounded-lg border border-hairline-strong bg-canvas px-3 py-2 text-sm text-fg"
       />
@@ -1047,7 +1057,12 @@ function DashboardFilterCard({
       className="w-full max-w-xl rounded-xl border border-hairline bg-raised p-4 shadow-sm"
     >
       <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-sm font-semibold text-fg">{caption}</h2>
+        <input
+          aria-label="Component title"
+          value={caption}
+          onChange={(event) => onChange({ label: event.target.value })}
+          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-fg outline-none"
+        />
         {filter.control !== undefined && (
           <div className="ml-auto flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
             <FaceButton
@@ -1083,12 +1098,7 @@ function DashboardFilterCard({
         </button>
       </div>
       {filter.control === undefined || face === "design" ? (
-        <FilterDesign
-          filter={filter}
-          reference={reference}
-          onChange={onChange}
-          onPick={(control) => setFace(control === "custom" ? "design" : "filter")}
-        />
+        <FilterDesign filter={filter} reference={reference} onChange={onChange} />
       ) : null}
       {filter.control !== undefined && face === "choices" && (
         <FilterChoices
@@ -1117,12 +1127,10 @@ function FilterDesign({
   filter,
   reference,
   onChange,
-  onPick,
 }: {
   readonly filter: DashboardFilter;
   readonly reference: string | null;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
-  readonly onPick: (control: DashboardFilterControl) => void;
 }) {
   const slider = filterSlider(filter);
   return (
@@ -1134,10 +1142,7 @@ function FilterDesign({
             type="button"
             aria-pressed={filter.control === item.id}
             aria-label={item.label}
-            onClick={() => {
-              onChange(filterControlPatch(item.id, filter));
-              onPick(item.id);
-            }}
+            onClick={() => onChange(filterControlPatch(item.id, filter))}
             className={cn(
               "flex items-center gap-3 rounded-lg px-2 py-2 text-left",
               filter.control === item.id ? "bg-brand-tint/15" : "hover:bg-brand-tint/15",

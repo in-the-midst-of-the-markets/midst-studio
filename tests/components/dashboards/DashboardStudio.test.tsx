@@ -135,7 +135,8 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("menuitem", { name: "Add chart" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Revenue" }));
     const tile = await view.findByTestId("dashboard-chart-revenue");
-    const heading = view.getByRole("heading", { name: "Revenue" });
+    const heading = view.getByLabelText("Chart title") as HTMLInputElement;
+    expect(heading.value).toBe("Revenue");
     expect(heading.className).not.toContain("truncate");
     expect(heading.parentElement?.className).toContain("flex-wrap");
     expect(view.getByRole("button", { name: "Chart" }).textContent).toBe("");
@@ -356,6 +357,8 @@ describe("DashboardStudio", () => {
     expect(storage.getSavedCharts()[0]?.connectionId).toBeUndefined();
     fireEvent.change(view.getByLabelText("Connection for Chart"), { target: { value: "c1" } });
     expect(storage.getSavedCharts()[0]?.connectionId).toBe("c1");
+    fireEvent.change(view.getByLabelText("Chart title"), { target: { value: "Revenue" } });
+    expect(storage.getSavedCharts()[0]?.name).toBe("Revenue");
   });
 
   test("adds a text box", () => {
@@ -363,8 +366,12 @@ describe("DashboardStudio", () => {
     storage.setActiveDashboardId("sales");
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    expect(view.getByRole("menuitem", { name: "Text box" }).textContent).toContain("Add a note or context");
     fireEvent.click(view.getByRole("menuitem", { name: "Text box" }));
-    fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello" } });
+    expect(view.queryByRole("heading", { name: "Text" })).toBeNull();
+    const box = view.getByLabelText("Text box") as HTMLTextAreaElement;
+    expect(box.placeholder).toBe("Add a note or context");
+    fireEvent.change(box, { target: { value: "Hello" } });
     expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("Hello");
     fireEvent.click(view.getByRole("button", { name: "Remove text" }));
     expect(storage.getSavedDashboards()[0]?.notes).toEqual([]);
@@ -394,16 +401,19 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Add content" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Component" }));
     fireEvent.click(view.getByRole("button", { name: "Dropdown" }));
-    expect(view.getByLabelText("Filter selection")).toBeTruthy();
-    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    expect(view.queryByLabelText("Filter selection")).toBeNull();
+    expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe("filter");
+    fireEvent.change(view.getByLabelText("Component title"), { target: { value: "Area" } });
+    expect((view.getByLabelText("Filter label") as HTMLInputElement).value).toBe("Area");
     fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Region" } });
+    expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe("Region");
     fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
     expect(view.getByText("Reference this selection in a query as {{region}}.")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "1bad" } });
     expect(view.getByText("Use a name like region so a query can reference it.")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "" } });
     fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "" } });
-    expect(view.getByRole("heading", { name: "Filter" })).toBeTruthy();
+    expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe("Filter");
     fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
     fireEvent.click(view.getByRole("button", { name: "Choices" }));
     fireEvent.click(view.getByRole("button", { name: "Run choices" }));
@@ -422,16 +432,21 @@ describe("DashboardStudio", () => {
     await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'west'") && !sql.includes("{"))).toBe(true));
     fireEvent.click(view.getByRole("button", { name: "Design" }));
     fireEvent.click(view.getByRole("button", { name: "Slider" }));
-    expect(view.getByLabelText("Filter slider")).toBeTruthy();
-    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    expect(view.queryByLabelText("Filter slider")).toBeNull();
     fireEvent.change(view.getByLabelText("Filter minimum"), { target: { value: "1" } });
     fireEvent.change(view.getByLabelText("Filter maximum"), { target: { value: "9" } });
     fireEvent.change(view.getByLabelText("Filter step"), { target: { value: "2" } });
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    fireEvent.change(view.getByLabelText("Filter slider"), { target: { value: "5" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("5");
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
     fireEvent.click(view.getByRole("button", { name: "Search" }));
+    expect(view.queryByLabelText("Filter search")).toBeNull();
+    fireEvent.change(view.getByLabelText("Filter placeholder"), { target: { value: "Find" } });
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
     fireEvent.change(view.getByLabelText("Filter search"), { target: { value: "east" } });
     expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("east");
     fireEvent.click(view.getByRole("button", { name: "Design" }));
-    fireEvent.change(view.getByLabelText("Filter placeholder"), { target: { value: "Find" } });
     fireEvent.click(view.getByRole("button", { name: "Custom" }));
     const script = view.getByRole("textbox", { name: "JavaScript" }) as HTMLTextAreaElement;
     fireEvent.change(script, { target: { value: script.value } });
@@ -612,5 +627,13 @@ describe("DashboardStudio", () => {
       componentId: saved[0]?.id,
     });
     expect(placed?.filters?.[0]?.id).not.toBe("f1");
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.click(view.getByRole("button", { name: "Search" }));
+    expect(view.queryByLabelText("Filter search")).toBeNull();
+    expect(view.getByLabelText("Filter placeholder")).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Component title"), { target: { value: "Zone" } });
+    const edited = storage.getSavedDashboards().find((item) => item.id === placed?.id);
+    expect(edited?.filters?.[0]).toMatchObject({ label: "Zone", control: "search" });
+    expect(storage.getSavedComponents()[0]?.filter.label).toBe("Area");
   });
 });
