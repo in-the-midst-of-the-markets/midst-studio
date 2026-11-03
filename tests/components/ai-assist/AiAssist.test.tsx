@@ -274,6 +274,43 @@ describe("ChartWithEditor", () => {
     expect(view.getByTestId("assist-chart")).toBeTruthy();
   });
 
+  test("draws a graph from Neo4j nodes and relationships", () => {
+    const ada = { "~graph": "node", elementId: "4:ada", labels: ["Person"], properties: { name: "Ada" } };
+    const city = { "~graph": "node", elementId: "4:city", labels: ["City"], properties: { name: "London" } };
+    const knows = {
+      "~graph": "relationship",
+      elementId: "5:knows",
+      type: "KNOWS",
+      startNodeElementId: "4:ada",
+      endNodeElementId: "4:city",
+      properties: {},
+    };
+    render(
+      <ChartWithEditor
+        title="People"
+        sql="MATCH (a:Person)-[r:KNOWS]->(b) RETURN a, r, b"
+        databaseType="neo4j"
+        result={{
+          rows: [{ a: ada, r: knows, b: city }],
+          fields: ["a", "r", "b"],
+          rowCount: 1,
+          executionTime: 3,
+        }}
+        error={null}
+        chart={null}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    expect(document.body.textContent).toContain("Graph · Force");
+    const option = charts.at(-1)?.setOption.mock.calls.at(-1)?.[0] as {
+      series?: { type?: string; links?: { source: string; target: string }[] }[];
+    };
+    expect(option.series?.[0]?.type).toBe("graph");
+    expect(option.series?.[0]?.links).toEqual([{ source: "Ada", target: "London" }]);
+  });
+
   test("adds and removes a filter from the button beside Dimension", () => {
     const ran: string[] = [];
     const months = Array.from({ length: 25 }, (_, index) => `m${index}`);
@@ -1257,6 +1294,73 @@ describe("AiAssist page", () => {
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     expect(view.getByLabelText("Vercel AI Gateway model")).toBeTruthy();
+  });
+
+  test("runs Cypher on Neo4j and draws the graph it returns", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        {
+          id: "g1",
+          name: "Graph",
+          type: "neo4j",
+          host: "localhost",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    localStorage.setItem("libredb_active_connection_id", "g1");
+    const ada = { "~graph": "node", elementId: "4:ada", labels: ["Person"], properties: { name: "Ada" } };
+    const city = { "~graph": "node", elementId: "4:city", labels: ["City"], properties: { name: "London" } };
+    const knows = {
+      "~graph": "relationship",
+      elementId: "5:knows",
+      type: "KNOWS",
+      startNodeElementId: "4:ada",
+      endNodeElementId: "4:city",
+      properties: {},
+    };
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      const body = init?.body === undefined ? null : JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        if (body !== null && typeof body === "object" && "results" in body) {
+          return jsonResponse({ explanation: "Ada knows London.", queries: [] });
+        }
+        return jsonResponse({
+          explanation: "People in the graph.",
+          queries: [
+            {
+              title: "People",
+              connection: "Graph",
+              sql: "MATCH (a:Person)-[r:KNOWS]->(b:City) RETURN a, r, b",
+              chart: null,
+            },
+          ],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({
+          rows: [{ a: ada, r: knows, b: city }],
+          fields: ["a", "r", "b"],
+          rowCount: 1,
+          executionTime: 3,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view, "Who knows a city?");
+    expect(await view.findByRole("button", { name: "Change type, Graph, Force" })).toBeTruthy();
+    expect(await view.findByText("Ada knows London.")).toBeTruthy();
+    expect(
+      calls.some(
+        (call) =>
+          call.url.includes("/api/db/query") &&
+          (call.body as { sql?: string } | null)?.sql === "MATCH (a:Person)-[r:KNOWS]->(b:City) RETURN a, r, b",
+      ),
+    ).toBe(true);
   });
 
   test("writes a query, draws the chart, and reveals the editor behind it", async () => {

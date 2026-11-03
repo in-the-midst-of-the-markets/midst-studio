@@ -59,7 +59,7 @@ describe("readAssistResults", () => {
     expect(kept?.title).toBe("Revenue by month");
     expect(kept?.sql).toBe(select);
     expect(kept?.fields).toEqual(["month", "revenue", "flag", "extra", "e", "f", "g", "h"]);
-    expect(kept?.rows[0]).toEqual(["a b", "", "false", "", "", "", "", ""]);
+    expect(kept?.rows[0]).toEqual(["a b", '{"nested":true}', "false", "", "", "", "", ""]);
     expect(kept?.rows[1]?.[0]).toBe("Jan");
     expect(kept?.rows[1]?.[1]).toBe("10");
     expect(kept?.rows[1]?.[2]).toBe("true");
@@ -99,6 +99,68 @@ describe("readAssistResults", () => {
     expect(failed.ok).toBe(true);
     if (!failed.ok) return;
     expect(failed.value[0]).toMatchObject({ title: "Failed", error: "denied", rowCount: 1 });
+  });
+
+  test("reads a node, a relationship, a path, and a list", () => {
+    const ada = { "~graph": "node", elementId: "4:ada", labels: ["Person"], properties: { name: "Ada" } };
+    const bare = { "~graph": "node", elementId: "4:bare", labels: ["City"], properties: {} };
+    const unlabeled = { "~graph": "node", elementId: "4:x", labels: [], properties: { name: "X" } };
+    const knows = {
+      "~graph": "relationship",
+      elementId: "5:knows",
+      type: "KNOWS",
+      startNodeElementId: "4:ada",
+      endNodeElementId: "4:bare",
+      properties: { since: 2010, extra: { nested: true }, a: "1", b: "2", c: "3", d: "4" },
+    };
+    const plain = {
+      "~graph": "relationship",
+      elementId: "5:plain",
+      type: "LIVES_IN",
+      startNodeElementId: "4:ada",
+      endNodeElementId: "4:bare",
+      properties: {},
+    };
+    const path = {
+      "~graph": "path",
+      nodes: ["nope", ada],
+      relationships: ["nope", plain],
+    };
+    const linked = { "~graph": "path", nodes: [ada, bare], relationships: [plain] };
+    const emptyPath = { "~graph": "path", nodes: [], relationships: [] };
+    const read = readAssistResults([
+      {
+        sql: "MATCH (n) RETURN n",
+        fields: ["n", "r", "p", "linked", "tags", "odd", "empty"],
+        rows: [
+          {
+            n: ada,
+            r: knows,
+            p: path,
+            linked,
+            tags: ["east", "west"],
+            odd: { n: 1n },
+            empty: emptyPath,
+          },
+        ],
+      },
+      {
+        sql: "MATCH (n) RETURN n",
+        fields: ["bare", "open"],
+        rows: [{ bare, open: unlabeled }],
+      },
+    ]);
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.value[0]?.rows[0]?.[0]).toBe("(:Person Ada)");
+    expect(read.value[0]?.rows[0]?.[1]).toBe("[:KNOWS since: 2010, a: 1, b: 2]");
+    expect(read.value[0]?.rows[0]?.[2]).toBe("(:Person Ada)-LIVES_IN->");
+    expect(read.value[0]?.rows[0]?.[3]).toBe("(:Person Ada)-LIVES_IN->(:City)");
+    expect(read.value[0]?.rows[0]?.[4]).toBe("east, west");
+    expect(read.value[0]?.rows[0]?.[5]).toBe("");
+    expect(read.value[0]?.rows[0]?.[6]).toBe("path");
+    expect(read.value[1]?.rows[0]?.[0]).toBe("(:City)");
+    expect(read.value[1]?.rows[0]?.[1]).toBe("(:X)");
   });
 
   test("uses the shown rows when the count is not an integer in range", () => {
@@ -262,7 +324,18 @@ describe("buildAssistReadingMessages", () => {
       resultsBlock: "r",
     });
     expect(graph[0]?.content).toContain("one read-only Cypher statement");
+    expect(graph[0]?.content).toContain("(:Label name)");
+    expect(graph[0]?.content).toContain("Add a query only for a number the rows do not already show.");
     expect(graph[0]?.content).not.toContain("one read-only SELECT");
+    const graphFinal = buildAssistReadingMessages({
+      pass: "final",
+      databaseType: "neo4j",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+    });
+    expect(graphFinal[0]?.content).toContain("Cite those names.");
     expect(final[0]?.content).toContain("Do not plan another query.");
     expect(final[1]?.content).toContain("Results:\nr");
   });
