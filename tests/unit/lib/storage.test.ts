@@ -381,6 +381,11 @@ describe("storage: broken JSON", () => {
     localStorage.setItem("libredb_saved_dashboards", "corrupt");
     expect(storage.getSavedDashboards()).toEqual([]);
   });
+
+  test("getSavedComponents returns empty array on invalid JSON", () => {
+    localStorage.setItem("libredb_saved_components", "corrupt");
+    expect(storage.getSavedComponents()).toEqual([]);
+  });
 });
 
 describe("storage: dashboards", () => {
@@ -441,5 +446,31 @@ describe("storage: dashboards", () => {
     window.removeEventListener("libredb-storage-change", handler);
     expect(storage.getSavedDashboards()[0]?.charts.map((frame) => frame.chartId)).toEqual(["b"]);
     expect(collections).toEqual(["saved_charts"]);
+  });
+});
+
+describe("storage: components", () => {
+  test("saves a component and replaces the same one", () => {
+    expect(storage.getSavedComponents()).toEqual([]);
+    storage.saveComponent({
+      id: "lib",
+      name: "Region",
+      createdAt: new Date("2026-01-01"),
+      filter: { name: "region", query: "SELECT 1", value: "east" },
+    });
+    const created = storage.getSavedComponents()[0];
+    expect(created?.createdAt).toBeInstanceOf(Date);
+    expect(created?.filter.query).toBe("SELECT 1");
+    storage.saveComponent({
+      id: "lib",
+      name: "Area",
+      createdAt: new Date("2026-02-01"),
+      filter: { name: "region", query: "SELECT 2", value: "west" },
+    });
+    const saved = storage.getSavedComponents();
+    expect(saved).toHaveLength(1);
+    expect(saved[0]?.name).toBe("Area");
+    expect(saved[0]?.createdAt).toEqual(created?.createdAt);
+    expect(saved[0]?.filter.query).toBe("SELECT 2");
   });
 });

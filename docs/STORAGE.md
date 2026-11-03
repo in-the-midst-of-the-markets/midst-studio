@@ -815,7 +815,7 @@ CREATE INDEX IF NOT EXISTS passkey_spent_challenges_expiry ON passkey_spent_chal
 | Column | Type | Description |
 |--------|------|-------------|
 | `user_id` | TEXT | User's email from JWT token (e.g., `admin@libredb.org`), or under governance `sub:` followed by the identity provider's subject ([Governance Mode](#governance-mode)) |
-| `collection` | TEXT | Data category: `connections`, `history`, `saved_queries`, `schema_snapshots`, `saved_charts`, `active_connection_id`, `audit_log`, `masking_config`, `threshold_config`, `dismissed_seeds`, `favorite_connections`, `connection_order`, `connection_groups`, `data_dictionaries` |
+| `collection` | TEXT | Data category: `connections`, `history`, `saved_queries`, `schema_snapshots`, `saved_charts`, `saved_dashboards`, `saved_components`, `active_connection_id`, `active_dashboard_id`, `audit_log`, `masking_config`, `threshold_config`, `dismissed_seeds`, `favorite_connections`, `connection_order`, `connection_groups`, `data_dictionaries` |
 | `data` | TEXT | JSON-serialized collection data |
 | `updated_at` | TEXT / TIMESTAMPTZ | Last modification timestamp |
 
@@ -899,7 +899,7 @@ This part describes the internals of the storage abstraction layer: design goals
 
 ### 3.1 Collections
 
-All application state is organized into **14 collections**, each stored as a JSON blob:
+All application state is organized into **17 collections**, each stored as a JSON blob:
 
 | Collection | Type | Description | Max Items |
 |-----------|------|-------------|-----------|
@@ -908,7 +908,10 @@ All application state is organized into **14 collections**, each stored as a JSO
 | `saved_queries` | `SavedQuery[]` | User-saved SQL/JSON queries | — |
 | `schema_snapshots` | `SchemaSnapshot[]` | Schema diff snapshots | 50 |
 | `saved_charts` | `SavedChartConfig[]` | Saved chart configurations | — |
+| `saved_dashboards` | `SavedDashboard[]` | Dashboards compiled from saved charts, notes, and filters | — |
+| `saved_components` | `SavedDashboardComponent[]` | Filter designs saved so they can be placed on another dashboard | — |
 | `active_connection_id` | `string \| null` | Currently active connection | — |
+| `active_dashboard_id` | `string \| null` | The dashboard the Create page opens | — |
 | `audit_log` | `AuditEvent[]` | Audit trail events | 1000 |
 | `masking_config` | `MaskingConfig` | Data masking rules and RBAC | — |
 | `threshold_config` | `ThresholdConfig[]` | Monitoring alert thresholds | — |
@@ -989,7 +992,10 @@ history           → libredb_history
 saved_queries     → libredb_saved_queries
 schema_snapshots  → libredb_schema_snapshots
 saved_charts      → libredb_saved_charts
+saved_dashboards  → libredb_saved_dashboards
+saved_components  → libredb_saved_components
 active_connection_id → libredb_active_connection_id
+active_dashboard_id → libredb_active_dashboard_id
 audit_log         → libredb_audit_log
 masking_config    → libredb_masking_config
 threshold_config  → libredb_threshold_config
@@ -1366,7 +1372,7 @@ When a user first enables server mode (or a new user logs in for the first time)
 2. Reads the signed-in username (GET /api/auth/me), clears a browser copy that belongs to another account, and sets 'libredb_workspace_owner' to the username
 3. Checks localStorage('libredb_server_migrated') flag
 4. If not migrated:
-   a. Reads whichever of the 14 collections exist in localStorage (a fresh browser with none simply sets the flag and skips)
+   a. Reads whichever of the 17 collections exist in localStorage (a fresh browser with none simply sets the flag and skips)
    b. POST /api/storage/migrate with the collected payload
    c. Server calls provider.mergeData() — upserts each collection as a whole blob in one transaction
    d. Sets 'libredb_server_migrated' flag in localStorage

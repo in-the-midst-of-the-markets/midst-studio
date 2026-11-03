@@ -2,9 +2,11 @@ import { writeQueryFilter } from "@/lib/charts/query-filters";
 import type {
   DashboardFilter,
   DashboardFilterControl,
+  DashboardFilterDesign,
   DashboardNote,
   SavedChartConfig,
   SavedDashboard,
+  SavedDashboardComponent,
 } from "@/lib/types";
 
 /** The script a new custom filter opens with. `value` and `choices` are in scope, and `setValue` publishes the selection. */
@@ -201,6 +203,66 @@ export function withFilterFields(
 export function filterReference(name: string): string | null {
   const trimmed = name.trim();
   return FILTER_NAME.test(trimmed) ? `{{${trimmed}}}` : null;
+}
+
+/** One dashboard variable a query can insert. `token` is the id the filter gives the query. */
+export interface DashboardVariable {
+  id: string;
+  label: string;
+  token: string;
+}
+
+/** Variables on this dashboard whose names are query ids. `exceptId` is the filter being edited. */
+export function dashboardVariables(filters: readonly DashboardFilter[], exceptId?: string): DashboardVariable[] {
+  const variables: DashboardVariable[] = [];
+  for (const filter of filters) {
+    if (filter.id === exceptId) continue;
+    const token = filterReference(filter.name);
+    if (token === null) continue;
+    variables.push({ id: filter.id, label: filter.label?.trim() || filter.name, token });
+  }
+  return variables;
+}
+
+/** The query with `token` written at the end, or the token alone when the query is blank. */
+export function insertQueryVariable(sql: string, token: string): string {
+  if (sql.trim() === "") return token;
+  return `${sql}${/\s$/.test(sql) ? "" : " "}${token}`;
+}
+
+/** The library record for a filter. The placement id and the library link stay off the design. */
+export function savedComponentFromFilter(filter: DashboardFilter, id: string): SavedDashboardComponent {
+  const design: DashboardFilterDesign = { name: filter.name, query: filter.query, value: filter.value };
+  if (filter.label !== undefined) design.label = filter.label;
+  if (filter.placeholder !== undefined) design.placeholder = filter.placeholder;
+  if (filter.connectionId !== undefined) design.connectionId = filter.connectionId;
+  if (filter.control !== undefined) design.control = filter.control;
+  if (filter.min !== undefined) design.min = filter.min;
+  if (filter.max !== undefined) design.max = filter.max;
+  if (filter.step !== undefined) design.step = filter.step;
+  if (filter.script !== undefined) design.script = filter.script;
+  return {
+    id,
+    name: filter.label?.trim() || filter.name.trim() || "Component",
+    createdAt: new Date(),
+    filter: design,
+  };
+}
+
+/** Places a saved component on a dashboard. A name already used there gets the next free one. */
+export function placeSavedComponent(
+  dashboard: SavedDashboard,
+  component: SavedDashboardComponent,
+  id = crypto.randomUUID(),
+): SavedDashboard {
+  const filters = dashboard.filters ?? [];
+  const filter: DashboardFilter = {
+    ...component.filter,
+    id,
+    name: nextLabel(filters, component.filter.name.trim() || "filter", ""),
+    componentId: component.id,
+  };
+  return { ...dashboard, updatedAt: new Date(), filters: [...filters, filter] };
 }
 
 function choiceText(value: unknown): string | null {

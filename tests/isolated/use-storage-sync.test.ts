@@ -13,6 +13,7 @@ const mockStorage = {
   getSchemaSnapshots: mock(() => []),
   getSavedCharts: mock(() => []),
   getSavedDashboards: mock(() => []),
+  getSavedComponents: mock(() => []),
   getActiveConnectionId: mock((): string | null => null),
   getActiveDashboardId: mock((): string | null => null),
   getAuditLog: mock(() => []),
@@ -627,6 +628,36 @@ describe("useStorageSync", () => {
         { timeout: 2000 },
       );
       expect(mockStorage.getDataDictionaries).toHaveBeenCalled();
+    });
+
+    test("pushes saved_components to the server on a storage-change event", async () => {
+      localStorage.setItem("libredb_server_migrated", "true");
+      const fetchMock = mockGlobalFetch({
+        "/api/storage/config": { ok: true, status: 200, json: { provider: "postgres", serverMode: true } },
+        ...SIGNED_IN,
+        "/api/storage/migrate": { ok: true, status: 200, json: { ok: true, migrated: [] } },
+        "/api/storage": { ok: true, status: 200, json: {} },
+        "/api/storage/saved_components": { ok: true, status: 200, json: { ok: true } },
+      });
+
+      const { result } = renderHook(() => useStorageSync());
+
+      await waitFor(() => {
+        expect(result.current.isServerMode).toBe(true);
+      });
+
+      act(() => {
+        window.dispatchEvent(
+          new CustomEvent("libredb-storage-change", {
+            detail: { collection: "saved_components", data: [] },
+          }),
+        );
+      });
+
+      await waitFor(() => {
+        expect(mockStorage.getSavedComponents).toHaveBeenCalled();
+      });
+      expect(calledPaths(fetchMock)).toContain("/api/storage/saved_components");
     });
 
     /**

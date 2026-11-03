@@ -493,4 +493,91 @@ describe("DashboardStudio", () => {
     view.unmount();
     gate.release?.();
   });
+
+  test("inserts a dashboard variable id into the chart query", async () => {
+    storage.saveConnection(connection);
+    storage.saveChart(chart());
+    storage.saveDashboard({
+      ...board("sales", ["revenue"]),
+      filters: [
+        { id: "bad", name: "1bad", query: "", value: "", control: "select" },
+        { id: "region", name: "region", label: "Region", query: "", value: "west", control: "select" },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    const posted: string[] = [];
+    mockGlobalFetch({
+      "/api/db/query": async (req) => {
+        const body = (await req.json()) as { sql?: string };
+        posted.push(body.sql ?? "");
+        return { json: rows };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    const variable = view.getByLabelText("Insert variable") as HTMLSelectElement;
+    expect(Array.from(variable.options).map((option) => option.value)).toEqual(["", "{{region}}"]);
+    expect(variable.options[0]?.textContent).toBe("Insert an id");
+    fireEvent.change(variable, { target: { value: "" } });
+    fireEvent.change(variable, { target: { value: "{{region}}" } });
+    expect((view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement).value).toBe(
+      "SELECT region, total FROM sales {{region}}",
+    );
+    fireEvent.click(view.getByRole("button", { name: "Run Revenue" }));
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toContain("{{region}}"),
+    );
+    await waitFor(() => expect(posted.some((sql) => sql.includes("'west'") && !sql.includes("{"))).toBe(true));
+  });
+
+  test("saves a component and places it on another dashboard", () => {
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [
+        {
+          id: "f1",
+          name: "region",
+          label: "Region",
+          query: "SELECT region FROM sales",
+          value: "east",
+          control: "select",
+          connectionId: "c1",
+        },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "New dashboard" }));
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved component" }));
+    expect(view.getByText("Save a component from a dashboard, then add it here.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Back" }));
+    fireEvent.change(view.getByLabelText("Dashboard"), { target: { value: "sales" } });
+    fireEvent.click(view.getByRole("button", { name: "Save Region component" }));
+    const saved = storage.getSavedComponents();
+    expect(saved).toHaveLength(1);
+    expect(saved[0]?.filter).toMatchObject({ name: "region", query: "SELECT region FROM sales", value: "east" });
+    expect(storage.getSavedDashboards().find((item) => item.id === "sales")?.filters?.[0]?.componentId).toBe(
+      saved[0]?.id,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Area" } });
+    fireEvent.click(view.getByRole("button", { name: "Save Area component" }));
+    expect(storage.getSavedComponents()).toHaveLength(1);
+    expect(storage.getSavedComponents()[0]?.name).toBe("Area");
+    fireEvent.click(view.getByRole("button", { name: "New dashboard" }));
+    fireEvent.click(view.getByRole("button", { name: "Add content" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved component" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Area" }));
+    const placed = storage.getSavedDashboards().find((item) => item.id !== "sales" && (item.filters?.length ?? 0) > 0);
+    expect(placed?.filters?.[0]).toMatchObject({
+      name: "region",
+      label: "Area",
+      query: "SELECT region FROM sales",
+      value: "east",
+      control: "select",
+      componentId: saved[0]?.id,
+    });
+    expect(placed?.filters?.[0]?.id).not.toBe("f1");
+  });
 });

@@ -5,6 +5,7 @@ import type {
   SchemaSnapshot,
   SavedChartConfig,
   SavedDashboard,
+  SavedDashboardComponent,
 } from "../types";
 import type { DataDictionary } from "../data-dictionary";
 import type { AuditEvent } from "../audit";
@@ -23,6 +24,8 @@ export interface StorageData {
   saved_charts: SavedChartConfig[];
   /** Dashboards the user compiled from saved charts. */
   saved_dashboards: SavedDashboard[];
+  /** Filter designs saved so they can be placed on another dashboard. */
+  saved_components: SavedDashboardComponent[];
   active_connection_id: string | null;
   /** The dashboard the Create page opens. Null when the user has not chosen one. */
   active_dashboard_id: string | null;
@@ -85,6 +88,7 @@ export const STORAGE_COLLECTIONS: StorageCollection[] = [
   "schema_snapshots",
   "saved_charts",
   "saved_dashboards",
+  "saved_components",
   "active_connection_id",
   "active_dashboard_id",
   "audit_log",

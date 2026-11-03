@@ -415,6 +415,8 @@ function getCollectionData(collection: string): unknown {
       return storage.getSavedCharts();
     case "saved_dashboards":
       return storage.getSavedDashboards();
+    case "saved_components":
+      return storage.getSavedComponents();
     case "active_connection_id":
       return storage.getActiveConnectionId();
     case "active_dashboard_id":

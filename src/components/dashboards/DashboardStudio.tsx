@@ -34,6 +34,7 @@ import { QueryEditor } from "@/components/QueryEditor";
 import { appFetch } from "@/lib/config/base-path";
 import {
   dashboardName,
+  dashboardVariables,
   dragResize,
   CUSTOM_FILTER_SCRIPT,
   filterChoices,
@@ -44,8 +45,11 @@ import {
   filterSlider,
   freshDashboard,
   freshDashboardChart,
+  insertQueryVariable,
   MIN_DASHBOARD_CHART_WIDTH,
+  placeSavedComponent,
   queryWithDashboardFilters,
+  savedComponentFromFilter,
   withChart,
   withFilter,
   withFilterFields,
@@ -82,6 +86,7 @@ import type {
   DatabaseType,
   SavedChartConfig,
   SavedDashboard,
+  SavedDashboardComponent,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +119,8 @@ export function DashboardStudio() {
   const [activeId, setActiveId] = useState<string | null>(() => storage.getActiveDashboardId());
   const [charts, setCharts] = useState<SavedChartConfig[]>(() => storage.getSavedCharts());
   const [connections] = useState<DatabaseConnection[]>(() => storage.getConnections());
-  const [menu, setMenu] = useState<null | "root" | "charts">(null);
+  const [menu, setMenu] = useState<null | "root" | "charts" | "components">(null);
+  const [components, setComponents] = useState<SavedDashboardComponent[]>(() => storage.getSavedComponents());
   const active = dashboards.find((item) => item.id === activeId) ?? null;
 
   useEffect(() => {
@@ -227,7 +233,8 @@ export function DashboardStudio() {
                 Make it your own
               </div>
               <p className="mt-1 text-xs leading-5 text-fg-muted">
-                Add a saved chart, start one from scratch, or add a filter other queries can use.
+                Add a saved chart, start one from scratch, or add a filter other queries can use. Save a component to
+                place it on another dashboard.
               </p>
             </div>
             <div className="mt-5 border-t border-hairline pt-4">
@@ -302,6 +309,12 @@ export function DashboardStudio() {
                     remember(withFilter(active, connections[0]?.id));
                     setMenu(null);
                   }}
+                  components={components}
+                  onComponents={() => setMenu("components")}
+                  onAddComponent={(component) => {
+                    remember(placeSavedComponent(active, component));
+                    setMenu(null);
+                  }}
                 />
               )}
             </div>
@@ -313,6 +326,14 @@ export function DashboardStudio() {
                   connections={connections}
                   onChange={(patch) => remember(withFilterFields(active, filter.id, patch))}
                   onRemove={() => remember(withoutFilter(active, filter.id))}
+                  onSave={() => {
+                    const libraryId = filter.componentId ?? crypto.randomUUID();
+                    storage.saveComponent(savedComponentFromFilter(filter, libraryId));
+                    setComponents(storage.getSavedComponents());
+                    if (filter.componentId !== libraryId) {
+                      remember(withFilterFields(active, filter.id, { componentId: libraryId }));
+                    }
+                  }}
                 />
               ))}
               {(active.notes ?? []).map((note) => (
@@ -371,6 +392,38 @@ export function DashboardStudio() {
         )}
       </div>
     </div>
+  );
+}
+
+function VariableInsert({
+  filters,
+  onInsert,
+}: {
+  readonly filters: readonly DashboardFilter[];
+  readonly onInsert: (token: string) => void;
+}) {
+  const variables = dashboardVariables(filters);
+  return (
+    <label className="block px-4 pt-3 text-xs text-fg-muted">
+      Variable
+      <select
+        aria-label="Insert variable"
+        value=""
+        disabled={variables.length === 0}
+        onChange={(event) => {
+          if (event.target.value === "") return;
+          onInsert(event.target.value);
+        }}
+        className={`mt-1.5 ${fieldClass}`}
+      >
+        <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an id"}</option>
+        {variables.map((variable) => (
+          <option key={variable.id} value={variable.token}>
+            {variable.label} {variable.token}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -655,6 +708,10 @@ function DashboardChart({
                 ))}
               </select>
             </label>
+            <VariableInsert
+              filters={filters}
+              onInsert={(token) => setSqlDraft((current) => insertQueryVariable(current, token))}
+            />
             <div className="min-h-0 flex-1">
               <QueryEditor
                 value={sqlDraft}
@@ -705,7 +762,7 @@ function DashboardChart({
 }
 
 const ADD_ITEMS: readonly {
-  id: "chart" | "make" | "text" | "filter";
+  id: "chart" | "make" | "text" | "filter" | "saved";
   label: string;
   detail: string;
   icon: LucideIcon;
@@ -714,23 +771,30 @@ const ADD_ITEMS: readonly {
   { id: "make", label: "Make a chart", detail: "Create a new chart from your data", icon: ChartColumn },
   { id: "text", label: "Text box", detail: "Add a title, note, or context", icon: Type },
   { id: "filter", label: "Component", detail: "Dropdown, slider, search, or custom", icon: ListFilter },
+  { id: "saved", label: "Saved component", detail: "Place a component you saved", icon: Bookmark },
 ];
 
 function AddContentMenu({
   menu,
   charts,
+  components,
   onCharts,
+  onComponents,
   onBack,
   onAddChart,
+  onAddComponent,
   onMakeChart,
   onText,
   onFilter,
 }: {
-  readonly menu: "root" | "charts";
+  readonly menu: "root" | "charts" | "components";
   readonly charts: readonly SavedChartConfig[];
+  readonly components: readonly SavedDashboardComponent[];
   readonly onCharts: () => void;
+  readonly onComponents: () => void;
   readonly onBack: () => void;
   readonly onAddChart: (chartId: string) => void;
+  readonly onAddComponent: (component: SavedDashboardComponent) => void;
   readonly onMakeChart: () => void;
   readonly onText: () => void;
   readonly onFilter: () => void;
@@ -739,6 +803,7 @@ function AddContentMenu({
     if (id === "chart") onCharts();
     else if (id === "make") onMakeChart();
     else if (id === "text") onText();
+    else if (id === "saved") onComponents();
     else onFilter();
   };
   return (
@@ -772,20 +837,36 @@ function AddContentMenu({
           <button type="button" onClick={onBack} className="px-2 py-1.5 text-left text-xs font-medium text-brand">
             Back
           </button>
-          {charts.length === 0 ? (
-            <p className="px-2 py-2 text-xs text-fg-muted">
-              Save a chart from the editor or AI Assist, then add it here.
-            </p>
+          {menu === "charts" ? (
+            charts.length === 0 ? (
+              <p className="px-2 py-2 text-xs text-fg-muted">
+                Save a chart from the editor or AI Assist, then add it here.
+              </p>
+            ) : (
+              charts.map((chart) => (
+                <button
+                  key={chart.id}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => onAddChart(chart.id)}
+                  className="rounded-lg px-2 py-2 text-left text-sm text-fg hover:bg-brand-tint/15"
+                >
+                  {chart.name}
+                </button>
+              ))
+            )
+          ) : components.length === 0 ? (
+            <p className="px-2 py-2 text-xs text-fg-muted">Save a component from a dashboard, then add it here.</p>
           ) : (
-            charts.map((chart) => (
+            components.map((component) => (
               <button
-                key={chart.id}
+                key={component.id}
                 type="button"
                 role="menuitem"
-                onClick={() => onAddChart(chart.id)}
+                onClick={() => onAddComponent(component)}
                 className="rounded-lg px-2 py-2 text-left text-sm text-fg hover:bg-brand-tint/15"
               >
-                {chart.name}
+                {component.name}
               </button>
             ))
           )}
@@ -896,11 +977,13 @@ function DashboardFilterCard({
   connections,
   onChange,
   onRemove,
+  onSave,
 }: {
   readonly filter: DashboardFilter;
   readonly connections: readonly DatabaseConnection[];
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
   readonly onRemove: () => void;
+  readonly onSave: () => void;
 }) {
   const [face, setFace] = useState<"filter" | "choices" | "design">(filter.control === undefined ? "design" : "filter");
   const [draft, setDraft] = useState(filter.query);
@@ -978,6 +1061,14 @@ function DashboardFilterCard({
             <FaceButton pressed={face === "design"} label="Design" icon={Braces} onClick={() => setFace("design")} />
           </div>
         )}
+        <button
+          type="button"
+          aria-label={`Save ${caption} component`}
+          onClick={onSave}
+          className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
+        >
+          <Bookmark className="size-3.5" aria-hidden="true" />
+        </button>
         <button
           type="button"
           aria-label={`Remove ${filter.name} filter`}
