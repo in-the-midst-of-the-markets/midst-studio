@@ -63,8 +63,9 @@ describe("completeChat", () => {
     expect(seen?.body).toMatchObject({
       model: "openai/gpt-4o",
       stream: false,
-      reasoning: { effort: "high" },
+      reasoning: { effort: "max" },
     });
+    expect(seen?.body).not.toHaveProperty("max_tokens");
   });
 
   test("posts to Fireworks and joins text parts", async () => {
