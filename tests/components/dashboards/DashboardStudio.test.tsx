@@ -409,7 +409,9 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Run choices" }));
     expect(view.getByRole("alert").textContent).toBe("Add a connection and a query to fill the choices.");
     fireEvent.change(view.getByLabelText("Filter connection"), { target: { value: "" } });
-    fireEvent.change(view.getByLabelText("Filter query"), { target: { value: "SELECT region FROM sales" } });
+    fireEvent.change(view.getByRole("textbox", { name: "Query SQL" }), {
+      target: { value: "SELECT region FROM sales" },
+    });
     fireEvent.change(view.getByLabelText("Filter connection"), { target: { value: "c1" } });
     fireEvent.click(view.getByRole("button", { name: "Run choices" }));
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
@@ -447,6 +449,37 @@ describe("DashboardStudio", () => {
     await waitFor(() => expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("north"));
     fireEvent.click(view.getByRole("button", { name: "Remove region filter" }));
     expect(storage.getSavedDashboards()[0]?.filters).toEqual([]);
+  });
+
+  test("hardcoded values replace the SQL editor", () => {
+    storage.saveConnection(connection);
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [
+        {
+          id: "f1",
+          name: "region",
+          query: "SELECT region FROM sales",
+          value: "",
+          control: "select",
+          connectionId: "c1",
+        },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    mockGlobalFetch({ "/api/db/query": { json: rows } });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Choices" }));
+    expect(view.getByRole("textbox", { name: "Query SQL" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Hardcoded values" }));
+    expect(view.queryByRole("textbox", { name: "Query SQL" })).toBeNull();
+    fireEvent.change(view.getByLabelText("Value list"), { target: { value: "east\nwest\neast\n  \n" } });
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    const select = view.getByLabelText("Filter selection") as HTMLSelectElement;
+    expect(Array.from(select.options).map((option) => option.value)).toEqual(["", "east", "west"]);
+    fireEvent.click(view.getByRole("button", { name: "Choices" }));
+    fireEvent.click(view.getByRole("button", { name: "From a query" }));
+    expect(view.getByRole("textbox", { name: "Query SQL" })).toBeTruthy();
   });
 
   test("a filter query reports an empty list, a failure, and a late answer", async () => {
