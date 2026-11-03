@@ -446,6 +446,7 @@ describe("DashboardStudio", () => {
     await waitFor(() =>
       expect((view.getByLabelText("Filter selection") as HTMLSelectElement).options.length).toBeGreaterThan(1),
     );
+    expect(view.getByLabelText("Filter selection").closest("label")).toBeNull();
     fireEvent.change(view.getByLabelText("Filter selection"), { target: { value: "west" } });
     await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'west'") && !sql.includes("{"))).toBe(true));
     fireEvent.click(view.getByRole("button", { name: "Design" }));
@@ -455,6 +456,7 @@ describe("DashboardStudio", () => {
     fireEvent.change(view.getByLabelText("Filter maximum"), { target: { value: "9" } });
     fireEvent.change(view.getByLabelText("Filter step"), { target: { value: "2" } });
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    expect(view.getByLabelText("Filter slider").closest("label")).toBeNull();
     fireEvent.change(view.getByLabelText("Filter slider"), { target: { value: "5" } });
     expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("5");
     fireEvent.click(view.getByRole("button", { name: "Design" }));
@@ -462,6 +464,7 @@ describe("DashboardStudio", () => {
     expect(view.queryByLabelText("Filter search")).toBeNull();
     fireEvent.change(view.getByLabelText("Filter placeholder"), { target: { value: "Find" } });
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    expect(view.getByLabelText("Filter search").closest("label")).toBeNull();
     fireEvent.change(view.getByLabelText("Filter search"), { target: { value: "east" } });
     expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("east");
     fireEvent.click(view.getByRole("button", { name: "Design" }));

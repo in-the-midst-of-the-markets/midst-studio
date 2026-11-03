@@ -1128,7 +1128,7 @@ function DashboardFilterCard({
         />
       )}
       {filter.control !== undefined && face === "filter" && (
-        <FilterSurface filter={filter} choices={listed ?? choices} caption={caption} onChange={onChange} />
+        <FilterSurface filter={filter} choices={listed ?? choices} onChange={onChange} />
       )}
       {shownStatus !== null && face !== "choices" && (
         <p role="alert" className="mt-2 text-xs text-danger">
@@ -1361,45 +1361,37 @@ function FilterChoices({
 function FilterSurface({
   filter,
   choices,
-  caption,
   onChange,
 }: {
   readonly filter: DashboardFilter;
   readonly choices: readonly string[];
-  readonly caption: string;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
 }) {
   if (filter.control === "slider") {
     const slider = filterSlider(filter);
     return (
-      <label className="flex items-center gap-3 text-sm text-fg">
-        {caption}
-        <input
-          type="range"
-          aria-label="Filter slider"
-          min={slider.min}
-          max={slider.max}
-          step={slider.step}
-          value={slider.value}
-          onChange={(event) => onChange({ value: event.target.value })}
-          className="w-full"
-        />
-      </label>
+      <input
+        type="range"
+        aria-label="Filter slider"
+        min={slider.min}
+        max={slider.max}
+        step={slider.step}
+        value={slider.value}
+        onChange={(event) => onChange({ value: event.target.value })}
+        className="w-full"
+      />
     );
   }
   if (filter.control === "search") {
     return (
-      <label className="block text-sm text-fg">
-        {caption}
-        <input
-          type="search"
-          aria-label="Filter search"
-          value={filter.value}
-          placeholder={filter.placeholder?.trim() || "Search"}
-          onChange={(event) => onChange({ value: event.target.value })}
-          className={`mt-1.5 ${fieldClass}`}
-        />
-      </label>
+      <input
+        type="search"
+        aria-label="Filter search"
+        value={filter.value}
+        placeholder={filter.placeholder?.trim() || "Search"}
+        onChange={(event) => onChange({ value: event.target.value })}
+        className={fieldClass}
+      />
     );
   }
   if (filter.control === "custom") {
@@ -1414,21 +1406,18 @@ function FilterSurface({
   }
   const options = filter.value !== "" && !choices.includes(filter.value) ? [filter.value, ...choices] : choices;
   return (
-    <label className="block text-sm text-fg">
-      {caption}
-      <select
-        aria-label="Filter selection"
-        value={filter.value}
-        onChange={(event) => onChange({ value: event.target.value })}
-        className={`mt-1.5 ${fieldClass}`}
-      >
-        <option value="">Choose</option>
-        {options.map((choice) => (
-          <option key={choice} value={choice}>
-            {choice}
-          </option>
-        ))}
-      </select>
-    </label>
+    <select
+      aria-label="Filter selection"
+      value={filter.value}
+      onChange={(event) => onChange({ value: event.target.value })}
+      className={fieldClass}
+    >
+      <option value="">Choose</option>
+      {options.map((choice) => (
+        <option key={choice} value={choice}>
+          {choice}
+        </option>
+      ))}
+    </select>
   );
 }
