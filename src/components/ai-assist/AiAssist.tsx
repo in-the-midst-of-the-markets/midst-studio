@@ -5,6 +5,7 @@ import { ChevronRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import { ChartWithEditor } from "@/components/ai-assist/ChartWithEditor";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
+import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
 import {
@@ -997,9 +998,9 @@ export function AiAssist() {
                     {turn.text !== "" && (
                       <>
                         <p className="text-xs font-medium text-fg-muted">AI</p>
-                        <p className="mt-1 rounded-xl bg-fill-subtle px-3 py-2 text-sm leading-6 text-fg-secondary">
-                          {turn.text}
-                        </p>
+                        <div className="mt-1 space-y-1 rounded-xl bg-fill-subtle px-3 py-2 text-sm leading-6 text-fg-secondary [&_h4]:text-sm [&_h4]:font-medium [&_h4]:text-fg [&_li]:text-sm [&_li]:leading-6 [&_li]:text-fg-secondary [&_p]:text-sm [&_p]:leading-6 [&_p]:text-fg-secondary">
+                          {renderProse(turn.text)}
+                        </div>
                       </>
                     )}
                   </section>

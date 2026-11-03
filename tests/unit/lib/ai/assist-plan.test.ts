@@ -259,6 +259,8 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("was renamed or removed");
     expect(messages[0]?.content).toContain(">=, <=, or =");
     expect(messages[0]?.content).toContain("You have not seen the rows yet.");
+    expect(messages[0]?.content).toContain("explanation is Markdown");
+    expect(messages[0]?.content).toContain("`code`");
   });
 });
 

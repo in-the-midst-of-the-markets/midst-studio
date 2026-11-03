@@ -1026,6 +1026,32 @@ describe("ChartWithEditor", () => {
 });
 
 describe("AiAssist page", () => {
+  test("formats an assistant answer written as markdown and leaves the question plain", async () => {
+    const at = new Date().toISOString();
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([
+        { id: "assist-1", role: "user", text: "Show **this**", at, cards: [] },
+        {
+          id: "assist-2",
+          role: "assistant",
+          text: 'Revenue is **120**.\n\n- East led on `orders`\n- West was flat\n\n<img src=x onerror="steal()">',
+          at,
+          cards: [],
+        },
+      ]),
+    );
+    const view = render(<AiAssist />);
+    const thread = view.getByRole("region", { name: "Conversation" });
+    expect(await view.findByText("Show **this**")).toBeTruthy();
+    expect(thread.querySelector("strong")?.textContent).toBe("120");
+    expect(thread.querySelector("code")?.textContent).toBe("orders");
+    expect(thread.querySelectorAll("li").length).toBe(2);
+    expect(thread.querySelector("img")).toBeNull();
+    expect(thread.textContent).toContain('<img src=x onerror="steal()">');
+    expect(thread.textContent).not.toContain("**120**");
+  });
+
   test("opens the conversation at the latest message", async () => {
     const element = HTMLElement.prototype;
     const scrollHeight = Object.getOwnPropertyDescriptor(element, "scrollHeight");
