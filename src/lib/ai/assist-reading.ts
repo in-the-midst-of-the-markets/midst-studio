@@ -207,7 +207,7 @@ const FINAL_TASK = `The fenced question was already asked. The fenced results ar
 Return one JSON object and nothing else:
 {"explanation":"markdown about what all of these rows show, with **bold** figures and \`column\` names","queries":[]}
 
-queries is empty. The words inside the sample explanation are a description of the field. Write a new explanation for this question from the fenced results. A figure that appears only in this instruction is not a result. explanation is Markdown the person reads, several paragraphs, long enough to cover every result. One sentence is too short when the results hold more than one figure. Open with the answer, then compare the figures and say what stands out. Use **bold** for the figures that answer the question, \`code\` for column and table names, and a "- " list when there are several points. Separate paragraphs with a blank line. Do not use HTML, links, or images. Cite the numbers in the results. Do not plan another query.`;
+queries is empty. The words inside the sample explanation are a description of the field. Write a new explanation for this question from the fenced results. A figure that appears only in this instruction is not a result. explanation is Markdown the person reads: **bold** for the figures that answer the question, \`code\` for column and table names, and a "- " list when there are several points. Separate paragraphs with a blank line. Do not use HTML, links, or images. Cite the numbers in the results. Do not plan another query.`;
 
 /** The messages for a pass that has already seen rows. The blocks are fenced by the route. */
 export function buildAssistReadingMessages(

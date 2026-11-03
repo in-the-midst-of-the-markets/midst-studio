@@ -260,9 +260,8 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain(">=, <=, or =");
     expect(messages[0]?.content).toContain("You have not seen the rows yet.");
     expect(messages[0]?.content).toContain("explanation is Markdown");
-    expect(messages[0]?.content).toContain(
-      "When queries is empty, explanation is Markdown the person reads, several paragraphs.",
-    );
+    expect(messages[0]?.content).not.toContain("one sentence");
+    expect(messages[0]?.content).not.toContain("several paragraphs");
     expect(messages[0]?.content).toContain("`code`");
   });
 });
