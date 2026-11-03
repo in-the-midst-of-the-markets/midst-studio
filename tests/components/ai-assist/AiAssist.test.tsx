@@ -772,6 +772,9 @@ describe("ChartWithEditor", () => {
     expect(table.getByText('{"z":1}')).toBeTruthy();
     expect(table.getByText("1 more rows")).toBeTruthy();
     expect(table.getByText("1 more columns")).toBeTruthy();
+    expect(table.queryByRole("button", { name: "Chart" })).toBeNull();
+    expect(table.queryByRole("button", { name: "Query" })).toBeNull();
+    expect(table.queryByRole("button", { name: "Code" })).toBeNull();
   });
 
   test("switches to another chart type and can chart a plain result", () => {

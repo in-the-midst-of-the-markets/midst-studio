@@ -260,6 +260,7 @@ export function ChartWithEditor({
   const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const codeTitle = chartTitleText(code.option);
   const heading = codeTitle !== "" ? codeTitle : title;
+  const showingTable = !running && choice === null && result !== null && result.rows.length > 0;
 
   return (
     <article className="flex w-full flex-col gap-4">
@@ -267,36 +268,38 @@ export function ChartWithEditor({
         {heading}
       </h3>
       <div className="flex h-[min(24rem,70dvh)] min-h-64 flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm 2xl:h-[min(28rem,calc(100dvh-12rem))]">
-        <div className="flex flex-wrap items-center justify-end gap-2 border-b border-hairline px-4 py-3">
-          <div className="flex items-center gap-1.5">
-            <FaceButton pressed={face === "chart"} onClick={() => setFace("chart")} icon={BarChart3} label="Chart" />
-            <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
-            {face === "query" && (
-              <button
-                type="button"
-                onClick={() => onRun(sql)}
-                disabled={running}
-                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-              >
-                Run
-              </button>
-            )}
-            <FaceButton pressed={face === "code"} onClick={() => setFace("code")} icon={Braces} label="Code" />
-            {built !== null && choice !== null && (
-              <SaveChartButton
-                draft={chartSaveDraft({
-                  title: chartTitleText(code.option ?? built.option),
-                  query: sql,
-                  connectionId,
-                  typeId: choice.typeId,
-                  variationId: choice.variationId,
-                  selection: choice.selection,
-                  look: savedLook,
-                })}
-              />
-            )}
+        {!showingTable && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-b border-hairline px-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <FaceButton pressed={face === "chart"} onClick={() => setFace("chart")} icon={BarChart3} label="Chart" />
+              <FaceButton pressed={face === "query"} onClick={() => setFace("query")} icon={Terminal} label="Query" />
+              {face === "query" && (
+                <button
+                  type="button"
+                  onClick={() => onRun(sql)}
+                  disabled={running}
+                  className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
+                >
+                  Run
+                </button>
+              )}
+              <FaceButton pressed={face === "code"} onClick={() => setFace("code")} icon={Braces} label="Code" />
+              {built !== null && choice !== null && (
+                <SaveChartButton
+                  draft={chartSaveDraft({
+                    title: chartTitleText(code.option ?? built.option),
+                    query: sql,
+                    connectionId,
+                    typeId: choice.typeId,
+                    variationId: choice.variationId,
+                    selection: choice.selection,
+                    look: savedLook,
+                  })}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
         {filters.length > 0 && (running || columns === null || slots === null) && (
           <QueryFilterBar
             filters={filters}
