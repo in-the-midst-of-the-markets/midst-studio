@@ -629,11 +629,14 @@ function graph(input: ChartBuildInput): BuiltChart | null {
   const target = first(input.selection, "target");
   if (source === null || target === null) return null;
   const weight = first(input.selection, "weight");
+  // Node size is the source node's measure. A source on several links keeps the greatest finite value.
+  const sizeColumn = first(input.selection, "size");
   const theme = themeOf(input);
   const cap = input.nodeCap ?? GRAPH_NODE_CAP;
   const names: string[] = [];
   const seen = new Set<string>();
   const links: { source: string; target: string; value?: number }[] = [];
+  const sizes = new Map<string, number>();
   let omitted = 0;
   const remember = (label: string): boolean => {
     if (seen.has(label)) return true;
@@ -649,6 +652,13 @@ function graph(input: ChartBuildInput): BuiltChart | null {
     if (!remember(from) || !remember(to)) {
       omitted += 1;
       continue;
+    }
+    if (sizeColumn !== null) {
+      const amount = finite(row[sizeColumn]);
+      if (amount !== null) {
+        const current = sizes.get(from);
+        if (current === undefined || amount > current) sizes.set(from, amount);
+      }
     }
     const value = weight === null ? null : finite(row[weight]);
     links.push(value === null ? { source: from, target: to } : { source: from, target: to, value });
@@ -667,7 +677,11 @@ function graph(input: ChartBuildInput): BuiltChart | null {
           ...(variation === "curved" ? { lineStyle: { curveness: 0.3 } } : {}),
           ...(variation === "arrows" ? { edgeSymbol: ["none", "arrow"] } : {}),
           ...(variation === "labeled" ? { edgeLabel: { show: true, color: theme.ink } } : {}),
-          data: names.map((name) => ({ name })),
+          ...(sizeColumn !== null ? { symbolSize: pointSize } : {}),
+          data: names.map((name) => {
+            const size = sizes.get(name);
+            return size === undefined ? { name } : { name, value: size };
+          }),
           links,
         },
       ],

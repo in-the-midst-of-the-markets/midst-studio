@@ -188,6 +188,7 @@ export const ECHART_TYPES: readonly EChartType[] = [
       one("source", "Source", "dimension"),
       one("target", "Target", "dimension"),
       one("weight", "Weight", "metric", false),
+      one("size", "Node size", "metric", false),
     ],
     variations: [
       { id: "force", label: "Force" },

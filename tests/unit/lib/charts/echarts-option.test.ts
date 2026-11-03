@@ -625,6 +625,8 @@ describe("heatmap, graph and treemap", () => {
     });
     expect(seriesOf(force)[0]?.layout).toBe("force");
     expect(seriesOf(force)[0]?.links).toEqual([{ source: "a", target: "b" }]);
+    expect(seriesOf(force)[0]?.data).toEqual([{ name: "a" }, { name: "b" }]);
+    expect(seriesOf(force)[0]?.symbolSize).toBeUndefined();
     const curved = draw({
       typeId: "graph",
       variationId: "curved",
@@ -646,6 +648,27 @@ describe("heatmap, graph and treemap", () => {
       selection: { source: ["source"], target: ["target"] },
     });
     expect(seriesOf(labeled)[0]?.edgeLabel).toEqual({ show: true, color: theme.ink });
+  });
+
+  test("sizes a source node from a metric and keeps the greatest finite value", () => {
+    const chart = draw({
+      typeId: "graph",
+      variationId: "force",
+      rows: [
+        { source: "a", target: "a", size: 50 },
+        { source: "a", target: "b", size: 2 },
+        { source: "a", target: "c", size: "9" },
+        { source: "a", target: "b", size: 4 },
+        { source: "b", target: "c", size: null },
+        { source: "b", target: "c", size: "nope" },
+        { source: "a", target: "d", size: 100 },
+      ],
+      selection: { source: ["source"], target: ["target"], size: ["size"] },
+      nodeCap: 3,
+    });
+    expect(seriesOf(chart)[0]?.symbolSize).toBe(pointSize);
+    expect(seriesOf(chart)[0]?.data).toEqual([{ name: "a", value: 9 }, { name: "b" }, { name: "c" }]);
+    expect(chart?.notes[0]).toContain("1 links are not drawn");
   });
 
   test("nests a treemap under a parent and skips a size that is not positive", () => {
