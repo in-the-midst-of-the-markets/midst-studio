@@ -25,7 +25,13 @@ import {
   type AssistQueryPlan,
   type AssistRecolor,
 } from "@/lib/ai/assist-plan";
-import { ASSIST_RESULT_CAP, explanationWithResults, followUpQueries, readAssistResults } from "@/lib/ai/assist-reading";
+import {
+  ASSIST_RESULT_CAP,
+  FOLLOW_RUNS,
+  explanationWithResults,
+  followUpQueries,
+  readAssistResults,
+} from "@/lib/ai/assist-reading";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import { applyQueryFilters, queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
@@ -755,19 +761,31 @@ export function AiAssist() {
           databaseType,
           history,
         };
-        const follow = await groundResults({ ...readingInput, pass: "follow", results: ranCards().map(resultPayload) });
-        const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
-        const extra = follow === null ? [] : followUpQueries(follow.queries, existingSql);
-        const extraCards = plannedCards(extra, connections, schemas);
-        for (const card of extraCards) ids.add(card.id);
-        if (extraCards.length > 0) {
-          commit(
-            turnsRef.current.map((turn) =>
-              turn.id === assistantId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
-            ),
-            true,
-          );
-          await executeCards(extraCards);
+        let follow: AssistPlan | null = null;
+        for (let run = 0; run < FOLLOW_RUNS; run += 1) {
+          // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
+          const reading = await groundResults({
+            ...readingInput,
+            pass: "follow",
+            results: ranCards().map(resultPayload),
+          });
+          if (reading !== null) follow = reading;
+          const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
+          const extra = reading === null ? [] : followUpQueries(reading.queries, existingSql);
+          const extraCards = plannedCards(extra, connections, schemas);
+          for (const card of extraCards) ids.add(card.id);
+          if (extraCards.length === 0) {
+            if (reading !== null) break;
+          } else {
+            commit(
+              turnsRef.current.map((turn) =>
+                turn.id === assistantId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
+              ),
+              true,
+            );
+            // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
+            await executeCards(extraCards);
+          }
         }
         const final = await groundResults({ ...readingInput, pass: "final", results: ranCards().map(resultPayload) });
         const analyzed = [final, follow].map((item) => item?.explanation.trim() ?? "").find((text) => text !== "");

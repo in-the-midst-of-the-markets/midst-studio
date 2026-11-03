@@ -15,7 +15,7 @@ import { guardRoute } from "@/lib/api/require-session";
 
 /**
  * AI Assist. POST plans queries, then reads the rows and may add more charted
- * queries, then writes the final analysis. GET lists the public catalogs. The model key is the browser's,
+ * queries on as many as three follow-ups, then writes the final analysis. GET lists the public catalogs. The model key is the browser's,
  * or OPENROUTER_API_KEY when the browser did not send one for OpenRouter.
  */
 export const dynamic = "force-dynamic";

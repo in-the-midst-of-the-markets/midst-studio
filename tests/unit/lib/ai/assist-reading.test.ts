@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { AssistQueryPlan } from "@/lib/ai/assist-plan";
 import {
+  ASSIST_RESULT_CAP,
+  FOLLOW_RUNS,
   buildAssistReadingMessages,
   explanationWithResults,
   followUpQueries,
@@ -70,14 +72,17 @@ describe("readAssistResults", () => {
 
   test("refuses a list past the result cap and skips a result with no statement", () => {
     expect(readAssistResults("no").ok).toBe(false);
-    expect(readAssistResults([1, 2, 3, 4, 5, 6, 7])).toEqual({
+    expect(FOLLOW_RUNS).toBe(3);
+    expect(readAssistResults(Array.from({ length: ASSIST_RESULT_CAP + 1 }, () => 1))).toEqual({
       ok: false,
       error: "The query results are not valid.",
     });
-    const full = readAssistResults(Array.from({ length: 6 }, (_, index) => ({ sql: `SELECT ${index}` })));
+    const full = readAssistResults(
+      Array.from({ length: ASSIST_RESULT_CAP }, (_, index) => ({ sql: `SELECT ${index}` })),
+    );
     expect(full.ok).toBe(true);
     if (!full.ok) return;
-    expect(full.value).toHaveLength(6);
+    expect(full.value).toHaveLength(ASSIST_RESULT_CAP);
     const read = readAssistResults([
       null,
       [],
