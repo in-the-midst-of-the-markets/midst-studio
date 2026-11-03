@@ -356,6 +356,7 @@ describe("POST /api/ai/assist", () => {
     expect(response.status).toBe(200);
     expect(messages[0]?.content).toContain("queries has one item");
     expect(messages[0]?.content).toContain("The connected engine is SQL");
+    expect(messages[0]?.content).toContain("sql is one read-only statement for this engine.");
     expect(messages[1]?.content).toContain("Current statement:");
     expect(messages[1]?.content).toContain("SELECT 1");
     expect(JSON.stringify(messages)).not.toContain("fw-secret");
@@ -392,6 +393,42 @@ describe("POST /api/ai/assist", () => {
     );
     expect(nameless.status).toBe(400);
     expect(((await nameless.json()) as { error: string }).error).toBe("Name the model to use.");
+  });
+
+  test("keeps a Cypher read when the editor is on Neo4j", async () => {
+    const match = "MATCH (n) RETURN n LIMIT 5";
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      const messages = (JSON.parse(String(init?.body)) as { messages: { content: string }[] }).messages;
+      expect(messages[0]?.content).toContain("one read-only Cypher statement");
+      expect(messages[0]?.content).toContain("Do not write SQL.");
+      return jsonResponse({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ explanation: "The nodes.", queries: [{ sql: match }, { sql: "SELECT 1" }] }),
+            },
+          },
+        ],
+      });
+    }) as unknown as typeof fetch;
+    const response = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "deepseek/deepseek-v4.1-flash-1017",
+          apiKey: "or-secret",
+          question: "List nodes",
+          schemaContext: "Person",
+          databaseType: "neo4j",
+          history: [],
+          editorSql: "",
+        },
+      }) as never,
+    );
+    expect(response.status).toBe(200);
+    const plan = (await response.json()) as { queries: { sql: string }[] };
+    expect(plan.queries.map((query) => query.sql)).toEqual([match]);
   });
 });
 

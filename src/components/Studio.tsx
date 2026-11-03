@@ -1788,6 +1788,7 @@ export default function Studio() {
             </main>
             <IdeQueryChat
               {...editorChatQuery(tabMgr.currentTab, tabMgr.updateTabById)}
+              connectionId={conn.activeConnection?.id ?? ""}
               databaseType={conn.activeConnection?.type ?? ""}
               schemaContext={conn.schemaContext}
             />

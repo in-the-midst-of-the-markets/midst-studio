@@ -290,4 +290,71 @@ describe("IdeQueryChat", () => {
     expect(view.container.querySelector("img")).toBeNull();
     expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
   });
+
+  test("clears the conversation, and drops it when the connection changes", async () => {
+    let release: ((response: Response) => void) | undefined;
+    install((_url, init) => {
+      if ((init?.method ?? "GET") === "GET") return jsonResponse({});
+      const body = JSON.parse(String(init?.body)) as { question?: string };
+      if (body.question === "Hold") {
+        return new Promise<Response>((resolve) => {
+          release = resolve;
+        });
+      }
+      if (body.question === "Count") {
+        return jsonResponse({ explanation: "Ten rows.", queries: [{ sql: "SELECT 1" }] });
+      }
+      return jsonResponse({
+        explanation: "Nodes named Ada.",
+        queries: [{ title: "Ada", sql: "MATCH (n) WHERE n.name = 'Ada' RETURN n LIMIT 5", connection: "Graph" }],
+      });
+    });
+    const onUseQuery = mock(() => {});
+    const view = render(
+      <IdeQueryChat sql="" connectionId="pg" databaseType="postgres" schemaContext="orders" onUseQuery={onUseQuery} />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Count" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("Ten rows.")).toBeTruthy();
+
+    view.rerender(
+      <IdeQueryChat sql="" connectionId="graph" databaseType="neo4j" schemaContext="labels" onUseQuery={onUseQuery} />,
+    );
+    expect(view.queryByText("Count")).toBeNull();
+    expect(view.queryByText("Ten rows.")).toBeNull();
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "People named Ada" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("Nodes named Ada.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Use this query" }));
+    expect(onUseQuery).toHaveBeenCalledWith("MATCH (n) WHERE n.name = 'Ada' RETURN n LIMIT 5");
+    expect((calls.at(-1)?.body as { history: unknown[]; databaseType: string }).history).toEqual([]);
+    expect((calls.at(-1)?.body as { databaseType: string }).databaseType).toBe("neo4j");
+
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    expect(view.getByRole("button", { name: "Clear chat" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    expect(view.queryByRole("button", { name: "Confirm clear chat" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Clear chat" }));
+    fireEvent.click(view.getByRole("button", { name: "Confirm clear chat" }));
+    expect(view.queryByText("Nodes named Ada.")).toBeNull();
+    expect(view.queryByRole("button", { name: "Clear chat" })).toBeNull();
+
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Hold" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("Hold")).toBeTruthy();
+    view.rerender(
+      <IdeQueryChat sql="" connectionId="other" databaseType="neo4j" schemaContext="labels" onUseQuery={onUseQuery} />,
+    );
+    expect(view.queryByText("Hold")).toBeNull();
+    release?.(
+      jsonResponse({
+        explanation: "This answer belongs to the previous connection.",
+        queries: [{ sql: "MATCH (n) RETURN n" }],
+      }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(view.queryByText("This answer belongs to the previous connection.")).toBeNull();
+    expect(view.queryByRole("button", { name: "Sending…" })).toBeNull();
+  });
 });

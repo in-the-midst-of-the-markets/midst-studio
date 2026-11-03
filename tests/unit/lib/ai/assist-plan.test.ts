@@ -154,6 +154,17 @@ describe("parseAssistPlan", () => {
 });
 
 describe("acceptAssistPlan", () => {
+  test("keeps a Cypher read for Neo4j and drops it for PostgreSQL", () => {
+    const match = "MATCH (n) WHERE n.name = 'Ada' RETURN n LIMIT 5";
+    const body = { explanation: "People named Ada.", queries: [{ title: "Ada", sql: match, connection: "Graph" }] };
+    expect(acceptAssistPlan(body, "neo4j").queries).toEqual([
+      { title: "Ada", sql: match, connection: "Graph", chart: null },
+    ]);
+    expect(acceptAssistPlan(JSON.stringify(body), "postgres").queries).toEqual([]);
+    expect(acceptAssistPlan({ queries: [{ sql: "SELECT 1" }] }, "neo4j").queries).toEqual([]);
+    expect(acceptAssistPlan({ queries: [{ sql: "CREATE (n) RETURN n" }] }, "neo4j").queries).toEqual([]);
+  });
+
   test("accepts text, an object, and anything else", () => {
     expect(acceptAssistPlan("Just text").explanation).toBe("Just text");
     expect(acceptAssistPlan({ explanation: "Hi", queries: [] }).explanation).toBe("Hi");
@@ -263,6 +274,20 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).not.toContain("one sentence");
     expect(messages[0]?.content).not.toContain("several paragraphs");
     expect(messages[0]?.content).toContain("`code`");
+  });
+
+  test("asks Neo4j for Cypher and does not teach it a SQL placeholder", () => {
+    const messages = buildAssistMessages({
+      databaseType: "neo4j",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+    });
+    expect(messages[0]?.content).toContain("The connected engine is neo4j.");
+    expect(messages[0]?.content).toContain("one read-only Cypher statement");
+    expect(messages[0]?.content).toContain("Do not write SQL or a placeholder.");
+    expect(messages[0]?.content).not.toContain("one read-only SELECT");
+    expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
   });
 });
 
