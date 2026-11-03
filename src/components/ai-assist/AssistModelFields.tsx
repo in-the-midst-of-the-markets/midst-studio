@@ -1,5 +1,6 @@
 "use client";
 
+import { rankAssistModels, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { COMMON_OPENROUTER_MODELS, type AssistModelOption, type AssistSettings } from "@/lib/ai/assist-settings";
 
 /**
@@ -12,6 +13,7 @@ export function AssistModelFields({
   gatewayModels,
   modelStatus,
   gatewayStatus,
+  rankings = null,
   onChange,
 }: {
   settings: AssistSettings;
@@ -19,12 +21,14 @@ export function AssistModelFields({
   gatewayModels: readonly AssistModelOption[];
   modelStatus: "loading" | "ready" | "failed";
   gatewayStatus: "loading" | "ready" | "failed";
+  rankings?: AssistRankings | null;
   onChange: (patch: Partial<AssistSettings>) => void;
 }) {
   const catalog = modelStatus === "ready" && models.length > 0 ? models : COMMON_OPENROUTER_MODELS;
   const modelOptions = catalog.some((item) => item.id === settings.openRouterModel)
     ? catalog
     : [{ id: settings.openRouterModel, name: settings.openRouterModel }, ...catalog];
+  const ranked = rankAssistModels(modelOptions, rankings);
 
   if (settings.source === "fireworks") {
     return (
@@ -79,13 +83,24 @@ export function AssistModelFields({
           onChange={(event) => onChange({ openRouterModel: event.target.value })}
           className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
         >
-          {modelOptions.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
+          {ranked.groups === null
+            ? modelOptions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))
+            : ranked.groups.map((group) => (
+                <optgroup key={group.category} label={group.label}>
+                  {group.models.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
         </select>
       </label>
+      {ranked.citation !== null && <p className="text-xs text-fg-muted">{ranked.citation}</p>}
       {modelStatus === "failed" && (
         <output className="block text-xs text-fg-muted">The OpenRouter catalog could not be loaded.</output>
       )}

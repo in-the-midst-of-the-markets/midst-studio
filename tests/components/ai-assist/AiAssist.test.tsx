@@ -1174,6 +1174,58 @@ describe("AiAssist page", () => {
     await waitFor(() => expect(calls.filter((call) => call.url.includes("provider-meta")).length).toBeGreaterThan(1));
   });
 
+  test("groups OpenRouter models by the domain where they are used most", async () => {
+    localStorage.setItem(
+      "libredb_ai_assist",
+      JSON.stringify({ ...readAssistSettings(), openRouterModel: "openai/gpt-4o" }),
+    );
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "GET") {
+        return jsonResponse({
+          models: [
+            { id: "openai/gpt-4o", name: "GPT-4o" },
+            { id: "anthropic/claude", name: "Claude" },
+            { id: "mistral/small", name: "Mistral" },
+            { id: "deepseek/deepseek-chat", name: "DeepSeek" },
+          ],
+          rankings: {
+            citation: "Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.",
+            categories: [
+              {
+                category: "finance",
+                models: [
+                  { id: "openai/gpt-4o", totalTokens: "10" },
+                  { id: "mistral/small", totalTokens: "100" },
+                ],
+              },
+              {
+                category: "programming",
+                models: [
+                  { id: "anthropic/claude", totalTokens: "50" },
+                  { id: "openai/gpt-4o", totalTokens: "80" },
+                ],
+              },
+            ],
+          },
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    const select = await view.findByLabelText("OpenRouter model");
+    const groups = [...select.querySelectorAll("optgroup")].map((group) => ({
+      label: group.getAttribute("label"),
+      models: [...group.querySelectorAll("option")].map((option) => option.textContent),
+    }));
+    expect(groups).toEqual([
+      { label: "Finance", models: ["Mistral"] },
+      { label: "Programming", models: ["GPT-4o", "Claude"] },
+      { label: "Other", models: ["DeepSeek"] },
+    ]);
+    expect(view.getByText("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.")).toBeTruthy();
+  });
+
   test("saves an OpenRouter model that is not in the catalog and a Fireworks account", async () => {
     localStorage.setItem(
       "libredb_ai_assist",
