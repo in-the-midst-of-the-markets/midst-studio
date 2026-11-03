@@ -240,6 +240,8 @@ export function savedComponentFromFilter(filter: DashboardFilter, id: string): S
   if (filter.min !== undefined) design.min = filter.min;
   if (filter.max !== undefined) design.max = filter.max;
   if (filter.step !== undefined) design.step = filter.step;
+  if (filter.choiceSource !== undefined) design.choiceSource = filter.choiceSource;
+  if (filter.valuesText !== undefined) design.valuesText = filter.valuesText;
   if (filter.script !== undefined) design.script = filter.script;
   return {
     id,
@@ -273,6 +275,20 @@ function choiceText(value: unknown): string | null {
   if (typeof value === "number" && Number.isFinite(value)) return String(value);
   if (typeof value === "boolean") return value ? "true" : "false";
   return null;
+}
+
+/** Distinct non-empty lines, in order. A hardcoded choice list uses this instead of a query. */
+export function filterValueList(text: string): string[] {
+  const seen = new Set<string>();
+  const choices: string[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const value = line.trim().slice(0, 80);
+    if (value === "" || seen.has(value)) continue;
+    seen.add(value);
+    choices.push(value);
+    if (choices.length === CHOICE_CAP) break;
+  }
+  return choices;
 }
 
 /** Distinct values of the first column, in the order they appear. */
