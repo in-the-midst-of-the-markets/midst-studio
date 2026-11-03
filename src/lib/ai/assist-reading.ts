@@ -1,9 +1,10 @@
 /**
- * The two looks AI Assist takes after a query has run.
+ * The looks AI Assist takes after a query has run.
  *
- * The first answer only plans queries. The follow-up reads those rows and may
- * add more charted queries. The final look reads every row, including those
- * extra queries, and writes the answer the person sees.
+ * The first answer only plans queries. Each follow-up reads the rows so far and
+ * may add more charted queries. Two further follow-ups run when a look still
+ * finds something new to read. The final look reads every row and writes the
+ * answer the person sees.
  */
 
 import {
@@ -15,8 +16,11 @@ import {
 } from "@/lib/ai/assist-plan";
 import { queryIdentity } from "@/lib/charts/query-filters";
 
-/** The first plan plus one follow-up, each capped at QUERY_CAP. */
-export const ASSIST_RESULT_CAP = QUERY_CAP * 2;
+/** Follow-up looks after the first queries. The first look, plus two more while a look still adds a query. */
+export const FOLLOW_RUNS = 3;
+
+/** The first plan plus every follow-up, each capped at QUERY_CAP. */
+export const ASSIST_RESULT_CAP = QUERY_CAP * (1 + FOLLOW_RUNS);
 const FIELD_CAP = 8;
 const ROW_CAP = 12;
 const CELL_CAP = 60;

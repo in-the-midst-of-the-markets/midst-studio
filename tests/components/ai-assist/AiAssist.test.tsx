@@ -2030,6 +2030,24 @@ describe("AiAssist page", () => {
           });
         }
         if (posted.pass === "follow") {
+          const seen = calls.filter((call) => {
+            const item = call.body;
+            return item !== null && typeof item === "object" && "pass" in item && item.pass === "follow";
+          }).length;
+          if (seen > 2) return jsonResponse({ explanation: "Nothing further.", queries: [] });
+          if (seen === 2) {
+            return jsonResponse({
+              explanation: "A channel split would help.",
+              queries: [
+                {
+                  title: "By channel",
+                  connection: "Orders",
+                  sql: "SELECT channel, revenue FROM orders",
+                  chart: { type: "bar", x: "channel", y: ["revenue"], caption: "by channel" },
+                },
+              ],
+            });
+          }
           return jsonResponse({
             explanation: "A region split would help.",
             queries: [
@@ -2082,17 +2100,22 @@ describe("AiAssist page", () => {
     expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
     expect(view.getByRole("heading", { name: "By region" })).toBeTruthy();
     expect(view.getByRole("heading", { name: "By product" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "By channel" })).toBeTruthy();
     expect(view.queryByRole("heading", { name: "By region again" })).toBeNull();
     expect(view.queryByRole("heading", { name: "Ignored" })).toBeNull();
-    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(3);
+    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(4);
     const bodies = posts().map((call) => call.body as { pass?: string; results?: { rows?: { revenue?: number }[] }[] });
-    expect(bodies).toHaveLength(3);
+    expect(bodies).toHaveLength(5);
     expect(bodies[0]?.pass).toBeUndefined();
     expect(bodies[0]).not.toHaveProperty("results");
     expect(bodies[1]?.pass).toBe("follow");
     expect(bodies[1]?.results?.[0]?.rows?.[0]?.revenue).toBe(10);
-    expect(bodies[2]?.pass).toBe("final");
+    expect(bodies[2]?.pass).toBe("follow");
     expect(bodies[2]?.results).toHaveLength(3);
+    expect(bodies[3]?.pass).toBe("follow");
+    expect(bodies[3]?.results).toHaveLength(4);
+    expect(bodies[4]?.pass).toBe("final");
+    expect(bodies[4]?.results).toHaveLength(4);
   });
 
   test("shows the final analysis when the follow-up fails, and the plan when neither reading returns one", async () => {

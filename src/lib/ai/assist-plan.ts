@@ -82,7 +82,7 @@ const QUESTION_CAP = ASSIST_TEXT_CAP;
 /** The schema text a question may carry. The catalog stops at the same size before it is posted. */
 export const ASSIST_SCHEMA_CAP = 30_000;
 const SQL_CAP = 8_000;
-/** How many reads one model answer may plan. The follow-up may add this many more. */
+/** How many reads one model answer may plan. Each follow-up may add this many more. */
 export const QUERY_CAP = 3;
 const TITLE_CAP = 120;
 const CONNECTION_CAP = 200;
