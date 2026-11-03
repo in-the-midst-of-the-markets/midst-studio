@@ -619,7 +619,12 @@ describe("DashboardStudio", () => {
     expect(view.getByText("Save a component from a dashboard, then add it here.")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Back" }));
     fireEvent.change(view.getByLabelText("Dashboard"), { target: { value: "sales" } });
-    fireEvent.click(view.getByRole("button", { name: "Save Region component" }));
+    const save = view.getByRole("button", { name: "Save Region component" });
+    expect(save.getAttribute("aria-pressed")).toBe("false");
+    expect(save.className).not.toContain("bg-brand-solid");
+    fireEvent.click(save);
+    expect(save.getAttribute("aria-pressed")).toBe("true");
+    expect(save.className).toContain("bg-brand-solid");
     const saved = storage.getSavedComponents();
     expect(saved).toHaveLength(1);
     expect(saved[0]?.filter).toMatchObject({ name: "region", query: "SELECT region FROM sales", value: "east" });
@@ -635,6 +640,9 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Add content" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Saved component" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Area" }));
+    const placedSave = view.getByRole("button", { name: "Save Area component" });
+    expect(placedSave.getAttribute("aria-pressed")).toBe("true");
+    expect(placedSave.className).toContain("bg-brand-solid");
     const placed = storage.getSavedDashboards().find((item) => item.id !== "sales" && (item.filters?.length ?? 0) > 0);
     expect(placed?.filters?.[0]).toMatchObject({
       name: "region",

@@ -1095,10 +1095,14 @@ function DashboardFilterCard({
         <button
           type="button"
           aria-label={`Save ${caption} component`}
+          aria-pressed={filter.componentId !== undefined}
           onClick={onSave}
-          className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
+          className={cn(
+            "inline-flex size-7 items-center justify-center rounded-md",
+            filter.componentId !== undefined ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+          )}
         >
-          <Bookmark className="size-3.5" aria-hidden="true" />
+          <Bookmark className={cn("size-3.5", filter.componentId !== undefined && "fill-current")} aria-hidden="true" />
         </button>
         <button
           type="button"
