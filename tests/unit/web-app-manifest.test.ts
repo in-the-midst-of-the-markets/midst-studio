@@ -31,7 +31,7 @@ describe("web app manifest", () => {
 
   test("describes KnowSQL as an installable standalone app", () => {
     expect(manifest).toMatchObject({
-      name: "in the KnowSQL of the markets",
+      name: "KnowSQL",
       short_name: "KnowSQL",
       start_url: ".",
       display: "standalone",

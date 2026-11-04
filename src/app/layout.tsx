@@ -24,7 +24,7 @@ import { SubscriptionRelease } from "@/components/marketplace/SubscriptionReleas
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const title = "in the KnowSQL of the markets";
+const title = "KnowSQL";
 const description =
   "A self-hosted database management platform for SQL and NoSQL databases, with schema exploration, query tools, data import, and AI-assisted database development.";
 // Project previews use the public demo documented in README, including on private deployments.
