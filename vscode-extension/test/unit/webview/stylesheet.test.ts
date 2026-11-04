@@ -25,6 +25,7 @@ function declarations(selector: string): Map<string, string> {
 /** Part 4's token table: each LibreDB token and the VS Code variable it reads. */
 const TOKEN_TABLE: [string[], string][] = [
   [["--studio-canvas", "--studio-sunken", "--studio-surface", "--background"], "--vscode-panel-background"],
+  [["--studio-control"], "--vscode-input-background"],
   [["--studio-overlay", "--studio-panel", "--muted"], "--vscode-editorWidget-background"],
   [["--popover"], "--vscode-menu-background"],
   [["--popover-foreground"], "--vscode-menu-foreground"],

@@ -376,7 +376,7 @@ export function QueryChart({
           {built !== null && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center gap-1 border-b border-hairline px-2 py-1">
-                <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+                <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
                   <button
                     type="button"
                     aria-pressed={!codeOpen}

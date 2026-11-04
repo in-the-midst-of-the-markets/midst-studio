@@ -22,7 +22,7 @@ export function HistoryLimitButton({ value, onChange }: { value: number; onChang
         <MessagesSquare className="size-4" aria-hidden="true" />
       </button>
       {open && (
-        <label className="absolute bottom-full left-0 z-10 mb-2 flex w-44 flex-col gap-1 rounded-lg border border-hairline bg-canvas p-2 text-xs text-fg-muted shadow-sm">
+        <label className="absolute bottom-full left-0 z-10 mb-2 flex w-44 flex-col gap-1 rounded-lg border border-hairline bg-control p-2 text-xs text-fg-muted shadow-sm">
           Earlier messages
           <select
             aria-label="Number of earlier messages"

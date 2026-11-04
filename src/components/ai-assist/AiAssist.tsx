@@ -922,7 +922,7 @@ export function AiAssist() {
                   key under Connectors.
                 </p>
               )}
-              <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-canvas p-2">
+              <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-control p-2">
                 <Sparkles className="size-4 shrink-0 text-brand" />
                 <textarea
                   ref={askRef}

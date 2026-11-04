@@ -52,6 +52,7 @@
 :root,
 :root.dark {
   --studio-canvas: var(--vscode-panel-background);
+  --studio-control: var(--vscode-input-background);
   --studio-sunken: var(--vscode-panel-background);
   --studio-surface: var(--vscode-panel-background);
   --background: var(--vscode-panel-background);
