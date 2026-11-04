@@ -715,38 +715,49 @@ describe("DashboardStudio", () => {
     expect(view.getByLabelText("Dashboard conversation")).toBeTruthy();
     fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Chart revenue" } });
     fireEvent.click(view.getByRole("button", { name: "Send" }));
-    expect(await view.findByText("East is ahead.")).toBeTruthy();
+    expect(await view.findAllByText("East is ahead.")).toHaveLength(2);
     expect(posted[0]?.editorSql).toBe("SELECT region, total FROM sales");
     expect(posted[0]?.databaseType).toBe("postgres");
     expect(posted[0]?.schemaContext).toContain("Dashboard: sales");
     expect(posted[0]?.schemaContext).toContain("Chart Revenue: SELECT region, total FROM sales");
-    fireEvent.click(view.getByRole("button", { name: "Add as chart" }));
+    expect(view.queryByRole("button", { name: "Add as chart" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Add as text" })).toBeNull();
     expect(
       storage
         .getSavedCharts()
         .some((item) => item.id !== "revenue" && item.query === "SELECT region, total FROM sales"),
     ).toBe(true);
     expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(2);
-    fireEvent.click(view.getByRole("button", { name: "Add as text" }));
     expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("East is ahead.");
   });
 
   test("the assistant starts a dashboard when none is open", async () => {
     mockGlobalFetch({
-      "/api/ai/assist": {
-        json: {
-          explanation: "A note.",
-          queries: [{ title: "Query", sql: "SELECT 1", chart: null }],
-        },
+      "/api/ai/assist": async (req) => {
+        if (req.method === "GET") return { json: { models: [] } };
+        const body = (await req.json()) as { question?: string };
+        if (body.question === "Write") return { json: { explanation: "A note.", queries: [] } };
+        if (body.question === "Numbers") {
+          return { json: { explanation: "", queries: [{ title: "Query", sql: "SELECT 2", chart: null }] } };
+        }
+        return {
+          json: {
+            explanation: "A note.",
+            queries: [{ title: "Query", sql: "SELECT 1", chart: null }],
+          },
+        };
       },
     });
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
     fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Start" } });
     fireEvent.click(view.getByRole("button", { name: "Send" }));
-    fireEvent.click(await view.findByRole("button", { name: "Add as chart" }));
+    expect(await view.findAllByText("A note.")).toHaveLength(2);
+    expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
     expect(storage.getSavedDashboards()).toHaveLength(1);
     expect(storage.getSavedCharts()[0]?.query).toBe("SELECT 1");
+    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("A note.");
+    expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(1);
     expect(storage.getActiveDashboardId()).toBe(storage.getSavedDashboards()[0]?.id ?? null);
     view.unmount();
     localStorage.clear();
@@ -754,9 +765,14 @@ describe("DashboardStudio", () => {
     fireEvent.click(again.getByRole("button", { name: "Ask AI" }));
     fireEvent.change(again.getByLabelText("Build or revise a query"), { target: { value: "Write" } });
     fireEvent.click(again.getByRole("button", { name: "Send" }));
-    fireEvent.click(await again.findByRole("button", { name: "Add as text" }));
+    expect(await again.findAllByText("A note.")).toHaveLength(2);
     expect(storage.getSavedDashboards()).toHaveLength(1);
     expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("A note.");
     expect(storage.getSavedCharts()).toHaveLength(0);
+    fireEvent.change(again.getByLabelText("Build or revise a query"), { target: { value: "Numbers" } });
+    fireEvent.click(again.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(storage.getSavedCharts()[0]?.query).toBe("SELECT 2"));
+    expect(storage.getSavedDashboards()[0]?.notes).toHaveLength(1);
+    expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(1);
   });
 });

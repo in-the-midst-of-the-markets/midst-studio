@@ -392,4 +392,34 @@ describe("IdeQueryChat", () => {
     expect(onUseQuery).toHaveBeenCalledWith("SELECT 1");
     expect(onUseNote).toHaveBeenCalledWith("East led.");
   });
+
+  test("places a dashboard reply without an add button", async () => {
+    install(() =>
+      jsonResponse({
+        explanation: "East led.",
+        queries: [{ title: "Query", sql: "SELECT 1", chart: null }],
+      }),
+    );
+    const onPlaceReply = mock(() => {});
+    const view = render(
+      <IdeQueryChat
+        sql=""
+        databaseType="postgres"
+        schemaContext="[]"
+        placement="fixed"
+        conversationLabel="Dashboard conversation"
+        onPlaceReply={onPlaceReply}
+        onUseQuery={() => {}}
+        onUseNote={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Revenue" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("East led.")).toBeTruthy();
+    expect(onPlaceReply).toHaveBeenCalledWith({ sql: "SELECT 1", text: "East led." });
+    expect(view.queryByRole("button", { name: "Add as chart" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Add as text" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
+  });
 });
