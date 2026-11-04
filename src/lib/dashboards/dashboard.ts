@@ -253,12 +253,22 @@ export function dashboardEditorSql(
   return "";
 }
 
+/**
+ * What this page can do, sent with every Dash question.
+ * The reply is placed on the board, so the assistant should take the time to
+ * choose a complete query and a chart variation instead of a first guess.
+ */
+export const DASHBOARD_ASSIST_GUIDE =
+  "Dash builds a board. A reply is placed at once: the query becomes a chart and the explanation becomes a text box. The person can also add a saved chart, make a new chart, add a text box, or add a component (dropdown, slider, search, or custom JavaScript). Charts, text, and components can be resized. A chart runs one query, can refresh on a schedule, and is drawn as a type and then a variation, such as bar (basic, stacked, horizontal) or line (basic, area, smooth). A component whose name is a query id is inserted as {{name}}. Read the board and the schema before answering. Take the time to write a complete query and a clear explanation rather than a short first guess.";
+
 /** Charts, text, and components on the board, so the assistant can see what is already there. */
 export function dashboardAssistContext(
-  dashboard: SavedDashboard,
+  dashboard: SavedDashboard | null,
   charts: readonly { id: string; name: string; query?: string }[],
 ): string {
-  const lines = [`Dashboard: ${dashboard.name}`];
+  const lines = [DASHBOARD_ASSIST_GUIDE];
+  if (dashboard === null) return lines.join("\n");
+  lines.push(`Dashboard: ${dashboard.name}`);
   for (const frame of dashboard.charts) {
     const chart = charts.find((item) => item.id === frame.chartId);
     if (chart === undefined) continue;

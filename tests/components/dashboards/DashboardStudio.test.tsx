@@ -373,8 +373,14 @@ describe("DashboardStudio", () => {
     fireEvent.change(sql, { target: { value: "SELECT region, total FROM sales" } });
     fireEvent.click(view.getByRole("button", { name: "Run Chart" }));
     fireEvent.click(await view.findByRole("button", { name: "Use Bar chart" }));
+    expect(view.queryByRole("group", { name: "Chart variations" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Use Line chart" }));
+    expect(view.queryByRole("button", { name: "Use Bar Stacked chart" })).toBeNull();
+    expect(view.getByRole("button", { name: "Use Line Area chart" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Use Bar chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Use Bar Stacked chart" }));
     await view.findByTestId("assist-chart");
-    expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "bar", variationId: "basic", connectionId: "c1" });
+    expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "bar", variationId: "stacked", connectionId: "c1" });
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.change(view.getByLabelText("Connection for Chart"), { target: { value: "" } });
     expect(storage.getSavedCharts()[0]?.connectionId).toBeUndefined();
@@ -720,6 +726,7 @@ describe("DashboardStudio", () => {
     expect(posted[0]?.databaseType).toBe("postgres");
     expect(posted[0]?.schemaContext).toContain("Dashboard: sales");
     expect(posted[0]?.schemaContext).toContain("Chart Revenue: SELECT region, total FROM sales");
+    expect(posted[0]?.schemaContext).toContain("Take the time to write a complete query");
     expect(view.queryByRole("button", { name: "Add as chart" })).toBeNull();
     expect(view.queryByRole("button", { name: "Add as text" })).toBeNull();
     expect(
