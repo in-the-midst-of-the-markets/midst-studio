@@ -484,17 +484,36 @@ describe("GET /api/ai/assist", () => {
     const rankingsCalls: string[] = [];
     globalThis.fetch = (async (input: string, init?: RequestInit) => {
       const url = String(input);
-      if (url.includes("/datasets/rankings-daily")) {
+      if (url.includes("/rankings/")) {
         rankingsCalls.push(url);
-        expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer server-secret");
+        expect(new Headers(init?.headers).get("Authorization")).toBeNull();
+        if (url.includes("modality-category-options")) {
+          return jsonResponse({
+            data: { dimensions: [{ dimension: "domain", categories: [{ value: "finance", label: "Finance" }] }] },
+          });
+        }
+        if (url.includes("modality-category-share")) {
+          return jsonResponse({
+            data: {
+              marketShareData: [
+                { x: "2026-10-26", ys: { "openai/old": 0.9 } },
+                {
+                  x: "2026-11-02",
+                  ys: { "anthropic/claude-opus-5.5-20260921": 0.1522, Others: 0.4743 },
+                },
+              ],
+            },
+          });
+        }
         return jsonResponse({
           data: [
-            { date: "2026-10-26", model_permaslug: "other", total_tokens: "99" },
-            { date: "2026-10-26", model_permaslug: "anthropic/claude", total_tokens: "20" },
-            { date: "2026-11-02", model_permaslug: "openai/gpt-4o", total_tokens: "10" },
-            { date: "2026-11-02", model_permaslug: "anthropic/claude", total_tokens: "30" },
+            {
+              date: "2026-11-03 00:00:00",
+              model_permaslug: "anthropic/claude",
+              rankingMetricValue: 30,
+            },
+            { date: "2026-11-03 00:00:00", model_permaslug: "openai/gpt-4o", rankingMetricValue: 10 },
           ],
-          meta: { as_of: "2026-11-03T00:00:00.000Z" },
         });
       }
       return jsonResponse({ data: [{ id: "openai/gpt-4o", name: "GPT-4o" }] });
@@ -505,25 +524,22 @@ describe("GET /api/ai/assist", () => {
     const body = (await response.json()) as {
       rankings: {
         citation: string;
-        categories: { category: string; models: { id: string; totalTokens: string }[] }[];
+        categories: { category: string; label: string; models: { id: string; totalTokens: string }[] }[];
       };
     };
-    expect(body.rankings.categories).toHaveLength(13);
-    expect(body.rankings.categories[0]?.category).toBe("all");
-    expect(body.rankings.categories[0]?.models).toEqual([
-      { id: "anthropic/claude", totalTokens: "50" },
-      { id: "openai/gpt-4o", totalTokens: "10" },
+    expect(body.rankings.categories.map((category) => category.category)).toEqual(["all", "finance"]);
+    expect(body.rankings.categories[1]?.models).toEqual([
+      { id: "anthropic/claude-opus-5.5-20260921", totalTokens: "152200" },
     ]);
-    expect(body.rankings.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03T00:00:00.000Z.");
+    expect(body.rankings.categories[0]?.models[0]).toEqual({ id: "anthropic/claude", totalTokens: "30" });
+    expect(body.rankings.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.");
     expect(JSON.stringify(body)).not.toContain("server-secret");
-    expect(rankingsCalls).toHaveLength(13);
-    expect(rankingsCalls.some((url) => !new URL(url).searchParams.has("category"))).toBe(true);
-    expect(rankingsCalls.some((url) => url.includes("category=marketing%2Fseo"))).toBe(true);
+    expect(rankingsCalls).toHaveLength(3);
 
     const again = await GET(createMockRequest("/api/ai/assist") as never);
     expect((await again.json()) as { rankings: { citation: string } }).toMatchObject({
       rankings: { citation: body.rankings.citation },
     });
-    expect(rankingsCalls).toHaveLength(13);
+    expect(rankingsCalls).toHaveLength(3);
   });
 });

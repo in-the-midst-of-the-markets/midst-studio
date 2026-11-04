@@ -1,51 +1,40 @@
 /**
  * OpenRouter's domain rankings, copied once a day onto this server.
  *
- * The Data API counts tokens by the subject of the request. A category is a
- * sampled week, and the default window is about a month of those weeks. The
- * copy sums every week in that window. Keeping only the newest week would be
- * the last day or two, and a flagship that is quiet today would disappear.
- * One extra pull, with no category, is overall use. It is a dataset read, so
- * the copy is taken with the server's OPENROUTER_API_KEY and then served to
- * every chat. A failed day leaves the previous file in place. Cite OpenRouter
- * when showing the figures: the file's `citation` is the line their license asks for.
+ * The copy is the latest week of the public domain chart on
+ * openrouter.ai/rankings. Each domain lists models by their share of that
+ * week, which is the order the chart draws. All is the trailing week of token
+ * volume. The chart is public, so the copy does not need an API key. A failed
+ * day leaves the previous file in place. Cite OpenRouter when showing the
+ * figures: the file's `citation` is the line their license asks for.
  */
 
 import * as fs from "fs";
 import * as path from "path";
-import { resolveAssistKey } from "@/lib/ai/assist-transport";
 import { getDataDir } from "@/lib/data-dir";
 
-export const OPENROUTER_RANKINGS_URL = "https://openrouter.ai/api/v1/datasets/rankings-daily";
+/** The domain list on the rankings page. */
+export const OPENROUTER_DOMAIN_OPTIONS_URL =
+  "https://openrouter.ai/api/frontend/v1/rankings/modality-category-options?routeSegment=text";
+
+/** One domain's weekly share series. `category` selects the domain. */
+export const OPENROUTER_DOMAIN_SHARE_URL = "https://openrouter.ai/api/frontend/v1/rankings/modality-category-share";
+
+/** Trailing week of token volume, used for All. */
+export const OPENROUTER_WEEKLY_MODELS_URL =
+  "https://openrouter.ai/api/frontend/v1/rankings/models?view=week&metric=tokens_excl_byok";
 
 /** A stored copy older than this is fetched again. Younger copies are served as they are. */
 export const RANKINGS_MAX_AGE_MS = 86_400_000;
 
-/**
- * The subject areas OpenRouter ranks. `day` is rejected for these; the pull
- * asks for weekly buckets and sums the window.
- */
-export const RANKING_CATEGORIES = [
-  "programming",
-  "roleplay",
-  "marketing",
-  "marketing/seo",
-  "technology",
-  "science",
-  "translation",
-  "legal",
-  "finance",
-  "health",
-  "trivia",
-  "academia",
-] as const;
+/** Files from an earlier ranking are ignored, so a deploy picks up the chart's order. */
+export const RANKINGS_FORMAT = 2;
 
-export type RankingCategory = (typeof RANKING_CATEGORIES)[number];
-
-/** Overall use, from the pull that does not name a category. */
+/** Overall use, from the trailing week of token volume. */
 export const OVERALL_RANKING = "all";
 
-export type StoredRankingCategory = RankingCategory | typeof OVERALL_RANKING;
+/** A share is stored as millionths so the menu can order it with integer comparison. */
+const SHARE_MILLIONTHS = 1_000_000;
 
 export interface RankedModel {
   readonly id: string;
@@ -53,12 +42,14 @@ export interface RankedModel {
 }
 
 export interface RankingCategorySnapshot {
-  readonly category: StoredRankingCategory;
+  readonly category: string;
+  readonly label: string;
   readonly asOf: string;
   readonly models: readonly RankedModel[];
 }
 
 export interface OpenRouterRankingsFile {
+  readonly version: typeof RANKINGS_FORMAT;
   readonly fetchedAt: string;
   readonly citation: string;
   readonly categories: readonly RankingCategorySnapshot[];
@@ -71,8 +62,11 @@ export interface RefreshRankingsOptions {
   readonly fetchImpl?: RankingsFetch;
   readonly now?: () => number;
   readonly filePath?: string;
-  /** Pass null to skip the pull. Omit it to use the server's OpenRouter key. */
-  readonly key?: string | null;
+}
+
+interface DomainOption {
+  readonly value: string;
+  readonly label: string;
 }
 
 let refreshInFlight: Promise<OpenRouterRankingsFile | null> | null = null;
@@ -82,14 +76,6 @@ export function rankingsFilePath(): string {
   const override = process.env.OPENROUTER_RANKINGS_PATH;
   if (typeof override === "string" && override.trim() !== "") return override.trim();
   return path.join(getDataDir(), "openrouter-rankings.json");
-}
-
-function isRankingCategory(value: string): value is RankingCategory {
-  return (RANKING_CATEGORIES as readonly string[]).includes(value);
-}
-
-function isStoredCategory(value: string): value is StoredRankingCategory {
-  return value === OVERALL_RANKING || isRankingCategory(value);
 }
 
 function isRankedModel(value: unknown): value is RankedModel {
@@ -111,11 +97,15 @@ function isCategorySnapshot(value: unknown): value is RankingCategorySnapshot {
     typeof value === "object" &&
     "category" in value &&
     typeof value.category === "string" &&
-    isStoredCategory(value.category) &&
+    value.category.trim() !== "" &&
+    "label" in value &&
+    typeof value.label === "string" &&
+    value.label.trim() !== "" &&
     "asOf" in value &&
     typeof value.asOf === "string" &&
     "models" in value &&
     Array.isArray(value.models) &&
+    value.models.length > 0 &&
     value.models.every(isRankedModel)
   );
 }
@@ -124,12 +114,15 @@ function isRankingsFile(value: unknown): value is OpenRouterRankingsFile {
   return (
     value !== null &&
     typeof value === "object" &&
+    "version" in value &&
+    value.version === RANKINGS_FORMAT &&
     "fetchedAt" in value &&
     typeof value.fetchedAt === "string" &&
     "citation" in value &&
     typeof value.citation === "string" &&
     "categories" in value &&
     Array.isArray(value.categories) &&
+    value.categories.length > 0 &&
     value.categories.every(isCategorySnapshot)
   );
 }
@@ -155,48 +148,141 @@ function fresh(snapshot: OpenRouterRankingsFile, now: number): boolean {
   return now - fetchedAt < RANKINGS_MAX_AGE_MS;
 }
 
-function rankingsUrl(category: StoredRankingCategory): string {
-  const params = new URLSearchParams({ period: "week" });
-  if (category !== OVERALL_RANKING) params.set("category", category);
-  return `${OPENROUTER_RANKINGS_URL}?${params.toString()}`;
+function shareUrl(category: string): string {
+  const params = new URLSearchParams({
+    routeSegment: "text",
+    dimension: "domain",
+    category,
+  });
+  return `${OPENROUTER_DOMAIN_SHARE_URL}?${params.toString()}`;
 }
 
-function compareTokens(left: string, right: string): number {
+function fallbackLabel(value: string): string {
+  const words = value
+    .split(/[/_]/)
+    .filter((part) => part !== "")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1));
+  return words.length === 0 ? value : words.join(" ");
+}
+
+function compareWeights(left: string, right: string): number {
   const a = BigInt(left);
   const b = BigInt(right);
   if (a === b) return 0;
   return a > b ? -1 : 1;
 }
 
-function rowOf(row: unknown): { date: string; id: string; tokens: string } | null {
-  if (row === null || typeof row !== "object") return null;
-  if (!("date" in row) || typeof row.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) return null;
-  if (!("model_permaslug" in row) || typeof row.model_permaslug !== "string") return null;
-  const id = row.model_permaslug.trim();
-  if (id === "" || id === "other") return null;
-  if (!("total_tokens" in row) || typeof row.total_tokens !== "string" || !/^\d+$/.test(row.total_tokens)) return null;
-  return { date: row.date, id, tokens: row.total_tokens };
+function domainList(payload: unknown): DomainOption[] | null {
+  if (payload === null || typeof payload !== "object" || !("data" in payload)) return null;
+  const data = payload.data;
+  if (data === null || typeof data !== "object" || !("dimensions" in data) || !Array.isArray(data.dimensions)) {
+    return null;
+  }
+  for (const dimension of data.dimensions) {
+    if (dimension === null || typeof dimension !== "object" || !("dimension" in dimension)) continue;
+    if (dimension.dimension !== "domain") continue;
+    if (!("categories" in dimension) || !Array.isArray(dimension.categories)) return null;
+    const domains: DomainOption[] = [];
+    const seen = new Set<string>();
+    for (const category of dimension.categories) {
+      if (category === null || typeof category !== "object" || !("value" in category)) continue;
+      if (typeof category.value !== "string") continue;
+      const value = category.value.trim();
+      if (value === "" || value === OVERALL_RANKING || seen.has(value)) continue;
+      seen.add(value);
+      const given = "label" in category && typeof category.label === "string" ? category.label.trim() : "";
+      domains.push({ value, label: given === "" ? fallbackLabel(value) : given });
+    }
+    return domains.length === 0 ? null : domains;
+  }
+  return null;
 }
 
-/** Every week in the window, summed by model, or null when the body is not a ranking. */
-function categorySnapshot(category: StoredRankingCategory, payload: unknown): RankingCategorySnapshot | null {
+function shareWeight(share: number): string | null {
+  if (!Number.isFinite(share) || share <= 0) return null;
+  const weight = Math.round(share * SHARE_MILLIONTHS);
+  if (weight <= 0) return null;
+  return String(weight);
+}
+
+/** The newest week of one domain, or null when the body is not that chart. */
+function latestWeek(payload: unknown): { asOf: string; models: RankedModel[] } | null {
+  if (payload === null || typeof payload !== "object" || !("data" in payload)) return null;
+  const data = payload.data;
+  if (
+    data === null ||
+    typeof data !== "object" ||
+    !("marketShareData" in data) ||
+    !Array.isArray(data.marketShareData)
+  ) {
+    return null;
+  }
+  let asOf = "";
+  let shares: Record<string, unknown> | null = null;
+  for (const row of data.marketShareData) {
+    if (row === null || typeof row !== "object") continue;
+    if (!("x" in row) || typeof row.x !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(row.x)) continue;
+    if (!("ys" in row) || row.ys === null || typeof row.ys !== "object" || Array.isArray(row.ys)) continue;
+    if (row.x < asOf) continue;
+    asOf = row.x;
+    shares = row.ys as Record<string, unknown>;
+  }
+  if (shares === null) return null;
+  const models: RankedModel[] = [];
+  for (const [id, share] of Object.entries(shares)) {
+    const trimmed = id.trim();
+    if (trimmed === "" || trimmed.toLowerCase() === "others") continue;
+    if (typeof share !== "number") continue;
+    const weight = shareWeight(share);
+    if (weight === null) continue;
+    models.push({ id: trimmed, totalTokens: weight });
+  }
+  if (models.length === 0) return null;
+  models.sort((left, right) => compareWeights(left.totalTokens, right.totalTokens) || left.id.localeCompare(right.id));
+  return { asOf, models };
+}
+
+function metricOf(value: unknown): bigint | null {
+  if (typeof value === "number" && Number.isSafeInteger(value) && value > 0) return BigInt(value);
+  if (typeof value === "string" && /^\d+$/.test(value) && value !== "0") return BigInt(value);
+  return null;
+}
+
+function dayOf(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const day = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : "";
+}
+
+function slugOf(row: object): string {
+  if ("variant_permaslug" in row && typeof row.variant_permaslug === "string" && row.variant_permaslug.trim() !== "") {
+    return row.variant_permaslug.trim();
+  }
+  if ("model_permaslug" in row && typeof row.model_permaslug === "string") return row.model_permaslug.trim();
+  return "";
+}
+
+/** The trailing week of token volume, or null when the body is not that chart. */
+function overallSnapshot(payload: unknown): RankingCategorySnapshot | null {
   if (payload === null || typeof payload !== "object" || !("data" in payload) || !Array.isArray(payload.data)) {
     return null;
   }
   const totals = new Map<string, bigint>();
+  let asOf = "";
   for (const row of payload.data) {
-    const parsed = rowOf(row);
-    if (parsed === null) continue;
-    totals.set(parsed.id, (totals.get(parsed.id) ?? BigInt(0)) + BigInt(parsed.tokens));
+    if (row === null || typeof row !== "object") continue;
+    const slug = slugOf(row);
+    if (slug === "" || slug.toLowerCase() === "other" || slug.toLowerCase() === "others") continue;
+    const metric = metricOf("rankingMetricValue" in row ? row.rankingMetricValue : undefined);
+    if (metric === null) continue;
+    totals.set(slug, (totals.get(slug) ?? BigInt(0)) + metric);
+    const day = dayOf("date" in row ? row.date : undefined);
+    if (day > asOf) asOf = day;
   }
   if (totals.size === 0) return null;
   const models = [...totals.entries()].map(([id, tokens]) => ({ id, totalTokens: tokens.toString() }));
-  models.sort((a, b) => compareTokens(a.totalTokens, b.totalTokens) || a.id.localeCompare(b.id));
-  let asOf = "";
-  if ("meta" in payload && payload.meta !== null && typeof payload.meta === "object" && "as_of" in payload.meta) {
-    if (typeof payload.meta.as_of === "string") asOf = payload.meta.as_of;
-  }
-  return { category, asOf, models };
+  models.sort((left, right) => compareWeights(left.totalTokens, right.totalTokens) || left.id.localeCompare(right.id));
+  return { category: OVERALL_RANKING, label: "All", asOf, models };
 }
 
 function citationFor(categories: readonly RankingCategorySnapshot[]): string {
@@ -208,21 +294,15 @@ function citationFor(categories: readonly RankingCategorySnapshot[]): string {
   return `Source: OpenRouter (openrouter.ai/rankings), as of ${when}.`;
 }
 
-async function pullCategory(
-  category: StoredRankingCategory,
-  key: string,
-  fetchImpl: RankingsFetch,
-): Promise<RankingCategorySnapshot | null> {
-  const response = await fetchImpl(rankingsUrl(category), {
+async function pullJson(url: string, fetchImpl: RankingsFetch): Promise<unknown | null> {
+  const response = await fetchImpl(url, {
     headers: {
-      Authorization: `Bearer ${key}`,
       "HTTP-Referer": "https://midst.market",
       "X-Title": "Midst",
     },
   });
   if (!response.ok) return null;
-  const payload: unknown = await response.json().catch(() => null);
-  return categorySnapshot(category, payload);
+  return await response.json().catch(() => null);
 }
 
 function writeStored(filePath: string, snapshot: OpenRouterRankingsFile): void {
@@ -237,29 +317,27 @@ function writeStored(filePath: string, snapshot: OpenRouterRankingsFile): void {
   }
 }
 
-function chosenKey(override: string | null | undefined): string | null {
-  if (override === undefined) return resolveAssistKey("openrouter", "");
-  const trimmed = override === null ? "" : override.trim();
-  return trimmed === "" ? null : trimmed;
-}
-
 async function refreshOnce(options: RefreshRankingsOptions): Promise<OpenRouterRankingsFile | null> {
   const filePath = options.filePath ?? rankingsFilePath();
   const now = options.now ?? Date.now;
   const stored = readStored(filePath);
   if (stored !== null && fresh(stored, now())) return stored;
-  const key = chosenKey(options.key);
-  if (key === null) return stored;
   try {
     const fetchImpl = options.fetchImpl ?? fetch;
-    const requested: readonly StoredRankingCategory[] = [OVERALL_RANKING, ...RANKING_CATEGORIES];
-    const pulled = await Promise.all(requested.map((category) => pullCategory(category, key, fetchImpl)));
-    const categories: RankingCategorySnapshot[] = [];
-    for (const snapshot of pulled) {
-      if (snapshot === null) return stored;
-      categories.push(snapshot);
+    const listed = domainList(await pullJson(OPENROUTER_DOMAIN_OPTIONS_URL, fetchImpl));
+    if (listed === null) return stored;
+    const shares = await Promise.all(listed.map((domain) => pullJson(shareUrl(domain.value), fetchImpl)));
+    const overall = overallSnapshot(await pullJson(OPENROUTER_WEEKLY_MODELS_URL, fetchImpl));
+    if (overall === null) return stored;
+    const categories: RankingCategorySnapshot[] = [overall];
+    for (let index = 0; index < listed.length; index += 1) {
+      const week = latestWeek(shares[index]);
+      const domain = listed[index];
+      if (week === null || domain === undefined) return stored;
+      categories.push({ category: domain.value, label: domain.label, asOf: week.asOf, models: week.models });
     }
     const next: OpenRouterRankingsFile = {
+      version: RANKINGS_FORMAT,
       fetchedAt: new Date(now()).toISOString(),
       citation: citationFor(categories),
       categories,
@@ -272,8 +350,8 @@ async function refreshOnce(options: RefreshRankingsOptions): Promise<OpenRouterR
 }
 
 /**
- * The saved copy when it is younger than a day. Otherwise one pull of every
- * domain, written only after all of them succeed. Callers share one pull.
+ * The saved copy when it is younger than a day. Otherwise one pull of the
+ * domain chart, written only after every domain succeeds. Callers share one pull.
  */
 export function refreshOpenRouterRankings(
   options: RefreshRankingsOptions = {},
