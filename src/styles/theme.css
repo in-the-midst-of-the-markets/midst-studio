@@ -29,12 +29,20 @@
  */
 
 :root {
+  color-scheme: light;
+
   /* ── Surfaces (light) ─────────────────────────────────────────────────── */
   --studio-canvas: #f4f4f5;
   --studio-sunken: #f0f0f1;
   --studio-surface: #fafafa;
   --studio-raised: #ffffff;
   --studio-overlay: #ffffff;
+  /*
+   * The fill of a field the user types or picks in. In light that fill is the
+   * canvas gray already painted on those fields, on a white raised surface, so
+   * this token does not move light mode.
+   */
+  --studio-control: #f4f4f5;
   /* Translucent card ground — the `bg-zinc-900/50` of the dark theme. */
   --studio-panel: rgb(255 255 255 / 0.6);
 
@@ -248,6 +256,8 @@
 }
 
 .dark {
+  color-scheme: dark;
+
   /* ── Surfaces (dark) ──────────────────────────────────────────────────── */
   /* Marketing page #101010. A tint wash under identity text falls under WCAG
    * AA once a ground is lighter than #141414, so that is the lightest studio
@@ -259,6 +269,13 @@
   --studio-raised: #141414;
   --studio-overlay: #141414;
   --studio-panel: rgb(20 20 20 / 0.5);
+  /*
+   * Not a surface. Dark elevation still stops at #141414, and the four-point
+   * step from that stop down to the canvas disappears on a field. The well
+   * takes one further step so it reads the way the canvas gray does on white.
+   * Accent text is not asked to sit on it.
+   */
+  --studio-control: #2a2a2a;
 
   /* ── Hairlines ────────────────────────────────────────────────────────── */
   --studio-hairline: rgb(255 255 255 / 0.05);
@@ -398,6 +415,7 @@
  */
 @theme inline {
   --color-canvas: var(--studio-canvas);
+  --color-control: var(--studio-control);
   --color-sunken: var(--studio-sunken);
   --color-surface: var(--studio-surface);
   --color-raised: var(--studio-raised);
@@ -504,4 +522,35 @@
   --color-hue-teal-solid-hover: var(--studio-hue-teal-solid-hover);
   --color-hue-purple-solid: var(--studio-hue-purple-solid);
   --color-hue-purple-solid-hover: var(--studio-hue-purple-solid-hover);
+}
+
+/*
+ * Field wells in dark mode. Unlayered on purpose: the fills these controls
+ * already carry (`bg-canvas`, `bg-background`, `bg-panel`, shadcn's
+ * `dark:bg-input/30`) are utility-layer classes, and a layered rule loses to
+ * them no matter its specificity. `:where` keeps this at one class so the
+ * Monaco reset below can win on specificity alone.
+ *
+ * Light mode is left alone — those fields are already a step off white.
+ * Transparent boxes (a title, a tab rename, the text inside an input group)
+ * opt out. Checkboxes, radios, sliders and colour swatches keep their own paint.
+ */
+.dark :where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([class~="bg-transparent"]):not([class~="dark:bg-transparent"]),
+  select:not([class~="bg-transparent"]):not([class~="dark:bg-transparent"]),
+  textarea:not([class~="bg-transparent"]):not([class~="dark:bg-transparent"]),
+  [data-slot="input"]:not([class~="dark:bg-transparent"]),
+  [data-slot="textarea"]:not([class~="dark:bg-transparent"]),
+  [data-slot="select-trigger"],
+  [data-slot="input-group"],
+  [data-slot="input-otp-slot"]
+) {
+  background-color: var(--studio-control);
+}
+
+.monaco-editor textarea,
+.monaco-editor input,
+.monaco-diff-editor textarea,
+.monaco-diff-editor input {
+  background-color: transparent;
 }

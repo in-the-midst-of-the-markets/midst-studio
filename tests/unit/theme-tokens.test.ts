@@ -90,6 +90,34 @@ describe("the dark chrome tokens stay pinned", () => {
     expect(value("--studio-panel")).toBe("rgb(20 20 20 / 0.5)");
   });
 
+  /**
+   * Light fields are the canvas gray on white, a step you can see. The dark
+   * canvas-to-raised step is four points and disappears, so the well is pinned
+   * a step further. It is not a surface: the #141414 cap stays on the ramp above.
+   */
+  test("the field fill", () => {
+    const lightValue = (token: string) =>
+      new RegExp(`${token}:\\s*([^;]+);`).exec(block(stripComments(theme), ":root"))?.[1];
+    expect(lightValue("--studio-control")).toBe("#f4f4f5");
+    expect(value("--studio-control")).toBe("#2a2a2a");
+    expect(value("--studio-control")).not.toBe(value("--studio-canvas"));
+    expect(value("--studio-control")).not.toBe(value("--studio-raised"));
+  });
+
+  test("dark fields take that fill, and editors and transparent boxes do not", () => {
+    const ruleAt = theme.indexOf(".dark :where(");
+    expect(ruleAt).toBeGreaterThan(theme.indexOf("@theme inline"));
+    const rule = theme.slice(ruleAt);
+    expect(rule).toContain("background-color: var(--studio-control)");
+    expect(rule).toContain(':not([class~="bg-transparent"])');
+    expect(rule).toContain(':not([class~="dark:bg-transparent"])');
+    expect(rule).toContain('[type="checkbox"]');
+    expect(rule).toContain('[type="color"]');
+    expect(rule).toContain('[data-slot="select-trigger"]');
+    expect(theme.slice(ruleAt)).toContain(".monaco-editor textarea");
+    expect(theme.indexOf("@layer", ruleAt)).toBe(-1);
+  });
+
   test("the hairlines", () => {
     expect(value("--studio-hairline")).toBe("rgb(255 255 255 / 0.05)");
     expect(value("--studio-hairline-strong")).toBe("rgb(255 255 255 / 0.1)");

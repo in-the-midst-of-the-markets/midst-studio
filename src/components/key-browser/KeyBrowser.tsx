@@ -783,10 +783,9 @@ export function KeyBrowser({ connection, capability, databaseLevel, request, onO
           declared a level to choose from, and left empty while that read is in flight or refused:
           the walk itself does not wait for it, because an absent database means the session's own.
 
-          THE PROJECT'S OWN SELECT AND NOT A NATIVE ONE, which is a colour and not a taste: a native
-          `<option>` list is painted by the browser, and this application declares no `color-scheme`,
-          so the popup came out light with the dark theme's text on it — a menu a reader has to guess
-          at. `SelectContent` is the themed surface every other picker in the product opens.
+          THE PROJECT'S OWN SELECT AND NOT A NATIVE ONE. A native `<option>` list is painted by the
+          browser from `color-scheme` alone, so it cannot follow the studio type, the focus ring, or
+          the field fill. `SelectContent` is the themed surface every other picker in the product opens.
         */}
         {databaseLevel !== undefined && (
           <Select

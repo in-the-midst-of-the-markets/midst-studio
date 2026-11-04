@@ -769,7 +769,7 @@ function DashboardChart({
           className="min-w-[min(100%,max-content)] flex-1 break-words bg-transparent text-sm font-semibold text-fg outline-none"
         />
         <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
-          <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+          <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
             <FaceButton pressed={face === "chart"} label="Chart" icon={BarChart3} onClick={() => setFace("chart")} />
             <FaceButton pressed={face === "query"} label="Query" icon={Terminal} onClick={() => setFace("query")} />
             <FaceButton pressed={face === "code"} label="Code" icon={Braces} onClick={() => setFace("code")} />
@@ -1442,7 +1442,7 @@ function DashboardNoteCard({
       className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
       <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-        <div className="flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+        <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
           <FaceButton pressed={face === "text"} label="Text" icon={Type} onClick={() => setFace("text")} />
           <FaceButton pressed={face === "query"} label="Text query" icon={Terminal} onClick={() => setFace("query")} />
           <FaceButton pressed={face === "code"} label="Text code" icon={Braces} onClick={() => setFace("code")} />
@@ -1612,7 +1612,7 @@ function DashboardFilterCard({
           className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-fg outline-none"
         />
         {filter.control !== undefined && (
-          <div className="ml-auto flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+          <div className="ml-auto flex items-center rounded-lg border border-hairline bg-control p-0.5">
             <FaceButton
               pressed={face === "filter"}
               label="Filter"
@@ -1819,7 +1819,7 @@ function FilterChoices({
   const databaseType = connections.find((item) => item.id === filter.connectionId)?.type;
   return (
     <div>
-      <div className="mb-3 flex items-center rounded-lg border border-hairline bg-canvas p-0.5">
+      <div className="mb-3 flex items-center rounded-lg border border-hairline bg-control p-0.5">
         <button
           type="button"
           aria-pressed={!fromValues}
