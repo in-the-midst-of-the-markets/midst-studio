@@ -673,7 +673,7 @@ function graph(input: ChartBuildInput): BuiltChart | null {
           type: "graph",
           layout: variation === "circular" ? "circular" : "force",
           roam: true,
-          label: { show: true, color: theme.ink },
+          label: { show: false, color: theme.ink },
           ...(variation === "curved" ? { lineStyle: { curveness: 0.3 } } : {}),
           ...(variation === "arrows" ? { edgeSymbol: ["none", "arrow"] } : {}),
           ...(variation === "labeled" ? { edgeLabel: { show: true, color: theme.ink } } : {}),

@@ -627,6 +627,7 @@ describe("heatmap, graph and treemap", () => {
     expect(seriesOf(force)[0]?.links).toEqual([{ source: "a", target: "b" }]);
     expect(seriesOf(force)[0]?.data).toEqual([{ name: "a" }, { name: "b" }]);
     expect(seriesOf(force)[0]?.symbolSize).toBeUndefined();
+    expect(seriesOf(force)[0]?.label).toEqual({ show: false, color: theme.ink });
     const curved = draw({
       typeId: "graph",
       variationId: "curved",
@@ -648,6 +649,7 @@ describe("heatmap, graph and treemap", () => {
       selection: { source: ["source"], target: ["target"] },
     });
     expect(seriesOf(labeled)[0]?.edgeLabel).toEqual({ show: true, color: theme.ink });
+    expect(seriesOf(labeled)[0]?.label).toEqual({ show: false, color: theme.ink });
   });
 
   test("sizes a source node from a metric and keeps the greatest finite value", () => {
