@@ -565,6 +565,14 @@ describe("StudioMobileHeader", () => {
     }
   });
 
+  test("opens Chart Settings from the profile menu", () => {
+    const view = render(<StudioMobileHeader {...defaults} isAdmin={false} />);
+    fireEvent.click(view.getByText("Chart Settings"));
+    expect(view.getByRole("dialog", { name: "Chart settings" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Close" }));
+    expect(view.queryByRole("dialog", { name: "Chart settings" })).toBeNull();
+  });
+
   test("the user menu carries a theme control", () => {
     const { queryByText } = render(<StudioMobileHeader {...defaults} />);
     expect(queryByText("Switch to light theme")).not.toBeNull();

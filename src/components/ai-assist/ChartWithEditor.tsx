@@ -24,6 +24,7 @@ import {
   type FilterCompare,
 } from "@/lib/charts/query-filters";
 import { classifyColumns, ECHART_TYPES, echartType, slotsFor, toggleSlot } from "@/lib/charts/echarts-catalog";
+import { useChartSettings } from "@/components/charts/use-chart-settings";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { chartTheme } from "@/lib/charts/palette";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
@@ -176,6 +177,7 @@ export function ChartWithEditor({
   const [typesOpen, setTypesOpen] = useState(false);
   const [browsingId, setBrowsingId] = useState<string | null>(null);
   const theme = chartTheme(useEffectiveTheme());
+  const settings = useChartSettings();
   if (tracked.result !== result || tracked.error !== error) {
     setTracked({ result, error });
     setFace("chart");
@@ -247,8 +249,9 @@ export function ChartWithEditor({
       theme,
       color,
       title,
+      settings,
     });
-  }, [result, choice, projectedRows, theme, color, title]);
+  }, [result, choice, projectedRows, theme, color, title, settings]);
   const filterLooks = defaultFilterLooks(filters, metricNames);
   const code = useChartCode(
     built?.option ?? null,

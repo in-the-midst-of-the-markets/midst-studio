@@ -1,6 +1,7 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
 import { applyChartValues } from "@/lib/charts/chart-code";
 import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
+import type { ChartSettings } from "@/lib/charts/chart-settings";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
 import { withoutFilterLooks } from "@/lib/charts/filter-look";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
@@ -48,6 +49,7 @@ export function optionForSavedChart(
   chart: Pick<SavedChartConfig, "typeId" | "variationId" | "selection" | "look">,
   result: QueryResult,
   theme: ChartTheme = chartTheme("dark"),
+  settings?: ChartSettings,
 ): BuiltChart | null {
   if (chart.typeId === undefined || chart.variationId === undefined) return null;
   const built = buildChartOption({
@@ -57,6 +59,7 @@ export function optionForSavedChart(
     selection: chart.selection ?? {},
     title: "",
     theme,
+    settings,
   });
   if (built === null) return null;
   const look = storedChartLook(chart.look);

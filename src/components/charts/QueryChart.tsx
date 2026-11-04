@@ -46,6 +46,7 @@ import {
   type ChartChoice,
   type ClassifiedColumns,
 } from "@/lib/charts/echarts-catalog";
+import { useChartSettings } from "@/components/charts/use-chart-settings";
 import { buildChartOption, watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 import {
   clearQueryFilters,
@@ -160,6 +161,7 @@ export function QueryChart({
   }
 
   const theme = chartTheme(useEffectiveTheme());
+  const settings = useChartSettings();
   const mask = useMemo(() => {
     if (sensitive.size === 0) return undefined;
     return (column: string, value: unknown): string => {
@@ -185,8 +187,9 @@ export function QueryChart({
       theme,
       mask,
       title: type?.label ?? "",
+      settings,
     });
-  }, [hasRows, choice, ready, rows, theme, mask, type]);
+  }, [hasRows, choice, ready, rows, theme, mask, type, settings]);
   const filters = query !== undefined && onFilterChange !== undefined ? readQueryFilters(query) : [];
   const filterLooks = defaultFilterLooks(filters, columns.metrics);
   const code = useChartCode(

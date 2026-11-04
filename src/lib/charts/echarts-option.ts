@@ -5,6 +5,7 @@
  * import the library and a test can read every series without a canvas.
  */
 
+import { applyChartSettings, type ChartSettings } from "@/lib/charts/chart-settings";
 import { applyChartTitle } from "@/lib/charts/chart-title";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 import { echartType, type SlotSelection } from "@/lib/charts/echarts-catalog";
@@ -58,6 +59,8 @@ export interface ChartBuildInput {
   readonly mask?: (column: string, value: unknown) => string;
   /** Words for `title.text` in the chart code. Empty leaves the chart untitled. */
   readonly title?: string;
+  /** Profile defaults. Omitted leaves the builder's own look. */
+  readonly settings?: ChartSettings;
 }
 
 type Row = Record<string, unknown>;
@@ -954,7 +957,9 @@ export function buildChartOption(input: ChartBuildInput): BuiltChart | null {
   if (type === null || type.variations.every((item) => item.id !== input.variationId)) return null;
   const built = BUILDERS[type.id]?.(input) ?? null;
   if (built === null) return null;
-  return { option: applyChartTitle(built.option, input.title ?? ""), notes: built.notes };
+  const titled = applyChartTitle(built.option, input.title ?? "");
+  if (input.settings === undefined) return { option: titled, notes: built.notes };
+  return { option: applyChartSettings(titled, input.typeId, input.variationId, input.settings), notes: built.notes };
 }
 
 /** Disconnects a resize observer, or does nothing where the browser has none. */
