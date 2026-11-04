@@ -77,7 +77,7 @@ import {
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
-import { classifyColumns, defaultSelection, ECHART_TYPES } from "@/lib/charts/echarts-catalog";
+import { classifyColumns, defaultSelection, echartType, ECHART_TYPES } from "@/lib/charts/echarts-catalog";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import {
@@ -476,10 +476,7 @@ export function DashboardStudio() {
         conversationLabel="Dashboard conversation"
         sql={dashboardEditorSql(active, charts)}
         databaseType={assistDatabaseType(connections.map((item) => item.type))}
-        schemaContext={schemaWithDashboard(
-          schemaContext,
-          active === null ? "" : dashboardAssistContext(active, charts),
-        )}
+        schemaContext={schemaWithDashboard(schemaContext, dashboardAssistContext(active, charts))}
         onPlaceReply={placeAssistantReply}
       />
     </>
@@ -1022,36 +1019,61 @@ function ChartTypePicker({
     patch: Pick<SavedChartConfig, "chartType" | "typeId" | "variationId" | "selection" | "xAxis" | "yAxis">,
   ) => void;
 }) {
+  const [typeId, setTypeId] = useState<string | null>(null);
+  const type = typeId === null ? null : echartType(typeId);
+  const chooseVariation = (variationId: string) => {
+    if (type === null) return;
+    const columns = classifyColumns(result.fields, result.rows);
+    const picked = defaultSelection(type.id, variationId, columns);
+    const selection: Record<string, string[]> = {};
+    for (const [slot, names] of Object.entries(picked)) selection[slot] = [...names];
+    const axes = axesFromSelection(picked);
+    onShape({
+      chartType: type.id,
+      typeId: type.id,
+      variationId,
+      selection,
+      xAxis: axes.xAxis,
+      yAxis: axes.yAxis,
+    });
+  };
   return (
-    <div className="flex flex-wrap gap-2 p-3">
-      {ECHART_TYPES.map((type) => {
-        const variationId = type.variations[0]?.id ?? type.id;
-        return (
-          <button
-            key={type.id}
-            type="button"
-            aria-label={`Use ${type.label} chart`}
-            onClick={() => {
-              const columns = classifyColumns(result.fields, result.rows);
-              const picked = defaultSelection(type.id, variationId, columns);
-              const selection: Record<string, string[]> = {};
-              for (const [slot, names] of Object.entries(picked)) selection[slot] = [...names];
-              const axes = axesFromSelection(picked);
-              onShape({
-                chartType: type.id,
-                typeId: type.id,
-                variationId,
-                selection,
-                xAxis: axes.xAxis,
-                yAxis: axes.yAxis,
-              });
-            }}
-            className="rounded-lg bg-brand-tint/15 px-2.5 py-1 text-xs font-medium text-brand"
-          >
-            {type.label}
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2 p-3">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Chart types">
+        {ECHART_TYPES.map((item) => {
+          const pressed = typeId === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              aria-pressed={pressed}
+              aria-label={`Use ${item.label} chart`}
+              onClick={() => setTypeId(item.id)}
+              className={cn(
+                "rounded-lg px-2.5 py-1 text-xs font-medium",
+                pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
+              )}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+      {type !== null && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Chart variations">
+          {type.variations.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={`Use ${type.label} ${item.label} chart`}
+              onClick={() => chooseVariation(item.id)}
+              className="rounded-lg bg-brand-tint/15 px-2.5 py-1 text-xs font-medium text-brand"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

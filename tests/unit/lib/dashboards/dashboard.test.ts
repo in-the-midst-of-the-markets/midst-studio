@@ -5,6 +5,7 @@ import {
   chartFrameSize,
   chartLabel,
   CUSTOM_FILTER_SCRIPT,
+  DASHBOARD_ASSIST_GUIDE,
   dashboardAssistContext,
   dashboardEditorSql,
   dashboardName,
@@ -319,6 +320,7 @@ describe("dashboard layout", () => {
     );
     expect(described).toBe(
       [
+        DASHBOARD_ASSIST_GUIDE,
         "Dashboard: Board",
         "Chart Plain: (no query)",
         "Chart Revenue: SELECT 1",
@@ -327,6 +329,7 @@ describe("dashboard layout", () => {
         "Component Component (unset) = ",
       ].join("\n"),
     );
+    expect(dashboardAssistContext(null, [])).toBe(DASHBOARD_ASSIST_GUIDE);
     expect(schemaWithDashboard("[]", "  ")).toBe("[]");
     expect(schemaWithDashboard("[]", "Dashboard: Board")).toBe("[]\n\nDashboard:\nDashboard: Board");
     expect(schemaWithDashboard("x".repeat(ASSIST_SCHEMA_CAP), "Dashboard: Board")).toBe("x".repeat(ASSIST_SCHEMA_CAP));
