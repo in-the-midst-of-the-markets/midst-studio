@@ -1,11 +1,14 @@
 /**
  * OpenRouter's domain rankings, copied once a day onto this server.
  *
- * The Data API counts tokens by the subject of the request. It is a dataset
- * read, so the copy is taken with the server's OPENROUTER_API_KEY and then
- * served to every chat. A failed day leaves the previous file in place.
- * Cite OpenRouter when showing the figures: the file's `citation` is the line
- * their license asks for.
+ * The Data API counts tokens by the subject of the request. A category is a
+ * sampled week, and the default window is about a month of those weeks. The
+ * copy sums every week in that window. Keeping only the newest week would be
+ * the last day or two, and a flagship that is quiet today would disappear.
+ * One extra pull, with no category, is overall use. It is a dataset read, so
+ * the copy is taken with the server's OPENROUTER_API_KEY and then served to
+ * every chat. A failed day leaves the previous file in place. Cite OpenRouter
+ * when showing the figures: the file's `citation` is the line their license asks for.
  */
 
 import * as fs from "fs";
@@ -20,7 +23,7 @@ export const RANKINGS_MAX_AGE_MS = 86_400_000;
 
 /**
  * The subject areas OpenRouter ranks. `day` is rejected for these; the pull
- * asks for the latest week.
+ * asks for weekly buckets and sums the window.
  */
 export const RANKING_CATEGORIES = [
   "programming",
@@ -39,13 +42,18 @@ export const RANKING_CATEGORIES = [
 
 export type RankingCategory = (typeof RANKING_CATEGORIES)[number];
 
+/** Overall use, from the pull that does not name a category. */
+export const OVERALL_RANKING = "all";
+
+export type StoredRankingCategory = RankingCategory | typeof OVERALL_RANKING;
+
 export interface RankedModel {
   readonly id: string;
   readonly totalTokens: string;
 }
 
 export interface RankingCategorySnapshot {
-  readonly category: RankingCategory;
+  readonly category: StoredRankingCategory;
   readonly asOf: string;
   readonly models: readonly RankedModel[];
 }
@@ -80,6 +88,10 @@ function isRankingCategory(value: string): value is RankingCategory {
   return (RANKING_CATEGORIES as readonly string[]).includes(value);
 }
 
+function isStoredCategory(value: string): value is StoredRankingCategory {
+  return value === OVERALL_RANKING || isRankingCategory(value);
+}
+
 function isRankedModel(value: unknown): value is RankedModel {
   return (
     value !== null &&
@@ -99,7 +111,7 @@ function isCategorySnapshot(value: unknown): value is RankingCategorySnapshot {
     typeof value === "object" &&
     "category" in value &&
     typeof value.category === "string" &&
-    isRankingCategory(value.category) &&
+    isStoredCategory(value.category) &&
     "asOf" in value &&
     typeof value.asOf === "string" &&
     "models" in value &&
@@ -143,8 +155,9 @@ function fresh(snapshot: OpenRouterRankingsFile, now: number): boolean {
   return now - fetchedAt < RANKINGS_MAX_AGE_MS;
 }
 
-function rankingsUrl(category: RankingCategory): string {
-  const params = new URLSearchParams({ period: "week", category });
+function rankingsUrl(category: StoredRankingCategory): string {
+  const params = new URLSearchParams({ period: "week" });
+  if (category !== OVERALL_RANKING) params.set("category", category);
   return `${OPENROUTER_RANKINGS_URL}?${params.toString()}`;
 }
 
@@ -165,23 +178,19 @@ function rowOf(row: unknown): { date: string; id: string; tokens: string } | nul
   return { date: row.date, id, tokens: row.total_tokens };
 }
 
-/** The latest week of one category, or null when the body is not a ranking. */
-function categorySnapshot(category: RankingCategory, payload: unknown): RankingCategorySnapshot | null {
+/** Every week in the window, summed by model, or null when the body is not a ranking. */
+function categorySnapshot(category: StoredRankingCategory, payload: unknown): RankingCategorySnapshot | null {
   if (payload === null || typeof payload !== "object" || !("data" in payload) || !Array.isArray(payload.data)) {
     return null;
   }
-  let latest = "";
-  const byDate = new Map<string, RankedModel[]>();
+  const totals = new Map<string, bigint>();
   for (const row of payload.data) {
     const parsed = rowOf(row);
     if (parsed === null) continue;
-    const list = byDate.get(parsed.date) ?? [];
-    list.push({ id: parsed.id, totalTokens: parsed.tokens });
-    byDate.set(parsed.date, list);
-    if (parsed.date > latest) latest = parsed.date;
+    totals.set(parsed.id, (totals.get(parsed.id) ?? BigInt(0)) + BigInt(parsed.tokens));
   }
-  const models = byDate.get(latest);
-  if (models === undefined || models.length === 0) return null;
+  if (totals.size === 0) return null;
+  const models = [...totals.entries()].map(([id, tokens]) => ({ id, totalTokens: tokens.toString() }));
   models.sort((a, b) => compareTokens(a.totalTokens, b.totalTokens) || a.id.localeCompare(b.id));
   let asOf = "";
   if ("meta" in payload && payload.meta !== null && typeof payload.meta === "object" && "as_of" in payload.meta) {
@@ -200,7 +209,7 @@ function citationFor(categories: readonly RankingCategorySnapshot[]): string {
 }
 
 async function pullCategory(
-  category: RankingCategory,
+  category: StoredRankingCategory,
   key: string,
   fetchImpl: RankingsFetch,
 ): Promise<RankingCategorySnapshot | null> {
@@ -243,7 +252,8 @@ async function refreshOnce(options: RefreshRankingsOptions): Promise<OpenRouterR
   if (key === null) return stored;
   try {
     const fetchImpl = options.fetchImpl ?? fetch;
-    const pulled = await Promise.all(RANKING_CATEGORIES.map((category) => pullCategory(category, key, fetchImpl)));
+    const requested: readonly StoredRankingCategory[] = [OVERALL_RANKING, ...RANKING_CATEGORIES];
+    const pulled = await Promise.all(requested.map((category) => pullCategory(category, key, fetchImpl)));
     const categories: RankingCategorySnapshot[] = [];
     for (const snapshot of pulled) {
       if (snapshot === null) return stored;

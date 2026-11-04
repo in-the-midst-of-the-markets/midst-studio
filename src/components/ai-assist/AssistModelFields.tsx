@@ -1,11 +1,13 @@
 "use client";
 
-import { rankAssistModels, type AssistRankings } from "@/lib/ai/assist-model-rank";
+import { useState } from "react";
+import { ASSIST_RANK_ALL, rankAssistModels, rankingDomains, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { COMMON_OPENROUTER_MODELS, type AssistModelOption, type AssistSettings } from "@/lib/ai/assist-settings";
 
 /**
  * The model control shared by every chat. The API keys live under Connectors.
  * The choice is the browser's last selection, whichever page set it.
+ * OpenRouter models can be ordered by a domain the person picks. All is overall use.
  */
 export function AssistModelFields({
   settings,
@@ -24,11 +26,14 @@ export function AssistModelFields({
   rankings?: AssistRankings | null;
   onChange: (patch: Partial<AssistSettings>) => void;
 }) {
+  const [domain, setDomain] = useState(ASSIST_RANK_ALL);
   const catalog = modelStatus === "ready" && models.length > 0 ? models : COMMON_OPENROUTER_MODELS;
   const modelOptions = catalog.some((item) => item.id === settings.openRouterModel)
     ? catalog
     : [{ id: settings.openRouterModel, name: settings.openRouterModel }, ...catalog];
-  const ranked = rankAssistModels(modelOptions, rankings);
+  const domains = rankingDomains(rankings);
+  const activeDomain = domains.some((item) => item.id === domain) ? domain : ASSIST_RANK_ALL;
+  const ranked = rankAssistModels(modelOptions, rankings, activeDomain);
 
   if (settings.source === "fireworks") {
     return (
@@ -75,6 +80,24 @@ export function AssistModelFields({
 
   return (
     <div className="flex flex-col gap-1">
+      {domains.length > 0 && (
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
+          Domain
+          <select
+            aria-label="Model domain"
+            value={activeDomain}
+            onChange={(event) => setDomain(event.target.value)}
+            className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
+          >
+            <option value={ASSIST_RANK_ALL}>All</option>
+            {domains.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <label className="flex flex-col gap-1 text-xs text-fg-muted">
         Model
         <select
@@ -83,21 +106,11 @@ export function AssistModelFields({
           onChange={(event) => onChange({ openRouterModel: event.target.value })}
           className="rounded-lg border border-hairline bg-canvas px-3 py-2 text-sm text-fg"
         >
-          {ranked.groups === null
-            ? modelOptions.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))
-            : ranked.groups.map((group) => (
-                <optgroup key={group.category} label={group.label}>
-                  {group.models.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+          {ranked.models.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
         </select>
       </label>
       {ranked.citation !== null && <p className="text-xs text-fg-muted">{ranked.citation}</p>}

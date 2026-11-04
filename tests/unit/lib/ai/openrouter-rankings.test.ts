@@ -44,6 +44,7 @@ function week(category: string, extras: unknown[] = [], meta: unknown = { as_of:
   return {
     data: [
       { date: "2026-10-26", model_permaslug: "openai/old", total_tokens: "1000" },
+      { date: "2026-10-26", model_permaslug: "openai/gpt-4o", total_tokens: "5" },
       { date: "2026-11-02", model_permaslug: "other", total_tokens: "9" },
       { date: "2026-11-02", model_permaslug: " openai/gpt-4o ", total_tokens: "10" },
       { date: "2026-11-02", model_permaslug: "anthropic/claude", total_tokens: "10" },
@@ -145,20 +146,24 @@ describe("refreshOpenRouterRankings", () => {
       now: () => now,
       fetchImpl,
     });
-    expect(seen).toHaveLength(RANKING_CATEGORIES.length);
+    expect(seen).toHaveLength(RANKING_CATEGORIES.length + 1);
     expect(seen.some((url) => url.includes("period=week"))).toBe(true);
+    expect(seen.some((url) => new URL(url).searchParams.get("category") === null)).toBe(true);
     expect(seen.some((url) => url.includes("category=marketing%2Fseo"))).toBe(true);
     expect(saved?.fetchedAt).toBe("2026-11-03T12:00:00.000Z");
     expect(saved?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03T00:00:00.000Z.");
+    expect(saved?.categories[0]?.category).toBe("all");
     expect(saved?.categories.find((category) => category.category === "programming")?.asOf).toBe("");
     expect(saved?.categories[0]?.models.map((model) => model.id)).toEqual([
-      "anthropic/claude",
+      "openai/old",
       "openai/gpt-4o",
+      "anthropic/claude",
       "google/gemini",
     ]);
+    expect(saved?.categories[0]?.models.find((model) => model.id === "openai/gpt-4o")?.totalTokens).toBe("15");
     const text = fs.readFileSync(target, "utf8");
     expect(text).not.toContain("server-secret");
-    expect(text).not.toContain("openai/old");
+    expect(text).toContain("openai/old");
 
     let again = 0;
     const second = await refreshOpenRouterRankings({
@@ -267,7 +272,7 @@ describe("refreshOpenRouterRankings", () => {
         return jsonResponse(week("programming", [], { as_of: "" }));
       },
     });
-    expect(calls).toBe(RANKING_CATEGORIES.length);
+    expect(calls).toBe(RANKING_CATEGORIES.length + 1);
 
     writeSnapshot(target, snapshot("not-a-date"));
     let started = 0;
@@ -289,11 +294,11 @@ describe("refreshOpenRouterRankings", () => {
         return jsonResponse({}, 500);
       },
     });
-    expect(started).toBe(RANKING_CATEGORIES.length);
+    expect(started).toBe(RANKING_CATEGORIES.length + 1);
     release?.();
     const [saved, shared] = await Promise.all([first, second]);
     expect(saved?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of the latest weekly rankings.");
     expect(shared).toEqual(saved);
-    expect(started).toBe(RANKING_CATEGORIES.length);
+    expect(started).toBe(RANKING_CATEGORIES.length + 1);
   });
 });

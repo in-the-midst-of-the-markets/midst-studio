@@ -23,11 +23,19 @@ describe("normalizeModels", () => {
         null,
         { name: "no id" },
         { id: "named-blank", name: "  " },
+        { id: "anthropic/claude-opus-5.5", name: "Opus", canonicalSlug: " anthropic/claude-opus-5.5-20260921 " },
+        { id: "openai/same", name: "Same", canonicalSlug: "openai/same" },
+        { id: "openai/blank", name: "Blank", canonicalSlug: "  " },
+        { id: "openai/num", name: "Num", canonicalSlug: 4 },
       ]),
     ).toEqual([
       { id: "openai/gpt-4o", name: "GPT-4o" },
       { id: "plain", name: "plain" },
       { id: "named-blank", name: "named-blank" },
+      { id: "anthropic/claude-opus-5.5", name: "Opus", canonicalSlug: "anthropic/claude-opus-5.5-20260921" },
+      { id: "openai/same", name: "Same" },
+      { id: "openai/blank", name: "Blank" },
+      { id: "openai/num", name: "Num" },
     ]);
     expect(normalizeModels("no")).toEqual([]);
   });
