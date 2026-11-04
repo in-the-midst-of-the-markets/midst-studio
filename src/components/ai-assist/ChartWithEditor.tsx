@@ -492,18 +492,6 @@ export function ChartWithEditor({
               )}
               {!running && built !== null && (
                 <div className="flex min-h-0 flex-1 flex-col">
-                  {code.option !== null && (
-                    <div className="flex items-center justify-between gap-2 px-3 py-1">
-                      <p className="text-xs text-fg-muted">Showing your chart code.</p>
-                      <button
-                        type="button"
-                        onClick={code.reset}
-                        className="text-xs font-medium text-fg-secondary underline"
-                      >
-                        Use generated chart
-                      </button>
-                    </div>
-                  )}
                   <div className="min-h-0 flex-1">
                     <AssistChartCanvas
                       option={code.option ?? built.option}
