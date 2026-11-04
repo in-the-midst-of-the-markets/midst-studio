@@ -5,6 +5,7 @@ import type {
   DashboardFilterControl,
   DashboardFilterDesign,
   DashboardNote,
+  DashboardNoteStyle,
   SavedChartConfig,
   SavedDashboard,
   SavedDashboardComponent,
@@ -219,10 +220,18 @@ export function withoutNote(dashboard: SavedDashboard, id: string): SavedDashboa
 }
 
 export function withNoteText(dashboard: SavedDashboard, id: string, text: string): SavedDashboard {
+  return withNoteFields(dashboard, id, { text });
+}
+
+export function withNoteFields(
+  dashboard: SavedDashboard,
+  id: string,
+  patch: Partial<Pick<DashboardNote, "text" | "query" | "connectionId" | "style" | "script">>,
+): SavedDashboard {
   return {
     ...dashboard,
     updatedAt: new Date(),
-    notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, text } : item)),
+    notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, ...patch } : item)),
   };
 }
 
@@ -236,6 +245,179 @@ export function withNoteFrame(
     updatedAt: new Date(),
     notes: (dashboard.notes ?? []).map((item) => (item.id === id ? { ...item, ...size } : item)),
   };
+}
+
+/** Faces a text box can use. The first is the dashboard type. */
+export const NOTE_FONTS: readonly { readonly id: string; readonly label: string }[] = [
+  { id: "Montserrat, sans-serif", label: "Montserrat" },
+  { id: "Georgia, serif", label: "Georgia" },
+  { id: "Palatino, Palatino Linotype, serif", label: "Palatino" },
+  { id: "ui-sans-serif, sans-serif", label: "System" },
+  { id: "ui-monospace, SFMono-Regular, monospace", label: "Mono" },
+];
+
+export const NOTE_FONT_SIZES: readonly number[] = [12, 14, 16, 18, 20, 24, 32, 40, 48, 64];
+
+const NOTE_FONT_SIZE_MIN = 8;
+const NOTE_FONT_SIZE_MAX = 96;
+const DEFAULT_NOTE_FONT_SIZE = 14;
+const NOTE_LINE_CAP = 100;
+const NOTE_HEX = /^#[0-9a-fA-F]{6}$/;
+
+export type NoteAlign = "left" | "center" | "right";
+
+/** The look a text box draws. A missing or unusable choice falls back to the dashboard type. */
+export interface NoteLook {
+  readonly fontFamily: string;
+  readonly fontSize: number;
+  readonly color?: string;
+  readonly background?: string;
+  readonly align: NoteAlign;
+  readonly bold: boolean;
+  readonly italic: boolean;
+}
+
+function noteFont(value: unknown): string {
+  const match = NOTE_FONTS.find((item) => item.id === value);
+  return match?.id ?? NOTE_FONTS[0]?.id ?? "Montserrat, sans-serif";
+}
+
+function noteFontSize(value: unknown): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < NOTE_FONT_SIZE_MIN ||
+    value > NOTE_FONT_SIZE_MAX
+  ) {
+    return DEFAULT_NOTE_FONT_SIZE;
+  }
+  return Math.round(value);
+}
+
+function noteHex(value: unknown): string | undefined {
+  return typeof value === "string" && NOTE_HEX.test(value) ? value : undefined;
+}
+
+function noteAlign(value: unknown): NoteAlign {
+  return value === "center" || value === "right" ? value : "left";
+}
+
+export function noteLook(style: DashboardNoteStyle | null | undefined): NoteLook {
+  const color = noteHex(style?.color);
+  const background = noteHex(style?.background);
+  return {
+    fontFamily: noteFont(style?.fontFamily),
+    fontSize: noteFontSize(style?.fontSize),
+    ...(color !== undefined ? { color } : {}),
+    ...(background !== undefined ? { background } : {}),
+    align: noteAlign(style?.align),
+    bold: style?.bold === true,
+    italic: style?.italic === true,
+  };
+}
+
+function noteCell(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : null;
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "bigint") return value.toString();
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  if (typeof value === "object") {
+    try {
+      const text = JSON.stringify(value);
+      return text === undefined ? null : text;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * The words a text-box query returned.
+ * Each row is one line, cells on a row are separated by a space, and empty cells are left out.
+ * The SQL is what concatenates a sentence; this only lays the result out.
+ */
+export function noteTextFromRows(rows: readonly Record<string, unknown>[], fields: readonly string[]): string {
+  const lines: string[] = [];
+  for (const row of rows) {
+    const cells: string[] = [];
+    for (const field of fields) {
+      const cell = noteCell(row[field]);
+      if (cell === null || cell === "") continue;
+      cells.push(cell);
+    }
+    if (cells.length === 0) continue;
+    lines.push(cells.join(" "));
+    if (lines.length === NOTE_LINE_CAP) break;
+  }
+  return lines.join("\n");
+}
+
+/** The script a text box opens with. `text` is the sentence, and `rows` and `fields` are the query. */
+export const NOTE_SCRIPT = [
+  'const root = document.getElementById("root");',
+  "if (root !== null) root.textContent = text;",
+  "",
+].join("\n");
+
+function noteCssValue(value: string): string {
+  return value.replace(/[<>{};]/g, "");
+}
+
+function noteFrameHost(
+  text: string,
+  rows: readonly Record<string, unknown>[],
+  fields: readonly string[],
+  look: NoteLook,
+): string {
+  const body = {
+    text,
+    fields,
+    fontFamily: look.fontFamily,
+    fontSize: look.fontSize,
+    color: look.color ?? "",
+    background: look.background ?? "",
+    align: look.align,
+    bold: look.bold,
+    italic: look.italic,
+  };
+  const payload = (next: readonly Record<string, unknown>[]) =>
+    JSON.stringify({ ...body, rows: next }).replace(/</g, "\\u003c");
+  try {
+    return payload(rows.slice(0, NOTE_LINE_CAP));
+  } catch {
+    return payload([]);
+  }
+}
+
+/** The document a text box script runs in a sandboxed frame. It draws into `#root`. */
+export function noteFrameDocument(
+  script: string,
+  text: string,
+  rows: readonly Record<string, unknown>[],
+  fields: readonly string[],
+  look: NoteLook,
+): string {
+  const host = noteFrameHost(text, rows, fields, look);
+  const source = script.replace(/<\/script/gi, "<\\/script");
+  const family = noteCssValue(look.fontFamily);
+  const color = noteCssValue(look.color ?? "inherit");
+  const background = noteCssValue(look.background ?? "transparent");
+  const weight = look.bold ? "700" : "400";
+  const fontStyle = look.italic ? "italic" : "normal";
+  return [
+    '<!DOCTYPE html><html><head><meta charset="utf-8">',
+    "<style>",
+    `body{margin:0;font-family:${family};font-size:${look.fontSize}px;color:${color};background:${background};text-align:${look.align};font-weight:${weight};font-style:${fontStyle};}`,
+    "#root{white-space:pre-wrap;overflow-wrap:anywhere;}",
+    "</style></head><body>",
+    '<div id="root"></div>',
+    `<script>const host = ${host};const text = host.text;const rows = host.rows;const fields = host.fields;</script>`,
+    `<script>${source}</script>`,
+    "</body></html>",
+  ].join("");
 }
 
 /** The query the dashboard assistant revises: the latest chart that is still saved. */
@@ -259,7 +441,7 @@ export function dashboardEditorSql(
  * choose a complete query and a chart variation instead of a first guess.
  */
 export const DASHBOARD_ASSIST_GUIDE =
-  "Dash builds a board. A reply is placed at once: the query becomes a chart and the explanation becomes a text box. The person can also add a saved chart, make a new chart, add a text box, or add a component (dropdown, slider, search, or custom JavaScript). Charts, text, and components can be resized. A chart runs one query, can refresh on a schedule, and is drawn as a type and then a variation, such as bar (basic, stacked, horizontal) or line (basic, area, smooth). A component whose name is a query id is inserted as {{name}}. Read the board and the schema before answering. Take the time to write a complete query and a clear explanation rather than a short first guess.";
+  "Dash builds a board. A reply is placed at once: the query becomes a chart and the explanation becomes a text box. The person can also add a saved chart, make a new chart, add a text box, or add a component (dropdown, slider, search, or custom JavaScript). Charts, text, and components can be resized. A text box can run a query, and that result is the text, so the SQL can include the words. Its color, font, and size can be changed on the box. JavaScript on the box can draw it, and can read the text and the query rows. A chart runs one query, can refresh on a schedule, and is drawn as a type and then a variation, such as bar (basic, stacked, horizontal) or line (basic, area, smooth). A component whose name is a query id is inserted as {{name}}. Read the board and the schema before answering. Take the time to write a complete query and a clear explanation rather than a short first guess.";
 
 /** Charts, text, and components on the board, so the assistant can see what is already there. */
 export function dashboardAssistContext(
@@ -277,7 +459,11 @@ export function dashboardAssistContext(
   }
   for (const note of dashboard.notes ?? []) {
     const text = note.text.trim();
+    const query = note.query?.trim() ?? "";
+    const code = note.script?.trim().replace(/\s+/g, " ") ?? "";
     if (text !== "") lines.push(`Text: ${text}`);
+    if (query !== "") lines.push(`Text query: ${query}`);
+    if (code !== "") lines.push(`Text code: ${code}`);
   }
   for (const filter of dashboard.filters ?? []) {
     const label = filter.label?.trim() || filter.name.trim() || "Component";

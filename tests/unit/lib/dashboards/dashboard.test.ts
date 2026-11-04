@@ -39,7 +39,12 @@ import {
   MAX_DASHBOARD_BLOCK_HEIGHT,
   schemaWithDashboard,
   withName,
+  noteFrameDocument,
+  noteLook,
+  noteTextFromRows,
+  NOTE_FONTS,
   withNote,
+  withNoteFields,
   withNoteFrame,
   withNoteText,
   withoutChart,
@@ -132,6 +137,19 @@ describe("dashboard layout", () => {
     expect(withNoteFrame(sized, "missing", { width: 1, height: 1 }).notes).toEqual(sized.notes);
     expect(withoutNote(written, "n1").notes).toEqual([]);
     expect(withoutNote(board(), "n1").notes).toEqual([]);
+    const queried = withNoteFields(written, "n1", {
+      query: "SELECT 'Hello'",
+      connectionId: "c1",
+      style: { fontFamily: "Georgia, serif", fontSize: 32 },
+    });
+    expect(queried.notes?.[0]).toMatchObject({
+      text: "Hello",
+      query: "SELECT 'Hello'",
+      connectionId: "c1",
+      style: { fontFamily: "Georgia, serif", fontSize: 32 },
+    });
+    expect(withNoteFields(queried, "missing", { query: "SELECT 2" }).notes).toEqual(queried.notes);
+    expect(withNoteFields(board(), "n1", { query: "SELECT 1" }).notes).toEqual([]);
     const filtered = withFilter(board(), "c1", "f1");
     expect(filtered.filters).toEqual([{ id: "f1", name: "filter", query: "", value: "", connectionId: "c1" }]);
     expect(withFilter(board(), "").filters?.[0]?.connectionId).toBeUndefined();
@@ -307,10 +325,17 @@ describe("dashboard layout", () => {
     ];
     expect(dashboardEditorSql(withCharts, charts)).toBe(" SELECT 1 ");
     expect(dashboardEditorSql(board([{ chartId: "plain", width: 1, height: 1 }]), charts)).toBe("");
-    const noted = withNoteText(withNote(withCharts, "n1"), "n1", "  Hello  ");
+    const noted = withNoteFields(withNoteText(withNote(withCharts, "n1"), "n1", "  Hello  "), "n1", {
+      query: " SELECT 'Hello' ",
+    });
     const described = dashboardAssistContext(
       {
         ...noted,
+        notes: [
+          ...(noted.notes ?? []),
+          { id: "n2", text: "  ", query: " SELECT 2 ", script: " use text;\nreturn rows; " },
+          { id: "n3", text: "", query: "   ", script: "   " },
+        ],
         filters: [
           { id: "f1", name: "region", label: " Area ", query: "", value: "east", control: "select" },
           { id: "f2", name: "  ", query: "", value: "" },
@@ -325,6 +350,9 @@ describe("dashboard layout", () => {
         "Chart Plain: (no query)",
         "Chart Revenue: SELECT 1",
         "Text: Hello",
+        "Text query: SELECT 'Hello'",
+        "Text query: SELECT 2",
+        "Text code: use text; return rows;",
         "Component Area (select) = east",
         "Component Component (unset) = ",
       ].join("\n"),
@@ -335,5 +363,120 @@ describe("dashboard layout", () => {
     expect(schemaWithDashboard("x".repeat(ASSIST_SCHEMA_CAP), "Dashboard: Board")).toBe("x".repeat(ASSIST_SCHEMA_CAP));
     const near = "y".repeat(ASSIST_SCHEMA_CAP - 10);
     expect(schemaWithDashboard(near, "Dashboard: Board")).toBe(`${near}\n\nDashboar`);
+  });
+
+  test("draws a text box from a usable font, size, color, and alignment", () => {
+    const fallback = noteLook(undefined);
+    expect(fallback).toEqual({
+      fontFamily: NOTE_FONTS[0]?.id,
+      fontSize: 14,
+      align: "left",
+      bold: false,
+      italic: false,
+    });
+    expect(noteLook(null)).toEqual(fallback);
+    expect(
+      noteLook({
+        fontFamily: "Georgia, serif",
+        fontSize: 14.5,
+        color: "#112233",
+        background: "#ABCDEF",
+        align: "center",
+        bold: true,
+        italic: true,
+      }),
+    ).toEqual({
+      fontFamily: "Georgia, serif",
+      fontSize: 15,
+      color: "#112233",
+      background: "#ABCDEF",
+      align: "center",
+      bold: true,
+      italic: true,
+    });
+    expect(noteLook({ fontSize: 8 }).fontSize).toBe(8);
+    expect(noteLook({ fontSize: 96 }).fontSize).toBe(96);
+    expect(noteLook({ fontSize: 95.6 }).fontSize).toBe(96);
+    expect(
+      noteLook({
+        fontFamily: "Comic Sans",
+        fontSize: Number.NaN,
+        color: "red",
+        background: "#123",
+        align: "nope" as "left",
+        bold: false,
+        italic: false,
+      }),
+    ).toEqual(fallback);
+    expect(noteLook({ fontSize: 7 }).fontSize).toBe(14);
+    expect(noteLook({ fontSize: 96.4 }).fontSize).toBe(14);
+    expect(noteLook({ fontSize: Number.POSITIVE_INFINITY }).fontSize).toBe(14);
+    expect(noteLook({ fontSize: "32" as unknown as number }).fontSize).toBe(14);
+    expect(noteLook({ align: "right" }).align).toBe("right");
+    expect(noteLook({ color: "#aabbcc", background: "blue" }).color).toBe("#aabbcc");
+    expect(noteLook({ color: "#aabbcc", background: "blue" }).background).toBeUndefined();
+  });
+
+  test("lays a text query out as lines of cells", () => {
+    expect(noteTextFromRows([], [])).toBe("");
+    expect(noteTextFromRows([{ value: null }, { value: "" }, { value: "  " }], ["missing", "value"])).toBe("  ");
+    const when = new Date("2026-01-02T03:04:05.000Z");
+    expect(
+      noteTextFromRows(
+        [
+          {
+            words: "Total",
+            amount: 2,
+            flag: false,
+            empty: null,
+            skip: "",
+            big: BigInt(3),
+            when,
+            list: [1, "a"],
+            bad: Number.NaN,
+            later: new Date("nope"),
+            mark: Symbol("x"),
+            fn: () => 0,
+          },
+        ],
+        ["words", "amount", "flag", "empty", "skip", "big", "when", "list", "bad", "later", "mark", "fn"],
+      ),
+    ).toBe(`Total 2 false 3 ${when.toISOString()} [1,"a"]`);
+    const loop: Record<string, unknown> = {};
+    loop.self = loop;
+    expect(noteTextFromRows([{ loop, quiet: { toJSON: () => undefined } }], ["loop", "quiet"])).toBe("");
+    const rows = Array.from({ length: 101 }, (_, index) => ({ n: index }));
+    expect(noteTextFromRows(rows, ["n"]).split("\n")).toHaveLength(100);
+    expect(noteTextFromRows([{ on: true }], ["on"])).toBe("true");
+  });
+
+  test("builds a sandboxed document for a text box script", () => {
+    const look = noteLook({
+      fontFamily: "Georgia, serif",
+      fontSize: 32,
+      color: "#112233",
+      background: "#ffeeee",
+      align: "center",
+      bold: true,
+      italic: true,
+    });
+    const doc = noteFrameDocument("root.textContent = text;\n</script><script>", "Hello <b>", [{ n: 1 }], ["n"], look);
+    expect(doc).toContain("Hello \\u003cb");
+    expect(doc).toContain("<\\/script>");
+    expect(doc).toContain('"n":1');
+    expect(doc).toContain("font-size:32px");
+    expect(doc).toContain("font-weight:700");
+    expect(doc).toContain("font-style:italic");
+    expect(doc).toContain("#112233");
+    expect(doc).toContain("#ffeeee");
+    const plain = noteFrameDocument("root.textContent = text;", "Kept", [], [], noteLook(undefined));
+    expect(plain).toContain("color:inherit");
+    expect(plain).toContain("background:transparent");
+    expect(plain).toContain("font-weight:400");
+    const loop: Record<string, unknown> = {};
+    loop.self = loop;
+    const safe = noteFrameDocument("root.textContent = text;", "Kept", [loop], ["self"], noteLook(undefined));
+    expect(safe).toContain("Kept");
+    expect(safe).toContain('"rows":[]');
   });
 });
