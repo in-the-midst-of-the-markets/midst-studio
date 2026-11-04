@@ -65,6 +65,11 @@ interface IdeQueryChatProps {
   onUseQuery?: (sql: string) => void;
   /** Puts the reply's explanation on the page, when the surface has a text box. */
   onUseNote?: (text: string) => void;
+  /**
+   * Places the reply on the page as soon as it arrives. The IDE leaves this
+   * unset and shows a button instead, because that button replaces the editor.
+   */
+  onPlaceReply?: (reply: { readonly sql: string | null; readonly text: string }) => void;
   /** The open connection. A different one starts a new conversation. */
   connectionId?: string;
   /** `fixed` keeps the button on the screen while the page scrolls. */
@@ -95,6 +100,7 @@ function IdeQueryChatSession({
   schemaContext,
   onUseQuery,
   onUseNote,
+  onPlaceReply,
   open,
   onOpenChange,
   placement = "absolute",
@@ -107,6 +113,7 @@ function IdeQueryChatSession({
   schemaContext: string;
   onUseQuery?: (sql: string) => void;
   onUseNote?: (text: string) => void;
+  onPlaceReply?: (reply: { readonly sql: string | null; readonly text: string }) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   placement?: "absolute" | "fixed";
@@ -216,6 +223,7 @@ function IdeQueryChatSession({
           sql: statement,
         },
       ]);
+      onPlaceReply?.({ sql: statement, text: plan.explanation });
     } catch {
       setTurns((current) => [
         ...current,
@@ -283,7 +291,7 @@ function IdeQueryChatSession({
             ) : (
               <div key={turn.id} className="text-sm text-fg-secondary">
                 {turn.text !== "" && <div className="space-y-1">{renderProse(turn.text)}</div>}
-                {turn.sql !== null && onUseQuery !== undefined && (
+                {onPlaceReply === undefined && turn.sql !== null && onUseQuery !== undefined && (
                   <button
                     type="button"
                     onClick={() => onUseQuery(turn.sql ?? "")}
@@ -292,7 +300,7 @@ function IdeQueryChatSession({
                     {useQueryLabel}
                   </button>
                 )}
-                {turn.text !== "" && onUseNote !== undefined && (
+                {onPlaceReply === undefined && turn.text !== "" && onUseNote !== undefined && (
                   <button
                     type="button"
                     onClick={() => onUseNote(turn.text)}

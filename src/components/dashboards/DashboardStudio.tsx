@@ -125,8 +125,8 @@ function ChartGlyph({ typeId }: { readonly typeId: string | undefined }) {
 /**
  * Compiles dashboards from saved charts.
  * Each chart, text box, and component keeps the size the user dragged it to, and a
- * chart with a query can rerun that query on its own schedule. Ask AI can add a
- * chart or a text box from the reply.
+ * chart with a query can rerun that query on its own schedule. Ask AI places a
+ * chart or a text box from the reply. The IDE is the page that waits for a click.
  */
 export function DashboardStudio() {
   const boardRef = useRef<HTMLDivElement>(null);
@@ -197,23 +197,25 @@ export function DashboardStudio() {
 
   const ensureDashboard = (): SavedDashboard => active ?? freshDashboard(dashboardName(dashboards));
 
-  const addChartFromAssistant = (sql: string) => {
-    const current = ensureDashboard();
-    const chart = freshDashboardChart(charts, connections[0]?.id);
-    const saved = { ...chart, query: sql };
-    storage.saveChart(saved);
-    setCharts(storage.getSavedCharts());
-    const next = withChart(current, saved.id, boardWidth(boardRef.current));
-    remember(next);
-    if (active === null) choose(next.id);
-  };
-
-  const addNoteFromAssistant = (text: string) => {
-    const noted = withNote(ensureDashboard());
-    const created = (noted.notes ?? [])[(noted.notes ?? []).length - 1];
-    const next = withNoteText(noted, created?.id ?? "", text);
-    remember(next);
-    if (active === null) choose(next.id);
+  const placeAssistantReply = (reply: { sql: string | null; text: string }) => {
+    const sql = reply.sql?.trim() ?? "";
+    const text = reply.text.trim();
+    if (sql === "" && text === "") return;
+    let current = ensureDashboard();
+    if (sql !== "") {
+      const chart = freshDashboardChart(charts, connections[0]?.id);
+      const saved = { ...chart, query: sql };
+      storage.saveChart(saved);
+      setCharts(storage.getSavedCharts());
+      current = withChart(current, saved.id, boardWidth(boardRef.current));
+    }
+    if (text !== "") {
+      const noted = withNote(current);
+      const created = (noted.notes ?? [])[(noted.notes ?? []).length - 1];
+      current = withNoteText(noted, created?.id ?? "", text);
+    }
+    remember(current);
+    if (active === null) choose(current.id);
   };
 
   return (
@@ -472,16 +474,13 @@ export function DashboardStudio() {
       <IdeQueryChat
         placement="fixed"
         conversationLabel="Dashboard conversation"
-        useQueryLabel="Add as chart"
-        noteLabel="Add as text"
         sql={dashboardEditorSql(active, charts)}
         databaseType={assistDatabaseType(connections.map((item) => item.type))}
         schemaContext={schemaWithDashboard(
           schemaContext,
           active === null ? "" : dashboardAssistContext(active, charts),
         )}
-        onUseQuery={addChartFromAssistant}
-        onUseNote={addNoteFromAssistant}
+        onPlaceReply={placeAssistantReply}
       />
     </>
   );
