@@ -1230,12 +1230,34 @@ export interface DashboardChartFrame {
   height: number;
 }
 
-/** A title or note on a dashboard. Width and height are absent until the user resizes it. */
+/** How a dashboard text box is drawn. Anything absent keeps the dashboard type. */
+export interface DashboardNoteStyle {
+  fontFamily?: string;
+  fontSize?: number;
+  /** A `#rrggbb` text color. Absent uses the theme color. */
+  color?: string;
+  /** A `#rrggbb` background. Absent leaves the card. */
+  background?: string;
+  align?: "left" | "center" | "right";
+  bold?: boolean;
+  italic?: boolean;
+}
+
+/**
+ * A title or note on a dashboard. Width and height are absent until the user resizes it.
+ * `query` replaces the written text with the query result, so the SQL can concatenate
+ * words with column values. Absent, the box shows `text`.
+ * `script` is JavaScript that draws the box. It can read `text`, `rows`, and `fields`.
+ */
 export interface DashboardNote {
   id: string;
   text: string;
   width?: number;
   height?: number;
+  query?: string;
+  connectionId?: string;
+  style?: DashboardNoteStyle;
+  script?: string;
 }
 
 /** How a dashboard filter is drawn. Absent until the user picks one. */
