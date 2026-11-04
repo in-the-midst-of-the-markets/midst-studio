@@ -78,6 +78,7 @@ import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
 import { classifyColumns, defaultSelection, echartType, ECHART_TYPES } from "@/lib/charts/echarts-catalog";
+import { useChartSettings } from "@/components/charts/use-chart-settings";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
 import {
@@ -636,6 +637,7 @@ function DashboardChart({
   readonly onTitle: (name: string) => void;
 }) {
   const theme = chartTheme(useEffectiveTheme());
+  const settings = useChartSettings();
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
   const [face, setFace] = useState<"chart" | "query" | "code">(() =>
     chart.query === undefined || chart.query === "" ? "query" : "chart",
@@ -670,7 +672,7 @@ function DashboardChart({
     };
   }, [run, refreshSeconds]);
 
-  const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme) : null;
+  const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme, settings) : null;
   const missingShelves = chart.typeId === undefined || chart.variationId === undefined;
   const sql = chart.query ?? "";
   const [sqlDraft, setSqlDraft] = useState(sql);
@@ -691,6 +693,7 @@ function DashboardChart({
           selection: chart.selection ?? {},
           title: "",
           theme,
+          settings,
         })
       : null;
   const storedLook = storedChartLook(chart.look);

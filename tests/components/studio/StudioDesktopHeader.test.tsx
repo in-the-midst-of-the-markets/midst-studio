@@ -371,6 +371,14 @@ describe("StudioDesktopHeader", () => {
       }
     });
 
+    test("opens Chart Settings from the profile menu", () => {
+      const view = render(<StudioDesktopHeader {...defaultProps} />);
+      fireEvent.click(view.getByText("Chart Settings"));
+      expect(view.getByRole("dialog", { name: "Chart settings" })).toBeTruthy();
+      fireEvent.click(view.getByRole("button", { name: "Close" }));
+      expect(view.queryByRole("dialog", { name: "Chart settings" })).toBeNull();
+    });
+
     test("Logout menu item has danger-token styling", () => {
       const { getByText } = render(<StudioDesktopHeader {...defaultProps} />);
       const logoutItem = getByText("Logout").closest('[role="menuitem"]');

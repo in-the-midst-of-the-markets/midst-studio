@@ -6,6 +6,7 @@ import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connecti
 import type { QueryEditorRef } from "@/components/QueryEditor";
 import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { AssistConnectors } from "@/components/ai-assist/AssistConnectors";
+import { ChartSettingsDialog } from "@/components/charts/ChartSettingsDialog";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ import {
   KeyRound,
   Plug,
   ShieldCheck,
+  SlidersHorizontal,
   LogOut,
   EllipsisVertical,
   Pencil,
@@ -144,6 +146,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
 }: StudioMobileHeaderProps) {
   const router = useRouter();
   const [connectorsOpen, setConnectorsOpen] = React.useState(false);
+  const [chartSettingsOpen, setChartSettingsOpen] = React.useState(false);
   // Bundled so the three cannot be half-supplied, the rule QueryToolbar follows: an
   // item that BEGINs without one that COMMITs would strand the user inside a
   // transaction it cannot close.
@@ -278,6 +281,9 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setConnectorsOpen(true)} className="cursor-pointer">
                   <Plug strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Connectors
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setChartSettingsOpen(true)} className="cursor-pointer">
+                  <SlidersHorizontal strokeWidth={1.5} className="w-3.5 h-3.5 mr-2" /> Chart Settings
                 </DropdownMenuItem>
                 <div className="border-t border-hairline my-1" />
                 {/*
@@ -446,6 +452,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
         </div>
       )}
       {connectorsOpen && <AssistConnectors onClose={() => setConnectorsOpen(false)} />}
+      {chartSettingsOpen && <ChartSettingsDialog onClose={() => setChartSettingsOpen(false)} />}
     </header>
   );
 });
