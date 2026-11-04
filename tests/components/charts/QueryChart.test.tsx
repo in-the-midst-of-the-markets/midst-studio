@@ -380,7 +380,8 @@ describe("QueryChart", () => {
       target: { value: JSON.stringify(edited) },
     });
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
-    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     const drawnOption = drawn().option as { title: { text: string }; series: { data: unknown }[] };
     expect(drawnOption.title.text).toBe("Edited");
     expect(drawnOption.series[0]?.data).toEqual([1, 2]);

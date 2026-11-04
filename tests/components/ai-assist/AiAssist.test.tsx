@@ -539,7 +539,8 @@ describe("ChartWithEditor", () => {
       target: { value: JSON.stringify(edited) },
     });
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
-    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
     expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("10");
     view.rerender(
@@ -554,7 +555,8 @@ describe("ChartWithEditor", () => {
         onRun={() => {}}
       />,
     );
-    expect(view.getByText("Showing your chart code.")).toBeTruthy();
+    expect(view.queryByText("Showing your chart code.")).toBeNull();
+    expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
     expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("99");
     fireEvent.click(view.getByRole("button", { name: "Code" }));
@@ -576,6 +578,7 @@ describe("ChartWithEditor", () => {
       />,
     );
     expect(JSON.stringify((lastOption() as { series: { data: unknown }[] }).series)).toContain("7");
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
     fireEvent.click(view.getByRole("button", { name: "Use generated chart" }));
     expect(view.queryByText("Showing your chart code.")).toBeNull();
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
@@ -1004,7 +1007,8 @@ describe("ChartWithEditor", () => {
       <ChartWithEditor {...props} savedView={memory.view} savedCode={memory.code} onRemember={onRemember} />,
     );
     expect(again.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
-    expect(again.getByText("Showing your chart code.")).toBeTruthy();
+    expect(again.queryByText("Showing your chart code.")).toBeNull();
+    expect(again.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     expect(again.getByRole("heading", { name: "Edited" })).toBeTruthy();
     fireEvent.click(again.getByRole("button", { name: "Code" }));
     expect((again.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain("Edited");
