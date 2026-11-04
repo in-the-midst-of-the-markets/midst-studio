@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
+import { AssistPromptBox } from "@/components/ai-assist/AssistPromptBox";
 import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
@@ -17,7 +18,6 @@ import {
   type AssistModelOption,
   type AssistSettings,
 } from "@/lib/ai/assist-settings";
-import { useSyncExternalStore } from "react";
 
 interface ChatTurn {
   readonly id: string;
@@ -320,64 +320,41 @@ function IdeQueryChatSession({
             void send();
           }}
         >
-          {notice !== null && (
-            <p role="alert" className="mb-2 text-xs text-danger">
-              {notice}
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <textarea
-              aria-label="Build or revise a query"
-              value={draft}
-              placeholder="Build a query or revise this one"
-              rows={2}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void send();
-                }
-              }}
-              className="min-h-9 flex-1 resize-none rounded-lg border border-hairline bg-canvas px-2 py-1 text-sm text-fg outline-none"
-            />
-            <button
-              type="submit"
-              disabled={draft.trim() === "" || sending}
-              className="rounded-lg bg-brand-solid px-2 py-1 text-xs font-medium text-white disabled:opacity-50"
-            >
-              {sending ? "Sending…" : "Send"}
-            </button>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <button
-              type="button"
-              aria-expanded={settingsOpen}
-              onClick={() => {
+          <div className="flex flex-col gap-3">
+            <AssistModelFields
+              settings={settings}
+              models={models}
+              gatewayModels={gatewayModels}
+              modelStatus={modelStatus}
+              gatewayStatus={gatewayStatus}
+              rankings={rankings}
+              open={settingsOpen}
+              onToggle={() => {
                 setSettingsOpen((current) => !current);
                 if (!settingsOpen) loadCatalog();
               }}
-              className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
-            >
-              Model
-            </button>
-            <HistoryLimitButton
-              value={settings.historyMessages}
-              onChange={(historyMessages) => updateSettings({ historyMessages })}
+              onChange={updateSettings}
+              accessory={
+                <HistoryLimitButton
+                  value={settings.historyMessages}
+                  onChange={(historyMessages) => updateSettings({ historyMessages })}
+                />
+              }
+            />
+            {notice !== null && (
+              <p role="alert" className="text-xs text-danger">
+                {notice}
+              </p>
+            )}
+            <AssistPromptBox
+              label="Build or revise a query"
+              value={draft}
+              sending={sending}
+              disabled={draft.trim() === "" || sending}
+              onChange={setDraft}
+              onSubmit={() => void send()}
             />
           </div>
-          {settingsOpen && (
-            <div className="mt-2">
-              <AssistModelFields
-                settings={settings}
-                models={models}
-                gatewayModels={gatewayModels}
-                modelStatus={modelStatus}
-                gatewayStatus={gatewayStatus}
-                rankings={rankings}
-                onChange={updateSettings}
-              />
-            </div>
-          )}
         </form>
       </section>
     );

@@ -1163,7 +1163,12 @@ describe("AiAssist page", () => {
     expect(ide.getAttribute("href")).toBe("/");
     expect(ide.className.includes("border")).toBe(true);
     fireEvent.click(view.getByRole("button", { name: "New query" }));
-    expect(document.activeElement).toBe(view.getByLabelText("How can I help?"));
+    const askBox = view.getByLabelText("How can I help?");
+    expect(document.activeElement).toBe(askBox);
+    expect(askBox.getAttribute("placeholder")).toBe("Tell me what query to build or optimize");
+    expect(view.getByText("Shift + Enter for a new line")).toBeTruthy();
+    expect(view.getByText("AI can make mistakes. Review generated queries.")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Model configuration" }).getAttribute("aria-expanded")).toBe("false");
     expect(view.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
     expect(view.queryByRole("link", { name: "AI" })).toBeNull();
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
@@ -1253,7 +1258,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     const select = (await view.findByLabelText("OpenRouter model")) as HTMLSelectElement;
     const names = () =>
       [...(view.getByLabelText("OpenRouter model") as HTMLSelectElement).querySelectorAll("option")].map(
@@ -1283,7 +1288,7 @@ describe("AiAssist page", () => {
       }),
     );
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     expect(view.queryByRole("radio", { name: "OpenRouter" })).toBeNull();
     expect(view.queryByRole("radio", { name: "Fireworks AI" })).toBeNull();
     expect(view.queryByRole("radio", { name: "Vercel AI Gateway" })).toBeNull();
@@ -1332,7 +1337,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     expect(view.queryByLabelText("OpenRouter API key")).toBeNull();
     expect(view.queryByText("API key saved")).toBeNull();
     expect(view.container.textContent?.includes("ork-secret")).toBe(false);
@@ -1388,7 +1393,7 @@ describe("AiAssist page", () => {
       JSON.stringify({ ...readAssistSettings(), source: "gateway", gatewayModel: "alibaba/qwen-3-14b" }),
     );
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     expect(view.getByLabelText("Vercel AI Gateway model")).toBeTruthy();
   });
@@ -1810,7 +1815,7 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     expect(await view.findByText("Using the server OpenRouter key.")).toBeTruthy();
     expect(view.queryByText(/This server has no OpenRouter key/)).toBeNull();
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(view.queryByRole("radio", { name: "OpenRouter" })).toBeNull();
     expect(view.getByLabelText("OpenRouter model")).toBeTruthy();
   });
@@ -1821,7 +1826,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     expect(await view.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
     act(() => {
       writeAssistSettings({ ...readAssistSettings(), source: "gateway" });
@@ -1996,7 +2001,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url, init);
     };
     const view = render(<AiAssist />);
-    fireEvent.click(await view.findByRole("button", { name: "Model" }));
+    fireEvent.click(await view.findByRole("button", { name: "Model configuration" }));
     expect((view.getByLabelText("OpenRouter model") as HTMLSelectElement).value).toBe(
       "deepseek/deepseek-v4.1-flash-1017",
     );
@@ -2008,7 +2013,7 @@ describe("AiAssist page", () => {
       return defaultFetch(url);
     };
     const broken = render(<AiAssist />);
-    fireEvent.click(await broken.findByRole("button", { name: "Model" }));
+    fireEvent.click(await broken.findByRole("button", { name: "Model configuration" }));
     expect(await broken.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
   });
 

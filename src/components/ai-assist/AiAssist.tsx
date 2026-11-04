@@ -7,6 +7,7 @@ import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { MidstLockup } from "@/components/midst-logo";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
+import { AssistPromptBox } from "@/components/ai-assist/AssistPromptBox";
 import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
@@ -907,7 +908,24 @@ export function AiAssist() {
               void send();
             }}
           >
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
+              <AssistModelFields
+                settings={settings}
+                models={models}
+                gatewayModels={gatewayModels}
+                modelStatus={modelStatus}
+                gatewayStatus={gatewayStatus}
+                rankings={rankings}
+                open={settingsOpen}
+                onToggle={() => setSettingsOpen((current) => !current)}
+                onChange={updateSettings}
+                accessory={
+                  <HistoryLimitButton
+                    value={settings.historyMessages}
+                    onChange={(historyMessages) => updateSettings({ historyMessages })}
+                  />
+                }
+              />
               {notice !== null && (
                 <p role="alert" className="text-xs text-danger">
                   {notice}
@@ -922,60 +940,15 @@ export function AiAssist() {
                   key under Connectors.
                 </p>
               )}
-              <div className="flex items-center gap-2 rounded-xl border border-hairline-strong bg-control p-2">
-                <Sparkles className="size-4 shrink-0 text-brand" />
-                <textarea
-                  ref={askRef}
-                  aria-label="How can I help?"
-                  value={draft}
-                  placeholder="Ask about your data"
-                  rows={1}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && !event.shiftKey) {
-                      event.preventDefault();
-                      void send();
-                    }
-                  }}
-                  className="min-h-9 flex-1 resize-none bg-transparent py-1 text-sm text-fg outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={!canSend}
-                  className="rounded-lg bg-brand-solid px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-                >
-                  {sending ? "Sending…" : "Send"}
-                </button>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    aria-expanded={settingsOpen}
-                    onClick={() => setSettingsOpen((current) => !current)}
-                    className="text-[11px] font-medium uppercase tracking-[0.14em] text-fg-muted hover:text-fg"
-                  >
-                    Model
-                  </button>
-                  <HistoryLimitButton
-                    value={settings.historyMessages}
-                    onChange={(historyMessages) => updateSettings({ historyMessages })}
-                  />
-                </div>
-                {settingsOpen && (
-                  <div className="mt-3 flex flex-col gap-3">
-                    <AssistModelFields
-                      settings={settings}
-                      models={models}
-                      gatewayModels={gatewayModels}
-                      modelStatus={modelStatus}
-                      gatewayStatus={gatewayStatus}
-                      rankings={rankings}
-                      onChange={updateSettings}
-                    />
-                  </div>
-                )}
-              </div>
+              <AssistPromptBox
+                label="How can I help?"
+                value={draft}
+                sending={sending}
+                disabled={!canSend}
+                onChange={setDraft}
+                onSubmit={() => void send()}
+                inputRef={askRef}
+              />
             </div>
           </form>
         </aside>

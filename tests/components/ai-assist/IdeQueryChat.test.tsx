@@ -71,6 +71,10 @@ describe("IdeQueryChat", () => {
     fireEvent.click(ask);
     expect(ask.getAttribute("aria-expanded")).toBe("true");
     const box = view.getByLabelText("Build or revise a query");
+    expect(box.getAttribute("placeholder")).toBe("Tell me what query to build or optimize");
+    expect(view.getByText("Shift + Enter for a new line")).toBeTruthy();
+    expect(view.getByText("AI can make mistakes. Review generated queries.")).toBeTruthy();
+    expect(view.getByRole("button", { name: "Model configuration" }).getAttribute("aria-expanded")).toBe("false");
     expect((view.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(box, { target: { value: "Count rows" } });
     fireEvent.keyDown(box, { key: "Enter", shiftKey: true });
@@ -93,7 +97,7 @@ describe("IdeQueryChat", () => {
     expect(sent.schemaContext).toBe(`a ${"b".repeat(29_998)}`);
     expect(sent.history).toEqual([]);
 
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(await view.findByRole("option", { name: "Other" })).toBeTruthy();
     fireEvent.change(view.getByLabelText("OpenRouter model"), { target: { value: "other/model" } });
     expect(JSON.parse(localStorage.getItem("libredb_ai_assist") ?? "{}").openRouterModel).toBe("other/model");
@@ -200,15 +204,15 @@ describe("IdeQueryChat", () => {
       fireworksKey: "fw-secret",
       gatewayKey: "gw-secret",
     });
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(await view.findByRole("option", { name: "DeepSeek V4.1 Flash" })).toBeTruthy();
     expect(view.queryByText("The OpenRouter catalog could not be loaded.")).toBeNull();
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     await waitFor(() => expect(gets).toBe(2));
     expect(view.queryByText("The OpenRouter catalog could not be loaded.")).toBeNull();
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(await view.findByText("The OpenRouter catalog could not be loaded.")).toBeTruthy();
     writeAssistSettings({
       source: "gateway",
@@ -221,9 +225,9 @@ describe("IdeQueryChat", () => {
     });
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     const before = gets;
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(gets).toBe(before);
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     await waitFor(() => expect(gets).toBe(before + 1));
     expect(view.getByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
 
@@ -237,8 +241,8 @@ describe("IdeQueryChat", () => {
       }
       return jsonResponse({ explanation: "Routed.", queries: [] });
     });
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
-    fireEvent.click(view.getByRole("button", { name: "Model" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     const listed = document.querySelector("#vercel-gateway-models option");
     expect(listed?.getAttribute("value")).toBe("alibaba/qwen-3-14b");
@@ -271,7 +275,7 @@ describe("IdeQueryChat", () => {
     view.unmount();
     const again = render(<IdeQueryChat sql="" databaseType="" schemaContext="" />);
     fireEvent.click(again.getByRole("button", { name: "Ask AI" }));
-    fireEvent.click(again.getByRole("button", { name: "Model" }));
+    fireEvent.click(again.getByRole("button", { name: "Model configuration" }));
     expect((again.getByLabelText("Fireworks model") as HTMLInputElement).value).toBe("accounts/acme/models/other");
   });
 
