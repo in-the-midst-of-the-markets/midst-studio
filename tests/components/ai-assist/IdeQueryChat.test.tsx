@@ -358,4 +358,38 @@ describe("IdeQueryChat", () => {
     expect(view.queryByText("This answer belongs to the previous connection.")).toBeNull();
     expect(view.queryByRole("button", { name: "Sending…" })).toBeNull();
   });
+
+  test("can pin the chat and keep the reply as text", async () => {
+    install(() =>
+      jsonResponse({
+        explanation: "East led.",
+        queries: [{ title: "Query", sql: "SELECT 1", chart: null }],
+      }),
+    );
+    const onUseQuery = mock(() => {});
+    const onUseNote = mock(() => {});
+    const view = render(
+      <IdeQueryChat
+        sql=""
+        databaseType="postgres"
+        schemaContext="[]"
+        placement="fixed"
+        conversationLabel="Dashboard conversation"
+        useQueryLabel="Add as chart"
+        noteLabel="Add as text"
+        onUseQuery={onUseQuery}
+        onUseNote={onUseNote}
+      />,
+    );
+    const ask = view.getByRole("button", { name: "Ask AI" });
+    expect(ask.className).toContain("fixed");
+    fireEvent.click(ask);
+    expect(view.getByLabelText("Dashboard conversation")).toBeTruthy();
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Revenue" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    fireEvent.click(await view.findByRole("button", { name: "Add as chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Add as text" }));
+    expect(onUseQuery).toHaveBeenCalledWith("SELECT 1");
+    expect(onUseNote).toHaveBeenCalledWith("East led.");
+  });
 });

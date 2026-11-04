@@ -1,10 +1,17 @@
 import { describe, expect, test } from "bun:test";
+import { ASSIST_SCHEMA_CAP } from "@/lib/ai/assist-plan";
 import {
+  blockFrameSize,
   chartFrameSize,
   chartLabel,
   CUSTOM_FILTER_SCRIPT,
+  dashboardAssistContext,
+  dashboardEditorSql,
   dashboardName,
   dashboardVariables,
+  DEFAULT_DASHBOARD_BLOCK_WIDTH,
+  DEFAULT_DASHBOARD_NOTE_HEIGHT,
+  dragBlockResize,
   dragResize,
   filterChoices,
   filterValueList,
@@ -27,8 +34,12 @@ import {
   withFilter,
   withFilterFields,
   withFrame,
+  MIN_DASHBOARD_BLOCK_HEIGHT,
+  MAX_DASHBOARD_BLOCK_HEIGHT,
+  schemaWithDashboard,
   withName,
   withNote,
+  withNoteFrame,
   withNoteText,
   withoutChart,
   withoutFilter,
@@ -53,6 +64,20 @@ describe("dashboard layout", () => {
     expect(dragResize({ width: 480, height: 320 }, -400, 40, 800)).toEqual({
       width: MIN_DASHBOARD_CHART_WIDTH,
       height: 360,
+    });
+    expect(blockFrameSize(576, 220, 800)).toEqual({ width: 576, height: 220 });
+    expect(blockFrameSize(2000, 20, 400)).toEqual({ width: 400, height: MIN_DASHBOARD_BLOCK_HEIGHT });
+    expect(blockFrameSize(2000, 4000, 100)).toEqual({
+      width: 1600,
+      height: MAX_DASHBOARD_BLOCK_HEIGHT,
+    });
+    expect(blockFrameSize(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN)).toEqual({
+      width: DEFAULT_DASHBOARD_BLOCK_WIDTH,
+      height: DEFAULT_DASHBOARD_NOTE_HEIGHT,
+    });
+    expect(dragBlockResize({ width: 576, height: 220 }, -400, 40, 800)).toEqual({
+      width: 240,
+      height: 260,
     });
   });
 
@@ -101,6 +126,9 @@ describe("dashboard layout", () => {
     const written = withNoteText(noted, "n1", "Hello");
     expect(written.notes?.[0]?.text).toBe("Hello");
     expect(withNoteText(written, "missing", "x").notes).toEqual(written.notes);
+    const sized = withNoteFrame(written, "n1", { width: 400, height: 180 });
+    expect(sized.notes?.[0]).toMatchObject({ text: "Hello", width: 400, height: 180 });
+    expect(withNoteFrame(sized, "missing", { width: 1, height: 1 }).notes).toEqual(sized.notes);
     expect(withoutNote(written, "n1").notes).toEqual([]);
     expect(withoutNote(board(), "n1").notes).toEqual([]);
     const filtered = withFilter(board(), "c1", "f1");
@@ -261,5 +289,48 @@ describe("dashboard layout", () => {
     expect(placed.filters?.[0]).toMatchObject({ id: "new", name: "region", query: "SELECT 1", componentId: "lib" });
     expect(placeSavedComponent(placed, full, "newer").filters?.[1]?.name).toBe("region2");
     expect(placeSavedComponent(board(), blank, "b").filters?.[0]?.name).toBe("filter");
+  });
+
+  test("describes the board for the assistant and keeps it inside the schema", () => {
+    expect(dashboardEditorSql(null, [])).toBe("");
+    const empty = board();
+    expect(dashboardEditorSql(empty, [])).toBe("");
+    const withCharts = board([
+      { chartId: "gone", width: 1, height: 1 },
+      { chartId: "plain", width: 1, height: 1 },
+      { chartId: "revenue", width: 1, height: 1 },
+    ]);
+    const charts = [
+      { id: "plain", name: "Plain" },
+      { id: "revenue", name: "Revenue", query: " SELECT 1 " },
+    ];
+    expect(dashboardEditorSql(withCharts, charts)).toBe(" SELECT 1 ");
+    expect(dashboardEditorSql(board([{ chartId: "plain", width: 1, height: 1 }]), charts)).toBe("");
+    const noted = withNoteText(withNote(withCharts, "n1"), "n1", "  Hello  ");
+    const described = dashboardAssistContext(
+      {
+        ...noted,
+        filters: [
+          { id: "f1", name: "region", label: " Area ", query: "", value: "east", control: "select" },
+          { id: "f2", name: "  ", query: "", value: "" },
+        ],
+      },
+      charts,
+    );
+    expect(described).toBe(
+      [
+        "Dashboard: Board",
+        "Chart Plain: (no query)",
+        "Chart Revenue: SELECT 1",
+        "Text: Hello",
+        "Component Area (select) = east",
+        "Component Component (unset) = ",
+      ].join("\n"),
+    );
+    expect(schemaWithDashboard("[]", "  ")).toBe("[]");
+    expect(schemaWithDashboard("[]", "Dashboard: Board")).toBe("[]\n\nDashboard:\nDashboard: Board");
+    expect(schemaWithDashboard("x".repeat(ASSIST_SCHEMA_CAP), "Dashboard: Board")).toBe("x".repeat(ASSIST_SCHEMA_CAP));
+    const near = "y".repeat(ASSIST_SCHEMA_CAP - 10);
+    expect(schemaWithDashboard(near, "Dashboard: Board")).toBe(`${near}\n\nDashboar`);
   });
 });
