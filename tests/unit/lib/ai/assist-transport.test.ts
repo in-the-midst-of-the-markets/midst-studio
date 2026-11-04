@@ -193,7 +193,7 @@ describe("listOpenRouterModels", () => {
       null,
       { name: "No id" },
       { id: 4 },
-      ...Array.from({ length: 400 }, (_, index) => ({ id: `m/${index}`, name: `M ${String(index).padStart(3, "0")}` })),
+      ...Array.from({ length: 810 }, (_, index) => ({ id: `m/${index}`, name: `M ${String(index).padStart(3, "0")}` })),
     ];
     let url = "";
     globalThis.fetch = (async (input: string) => {
@@ -202,7 +202,7 @@ describe("listOpenRouterModels", () => {
     }) as unknown as typeof fetch;
     const models = await listOpenRouterModels();
     expect(url).toBe(OPENROUTER_MODELS_URL);
-    expect(models).toHaveLength(400);
+    expect(models).toHaveLength(800);
     expect(models[0]?.name.localeCompare(models[1]?.name ?? "") ?? 0).toBeLessThanOrEqual(0);
     expect(models[0]).toEqual({ id: "openai/blank", name: "000 Blank" });
     expect(models[1]).toEqual({

@@ -3,14 +3,16 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import {
-  RANKING_CATEGORIES,
+  OPENROUTER_DOMAIN_OPTIONS_URL,
+  OPENROUTER_DOMAIN_SHARE_URL,
+  OPENROUTER_WEEKLY_MODELS_URL,
+  RANKINGS_FORMAT,
   RANKINGS_MAX_AGE_MS,
   rankingsFilePath,
   refreshOpenRouterRankings,
   type OpenRouterRankingsFile,
 } from "@/lib/ai/openrouter-rankings";
 
-const originalKey = process.env.OPENROUTER_API_KEY;
 const originalPath = process.env.OPENROUTER_RANKINGS_PATH;
 const originalSqlite = process.env.STORAGE_SQLITE_PATH;
 
@@ -25,13 +27,23 @@ function filePath(): string {
 
 function snapshot(fetchedAt: string): OpenRouterRankingsFile {
   return {
+    version: RANKINGS_FORMAT,
     fetchedAt,
     citation: "Source: OpenRouter (openrouter.ai/rankings), as of saved.",
-    categories: RANKING_CATEGORIES.map((category) => ({
-      category,
-      asOf: "saved",
-      models: [{ id: "openai/gpt-4o", totalTokens: "1" }],
-    })),
+    categories: [
+      {
+        category: "all",
+        label: "All",
+        asOf: "saved",
+        models: [{ id: "openai/gpt-4o", totalTokens: "1" }],
+      },
+      {
+        category: "finance",
+        label: "Finance",
+        asOf: "saved",
+        models: [{ id: "anthropic/claude-opus-5.5-20260921", totalTokens: "1" }],
+      },
+    ],
   };
 }
 
@@ -40,25 +52,118 @@ function writeSnapshot(target: string, value: unknown): void {
   fs.writeFileSync(target, JSON.stringify(value));
 }
 
-function week(category: string, extras: unknown[] = [], meta: unknown = { as_of: "2026-11-03T00:00:00.000Z" }) {
+function optionsBody(): unknown {
+  return {
+    data: {
+      dimensions: [
+        null,
+        { note: "missing" },
+        { dimension: "language", categories: [{ value: "english", label: "English" }] },
+        {
+          dimension: "domain",
+          categories: [
+            null,
+            { value: 4, label: "Number" },
+            { value: "  ", label: "Blank" },
+            { value: " all ", label: "All" },
+            { value: "finance", label: " Finance " },
+            { value: "finance", label: "Again" },
+            { value: "///", label: "" },
+            { label: "No value" },
+            { value: "health_wellness" },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+function shareBody(category: string): unknown {
+  const latest =
+    category === "finance"
+      ? {
+          " anthropic/claude-opus-5.5-20260921 ": 0.1522,
+          "anthropic/claude-sonnet-5.5-20260928": 0.0919,
+          "z-ai/glm-5.3-flash-20260826": 0.0296,
+          "openai/tie": 0.0296,
+          Others: 0.4743,
+          " ": 0.2,
+          "not-a-share": "0.5",
+          tiny: 0.0000004,
+          negative: -0.2,
+          infinite: Number.POSITIVE_INFINITY,
+        }
+      : category === "health_wellness"
+        ? { "openai/gpt-4o": 0.4, others: 0.6 }
+        : { "openai/kept": 0.1 };
+  return {
+    data: {
+      marketShareData: [
+        null,
+        { x: "2026-11-2", ys: { "openai/bad-date": 0.9 } },
+        { x: "2026-11-02", ys: ["nope"] },
+        { x: "2026-10-26", ys: { "openai/old": 0.99 } },
+        { x: "2026-11-02", ys: { "openai/replaced": 0.01 } },
+        { x: "2026-11-02", ys: latest },
+        { note: "missing" },
+      ],
+    },
+  };
+}
+
+function weeklyBody(): unknown {
   return {
     data: [
-      { date: "2026-10-26", model_permaslug: "openai/old", total_tokens: "1000" },
-      { date: "2026-10-26", model_permaslug: "openai/gpt-4o", total_tokens: "5" },
-      { date: "2026-11-02", model_permaslug: "other", total_tokens: "9" },
-      { date: "2026-11-02", model_permaslug: " openai/gpt-4o ", total_tokens: "10" },
-      { date: "2026-11-02", model_permaslug: "anthropic/claude", total_tokens: "10" },
-      { date: "2026-11-02", model_permaslug: "google/gemini", total_tokens: "2" },
-      ...extras,
+      null,
+      "nope",
+      { date: "not-a-day", model_permaslug: "openai/undated", rankingMetricValue: 4 },
+      { date: "2026-11-01", model_permaslug: "other", rankingMetricValue: 99 },
+      { date: "2026-11-02", model_permaslug: "others", variant_permaslug: "  ", rankingMetricValue: "8" },
+      {
+        date: "2026-11-03 00:00:00",
+        model_permaslug: "openai/gpt-4o",
+        variant_permaslug: "openai/gpt-4o",
+        rankingMetricValue: 10,
+      },
+      {
+        date: "2026-11-02",
+        model_permaslug: "openai/gpt-4o",
+        variant_permaslug: "openai/gpt-4o",
+        rankingMetricValue: "5",
+      },
+      {
+        date: "2026-11-03 00:00:00",
+        model_permaslug: "anthropic/claude-opus-5.5-20260921",
+        variant_permaslug: "anthropic/claude-opus-5.5-20260921:batch",
+        rankingMetricValue: 3,
+      },
+      { date: "2026-11-03 00:00:00", model_permaslug: "openai/zero", rankingMetricValue: 0 },
+      { date: "2026-11-03 00:00:00", model_permaslug: "openai/float", rankingMetricValue: 1.5 },
+      { date: "2026-11-03 00:00:00", model_permaslug: "openai/missing" },
+      { date: 4, rankingMetricValue: 9 },
     ],
-    meta,
-    category,
+  };
+}
+
+function chartFetch(
+  extra?: (url: string) => Response | null,
+): (input: RequestInfo | URL, init?: RequestInit) => Response {
+  return (input, init) => {
+    const url = String(input);
+    expect(new Headers(init?.headers).get("Authorization")).toBeNull();
+    expect(new Headers(init?.headers).get("X-Title")).toBe("Midst");
+    const replaced = extra?.(url);
+    if (replaced) return replaced;
+    if (url === OPENROUTER_DOMAIN_OPTIONS_URL) return jsonResponse(optionsBody());
+    if (url.startsWith(OPENROUTER_DOMAIN_SHARE_URL)) {
+      return jsonResponse(shareBody(new URL(url).searchParams.get("category") ?? ""));
+    }
+    if (url === OPENROUTER_WEEKLY_MODELS_URL) return jsonResponse(weeklyBody());
+    return jsonResponse({}, 404);
   };
 }
 
 afterEach(() => {
-  if (originalKey === undefined) delete process.env.OPENROUTER_API_KEY;
-  else process.env.OPENROUTER_API_KEY = originalKey;
   if (originalPath === undefined) delete process.env.OPENROUTER_RANKINGS_PATH;
   else process.env.OPENROUTER_RANKINGS_PATH = originalPath;
   if (originalSqlite === undefined) delete process.env.STORAGE_SQLITE_PATH;
@@ -85,7 +190,6 @@ describe("refreshOpenRouterRankings", () => {
     let calls = 0;
     const served = await refreshOpenRouterRankings({
       filePath: target,
-      key: "server-secret",
       fetchImpl: async () => {
         calls += 1;
         return jsonResponse({});
@@ -95,80 +199,56 @@ describe("refreshOpenRouterRankings", () => {
     expect(calls).toBe(0);
   });
 
-  test("keeps a stale copy when the server has no key", async () => {
+  test("replaces a stale copy with the latest domain week", async () => {
     const target = filePath();
-    const saved = snapshot("2020-01-01T00:00:00.000Z");
-    writeSnapshot(target, saved);
-    let calls = 0;
-    const fetchImpl = async () => {
-      calls += 1;
-      return jsonResponse({});
-    };
-    expect(await refreshOpenRouterRankings({ filePath: target, key: null, fetchImpl })).toEqual(saved);
-    expect(await refreshOpenRouterRankings({ filePath: target, key: "   ", fetchImpl })).toEqual(saved);
-    delete process.env.OPENROUTER_API_KEY;
-    expect(await refreshOpenRouterRankings({ filePath: target, fetchImpl })).toEqual(saved);
-    expect(calls).toBe(0);
-    expect(
-      await refreshOpenRouterRankings({ filePath: path.join(target, "missing"), key: null, fetchImpl }),
-    ).toBeNull();
-  });
-
-  test("replaces a stale copy after every domain succeeds", async () => {
-    const target = filePath();
-    writeSnapshot(target, snapshot("2020-01-01T00:00:00.000Z"));
+    writeSnapshot(target, { fetchedAt: "2020-01-01T00:00:00.000Z", citation: "old", categories: [] });
     const seen: string[] = [];
     const now = Date.parse("2026-11-03T12:00:00.000Z");
-    const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      seen.push(url);
-      expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer server-secret");
-      expect(new Headers(init?.headers).get("X-Title")).toBe("Midst");
-      const category = new URL(url).searchParams.get("category");
-      if (category === "programming") return jsonResponse(week(category, [], null));
-      if (category === "roleplay") return jsonResponse(week(category, [], { as_of: 4 }));
-      if (category === "marketing") return jsonResponse(week(category, [], undefined));
-      return jsonResponse(
-        week(category ?? "", [
-          null,
-          "nope",
-          { date: "2026-11-2", model_permaslug: "openai/bad-date", total_tokens: "8" },
-          { date: "2026-11-02", model_permaslug: " ", total_tokens: "8" },
-          { date: "2026-11-02", model_permaslug: "openai/words", total_tokens: "eight" },
-          { date: "2026-11-02", model_permaslug: "openai/number", total_tokens: 8 },
-          { date: "2026-11-02", total_tokens: "8" },
-        ]),
-      );
-    };
     const saved = await refreshOpenRouterRankings({
       filePath: target,
-      key: "  server-secret  ",
       now: () => now,
-      fetchImpl,
+      fetchImpl: (input, init) => {
+        seen.push(String(input));
+        return chartFetch()(input, init);
+      },
     });
-    expect(seen).toHaveLength(RANKING_CATEGORIES.length + 1);
-    expect(seen.some((url) => url.includes("period=week"))).toBe(true);
-    expect(seen.some((url) => new URL(url).searchParams.get("category") === null)).toBe(true);
-    expect(seen.some((url) => url.includes("category=marketing%2Fseo"))).toBe(true);
-    expect(saved?.fetchedAt).toBe("2026-11-03T12:00:00.000Z");
-    expect(saved?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03T00:00:00.000Z.");
-    expect(saved?.categories[0]?.category).toBe("all");
-    expect(saved?.categories.find((category) => category.category === "programming")?.asOf).toBe("");
-    expect(saved?.categories[0]?.models.map((model) => model.id)).toEqual([
-      "openai/old",
-      "openai/gpt-4o",
-      "anthropic/claude",
-      "google/gemini",
+    expect(seen).toEqual([
+      OPENROUTER_DOMAIN_OPTIONS_URL,
+      `${OPENROUTER_DOMAIN_SHARE_URL}?routeSegment=text&dimension=domain&category=finance`,
+      `${OPENROUTER_DOMAIN_SHARE_URL}?routeSegment=text&dimension=domain&category=${encodeURIComponent("///")}`,
+      `${OPENROUTER_DOMAIN_SHARE_URL}?routeSegment=text&dimension=domain&category=health_wellness`,
+      OPENROUTER_WEEKLY_MODELS_URL,
     ]);
-    expect(saved?.categories[0]?.models.find((model) => model.id === "openai/gpt-4o")?.totalTokens).toBe("15");
+    expect(saved?.fetchedAt).toBe("2026-11-03T12:00:00.000Z");
+    expect(saved?.version).toBe(RANKINGS_FORMAT);
+    expect(saved?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.");
+    expect(saved?.categories.map((category) => category.category)).toEqual([
+      "all",
+      "finance",
+      "///",
+      "health_wellness",
+    ]);
+    expect(saved?.categories.map((category) => category.label)).toEqual(["All", "Finance", "///", "Health Wellness"]);
+    const finance = saved?.categories.find((category) => category.category === "finance");
+    expect(finance?.asOf).toBe("2026-11-02");
+    expect(finance?.models.map((model) => [model.id, model.totalTokens])).toEqual([
+      ["anthropic/claude-opus-5.5-20260921", "152200"],
+      ["anthropic/claude-sonnet-5.5-20260928", "91900"],
+      ["openai/tie", "29600"],
+      ["z-ai/glm-5.3-flash-20260826", "29600"],
+    ]);
+    expect(saved?.categories[0]?.models.map((model) => [model.id, model.totalTokens])).toEqual([
+      ["openai/gpt-4o", "15"],
+      ["openai/undated", "4"],
+      ["anthropic/claude-opus-5.5-20260921:batch", "3"],
+    ]);
     const text = fs.readFileSync(target, "utf8");
-    expect(text).not.toContain("server-secret");
-    expect(text).toContain("openai/old");
+    expect(text).toContain("anthropic/claude-opus-5.5-20260921");
+    expect(text).not.toContain("openai/old");
 
     let again = 0;
     const second = await refreshOpenRouterRankings({
       filePath: target,
-      key: "server-secret",
       now: () => now + 1_000,
       fetchImpl: async () => {
         again += 1;
@@ -179,11 +259,11 @@ describe("refreshOpenRouterRankings", () => {
     expect(again).toBe(0);
   });
 
-  test("keeps the previous file when a domain fails or the disk rejects the write", async () => {
+  test("keeps the previous file when a chart fails or the disk rejects the write", async () => {
     const target = filePath();
     const saved = snapshot("2020-01-01T00:00:00.000Z");
     writeSnapshot(target, saved);
-    const failures: Array<(input: string) => Response | Promise<Response>> = [
+    const failures: Array<(input: string, init?: RequestInit) => Response | Promise<Response>> = [
       () => jsonResponse({}, 503),
       () => {
         const response = jsonResponse({});
@@ -192,7 +272,29 @@ describe("refreshOpenRouterRankings", () => {
       },
       () => jsonResponse(null),
       () => jsonResponse({ data: {} }),
-      () => jsonResponse({ data: [{ date: "2026-11-02", model_permaslug: "other", total_tokens: "1" }] }),
+      () => jsonResponse({ data: { dimensions: [{ dimension: "domain", categories: "nope" }] } }),
+      () => jsonResponse({ data: { dimensions: [{ dimension: "domain", categories: [{ value: "all" }] }] } }),
+      () => jsonResponse({ data: { dimensions: [{ dimension: "language", categories: [] }] } }),
+      (input, init) => {
+        if (String(input) === OPENROUTER_DOMAIN_OPTIONS_URL) return jsonResponse(optionsBody());
+        if (String(input).startsWith(OPENROUTER_DOMAIN_SHARE_URL)) return jsonResponse({ data: null });
+        return chartFetch()(input, init);
+      },
+      (input) => {
+        if (String(input) === OPENROUTER_DOMAIN_OPTIONS_URL) return jsonResponse(optionsBody());
+        return jsonResponse({}, 503);
+      },
+      (input, init) => {
+        if (String(input) === OPENROUTER_DOMAIN_OPTIONS_URL) return jsonResponse(optionsBody());
+        if (String(input).startsWith(OPENROUTER_DOMAIN_SHARE_URL)) {
+          return jsonResponse({ data: { marketShareData: [] } });
+        }
+        return chartFetch()(input, init);
+      },
+      (input, init) => {
+        if (String(input) === OPENROUTER_WEEKLY_MODELS_URL) return jsonResponse({ data: [] });
+        return chartFetch()(input, init);
+      },
       () => {
         throw new Error("offline");
       },
@@ -200,7 +302,6 @@ describe("refreshOpenRouterRankings", () => {
     for (const fetchImpl of failures) {
       const served = await refreshOpenRouterRankings({
         filePath: target,
-        key: "server-secret",
         now: () => Date.parse("2026-11-03T00:00:00.000Z"),
         fetchImpl,
       });
@@ -212,7 +313,6 @@ describe("refreshOpenRouterRankings", () => {
     expect(
       await refreshOpenRouterRankings({
         filePath: missing,
-        key: "server-secret",
         fetchImpl: async () => jsonResponse({}, 503),
       }),
     ).toBeNull();
@@ -223,9 +323,8 @@ describe("refreshOpenRouterRankings", () => {
     });
     const kept = await refreshOpenRouterRankings({
       filePath: target,
-      key: "server-secret",
       now: () => Date.parse("2026-11-03T00:00:00.000Z"),
-      fetchImpl: async () => jsonResponse(week("programming")),
+      fetchImpl: chartFetch(),
     });
     expect(kept).toEqual(saved);
     expect(fs.readdirSync(path.dirname(target)).some((name) => name.endsWith(".tmp"))).toBe(false);
@@ -236,9 +335,8 @@ describe("refreshOpenRouterRankings", () => {
     });
     const still = await refreshOpenRouterRankings({
       filePath: target,
-      key: "server-secret",
       now: () => Date.parse("2026-11-03T00:00:00.000Z"),
-      fetchImpl: async () => jsonResponse(week("programming")),
+      fetchImpl: chartFetch(),
     });
     expect(still).toEqual(saved);
     write.mockRestore();
@@ -249,30 +347,55 @@ describe("refreshOpenRouterRankings", () => {
     const target = filePath();
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, "{");
-    expect(await refreshOpenRouterRankings({ filePath: target, key: null })).toBeNull();
+    expect(
+      await refreshOpenRouterRankings({ filePath: target, fetchImpl: async () => jsonResponse({}, 503) }),
+    ).toBeNull();
     writeSnapshot(`${target}.shape`, {
-      fetchedAt: 1,
+      version: 1,
+      fetchedAt: "2026-11-03T00:00:00.000Z",
       citation: "x",
-      categories: [{ category: "programming", asOf: "", models: [{ id: "", totalTokens: "1" }] }],
+      categories: [{ category: "finance", asOf: "", models: [{ id: "openai/gpt-4o", totalTokens: "1" }] }],
     });
-    expect(await refreshOpenRouterRankings({ filePath: `${target}.shape`, key: null })).toBeNull();
-    const directory = path.dirname(target);
-    expect(await refreshOpenRouterRankings({ filePath: directory, key: null })).toBeNull();
+    expect(
+      await refreshOpenRouterRankings({ filePath: `${target}.shape`, fetchImpl: async () => jsonResponse({}, 503) }),
+    ).toBeNull();
+    expect(
+      await refreshOpenRouterRankings({ filePath: path.dirname(target), fetchImpl: async () => jsonResponse({}, 503) }),
+    ).toBeNull();
+
+    const blank = filePath();
+    writeSnapshot(blank, {
+      version: RANKINGS_FORMAT,
+      fetchedAt: "2026-11-03T00:00:00.000Z",
+      citation: "",
+      categories: [
+        { category: " ", label: "Blank", asOf: "", models: [{ id: "openai/gpt-4o", totalTokens: "1" }] },
+        { category: "finance", label: " ", asOf: "", models: [{ id: " ", totalTokens: "1" }] },
+        { category: "legal", label: "Legal", asOf: "", models: [] },
+      ],
+    });
+    expect(
+      await refreshOpenRouterRankings({ filePath: blank, fetchImpl: async () => jsonResponse({}, 503) }),
+    ).toBeNull();
 
     const boundary = filePath();
     const fetchedAt = new Date(Date.parse("2026-11-03T00:00:00.000Z") - RANKINGS_MAX_AGE_MS).toISOString();
     writeSnapshot(boundary, snapshot(fetchedAt));
     let calls = 0;
-    await refreshOpenRouterRankings({
+    const cited = await refreshOpenRouterRankings({
       filePath: boundary,
-      key: "server-secret",
       now: () => Date.parse("2026-11-03T00:00:00.000Z"),
-      fetchImpl: async () => {
+      fetchImpl: (input, init) => {
         calls += 1;
-        return jsonResponse(week("programming", [], { as_of: "" }));
+        if (String(input) === OPENROUTER_WEEKLY_MODELS_URL) {
+          return jsonResponse({ data: [{ model_permaslug: "openai/gpt-4o", rankingMetricValue: 2 }] });
+        }
+        return chartFetch()(input, init);
       },
     });
-    expect(calls).toBe(RANKING_CATEGORIES.length + 1);
+    expect(calls).toBe(5);
+    expect(cited?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-02.");
+    expect(cited?.categories[0]?.asOf).toBe("");
 
     writeSnapshot(target, snapshot("not-a-date"));
     let started = 0;
@@ -280,25 +403,26 @@ describe("refreshOpenRouterRankings", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const fetchImpl = async () => {
+    const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit) => {
       started += 1;
       await gate;
-      return jsonResponse(week("programming", [], {}));
+      return chartFetch()(input, init);
     };
-    const first = refreshOpenRouterRankings({ filePath: target, key: "server-secret", fetchImpl });
+    const first = refreshOpenRouterRankings({ filePath: target, fetchImpl });
     const second = refreshOpenRouterRankings({
       filePath: target,
-      key: "other",
       fetchImpl: async () => {
         started += 100;
         return jsonResponse({}, 500);
       },
     });
-    expect(started).toBe(RANKING_CATEGORIES.length + 1);
+    expect(started).toBe(1);
     release?.();
     const [saved, shared] = await Promise.all([first, second]);
-    expect(saved?.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of the latest weekly rankings.");
+    expect(saved?.categories.find((category) => category.category === "finance")?.models[0]?.id).toBe(
+      "anthropic/claude-opus-5.5-20260921",
+    );
     expect(shared).toEqual(saved);
-    expect(started).toBe(RANKING_CATEGORIES.length + 1);
+    expect(started).toBe(5);
   });
 });

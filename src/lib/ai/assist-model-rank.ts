@@ -1,10 +1,11 @@
 /**
  * Where each OpenRouter model sits in the chat's model list.
  *
- * The person picks a domain. The models that domain ranks come first, in its
- * order, and the rest of the catalog follows so a model can still be chosen.
- * All is overall use. A ranking id may be the dated slug, so a catalog model
- * matches on its id or that slug.
+ * The person picks a domain. The models that domain ranks come first, in the
+ * latest week's order, and the rest of the catalog follows so a model can
+ * still be chosen. All is overall use. A ranking id may be the dated slug, so
+ * a catalog model matches on its id, that slug, or the undated id the slug
+ * belongs to.
  */
 
 import type { AssistModelOption } from "@/lib/ai/assist-settings";
@@ -16,6 +17,7 @@ export interface AssistRankedModel {
 
 export interface AssistRankingCategory {
   readonly category: string;
+  readonly label?: string;
   readonly models: readonly AssistRankedModel[];
 }
 
@@ -38,14 +40,28 @@ const CATEGORY_LABELS: Readonly<Record<string, string>> = {
   legal: "Legal",
   finance: "Finance",
   health: "Health",
+  health_wellness: "Health & wellness",
   trivia: "Trivia",
   academia: "Academia",
+  software_technology: "Software & technology",
+  arts_entertainment: "Arts & entertainment",
+  business_operations: "Business operations",
+  science_engineering: "Science & engineering",
+  customer_service: "Customer service",
+  marketing_advertising: "Marketing & advertising",
+  sales_commerce: "Sales & commerce",
+  government_politics: "Government & politics",
+  travel_hospitality: "Travel & hospitality",
 };
 
 function categoryLabel(category: string): string {
   const known = CATEGORY_LABELS[category];
   if (known !== undefined) return known;
-  return category.slice(0, 1).toUpperCase() + category.slice(1);
+  const words = category
+    .split(/[/_]/)
+    .filter((part) => part !== "")
+    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1));
+  return words.length === 0 ? category : words.join(" ");
 }
 
 function tokensOf(value: unknown): string | null {
@@ -73,7 +89,8 @@ function categoryOf(value: unknown): AssistRankingCategory | null {
     if (model !== null) models.push(model);
   }
   if (models.length === 0) return null;
-  return { category, models };
+  const label = "label" in value && typeof value.label === "string" ? value.label.trim() : "";
+  return label === "" ? { category, models } : { category, label, models };
 }
 
 /** The rankings a catalog response carried, or null when that field is not a ranking. */
@@ -102,7 +119,9 @@ export function rankingDomains(rankings: AssistRankings | null): RankingDomain[]
   const domains: RankingDomain[] = [];
   for (const category of rankings.categories) {
     if (category.category === ASSIST_RANK_ALL || category.models.length === 0) continue;
-    domains.push({ id: category.category, label: categoryLabel(category.category) });
+    const label =
+      category.label !== undefined && category.label !== "" ? category.label : categoryLabel(category.category);
+    domains.push({ id: category.category, label });
   }
   domains.sort((left, right) => left.label.localeCompare(right.label) || left.id.localeCompare(right.id));
   return domains;
@@ -114,16 +133,31 @@ function modelKeys(model: AssistModelOption): Set<string> {
   return keys;
 }
 
+/** `anthropic/claude-opus-5.5-20260921` and its `:batch` form both belong to `anthropic/claude-opus-5.5`. */
+function familyKey(slug: string): string {
+  const colon = slug.indexOf(":");
+  const bare = colon === -1 ? slug : slug.slice(0, colon);
+  return bare.replace(/-\d{8}$/, "");
+}
+
 function tokensFor(category: AssistRankingCategory | undefined, model: AssistModelOption): bigint | null {
   if (category === undefined) return null;
   const keys = modelKeys(model);
-  let best: bigint | null = null;
+  const modelFamily = familyKey(model.id);
+  let exact: bigint | null = null;
+  let family: bigint | null = null;
   for (const row of category.models) {
-    if (!keys.has(row.id)) continue;
     const tokens = BigInt(row.totalTokens);
-    if (best === null || tokens > best) best = tokens;
+    if (keys.has(row.id)) {
+      if (exact === null || tokens > exact) exact = tokens;
+      continue;
+    }
+    const rowFamily = familyKey(row.id);
+    const sameFamily = rowFamily === model.id || (model.id.includes(":") && rowFamily === modelFamily);
+    if (!sameFamily) continue;
+    if (family === null || tokens > family) family = tokens;
   }
-  return best;
+  return exact ?? family;
 }
 
 /**

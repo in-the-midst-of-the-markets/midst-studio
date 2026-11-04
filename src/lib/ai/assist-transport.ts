@@ -14,7 +14,7 @@ export const FIREWORKS_CHAT_URL = "https://api.fireworks.ai/inference/v1/chat/co
 export const GATEWAY_CHAT_URL = "https://ai-gateway.vercel.sh/v1/chat/completions";
 export const GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1/models";
 
-const MODEL_CAP = 400;
+const MODEL_CAP = 800;
 
 export interface AssistModelOption {
   readonly id: string;

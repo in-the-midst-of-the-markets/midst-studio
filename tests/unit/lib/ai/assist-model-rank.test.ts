@@ -80,6 +80,24 @@ describe("rankingDomains", () => {
       { id: "widgets", label: "Widgets" },
     ]);
     expect(
+      rankingDomains(
+        readAssistRankings({
+          citation: "Source.",
+          categories: [
+            { category: "finance", label: "  Markets  ", models: [{ id: "a", totalTokens: "1" }] },
+            { category: "health_wellness", label: "   ", models: [{ id: "a", totalTokens: "1" }] },
+            { category: "customer_support", models: [{ id: "a", totalTokens: "1" }] },
+            { category: "///", models: [{ id: "a", totalTokens: "1" }] },
+          ],
+        }),
+      ),
+    ).toEqual([
+      { id: "///", label: "///" },
+      { id: "customer_support", label: "Customer Support" },
+      { id: "health_wellness", label: "Health & wellness" },
+      { id: "finance", label: "Markets" },
+    ]);
+    expect(
       rankingDomains({
         citation: "",
         categories: [
@@ -239,5 +257,88 @@ describe("rankAssistModels", () => {
         "finance",
       ).models.map((model) => model.id),
     ).toEqual(["local/model"]);
+  });
+
+  test("follows the latest finance week, including a dated slug and its batch model", () => {
+    const rankings = readAssistRankings({
+      citation: "Source.",
+      categories: [
+        {
+          category: "finance",
+          label: "Finance",
+          models: [
+            { id: "anthropic/claude-opus-5.5-20260921", totalTokens: "152200" },
+            { id: "anthropic/claude-opus-5.5-20260101", totalTokens: "999999" },
+            { id: "anthropic/claude-sonnet-5.5-20260928", totalTokens: "91900" },
+            { id: "anthropic/claude-fable-5.1-20260831", totalTokens: "62000" },
+            { id: "moonshotai/kimi-k3-20260715", totalTokens: "50300" },
+            { id: "openai/gpt-5.6-sol-20260709", totalTokens: "44500" },
+            { id: "z-ai/glm-5.3-flash-20260826", totalTokens: "29600" },
+            { id: "openai/gpt-6-astra-20260903", totalTokens: "200000" },
+          ],
+        },
+      ],
+    });
+    const models: AssistModelOption[] = [
+      { id: "deepseek/deepseek-v4.1-flash", name: "DeepSeek: DeepSeek V4.1 Flash" },
+      {
+        id: "z-ai/glm-5.3-flash",
+        name: "Z.ai: GLM 5.3 Flash",
+        canonicalSlug: "z-ai/glm-5.3-flash-20260826",
+      },
+      {
+        id: "z-ai/glm-5.3-flash:batch",
+        name: "Z.ai: GLM 5.3 Flash (batch)",
+        canonicalSlug: "z-ai/glm-5.3-flash-20260826",
+      },
+      { id: "openai/gpt-6-astra-pro:batch", name: "OpenAI: GPT-6 Astra Pro (batch)" },
+      {
+        id: "openai/gpt-6-astra",
+        name: "OpenAI: GPT-6 Astra",
+        canonicalSlug: "openai/gpt-6-astra-20260903",
+      },
+      { id: "anthropic/claude-opus-5", name: "Anthropic: Claude Opus 5" },
+      {
+        id: "anthropic/claude-opus-5.5",
+        name: "Anthropic: Claude Opus 5.5",
+        canonicalSlug: "anthropic/claude-opus-5.5-20260921",
+      },
+      {
+        id: "anthropic/claude-opus-5.5:batch",
+        name: "Anthropic: Claude Opus 5.5 (batch)",
+        canonicalSlug: "anthropic/claude-opus-5.5-20260921",
+      },
+      {
+        id: "anthropic/claude-sonnet-5.5",
+        name: "Anthropic: Claude Sonnet 5.5",
+        canonicalSlug: "anthropic/claude-sonnet-5.5-20260928",
+      },
+      { id: "anthropic/claude-fable-5.1", name: "Anthropic: Claude Fable 5.1" },
+      { id: "moonshotai/kimi-k3", name: "MoonshotAI: Kimi K3" },
+      { id: "openai/gpt-5.6-sol:batch", name: "OpenAI: GPT-5.6 Sol (batch)" },
+    ];
+    expect(rankAssistModels(models, rankings, "finance").models.map((model) => model.name)).toEqual([
+      "OpenAI: GPT-6 Astra",
+      "Anthropic: Claude Opus 5.5",
+      "Anthropic: Claude Opus 5.5 (batch)",
+      "Anthropic: Claude Sonnet 5.5",
+      "Anthropic: Claude Fable 5.1",
+      "MoonshotAI: Kimi K3",
+      "OpenAI: GPT-5.6 Sol (batch)",
+      "Z.ai: GLM 5.3 Flash",
+      "Z.ai: GLM 5.3 Flash (batch)",
+      "DeepSeek: DeepSeek V4.1 Flash",
+      "OpenAI: GPT-6 Astra Pro (batch)",
+      "Anthropic: Claude Opus 5",
+    ]);
+    const undated = rankAssistModels(
+      [
+        { id: "anthropic/claude-opus-5.5", name: "Opus" },
+        { id: "openai/other", name: "Other" },
+      ],
+      rankings,
+      "finance",
+    );
+    expect(undated.models.map((model) => model.name)).toEqual(["Opus", "Other"]);
   });
 });
