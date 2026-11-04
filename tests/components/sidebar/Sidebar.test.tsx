@@ -216,13 +216,13 @@ describe("Sidebar", () => {
     }
   });
 
-  test("renders the Midst mark with its name at the top of the sidebar", () => {
+  test("renders the KnowSQL mark with its name at the top of the sidebar", () => {
     const props = createDefaultProps();
     const { getByText, container } = render(<Sidebar {...props} />);
 
     const header = container.querySelector(".h-14");
-    expect(header?.textContent).toContain("Midst");
-    expect(getByText("Midst")).toBeTruthy();
+    expect(header?.textContent).toContain("KnowSQL");
+    expect(getByText("KnowSQL")).toBeTruthy();
   });
 
   test('shows "Add Internal Data" button (Plus icon)', () => {

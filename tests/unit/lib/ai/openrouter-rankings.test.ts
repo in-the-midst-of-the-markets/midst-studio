@@ -151,7 +151,7 @@ function chartFetch(
   return (input, init) => {
     const url = String(input);
     expect(new Headers(init?.headers).get("Authorization")).toBeNull();
-    expect(new Headers(init?.headers).get("X-Title")).toBe("Midst");
+    expect(new Headers(init?.headers).get("X-Title")).toBe("KnowSQL");
     const replaced = extra?.(url);
     if (replaced) return replaced;
     if (url === OPENROUTER_DOMAIN_OPTIONS_URL) return jsonResponse(optionsBody());

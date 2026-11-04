@@ -29,10 +29,10 @@ function pngDimensions(file: string): { width: number; height: number } {
 describe("web app manifest", () => {
   const manifest = JSON.parse(readFileSync(join(PUBLIC_DIR, "site.webmanifest"), "utf8")) as WebManifest;
 
-  test("describes Midst as an installable standalone app", () => {
+  test("describes KnowSQL as an installable standalone app", () => {
     expect(manifest).toMatchObject({
-      name: "in the Midst of the markets",
-      short_name: "Midst",
+      name: "in the KnowSQL of the markets",
+      short_name: "KnowSQL",
       start_url: ".",
       display: "standalone",
       theme_color: "#101010",

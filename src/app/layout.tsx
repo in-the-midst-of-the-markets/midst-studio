@@ -24,14 +24,14 @@ import { SubscriptionRelease } from "@/components/marketplace/SubscriptionReleas
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const title = "in the Midst of the markets";
+const title = "in the KnowSQL of the markets";
 const description =
   "A self-hosted database management platform for SQL and NoSQL databases, with schema exploration, query tools, data import, and AI-assisted database development.";
 // Project previews use the public demo documented in README, including on private deployments.
 const siteUrl = "https://libredb.org";
 const previewImage = {
   url: `https://raw.githubusercontent.com/libredb/libredb-studio/main/public/screenshots/hero-editor.png`,
-  alt: "Midst SQL editor and query results",
+  alt: "KnowSQL SQL editor and query results",
 };
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     title,
     description,
-    siteName: "Midst",
+    siteName: "KnowSQL",
     images: [{ ...previewImage, width: 1440, height: 900 }],
   },
   twitter: {
@@ -54,10 +54,10 @@ export const metadata: Metadata = {
   manifest: withBasePath("/site.webmanifest"),
   icons: {
     icon: [
-      { url: withBasePath("/favicon.ico?v=5"), sizes: "any" },
+      { url: withBasePath("/favicon.ico?v=6"), sizes: "any" },
       { url: withBasePath("/favicon.png"), type: "image/png" },
     ],
-    shortcut: withBasePath("/favicon.ico?v=5"),
+    shortcut: withBasePath("/favicon.ico?v=6"),
     apple: [{ url: withBasePath("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" }],
   },
 };

@@ -113,7 +113,7 @@ export async function completeChat(input: {
   };
   if (input.source === "openrouter") {
     headers["HTTP-Referer"] = "https://midst.market";
-    headers["X-Title"] = "Midst";
+    headers["X-Title"] = "KnowSQL";
   }
   const body: {
     model: string;

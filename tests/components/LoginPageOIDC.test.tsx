@@ -37,10 +37,10 @@ describe("LoginPage (OIDC mode)", () => {
     expect(queryByText("User")).toBeNull();
   });
 
-  test("renders the Midst mark with its name", () => {
+  test("renders the KnowSQL mark with its name", () => {
     // Desktop hero and the mobile header each carry the mark and the word.
     const { getAllByText } = render(<LoginForm authProvider="oidc" passkey={null} />);
-    expect(getAllByText("Midst").length).toBeGreaterThan(0);
+    expect(getAllByText("KnowSQL").length).toBeGreaterThan(0);
   });
 
   test("shows error message when error param is present", () => {

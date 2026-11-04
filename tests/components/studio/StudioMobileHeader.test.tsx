@@ -156,10 +156,10 @@ describe("StudioMobileHeader", () => {
     mockOnImport.mockClear();
   });
 
-  test("shows the Midst lockup at the start of the header", () => {
+  test("shows the KnowSQL lockup at the start of the header", () => {
     const { container } = render(<StudioMobileHeader {...defaults} />);
     const left = container.querySelector("header > div > div");
-    expect(left?.firstElementChild?.textContent).toBe("Midst");
+    expect(left?.firstElementChild?.textContent).toBe("KnowSQL");
   });
 
   test("renders DB selector and Online badge", () => {
