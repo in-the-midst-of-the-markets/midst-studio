@@ -294,7 +294,7 @@ export function buildAssistReadingMessages(
       ? "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Cite those names."
       : "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Use those names. Add a query only for a number the rows do not already show."
     : "";
-  const system = `You are the analyst inside Midst, a database studio. The connected engine is ${engine}.\n\n${task}${graphCells}`;
+  const system = `You are the analyst inside KnowSQL, a database studio. The connected engine is ${engine}.\n\n${task}${graphCells}`;
   const user = `Question:\n${prompt.questionBlock}\n\nResults:\n${prompt.resultsBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },

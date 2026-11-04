@@ -298,7 +298,7 @@ async function pullJson(url: string, fetchImpl: RankingsFetch): Promise<unknown 
   const response = await fetchImpl(url, {
     headers: {
       "HTTP-Referer": "https://midst.market",
-      "X-Title": "Midst",
+      "X-Title": "KnowSQL",
     },
   });
   if (!response.ok) return null;

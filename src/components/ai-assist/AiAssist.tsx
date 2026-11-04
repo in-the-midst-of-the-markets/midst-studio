@@ -735,9 +735,9 @@ export function AiAssist() {
         <div className="flex items-center justify-end gap-2">
           <span className="hidden items-center gap-2 rounded-full border border-hairline bg-canvas py-1 pr-3 pl-1 text-xs font-medium text-fg sm:inline-flex">
             <span className="flex size-6 items-center justify-center rounded-full bg-brand-tint/20 text-[11px] font-semibold text-brand">
-              M
+              K
             </span>
-            Midst
+            KnowSQL
           </span>
           <ModeLinks page="assist" variant="outline" />
         </div>
@@ -826,7 +826,7 @@ export function AiAssist() {
                 <Sparkles className="size-4" />
               </span>
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold text-fg">Ask Midst AI</h2>
+                <h2 className="text-sm font-semibold text-fg">Ask KnowSQL AI</h2>
                 <p className="text-xs text-fg-muted">Refine your query and explore insights</p>
               </div>
             </div>

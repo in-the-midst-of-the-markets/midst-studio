@@ -59,7 +59,7 @@ describe("completeChat", () => {
     expect(text).toBe("  hello  ");
     expect(seen?.url).toBe(OPENROUTER_CHAT_URL);
     expect(seen?.headers.get("Authorization")).toBe("Bearer secret");
-    expect(seen?.headers.get("X-Title")).toBe("Midst");
+    expect(seen?.headers.get("X-Title")).toBe("KnowSQL");
     expect(seen?.body).toMatchObject({
       model: "openai/gpt-4o",
       stream: false,

@@ -8,8 +8,8 @@ interface MidstMarkProps {
 }
 
 /**
- * The product mark. Same artwork as the browser tab icon: a purple rounded
- * square with a white M. It carries its own ground, so it reads on light and dark chrome.
+ * The product mark. Same artwork as the browser tab icon: four purple cubes
+ * on a transparent ground, so it reads on light and dark chrome.
  */
 function MidstMark({ className, alt = "" }: MidstMarkProps) {
   // The file is served under a runtime base path. next/image would prefix that path a second time.
@@ -34,7 +34,7 @@ export function MidstLockup({ className, markClassName, wordClassName }: MidstLo
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <MidstMark className={cn("h-7 w-7", markClassName)} />
-      <span className={cn("font-semibold tracking-tight text-fg", wordClassName)}>Midst</span>
+      <span className={cn("font-semibold tracking-tight text-fg", wordClassName)}>KnowSQL</span>
     </span>
   );
 }

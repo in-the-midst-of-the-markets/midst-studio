@@ -102,7 +102,7 @@ describe("StudioDesktopHeader", () => {
 
   test("leaves the product name to the sidebar", () => {
     const { queryByText } = render(<StudioDesktopHeader {...defaultProps} />);
-    expect(queryByText("Midst")).toBeNull();
+    expect(queryByText("KnowSQL")).toBeNull();
   });
 
   // ── Connection Info (Left Section) ──

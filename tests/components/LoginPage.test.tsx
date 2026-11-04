@@ -78,9 +78,9 @@ describe("LoginPage", () => {
     expect(getByRole("button", { name: "Sign in" })).not.toBeNull();
   });
 
-  test("renders the Midst mark with its name", () => {
+  test("renders the KnowSQL mark with its name", () => {
     const { getAllByText } = renderLogin();
-    expect(getAllByText("Midst").length).toBeGreaterThanOrEqual(1);
+    expect(getAllByText("KnowSQL").length).toBeGreaterThanOrEqual(1);
   });
 
   test("shows error toast when submitting empty form", () => {

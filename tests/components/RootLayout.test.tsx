@@ -37,21 +37,21 @@ describe("RootLayout", () => {
   });
 
   test("exports correct metadata title", () => {
-    expect(metadata.title).toBe("in the Midst of the markets");
+    expect(metadata.title).toBe("in the KnowSQL of the markets");
   });
 
   test("shares a branded static image with matching Open Graph and Twitter metadata", () => {
     const screenshot = readFileSync(new URL("../../public/screenshots/hero-editor.png", import.meta.url));
     const image = {
       url: "https://raw.githubusercontent.com/libredb/libredb-studio/main/public/screenshots/hero-editor.png",
-      alt: "Midst SQL editor and query results",
+      alt: "KnowSQL SQL editor and query results",
     };
     expect(metadata.openGraph).toMatchObject({
       type: "website",
       url: "https://libredb.org",
       title: metadata.title,
       description: metadata.description,
-      siteName: "Midst",
+      siteName: "KnowSQL",
       images: [{ ...image, width: screenshot.readUInt32BE(16), height: screenshot.readUInt32BE(20) }],
     });
     expect(metadata.twitter).toMatchObject({
