@@ -37,7 +37,7 @@ describe("RootLayout", () => {
   });
 
   test("exports correct metadata title", () => {
-    expect(metadata.title).toBe("in the KnowSQL of the markets");
+    expect(metadata.title).toBe("KnowSQL");
   });
 
   test("shares a branded static image with matching Open Graph and Twitter metadata", () => {
