@@ -19,6 +19,8 @@ const MODEL_CAP = 400;
 export interface AssistModelOption {
   readonly id: string;
   readonly name: string;
+  /** The dated slug OpenRouter ranks, when it is not the same as `id`. */
+  readonly canonicalSlug?: string;
 }
 
 export interface AssistChatMessage {
@@ -154,7 +156,8 @@ function catalogModels(payload: unknown): AssistModelOption[] {
     const id = item.id.trim();
     if (id === "" || byId.has(id)) continue;
     const name = "name" in item && typeof item.name === "string" && item.name.trim() !== "" ? item.name.trim() : id;
-    byId.set(id, { id, name });
+    const slug = "canonical_slug" in item && typeof item.canonical_slug === "string" ? item.canonical_slug.trim() : "";
+    byId.set(id, slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name });
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(0, MODEL_CAP);
 }

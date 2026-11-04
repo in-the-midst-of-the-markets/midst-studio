@@ -1,10 +1,10 @@
 /**
  * Where each OpenRouter model sits in the chat's model list.
  *
- * A model is filed under the domain where the saved rankings give it the most
- * tokens. Domains are ordered by that top figure, and the models inside a
- * domain follow the same order. A model the rankings do not name stays in the
- * order the catalog returned it.
+ * The person picks a domain. The models that domain ranks come first, in its
+ * order, and the rest of the catalog follows so a model can still be chosen.
+ * All is overall use. A ranking id may be the dated slug, so a catalog model
+ * matches on its id or that slug.
  */
 
 import type { AssistModelOption } from "@/lib/ai/assist-settings";
@@ -24,11 +24,8 @@ export interface AssistRankings {
   readonly categories: readonly AssistRankingCategory[];
 }
 
-export interface RankedModelGroup {
-  readonly category: string;
-  readonly label: string;
-  readonly models: readonly AssistModelOption[];
-}
+/** The domain filter's first choice: overall use, not one subject. */
+export const ASSIST_RANK_ALL = "all";
 
 const CATEGORY_LABELS: Readonly<Record<string, string>> = {
   programming: "Programming",
@@ -94,93 +91,76 @@ export function readAssistRankings(value: unknown): AssistRankings | null {
   return { citation, categories };
 }
 
-interface Placement {
-  readonly category: string;
-  readonly tokens: bigint;
-}
-
-function placementFor(rankings: AssistRankings): Map<string, Placement> {
-  const placed = new Map<string, Placement>();
-  for (const category of rankings.categories) {
-    for (const model of category.models) {
-      const tokens = BigInt(model.totalTokens);
-      const current = placed.get(model.id);
-      if (
-        current === undefined ||
-        tokens > current.tokens ||
-        (tokens === current.tokens && category.category < current.category)
-      ) {
-        placed.set(model.id, { category: category.category, tokens });
-      }
-    }
-  }
-  return placed;
-}
-
-interface Bucket {
-  readonly category: string;
+export interface RankingDomain {
+  readonly id: string;
   readonly label: string;
-  readonly top: bigint;
-  readonly rows: { readonly model: AssistModelOption; readonly tokens: bigint }[];
+}
+
+/** The domains a person can filter by, in label order. Overall use is not one of them. */
+export function rankingDomains(rankings: AssistRankings | null): RankingDomain[] {
+  if (rankings === null) return [];
+  const domains: RankingDomain[] = [];
+  for (const category of rankings.categories) {
+    if (category.category === ASSIST_RANK_ALL || category.models.length === 0) continue;
+    domains.push({ id: category.category, label: categoryLabel(category.category) });
+  }
+  domains.sort((left, right) => left.label.localeCompare(right.label) || left.id.localeCompare(right.id));
+  return domains;
+}
+
+function modelKeys(model: AssistModelOption): Set<string> {
+  const keys = new Set<string>([model.id]);
+  if (model.canonicalSlug !== undefined && model.canonicalSlug !== "") keys.add(model.canonicalSlug);
+  return keys;
+}
+
+function tokensFor(category: AssistRankingCategory | undefined, model: AssistModelOption): bigint | null {
+  if (category === undefined) return null;
+  const keys = modelKeys(model);
+  let best: bigint | null = null;
+  for (const row of category.models) {
+    if (!keys.has(row.id)) continue;
+    const tokens = BigInt(row.totalTokens);
+    if (best === null || tokens > best) best = tokens;
+  }
+  return best;
 }
 
 /**
- * The catalog grouped by the domain each model leads.
- * `groups` is null when nothing in the catalog is ranked, so the page keeps the
- * catalog order. The citation is OpenRouter's line, or null when there is none.
+ * The catalog ordered for one domain.
+ * Ranked models come first. The rest keep the catalog's order. The citation is
+ * OpenRouter's line, or null when there is none.
  */
 export function rankAssistModels(
   models: readonly AssistModelOption[],
   rankings: AssistRankings | null,
-): { readonly groups: readonly RankedModelGroup[] | null; readonly citation: string | null } {
+  domain = ASSIST_RANK_ALL,
+): { readonly models: readonly AssistModelOption[]; readonly citation: string | null } {
   const citation = rankings !== null && rankings.citation !== "" ? rankings.citation : null;
-  if (rankings === null || rankings.categories.length === 0) return { groups: null, citation };
-  const placed = placementFor(rankings);
-  const buckets = new Map<string, Bucket>();
-  const other: AssistModelOption[] = [];
   const seen = new Set<string>();
+  const unique: AssistModelOption[] = [];
   for (const model of models) {
     if (seen.has(model.id)) continue;
     seen.add(model.id);
-    const rank = placed.get(model.id);
-    if (rank === undefined) {
-      other.push(model);
-      continue;
-    }
-    const current = buckets.get(rank.category);
-    if (current === undefined) {
-      buckets.set(rank.category, {
-        category: rank.category,
-        label: categoryLabel(rank.category),
-        top: rank.tokens,
-        rows: [{ model, tokens: rank.tokens }],
-      });
-      continue;
-    }
-    current.rows.push({ model, tokens: rank.tokens });
-    if (rank.tokens > current.top) {
-      buckets.set(rank.category, { ...current, top: rank.tokens });
-    }
+    unique.push(model);
   }
-  if (buckets.size === 0) return { groups: null, citation };
-  const groups = [...buckets.values()]
-    .sort((left, right) => {
-      if (left.top === right.top) return left.label.localeCompare(right.label);
-      return left.top > right.top ? -1 : 1;
-    })
-    .map((bucket) => ({
-      category: bucket.category,
-      label: bucket.label,
-      models: [...bucket.rows]
-        .sort((left, right) => {
-          if (left.tokens === right.tokens) {
-            const byName = left.model.name.localeCompare(right.model.name);
-            return byName !== 0 ? byName : left.model.id.localeCompare(right.model.id);
-          }
-          return left.tokens > right.tokens ? -1 : 1;
-        })
-        .map((row) => row.model),
-    }));
-  if (other.length > 0) groups.push({ category: "other", label: "Other", models: other });
-  return { groups, citation };
+  const chosen = domain.trim() === "" ? ASSIST_RANK_ALL : domain.trim();
+  const category = rankings?.categories.find((item) => item.category === chosen);
+  if (category === undefined) return { models: unique, citation };
+  const ranked: { model: AssistModelOption; tokens: bigint }[] = [];
+  const rest: AssistModelOption[] = [];
+  for (const model of unique) {
+    const tokens = tokensFor(category, model);
+    if (tokens === null) rest.push(model);
+    else ranked.push({ model, tokens });
+  }
+  if (ranked.length === 0) return { models: unique, citation };
+  ranked.sort((left, right) => {
+    if (left.tokens === right.tokens) {
+      const byName = left.model.name.localeCompare(right.model.name);
+      return byName !== 0 ? byName : left.model.id.localeCompare(right.model.id);
+    }
+    return left.tokens > right.tokens ? -1 : 1;
+  });
+  return { models: [...ranked.map((row) => row.model), ...rest], citation };
 }

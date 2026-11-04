@@ -183,6 +183,9 @@ describe("completeChat", () => {
 describe("listOpenRouterModels", () => {
   test("sorts, drops blanks and duplicates, and caps the list", async () => {
     const data = [
+      { id: "openai/blank", name: "000 Blank", canonical_slug: "   " },
+      { id: "anthropic/claude-opus-5.5", name: "000 Opus", canonical_slug: " anthropic/claude-opus-5.5-20260921 " },
+      { id: "openai/same", name: "000 Same", canonical_slug: "openai/same" },
       { id: "b/two", name: "Beta" },
       { id: "a/one" },
       { id: "  ", name: "Blank" },
@@ -201,6 +204,13 @@ describe("listOpenRouterModels", () => {
     expect(url).toBe(OPENROUTER_MODELS_URL);
     expect(models).toHaveLength(400);
     expect(models[0]?.name.localeCompare(models[1]?.name ?? "") ?? 0).toBeLessThanOrEqual(0);
+    expect(models[0]).toEqual({ id: "openai/blank", name: "000 Blank" });
+    expect(models[1]).toEqual({
+      id: "anthropic/claude-opus-5.5",
+      name: "000 Opus",
+      canonicalSlug: "anthropic/claude-opus-5.5-20260921",
+    });
+    expect(models[2]).toEqual({ id: "openai/same", name: "000 Same" });
     expect(models.some((item) => item.id === "a/one" && item.name === "a/one")).toBe(true);
   });
 

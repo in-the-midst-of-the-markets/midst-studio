@@ -490,6 +490,7 @@ describe("GET /api/ai/assist", () => {
         return jsonResponse({
           data: [
             { date: "2026-10-26", model_permaslug: "other", total_tokens: "99" },
+            { date: "2026-10-26", model_permaslug: "anthropic/claude", total_tokens: "20" },
             { date: "2026-11-02", model_permaslug: "openai/gpt-4o", total_tokens: "10" },
             { date: "2026-11-02", model_permaslug: "anthropic/claude", total_tokens: "30" },
           ],
@@ -502,19 +503,27 @@ describe("GET /api/ai/assist", () => {
     const response = await GET(createMockRequest("/api/ai/assist") as never);
     expect(response.status).toBe(200);
     const body = (await response.json()) as {
-      rankings: { citation: string; categories: { category: string; models: { id: string }[] }[] };
+      rankings: {
+        citation: string;
+        categories: { category: string; models: { id: string; totalTokens: string }[] }[];
+      };
     };
-    expect(body.rankings.categories).toHaveLength(12);
-    expect(body.rankings.categories[0]?.models.map((model) => model.id)).toEqual(["anthropic/claude", "openai/gpt-4o"]);
+    expect(body.rankings.categories).toHaveLength(13);
+    expect(body.rankings.categories[0]?.category).toBe("all");
+    expect(body.rankings.categories[0]?.models).toEqual([
+      { id: "anthropic/claude", totalTokens: "50" },
+      { id: "openai/gpt-4o", totalTokens: "10" },
+    ]);
     expect(body.rankings.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03T00:00:00.000Z.");
     expect(JSON.stringify(body)).not.toContain("server-secret");
-    expect(rankingsCalls).toHaveLength(12);
+    expect(rankingsCalls).toHaveLength(13);
+    expect(rankingsCalls.some((url) => !new URL(url).searchParams.has("category"))).toBe(true);
     expect(rankingsCalls.some((url) => url.includes("category=marketing%2Fseo"))).toBe(true);
 
     const again = await GET(createMockRequest("/api/ai/assist") as never);
     expect((await again.json()) as { rankings: { citation: string } }).toMatchObject({
       rankings: { citation: body.rankings.citation },
     });
-    expect(rankingsCalls).toHaveLength(12);
+    expect(rankingsCalls).toHaveLength(13);
   });
 });

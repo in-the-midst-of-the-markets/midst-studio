@@ -10,6 +10,8 @@ import { ASSIST_HISTORY_DEFAULT, ASSIST_HISTORY_MAX, ASSIST_SOURCES, type Assist
 export interface AssistModelOption {
   readonly id: string;
   readonly name: string;
+  /** The dated slug OpenRouter ranks, when it is not the same as `id`. */
+  readonly canonicalSlug?: string;
 }
 
 export interface AssistSettings {
@@ -94,7 +96,8 @@ export function normalizeModels(value: unknown): AssistModelOption[] {
     const id = item.id.trim();
     if (id === "") continue;
     const name = "name" in item && typeof item.name === "string" && item.name.trim() !== "" ? item.name.trim() : id;
-    options.push({ id, name });
+    const slug = "canonicalSlug" in item && typeof item.canonicalSlug === "string" ? item.canonicalSlug.trim() : "";
+    options.push(slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name });
   }
   return options;
 }

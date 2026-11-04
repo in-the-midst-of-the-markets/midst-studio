@@ -1204,7 +1204,7 @@ describe("AiAssist page", () => {
     expect(history?.map((turn) => turn.question)).toEqual(["Second"]);
   });
 
-  test("groups OpenRouter models by the domain where they are used most", async () => {
+  test("filters OpenRouter models by the domain the person picks", async () => {
     localStorage.setItem(
       "libredb_ai_assist",
       JSON.stringify({ ...readAssistSettings(), openRouterModel: "openai/gpt-4o" }),
@@ -1221,6 +1221,13 @@ describe("AiAssist page", () => {
           rankings: {
             citation: "Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.",
             categories: [
+              {
+                category: "all",
+                models: [
+                  { id: "anthropic/claude", totalTokens: "900" },
+                  { id: "deepseek/deepseek-chat", totalTokens: "200" },
+                ],
+              },
               {
                 category: "finance",
                 models: [
@@ -1243,16 +1250,20 @@ describe("AiAssist page", () => {
     };
     const view = render(<AiAssist />);
     fireEvent.click(await view.findByRole("button", { name: "Model" }));
-    const select = await view.findByLabelText("OpenRouter model");
-    const groups = [...select.querySelectorAll("optgroup")].map((group) => ({
-      label: group.getAttribute("label"),
-      models: [...group.querySelectorAll("option")].map((option) => option.textContent),
-    }));
-    expect(groups).toEqual([
-      { label: "Finance", models: ["Mistral"] },
-      { label: "Programming", models: ["GPT-4o", "Claude"] },
-      { label: "Other", models: ["DeepSeek"] },
-    ]);
+    const select = (await view.findByLabelText("OpenRouter model")) as HTMLSelectElement;
+    const names = () =>
+      [...(view.getByLabelText("OpenRouter model") as HTMLSelectElement).querySelectorAll("option")].map(
+        (option) => option.textContent,
+      );
+    expect(select.querySelectorAll("optgroup")).toHaveLength(0);
+    expect(names()).toEqual(["Claude", "DeepSeek", "GPT-4o", "Mistral"]);
+    const domain = view.getByLabelText("Model domain") as HTMLSelectElement;
+    expect([...domain.options].map((option) => option.textContent)).toEqual(["All", "Finance", "Programming"]);
+    fireEvent.change(domain, { target: { value: "programming" } });
+    expect(names()).toEqual(["GPT-4o", "Claude", "Mistral", "DeepSeek"]);
+    fireEvent.change(domain, { target: { value: "finance" } });
+    expect(names()).toEqual(["Mistral", "GPT-4o", "Claude", "DeepSeek"]);
+    expect((view.getByLabelText("OpenRouter model") as HTMLSelectElement).value).toBe("openai/gpt-4o");
     expect(view.getByText("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.")).toBeTruthy();
   });
 

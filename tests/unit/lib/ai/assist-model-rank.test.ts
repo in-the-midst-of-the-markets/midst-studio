@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { rankAssistModels, readAssistRankings } from "@/lib/ai/assist-model-rank";
+import { rankAssistModels, rankingDomains, readAssistRankings } from "@/lib/ai/assist-model-rank";
 import type { AssistModelOption } from "@/lib/ai/assist-settings";
 
 const catalog: AssistModelOption[] = [
@@ -62,11 +62,49 @@ describe("readAssistRankings", () => {
   });
 });
 
+describe("rankingDomains", () => {
+  test("lists subjects by label and skips overall use", () => {
+    expect(rankingDomains(null)).toEqual([]);
+    const rankings = readAssistRankings({
+      citation: "",
+      categories: [
+        { category: "science", models: [{ id: "openai/gpt-4o", totalTokens: "1" }] },
+        { category: "all", models: [{ id: "openai/gpt-4o", totalTokens: "9" }] },
+        { category: "legal", models: [{ id: "anthropic/claude", totalTokens: "1" }] },
+        { category: "widgets", models: [{ id: "local/widget", totalTokens: "1" }] },
+      ],
+    });
+    expect(rankingDomains(rankings)).toEqual([
+      { id: "legal", label: "Legal" },
+      { id: "science", label: "Science" },
+      { id: "widgets", label: "Widgets" },
+    ]);
+    expect(
+      rankingDomains({
+        citation: "",
+        categories: [
+          { category: "finance", models: [] },
+          { category: "programming", models: [{ id: "a", totalTokens: "1" }] },
+        ],
+      }),
+    ).toEqual([{ id: "programming", label: "Programming" }]);
+  });
+});
+
 describe("rankAssistModels", () => {
-  test("files each model under the domain where it has the most tokens", () => {
+  test("orders the chosen domain and keeps every other model", () => {
     const rankings = readAssistRankings({
       citation: "Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.",
       categories: [
+        {
+          category: "all",
+          models: [
+            { id: "anthropic/claude-opus-5.5-20260921", totalTokens: "900" },
+            { id: "openai/gpt-5", totalTokens: "3" },
+            { id: "openai/gpt-5-20260101", totalTokens: "30" },
+            { id: "deepseek/deepseek-chat", totalTokens: "20" },
+          ],
+        },
         {
           category: "finance",
           models: [
@@ -82,6 +120,7 @@ describe("rankAssistModels", () => {
             { id: "openai/gpt-4o", totalTokens: "80" },
             { id: "z-ai/same", totalTokens: "7" },
             { id: "z-ai/same-b", totalTokens: "7" },
+            { id: "z-ai/named", totalTokens: "7" },
             { id: "extra/big", totalTokens: "90" },
           ],
         },
@@ -98,24 +137,70 @@ describe("rankAssistModels", () => {
         },
       ],
     });
-    const ranked = rankAssistModels(catalog, rankings);
+    const withSlug: AssistModelOption[] = [
+      ...catalog,
+      { id: "z-ai/named", name: "Named" },
+      { id: "anthropic/claude-opus-5.5", name: "Opus", canonicalSlug: "anthropic/claude-opus-5.5-20260921" },
+      { id: "openai/gpt-5", name: "GPT-5", canonicalSlug: "openai/gpt-5-20260101" },
+      { id: "openai/blank", name: "Blank", canonicalSlug: "" },
+    ];
+    const ranked = rankAssistModels(withSlug, rankings);
     expect(ranked.citation).toBe("Source: OpenRouter (openrouter.ai/rankings), as of 2026-11-03.");
-    expect(ranked.groups?.map((group) => [group.label, group.models.map((model) => model.name)])).toEqual([
-      ["Finance", ["Mistral"]],
-      ["Programming", ["Big", "GPT-4o", "Claude", "Same", "Same"]],
-      ["Widgets", ["Widget"]],
-      ["Other", ["DeepSeek"]],
+    expect(ranked.models.map((model) => model.name)).toEqual([
+      "Opus",
+      "GPT-5",
+      "DeepSeek",
+      "GPT-4o",
+      "Claude",
+      "Mistral",
+      "Same",
+      "Same",
+      "Big",
+      "Widget",
+      "Named",
+      "Blank",
     ]);
-    expect(ranked.groups?.[1]?.models.map((model) => model.id)).toEqual([
+    expect(ranked.models.filter((model) => model.id === "anthropic/claude")).toEqual([
+      { id: "anthropic/claude", name: "Claude" },
+    ]);
+
+    expect(rankAssistModels(withSlug, rankings, " programming ").models.map((model) => model.id)).toEqual([
       "extra/big",
       "openai/gpt-4o",
       "anthropic/claude",
+      "z-ai/named",
       "z-ai/same",
       "z-ai/same-b",
+      "mistral/small",
+      "deepseek/deepseek-chat",
+      "local/widget",
+      "anthropic/claude-opus-5.5",
+      "openai/gpt-5",
+      "openai/blank",
     ]);
+    expect(rankAssistModels(withSlug, rankings, "finance").models.map((model) => model.name)).toEqual([
+      "Mistral",
+      "GPT-4o",
+      "Claude",
+      "DeepSeek",
+      "Same",
+      "Same",
+      "Big",
+      "Widget",
+      "Named",
+      "Opus",
+      "GPT-5",
+      "Blank",
+    ]);
+    expect(rankAssistModels(withSlug, rankings, "academia").models.map((model) => model.id)).toEqual(
+      rankAssistModels(withSlug, null).models.map((model) => model.id),
+    );
+    expect(rankAssistModels(withSlug, rankings, "   ").models.map((model) => model.id)).toEqual(
+      ranked.models.map((model) => model.id),
+    );
   });
 
-  test("orders domains that share a top figure by name and leaves an unranked catalog flat", () => {
+  test("leaves the catalog in place when the chosen domain has no match", () => {
     const tied = readAssistRankings({
       citation: "",
       categories: [
@@ -129,12 +214,13 @@ describe("rankAssistModels", () => {
         },
       ],
     });
-    const ranked = rankAssistModels(catalog, tied);
-    expect(ranked.citation).toBeNull();
-    expect(ranked.groups?.map((group) => group.label)).toEqual(["Legal", "Science", "Other"]);
-    expect(rankAssistModels(catalog, null)).toEqual({ groups: null, citation: null });
+    const unique = catalog.filter((model, index) => catalog.findIndex((item) => item.id === model.id) === index);
+    expect(rankAssistModels(catalog, tied).models).toEqual(unique);
+    expect(rankAssistModels(catalog, tied).citation).toBeNull();
+    expect(rankAssistModels(catalog, tied, "science").models[0]?.id).toBe("openai/gpt-4o");
+    expect(rankAssistModels(catalog, null)).toEqual({ models: unique, citation: null });
     expect(rankAssistModels(catalog, { citation: "Source.", categories: [] })).toEqual({
-      groups: null,
+      models: unique,
       citation: "Source.",
     });
     expect(
@@ -142,6 +228,16 @@ describe("rankAssistModels", () => {
         citation: "",
         categories: [{ category: "finance", models: [{ id: "openai/gpt-4o", totalTokens: "3" }] }],
       }),
-    ).toEqual({ groups: null, citation: null });
+    ).toEqual({ models: [{ id: "local/model", name: "Local" }], citation: null });
+    expect(
+      rankAssistModels(
+        [{ id: "local/model", name: "Local" }],
+        {
+          citation: "",
+          categories: [{ category: "finance", models: [{ id: "openai/gpt-4o", totalTokens: "3" }] }],
+        },
+        "finance",
+      ).models.map((model) => model.id),
+    ).toEqual(["local/model"]);
   });
 });
