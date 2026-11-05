@@ -2509,7 +2509,32 @@ describe("AiAssist page", () => {
   test("says when there is no saved query to add", () => {
     saveConnection();
     const view = render(<AiAssist />);
-    fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+    const rect = HTMLButtonElement.prototype.getBoundingClientRect;
+    HTMLButtonElement.prototype.getBoundingClientRect = () =>
+      ({
+        x: 900,
+        y: 40,
+        left: 900,
+        top: 40,
+        right: 932,
+        bottom: 72,
+        width: 32,
+        height: 32,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    try {
+      fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+      const menu = view.getByRole("menu", { name: "Add to chat" });
+      // The menu is portaled onto the page so the chat column cannot clip its top.
+      expect(menu.parentElement).toBe(document.body);
+      expect(menu.className).toContain("fixed");
+      expect(menu.style.left).toBe(`${Math.max(8, window.innerWidth - 256 - 8)}px`);
+      expect(menu.style.maxHeight).toBe("120px");
+      window.dispatchEvent(new Event("resize"));
+      window.dispatchEvent(new Event("scroll"));
+    } finally {
+      HTMLButtonElement.prototype.getBoundingClientRect = rect;
+    }
     fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
     expect(view.getByText("No saved queries yet.")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Back" }));
