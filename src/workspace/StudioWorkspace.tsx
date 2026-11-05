@@ -1,7 +1,5 @@
 "use client";
 
-import type { CsvDelimiter } from "@/lib/export/csv";
-
 import React, { useState, useEffect, useImperativeHandle, useRef, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Sidebar } from "@/components/sidebar";
@@ -27,9 +25,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ChunkBoundary, ViewLoading } from "@/components/LazyView";
 import { lazyRetry } from "@/lib/lazy";
 import { editorLanguageForTabType, resolveTabType } from "@/lib/editor/tab-language";
-import { buildResultExport, type ResultExportFormat, type ResultExportSource } from "@/lib/export/result-export";
-import { writeToClipboard } from "@/components/copy-button";
-import { downloadText } from "@/lib/export/download";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
 
 // The ERD is the largest thing this shell can mount (`@xyflow/react` + the elk layout
@@ -356,72 +351,6 @@ export function StudioWorkspace({
       recommendation: "Review this query carefully before proceeding.",
     }),
     [],
-  );
-
-  // === Export results (shared writers; this shell applies no masking) ===
-  const buildExportSource = useCallback((): ResultExportSource | null => {
-    if (!tabMgr.currentTab.result) return null;
-    return {
-      rows: tabMgr.currentTab.result.rows,
-      fields: tabMgr.currentTab.result.fields,
-      tabName: tabMgr.currentTab.name,
-      // The statement that fetched these rows names their table when it reads exactly one (#1386).
-      query: tabMgr.currentTab.resultQuery,
-      // Was missing from this callback's dependencies, so a SQL export written
-      // after the host switched connections quoted its literals for whichever
-      // engine happened to be active on the first render.
-      dialect: conn.activeConnection?.type,
-      // The host's own declared column types (`use-query-adapter` carries them),
-      // which the DDL form prefers over a type guessed from a value.
-      columnTypes: tabMgr.currentTab.result.columnTypes,
-    };
-  }, [tabMgr.currentTab, conn.activeConnection?.type]);
-
-  const buildResultFile = useCallback(
-    (format: ResultExportFormat, csvDelimiter?: CsvDelimiter) => {
-      const source = buildExportSource();
-      if (source === null) return null;
-      return buildResultExport(format, { ...source, csvDelimiter });
-    },
-    [buildExportSource],
-  );
-
-  const exportResults = useCallback(
-    (format: ResultExportFormat, _hydrated?: unknown, csvDelimiter?: CsvDelimiter) => {
-      const file = buildResultFile(format, csvDelimiter);
-      if (file === null) return;
-      downloadText(file.content, file.mimeType, `query_result_export.${file.extension}`);
-    },
-    [buildResultFile],
-  );
-
-  /**
-   * The same rows, in the same format, onto the clipboard (#701).
-   *
-   * Built from the same function as the file above, so the two cannot come to disagree
-   * about what a format means. The byte-order mark is the one thing they do not share:
-   * `downloadText` adds it for a spreadsheet reading bytes off disk, and a paste
-   * carrying it would open with an invisible character wherever it landed.
-   *
-   * The outcome is reported only once the write has one (B43). `writeToClipboard` falls
-   * back to the editing command where there is no secure context, and when both routes
-   * are gone the user is told rather than left to find an empty clipboard mid-paste.
-   */
-  const copyResults = useCallback(
-    (format: ResultExportFormat, _hydrated?: unknown, csvDelimiter?: CsvDelimiter) => {
-      const file = buildResultFile(format, csvDelimiter);
-      if (file === null) return;
-      void writeToClipboard(file.content).then((copied) => {
-        if (copied) toast({ title: `Copied ${file.extension.toUpperCase()} to clipboard` });
-        else
-          toast({
-            title: "Could not copy to clipboard",
-            description: "Select the text and copy it yourself, or export the result as a file.",
-            variant: "destructive",
-          });
-      });
-    },
-    [buildResultFile, toast],
   );
 
   /**
@@ -1150,8 +1079,6 @@ export function StudioWorkspace({
                           tabMgr.currentTab.result?.pagination?.hasMore ? queryExec.handleLoadMore : undefined
                         }
                         isLoadingMore={tabMgr.currentTab.isLoadingMore}
-                        onExportResults={exportResults}
-                        onCopyResults={copyResults}
                       />
                     </ResizablePanel>
                   </ResizablePanelGroup>

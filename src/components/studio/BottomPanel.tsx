@@ -1,12 +1,10 @@
 "use client";
 
-import type { CsvDelimiter } from "@/lib/export/csv";
-
 import React, { useMemo } from "react";
 import type { DatabaseConnection, QueryResult } from "@/lib/types";
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
-import { detectSensitiveColumnsFromConfig, type MaskingConfig } from "@/lib/data-masking";
+import type { MaskingConfig } from "@/lib/data-masking";
 import type { AgentArtifactHydration } from "@/components/agent/hydration";
 import type { CellChange } from "@/components/ResultsGrid";
 import { ResultsGrid } from "@/components/ResultsGrid";
@@ -14,9 +12,6 @@ import { QueryHistory } from "@/components/QueryHistory";
 import { SavedQueries } from "@/components/SavedQueries";
 import { ChunkBoundary, ViewLoading } from "@/components/LazyView";
 import { lazyRetry } from "@/lib/lazy";
-import { describeExportScope } from "@/lib/export/scope";
-import { pageOfferFor } from "@/components/results-grid/page-offer";
-import type { ResultExportFormat } from "@/lib/export/result-export";
 
 import { resolveExplainPlan } from "@/lib/explain";
 import { hasGraphValues } from "@/lib/db/graph/result-graph";
@@ -26,7 +21,6 @@ import {
   Bookmark,
   Clock,
   Columns3,
-  Download,
   FileText,
   GitCompare,
   LayoutGrid,
@@ -36,44 +30,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { offersSqlExport } from "@/lib/db/types";
-
-/**
- * Every form a result can leave this panel in, in the order the menu offers them.
- *
- * ONE list, read by both destinations (#701). The file items and the clipboard items
- * are the same formats by construction rather than by two lists that agree today: the
- * drift between two spellings of one list is what put the delimiter options out of
- * step with the writers before.
- */
-export type ResultFormatEntry = {
-  readonly format: ResultExportFormat;
-  readonly label: string;
-  readonly csvDelimiter?: CsvDelimiter;
-};
-
-export const RESULT_FORMATS: readonly ResultFormatEntry[] = [
-  { format: "csv", label: "CSV" },
-  { format: "csv", label: "CSV (semicolon)", csvDelimiter: ";" },
-  { format: "csv", label: "CSV (tab)", csvDelimiter: "\t" },
-  { format: "json", label: "JSON" },
-  { format: "markdown", label: "Markdown" },
-  { format: "html", label: "HTML" },
-  { format: "sql-insert", label: "SQL INSERT" },
-  { format: "sql-ddl", label: "DDL (CREATE TABLE)" },
-];
-
-/** The two formats that write a SQL table, offered only where the dialect says they apply (`offersSqlExport`, BACKLOG U69). */
-const SQL_TABLE_FORMATS: ReadonlySet<ResultExportFormat> = new Set<ResultExportFormat>(["sql-insert", "sql-ddl"]);
 
 export type BottomPanelMode =
   | "results"
@@ -167,31 +123,6 @@ interface BottomPanelProps {
   onChartFilter?: (sql: string) => void;
   onLoadMore: (() => void) | undefined;
   isLoadingMore: boolean | undefined;
-  // The writer's own type, so a format added there cannot silently fail to reach this
-  // menu — the drift between two spellings of one list is what this PR is about.
-  //
-  // The second argument is the artifact the rows on screen came from, or null when
-  // they are the tab's own: the export writes what it is GIVEN rather than reading the
-  // tab back, which is what lets the menu stay open over a hydrated result (B34).
-  onExportResults: (
-    format: ResultExportFormat,
-    hydrated: AgentArtifactHydration | null,
-    csvDelimiter?: CsvDelimiter,
-  ) => void;
-  /**
-   * The same rows, in the same formats, onto the clipboard instead of into a file
-   * (#701).
-   *
-   * Its own prop rather than a destination argument on the one above, because the two
-   * do not end the same way: a download either starts or the browser says so, while a
-   * clipboard write can be refused — no secure context, no permission, an unfocused
-   * document — and the shell has to report that outcome once it has one.
-   */
-  onCopyResults: (
-    format: ResultExportFormat,
-    hydrated: AgentArtifactHydration | null,
-    csvDelimiter?: CsvDelimiter,
-  ) => void;
   /**
    * A result an agent run stored, shown in the surface that already renders that
    * kind of result (#329 T11). Optional so every other caller — the embedded shell
@@ -229,8 +160,6 @@ export const BottomPanel = React.memo(function BottomPanel({
   onChartFilter,
   onLoadMore,
   isLoadingMore,
-  onExportResults,
-  onCopyResults,
   agentArtifact = null,
   onDismissAgentArtifact,
 }: BottomPanelProps) {
@@ -255,9 +184,7 @@ export const BottomPanel = React.memo(function BottomPanel({
 
     While one is shown the view is read-only: inline editing writes rows back through
     the tab's connection and pagination continues the tab's own query, so neither
-    means anything for a stored result. Export is the exception, and used to be hidden
-    with them: it is retargeted instead (B34), handed the artifact so it writes the
-    rows on screen into a file named after the run.
+    means anything for a stored result.
   */
   const hydratedResult = agentArtifact?.surface === "results" ? agentArtifact.result : null;
   const hydratedPlan = useMemo(
@@ -278,60 +205,6 @@ export const BottomPanel = React.memo(function BottomPanel({
       (mode === "explain" && hydratedPlan !== null) ||
       (mode === "charts" && hydratedChart !== null));
   const displayedResult = hydratedResult ?? result;
-  /**
-   * What an export must be attributed to: the artifact when the run's rows are the
-   * ones on screen, null when they are the tab's own. Only the results surface has an
-   * export, so this is the grid's artifact and no other's.
-   */
-  const exportArtifact = mode === "results" && hydratedResult !== null ? agentArtifact : null;
-  /**
-   * The next-page offer these rows carry, which is what the grid gates its control on.
-   *
-   * Computed here as well as in `ResultsGrid` because two surfaces speak about the same
-   * offer and must not disagree: the export dialog's "load them first" names an action
-   * only this offer makes available. Both call `pageOfferFor`, so there is one definition
-   * of the condition and not two (#816).
-   */
-  const gridPageOffer = pageOfferFor(
-    displayedResult?.pagination,
-    metadata?.capabilities.supportsResultPagination,
-    hydratedHere ? undefined : onLoadMore,
-  );
-  // How much of the result an export would write — the count the button carries and
-  // the shortfall the menu states. Derived here so both read the same numbers.
-  const exportScope = describeExportScope(displayedResult ?? { rows: [] }, gridPageOffer !== undefined);
-  /**
-   * The columns an export writes masked: the same detection the file builder applies, so the
-   * menu says exactly what the file will hold (#1433). Empty when masking is off or no column
-   * of this result matches a pattern, and then nothing is claimed.
-   */
-  const maskedColumns =
-    maskingEnabled && displayedResult
-      ? [...detectSensitiveColumnsFromConfig(displayedResult.fields, maskingConfig).keys()]
-      : [];
-  // One list for both menus, filtered once, so the file items and the clipboard items cannot disagree (#701).
-  // SQL INSERT is withheld while a column is masked: its mask text would be written as the
-  // column's VALUE, and replaying the file would store it or be refused by a typed column (#1433).
-  const resultFormats = (
-    offersSqlExport(metadata?.capabilities)
-      ? RESULT_FORMATS
-      : RESULT_FORMATS.filter((entry) => !SQL_TABLE_FORMATS.has(entry.format))
-  ).filter((entry) => !(maskedColumns.length > 0 && entry.format === "sql-insert"));
-
-  /**
-   * Hands one format entry to whichever destination the user chose.
-   *
-   * The delimiter is passed only where the entry carries one, rather than as an
-   * explicit `undefined`: "CSV" means the writer's own default, and a call that spells
-   * the absence out is a different call for the same choice.
-   */
-  const runResultFormat = (
-    run: (format: ResultExportFormat, hydrated: AgentArtifactHydration | null, csvDelimiter?: CsvDelimiter) => void,
-    entry: (typeof RESULT_FORMATS)[number],
-  ) => {
-    if (entry.csvDelimiter === undefined) run(entry.format, exportArtifact);
-    else run(entry.format, exportArtifact, entry.csvDelimiter);
-  };
 
   const tabs: { key: BottomPanelMode; label: string; icon: React.ReactNode; activeClass: string }[] = [
     {
@@ -404,9 +277,7 @@ export const BottomPanel = React.memo(function BottomPanel({
       <div className="h-9 bg-surface border-b border-hairline flex items-center justify-between gap-2 px-2">
         {/*
           The tab strip is the part that yields. It scrolls (without a visible bar in
-          a 36px-tall row) rather than pushing the export group out of the header:
-          eight mode tabs plus a rail plus a sidebar is enough to clip the right-hand
-          side entirely, and what got clipped was the only way to save a result.
+          a 36px-tall row) rather than pushing the row count out of the header.
         */}
         <div className="flex items-center h-full gap-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {visibleTabs.map((tab) => (
@@ -425,88 +296,9 @@ export const BottomPanel = React.memo(function BottomPanel({
         </div>
 
         {displayedResult && mode === "results" && (
-          // Never shrinks: Export is the only way a result leaves the product, so it
-          // is the last thing that may be given up for width.
-          <div className="flex items-center gap-1 shrink-0">
-            {/*
-              Dropped first when the panel is narrow, because it is the only thing here
-              that is said twice — the stats bar directly below carries the row count,
-              and EXEC TIME carries the duration.
-            */}
-            <span className="hidden @4xl/panel:inline text-xs font-mono text-fg-muted mr-2">
-              {displayedResult.rowCount} rows • {displayedResult.executionTime}ms
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs font-medium text-fg-muted hover:text-fg-bright gap-2"
-                >
-                  {/*
-                    The count belongs ON the button because it is what the button
-                    does: an export writes the rows the grid HOLDS, which is one
-                    page, and a file of 500 rows off a table of two million looks
-                    exactly like a complete answer once it has left the product.
-                  */}
-                  <Download strokeWidth={1.5} className="w-3 h-3" /> Export
-                  <span data-testid="export-row-count" className="font-mono text-fg-subtle">
-                    {exportScope.countLabel}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-raised border-hairline-strong text-fg-secondary">
-                <div data-testid="export-scope" className="px-2 py-1.5 text-xs text-fg-muted max-w-[15rem]">
-                  {exportScope.summary}
-                  {exportScope.shortfall !== null && (
-                    <span className="block mt-1 text-warning/80">{exportScope.shortfall}</span>
-                  )}
-                </div>
-                {exportArtifact !== null && (
-                  // Stated before the formats, because it changes what the file IS:
-                  // these are a run's rows, and the name will say so.
-                  <div data-testid="export-provenance" className="px-2 pb-1.5 text-xs text-brand">
-                    Saved as agent run <span className="font-mono text-[0.625rem]">{exportArtifact.runId}</span>&apos;s
-                    own file.
-                  </div>
-                )}
-                {maskedColumns.length > 0 && (
-                  // Said once for both destinations: the file and the clipboard write the
-                  // same masked text, and nothing in the file itself says so.
-                  <div data-testid="export-masked" className="px-2 pb-1.5 text-xs text-warning/80 max-w-[15rem]">
-                    Masked columns ({maskedColumns.join(", ")}) are exported and copied masked. SQL INSERT is not
-                    offered, as it would store the mask as data.
-                  </div>
-                )}
-                <DropdownMenuSeparator className="bg-hairline" />
-                {resultFormats.map((entry) => (
-                  <DropdownMenuItem
-                    key={`export-${entry.label}`}
-                    onClick={() => runResultFormat(onExportResults, entry)}
-                    className="text-xs cursor-pointer"
-                  >
-                    Export as {entry.label}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator className="bg-hairline" />
-                {/*
-                  Below the scope line and below the files, because it is the same rows
-                  under the same shortfall: a paste reads even more like a complete
-                  answer than a file does, having no name to carry a caveat.
-                */}
-                <DropdownMenuLabel className="text-xs font-normal text-fg-muted">To clipboard</DropdownMenuLabel>
-                {resultFormats.map((entry) => (
-                  <DropdownMenuItem
-                    key={`copy-${entry.label}`}
-                    onClick={() => runResultFormat(onCopyResults, entry)}
-                    className="text-xs cursor-pointer"
-                  >
-                    Copy as {entry.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <span className="hidden @4xl/panel:inline shrink-0 text-xs font-mono text-fg-muted">
+            {displayedResult.rowCount} rows • {displayedResult.executionTime}ms
+          </span>
         )}
       </div>
 
