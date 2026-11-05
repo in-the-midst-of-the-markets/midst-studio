@@ -77,7 +77,7 @@ export interface AssistRequest {
 }
 
 /** The longest question, explanation, or earlier turn this page will send. */
-export const ASSIST_TEXT_CAP = 4_000;
+export const ASSIST_TEXT_CAP = 10_000;
 const QUESTION_CAP = ASSIST_TEXT_CAP;
 /** The schema text a question may carry. The catalog stops at the same size before it is posted. */
 export const ASSIST_SCHEMA_CAP = 30_000;
