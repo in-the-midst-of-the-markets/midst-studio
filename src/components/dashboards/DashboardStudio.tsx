@@ -1137,7 +1137,7 @@ function ChartTypePicker({
   };
   return (
     <div className="flex flex-col gap-2 p-3">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Chart types">
+      <fieldset aria-label="Chart types" className="m-0 flex flex-wrap gap-2 border-0 p-0">
         {ECHART_TYPES.map((item) => {
           const pressed = typeId === item.id;
           return (
@@ -1156,9 +1156,9 @@ function ChartTypePicker({
             </button>
           );
         })}
-      </div>
+      </fieldset>
       {type !== null && (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Chart variations">
+        <fieldset aria-label="Chart variations" className="m-0 flex flex-wrap gap-2 border-0 p-0">
           {type.variations.map((item) => (
             <button
               key={item.id}
@@ -1170,7 +1170,7 @@ function ChartTypePicker({
               {item.label}
             </button>
           ))}
-        </div>
+        </fieldset>
       )}
     </div>
   );

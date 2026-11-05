@@ -333,7 +333,8 @@ describe("DashboardStudio", () => {
       target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "#112233" }) },
     });
     await waitFor(() => expect(drawnOptions.at(-1)?.backgroundColor).toBe("#112233"));
-    expect((drawnOptions.at(-1)?.color as string[])[0]).toBe("#112233");
+    const colors = drawnOptions.at(-1)?.color;
+    expect(Array.isArray(colors) ? colors[0] : undefined).toBe("#112233");
     fireEvent.change(code, {
       target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "transparent" }) },
     });

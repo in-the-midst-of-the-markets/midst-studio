@@ -69,9 +69,7 @@ describe("AssistConnectors", () => {
     );
     fireEvent.click(view.getByRole("dialog", { name: "Connectors" }));
     expect(closed).toBe(0);
-    const backdrop = view.container.firstElementChild;
-    expect(backdrop).toBeTruthy();
-    fireEvent.click(backdrop!);
+    fireEvent.click(view.getByRole("button", { name: "Dismiss connectors" }));
     expect(closed).toBe(1);
     fireEvent.click(view.getByRole("button", { name: "Close" }));
     expect(closed).toBe(2);

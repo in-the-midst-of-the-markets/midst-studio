@@ -938,7 +938,10 @@ describe("waterfall", () => {
     expect(fallen[0]?.data).toEqual([0, -30, -30]);
     expect(fallen[2]?.data?.[2]).toEqual({ value: 30, signed: -30 });
     const marked = draw({ typeId: "waterfall", variationId: "labeled", rows, selection, categoryCap: 1 });
-    expect((seriesOf(marked)[1]?.label as { show: boolean }).show).toBe(true);
+    const markedLabel = seriesOf(marked)[1]?.label;
+    expect(markedLabel !== null && typeof markedLabel === "object" && "show" in markedLabel && markedLabel.show).toBe(
+      true,
+    );
     expect(marked?.notes).toEqual(["Showing the first 1 of 3 categories."]);
   });
 });
