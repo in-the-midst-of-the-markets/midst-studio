@@ -1148,9 +1148,21 @@ export interface QueryHistoryItem {
 export interface SavedQuery {
   id: string;
   name: string;
+  /**
+   * The table name a join uses, as `saved.<tableId>`.
+   *
+   * Letters, numbers, and underscores only, so the outer DuckDB statement can name it
+   * without quoting. Queries saved before this was recorded omit it; save them again to join them.
+   */
+  tableId?: string;
   query: string;
   description?: string;
   connectionType: DatabaseType;
+  /**
+   * The connection this query was saved from. A saved join runs it there.
+   * Queries saved before this was recorded omit it; save them again to join them.
+   */
+  connectionId?: string;
   createdAt: Date;
   updatedAt: Date;
   tags?: string[];

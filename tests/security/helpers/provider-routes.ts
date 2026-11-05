@@ -129,6 +129,7 @@ export const CONNECTION_ROUTES: Readonly<Record<string, Readonly<Record<string, 
   "db/profile": { tablePath: ["public", "orders"], columns: ["id"] },
   "db/provider-meta": {},
   "db/query": { sql: "SELECT 1" },
+  "db/saved-join": { sql: "SELECT 1", saved: [] },
   "db/test-connection": {},
   "db/transaction": { action: "begin" },
 };

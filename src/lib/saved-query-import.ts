@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SHIPPED_DATABASE_TYPES } from "@/lib/db/compatibility";
+import { savedQueryTableIdError } from "@/lib/saved-query-id";
 import type { SavedQuery } from "@/lib/types";
 
 // This schema loads in the browser. Even Zod's caught eval-capability probe
@@ -12,6 +13,11 @@ const savedQuerySchema = z.object({
   query: z.string(),
   description: z.string().optional(),
   connectionType: z.enum(SHIPPED_DATABASE_TYPES),
+  connectionId: z.string().min(1).optional(),
+  tableId: z
+    .string()
+    .optional()
+    .refine((value) => value === undefined || savedQueryTableIdError(value) === null),
   createdAt: z.string().pipe(z.coerce.date()),
   updatedAt: z.string().pipe(z.coerce.date()),
   tags: z.array(z.string()).optional(),

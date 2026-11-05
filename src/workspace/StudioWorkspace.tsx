@@ -30,6 +30,7 @@ import { editorLanguageForTabType, resolveTabType } from "@/lib/editor/tab-langu
 import { buildResultExport, type ResultExportFormat, type ResultExportSource } from "@/lib/export/result-export";
 import { writeToClipboard } from "@/components/copy-button";
 import { downloadText } from "@/lib/export/download";
+import { savedQueryTableIdError } from "@/lib/saved-query-id";
 
 // The ERD is the largest thing this shell can mount (`@xyflow/react` + the elk layout
 // engine + the snapdom capture), and it is mounted only while `showDiagram` is true.
@@ -293,26 +294,38 @@ export function StudioWorkspace({
   const [testDataPath, setTestDataPath] = useState<readonly string[] | null>(null);
 
   // === Save query handler ===
-  const handleSaveQuery = useStableCallback(async (name: string, description: string, tags: string[]) => {
-    if (!conn.activeConnection) return;
+  const handleSaveQuery = useStableCallback(
+    async (name: string, description: string, tags: string[], tableId: string) => {
+      if (!conn.activeConnection) return false;
 
-    if (onSaveQueryProp) {
-      try {
-        await onSaveQueryProp({
-          name,
-          query: tabMgr.currentTab.query,
-          description,
-          connectionType: conn.activeConnection.type,
-          tags,
-        });
-        setSavedKey((prev) => prev + 1);
-        toast({ title: "Query Saved", description: `"${name}" has been added to your saved queries.` });
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : "Failed to save query";
-        toast({ title: "Save Failed", description: msg, variant: "destructive" });
+      const idError = savedQueryTableIdError(tableId);
+      if (idError !== null) {
+        toast({ title: "ID needs a change", description: idError, variant: "destructive" });
+        return false;
       }
-    }
-  });
+
+      if (onSaveQueryProp) {
+        try {
+          await onSaveQueryProp({
+            name,
+            tableId,
+            query: tabMgr.currentTab.query,
+            description,
+            connectionType: conn.activeConnection.type,
+            connectionId: conn.activeConnection.id,
+            tags,
+          });
+          setSavedKey((prev) => prev + 1);
+          toast({ title: "Query Saved", description: `"${name}" has been added to your saved queries.` });
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : "Failed to save query";
+          toast({ title: "Save Failed", description: msg, variant: "destructive" });
+          return false;
+        }
+      }
+      return true;
+    },
+  );
 
   // === Modal handlers (handed to `StudioModals`) ===
   const closeSaveQuery = useCallback(() => setIsSaveQueryModalOpen(false), []);

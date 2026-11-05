@@ -26,6 +26,8 @@ import { maybeInviteToStar } from "@/lib/community/star-prompt-toast";
 import { sandboxRefusal } from "@/lib/editor/sandbox-refusal";
 import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
+import { savedJoinCatalog } from "@/lib/saved-join/catalog";
+import { mentionsSavedSchema } from "@/lib/saved-join/mentions";
 import { buildConnectionPayload } from "./use-connection-payload";
 import { transactionGone } from "./use-transaction-control";
 
@@ -91,6 +93,11 @@ interface UseQueryExecutionParams {
    */
   onStatementSent?: () => void;
   queryEditorRef: RefObject<QueryEditorRef | null>;
+  /**
+   * Every connection the editor can reach, including managed ones that are not in
+   * browser storage. A saved join runs each saved query on the connection it was saved from.
+   */
+  connections?: readonly DatabaseConnection[];
 }
 
 /**
@@ -266,6 +273,7 @@ export function useQueryExecution({
   onTransactionEnded,
   onStatementSent,
   queryEditorRef,
+  connections,
 }: UseQueryExecutionParams) {
   /**
    * The run in flight for each tab, keyed by tab id.
@@ -416,6 +424,26 @@ export function useQueryExecution({
         return false;
       }
 
+      // `saved.<name>` is a saved query, and the statement around it is DuckDB. It does not run on
+      // the active connection, so that connection's refusal, safety dialog and transaction do not apply.
+      const savedJoin = typeof queryToExecute === "string" && mentionsSavedSchema(queryToExecute);
+      if (savedJoin && transactionActive) {
+        toast({
+          title: "Finish the transaction",
+          description: "A saved join runs outside the open transaction. Commit or roll it back first.",
+          variant: "destructive",
+        });
+        return false;
+      }
+      if (savedJoin && isExplain) {
+        toast({
+          title: "Explain is not available",
+          description: "A saved join runs each saved query on its own database, then runs this statement in DuckDB.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       // A statement this connection type's editor refuses never becomes a request and never enters history. The
       // check runs before the confirmation gate and before every condition that Proceed (`skipSafety`), an explain
       // run, a page (`offset`) or playground mode skips, so none of those paths can carry it to a route. It counts as
@@ -425,16 +453,17 @@ export function useQueryExecution({
       // SANDBOX adds its own refusal on the same terms: a statement that would commit the
       // transaction SANDBOX is about to roll back (see `sandboxRefusal`). Asked only of a
       // run that will open that transaction, the same condition `isPlaygroundRun` reads below.
-      const refusal =
-        statementRefusal(queryToExecute, activeConnection.type) ??
-        (playgroundMode && !transactionActive && !isExplain && !executionOptions?.offset
-          ? sandboxRefusal(
-              queryToExecute,
-              resolveSqlGrammar(activeConnection.type),
-              metadata?.capabilities.implicitCommitStatements,
-              metadata?.capabilities.implicitCommitExceptions,
-            )
-          : undefined);
+      const refusal = savedJoin
+        ? undefined
+        : (statementRefusal(queryToExecute, activeConnection.type) ??
+          (playgroundMode && !transactionActive && !isExplain && !executionOptions?.offset
+            ? sandboxRefusal(
+                queryToExecute,
+                resolveSqlGrammar(activeConnection.type),
+                metadata?.capabilities.implicitCommitStatements,
+                metadata?.capabilities.implicitCommitExceptions,
+              )
+            : undefined));
       if (refusal !== undefined) {
         runsRef.current.get(targetTabId)?.controller.abort();
         runsRef.current.delete(targetTabId);
@@ -472,6 +501,7 @@ export function useQueryExecution({
       // Safety check for dangerous queries (skip for explain, load-more, playground, and force-execute)
       const skipSafety = executionOptions?.skipSafety ?? false;
       if (
+        !savedJoin &&
         !skipSafety &&
         !isExplain &&
         !executionOptions?.offset &&
@@ -626,7 +656,7 @@ export function useQueryExecution({
       };
 
       // Playground mode: begin a transaction before executing (will rollback after)
-      const isPlaygroundRun = playgroundMode && !transactionActive && !isExplain && !isLoadMore;
+      const isPlaygroundRun = !savedJoin && playgroundMode && !transactionActive && !isExplain && !isLoadMore;
 
       onStatementSent?.();
       try {
@@ -703,35 +733,45 @@ export function useQueryExecution({
         const useTransaction = (transactionActive || isPlaygroundRun) && !isExplain;
 
         // Start both queries in parallel (main query + background explain)
-        const queryEndpoint = useTransaction
-          ? "/api/db/transaction"
-          : useMultiQuery
-            ? "/api/db/multi-query"
-            : "/api/db/query";
+        const queryEndpoint = savedJoin
+          ? "/api/db/saved-join"
+          : useTransaction
+            ? "/api/db/transaction"
+            : useMultiQuery
+              ? "/api/db/multi-query"
+              : "/api/db/query";
         // The two routes that hand the provider the run's queryId: one statement, and a script,
         // whose route binds it to each unit in turn.
         run.serverCancellable = queryEndpoint !== "/api/db/transaction";
         const mainQueryPromise = appFetch(queryEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...runPayload,
-            // The parameter array travels beside the SQL on whichever endpoint the
-            // statement takes, and only when the caller supplied one: a request
-            // without values must stay a request without a `params` key (#290).
-            ...(params && { params }),
-            ...(useTransaction
-              ? { action: "query", sql: queryToExecute, options: { limit, offset, unlimited } }
-              : {
-                  // The user's own statement, always: an explain run asks for a
-                  // plan of it with `explain`, and the connected provider builds
-                  // the EXPLAIN on the server (#574).
+          body: JSON.stringify(
+            savedJoin
+              ? {
                   sql: queryToExecute,
-                  options: isExplain ? {} : { limit, offset, unlimited },
-                  ...(isExplain && { explain: { mode: "analyze" } }),
-                  queryId,
-                }),
-          }),
+                  saved: savedJoinCatalog(storage.getSavedQueries(), connections ?? storage.getConnections()),
+                  options: { limit, offset, unlimited },
+                }
+              : {
+                  ...runPayload,
+                  // The parameter array travels beside the SQL on whichever endpoint the
+                  // statement takes, and only when the caller supplied one: a request
+                  // without values must stay a request without a `params` key (#290).
+                  ...(params && { params }),
+                  ...(useTransaction
+                    ? { action: "query", sql: queryToExecute, options: { limit, offset, unlimited } }
+                    : {
+                        // The user's own statement, always: an explain run asks for a
+                        // plan of it with `explain`, and the connected provider builds
+                        // the EXPLAIN on the server (#574).
+                        sql: queryToExecute,
+                        options: isExplain ? {} : { limit, offset, unlimited },
+                        ...(isExplain && { explain: { mode: "analyze" } }),
+                        queryId,
+                      }),
+                },
+          ),
           signal: abortController.signal,
         });
 
@@ -744,7 +784,7 @@ export function useQueryExecution({
         // query settles, and a plan request that fails first — or is aborted with
         // its run — would be an unhandled rejection until then.
         let explainPromise: Promise<Response | null> | null = null;
-        if (sendsPlan) {
+        if (sendsPlan && !savedJoin) {
           explainPromise = appFetch("/api/db/query", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1148,6 +1188,7 @@ export function useQueryExecution({
       playgroundMode,
       setTabs,
       queryEditorRef,
+      connections,
     ],
   );
 

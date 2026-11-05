@@ -67,6 +67,11 @@ describe("parseSavedQueries", () => {
     expect(() => parseSavedQueries(text)).toThrow();
   });
 
+  test("keeps a table id and rejects one that is not a table name", () => {
+    expect(parseSavedQueries(JSON.stringify([{ ...query, tableId: "team_report" }]))[0]?.tableId).toBe("team_report");
+    expect(() => parseSavedQueries(JSON.stringify([{ ...query, tableId: "team report" }]))).toThrow();
+  });
+
   test("accepts missing optional fields and strips unrecognized fields", () => {
     const { description: _description, tags: _tags, ...minimal } = query;
     expect(parseSavedQueries(JSON.stringify([{ ...minimal, connectionType: "mysql", extra: "ignored" }]))).toEqual([
