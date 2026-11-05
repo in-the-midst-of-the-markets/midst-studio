@@ -539,6 +539,11 @@ first-class `DatabaseConnection` field and independent of the form's `connection
 even though this form shows no TLS row of its own, and an explicit `disable` turns TLS **off** as
 firmly as an explicit mode turns it on (the #264 lesson).
 
+A password or an API key is not sent over plain HTTP except to this machine. The factory rewrites a
+connection that uses an SSH tunnel to the tunnel's loopback end before the transport is built, so
+that path counts as this machine. A remote host without TLS is a `DatabaseConfigError` and nothing
+is sent. A cluster with security disabled, which sends no credential, still connects over plain HTTP.
+
 `verify-system` (D26) is the mode that DESCRIBES this transport: `fetch` always verifies the chain
 against the platform's certificate store and cannot be told otherwise, so of the four non-`disable`
 modes it is the only one whose name matches the handshake. `require` here does not mean "encrypt

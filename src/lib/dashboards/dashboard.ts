@@ -392,6 +392,19 @@ function noteFrameHost(
   }
 }
 
+/**
+ * What a dashboard script may load. The frame is a unique origin, and this keeps the
+ * script from fetching, embedding a response, or posting a form.
+ */
+export const DASHBOARD_FRAME_CSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'";
+
+/** The longest value a custom filter may publish. A longer one is cut, not stored whole. */
+const FILTER_FRAME_VALUE_CAP = 2_000;
+
+function frameHead(): string {
+  return `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${DASHBOARD_FRAME_CSP}">`;
+}
+
 /** The document a text box script runs in a sandboxed frame. It draws into `#root`. */
 export function noteFrameDocument(
   script: string,
@@ -408,7 +421,8 @@ export function noteFrameDocument(
   const weight = look.bold ? "700" : "400";
   const fontStyle = look.italic ? "italic" : "normal";
   return [
-    '<!DOCTYPE html><html><head><meta charset="utf-8">',
+    "<!DOCTYPE html><html>",
+    frameHead(),
     "<style>",
     `body{margin:0;font-family:${family};font-size:${look.fontSize}px;color:${color};background:${background};text-align:${look.align};font-weight:${weight};font-style:${fontStyle};}`,
     "#root{white-space:pre-wrap;overflow-wrap:anywhere;}",
@@ -643,7 +657,7 @@ export function filterFrameDocument(id: string, script: string, value: string, c
   const host = JSON.stringify({ id, value, choices }).replace(/</g, "\\u003c");
   const source = script.replace(/<\/script/gi, "<\\/script");
   return [
-    '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>',
+    `<!DOCTYPE html><html>${frameHead()}</head><body>`,
     '<div id="root"></div>',
     `<script>const host = ${host};const value = host.value;const choices = host.choices;`,
     'function setValue(next){parent.postMessage({source:"libredb-filter",id:host.id,value:next==null?"":String(next)},"*");}',
@@ -660,7 +674,7 @@ export function filterFrameMessage(data: unknown): { id: string; value: string }
   const id = "id" in data ? data.id : undefined;
   const value = "value" in data ? data.value : undefined;
   if (source !== "libredb-filter" || typeof id !== "string" || id === "" || typeof value !== "string") return null;
-  return { id, value };
+  return { id, value: value.slice(0, FILTER_FRAME_VALUE_CAP) };
 }
 
 /** Fields stored when the user picks a control. A slider starts at 0 to 100. */

@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type RefObject,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -54,6 +55,7 @@ import {
   dragResize,
   schemaWithDashboard,
   CUSTOM_FILTER_SCRIPT,
+  DASHBOARD_FRAME_CSP,
   filterChoices,
   filterControlPatch,
   filterFrameDocument,
@@ -1364,6 +1366,7 @@ function NoteBody({
         <iframe
           title="Text script"
           sandbox="allow-scripts"
+          csp={DASHBOARD_FRAME_CSP}
           srcDoc={noteFrameDocument(script, words, result?.rows ?? [], result?.fields ?? [], look)}
           className="min-h-16 w-full flex-1 rounded-lg border border-hairline bg-canvas"
         />
@@ -1579,9 +1582,12 @@ function DashboardFilterCard({
     };
   }, [connections, filter.choiceSource, filter.connectionId, filter.query]);
 
+  const frameRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
     if (filter.control !== "custom") return;
     const onMessage = (event: MessageEvent) => {
+      // The text-box frame and any other window can post the same shape. Only this filter's frame may set its value.
+      if (event.source === null || event.source !== frameRef.current?.contentWindow) return;
       const next = filterFrameMessage(event.data);
       if (next === null || next.id !== filter.id || next.value === filter.value) return;
       onChange({ value: next.value });
@@ -1665,7 +1671,7 @@ function DashboardFilterCard({
           />
         )}
         {filter.control !== undefined && face === "filter" && (
-          <FilterSurface filter={filter} choices={listed ?? choices} onChange={onChange} />
+          <FilterSurface filter={filter} choices={listed ?? choices} frameRef={frameRef} onChange={onChange} />
         )}
         {shownStatus !== null && face !== "choices" && (
           <p role="alert" className="mt-2 text-xs text-danger">
@@ -1906,10 +1912,12 @@ function FilterChoices({
 function FilterSurface({
   filter,
   choices,
+  frameRef,
   onChange,
 }: {
   readonly filter: DashboardFilter;
   readonly choices: readonly string[];
+  readonly frameRef: RefObject<HTMLIFrameElement | null>;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
 }) {
   if (filter.control === "slider") {
@@ -1942,8 +1950,10 @@ function FilterSurface({
   if (filter.control === "custom") {
     return (
       <iframe
+        ref={frameRef}
         title="Custom filter"
         sandbox="allow-scripts"
+        csp={DASHBOARD_FRAME_CSP}
         srcDoc={filterFrameDocument(filter.id, filter.script ?? CUSTOM_FILTER_SCRIPT, filter.value, choices)}
         className="h-full min-h-28 w-full rounded-lg border border-hairline bg-canvas"
       />

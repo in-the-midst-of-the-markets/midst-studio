@@ -696,9 +696,12 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
     const frame = view.getByTitle("Custom filter") as HTMLIFrameElement;
     expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(frame.getAttribute("csp")).toContain("default-src 'none'");
     expect(frame.getAttribute("srcdoc")).toContain("setValue");
     const filterId = storage.getSavedDashboards()[0]?.filters?.[0]?.id ?? "";
-    const message = (data: unknown) => window.dispatchEvent(new window.MessageEvent("message", { data }));
+    const message = (data: unknown, source: MessageEventSource | null = frame.contentWindow) =>
+      window.dispatchEvent(new window.MessageEvent("message", { data, source }));
+    message({ source: "libredb-filter", id: filterId, value: "nope" }, null);
     message({ source: "libredb-filter", id: "other", value: "nope" });
     message({ source: "libredb-filter", id: filterId, value: "east" });
     message({ source: "libredb-filter", id: filterId, value: "north" });
