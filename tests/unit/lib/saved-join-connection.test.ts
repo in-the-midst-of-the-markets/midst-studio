@@ -59,6 +59,10 @@ describe("Cross_DB_Joins", () => {
     expect(schema[0]).toEqual({ name: "orders", kind: "table", path: ["orders"], columns: [], indexes: [] });
     expect(CROSS_DB_JOINS_CAPABILITIES.supportsExplain).toBe(false);
     expect(CROSS_DB_JOINS_CAPABILITIES.supportsTransactions).toBe(false);
+    expect(CROSS_DB_JOINS_CAPABILITIES.supportsMaintenance).toBe(false);
+    expect(CROSS_DB_JOINS_CAPABILITIES.maintenanceOperations).toEqual([]);
+    expect(CROSS_DB_JOINS_CAPABILITIES.supportsConnectionString).toBe(false);
+    expect(CROSS_DB_JOINS_CAPABILITIES.defaultPort).toBeNull();
     expect(CROSS_DB_JOINS_CAPABILITIES.queryLanguage).toBe("sql");
   });
 
