@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fenceForPrompt } from "@/lib/ai/prompt-fence";
 import { buildAssistMessages, parseAssistPlan, readAssistRequest, type AssistSource } from "@/lib/ai/assist-plan";
+import { buildDashboardMessages, readBoardContext } from "@/lib/ai/dashboard-prompt";
 import { buildEditorMessages, readEditorSql } from "@/lib/ai/editor-prompt";
 import { buildAssistReadingMessages, formatAssistResults, readAssistReading } from "@/lib/ai/assist-reading";
 import {
@@ -90,6 +91,30 @@ export async function POST(req: NextRequest) {
         }),
         reading.value.databaseType,
         reading.value.schemaContext,
+        webSearch,
+      );
+    }
+
+    // The dashboard sends its cell inventory. That path wins when a request also
+    // carries an editor statement, so the last chart is not treated as the whole board.
+    if ("boardContext" in record) {
+      const board = readBoardContext(record.boardContext);
+      if (!board.ok) return NextResponse.json({ error: board.error }, { status: 400 });
+      const boardRequest = readAssistRequest(posted);
+      if (!boardRequest.ok) return NextResponse.json({ error: boardRequest.error }, { status: 400 });
+      return await answerWith(
+        boardRequest.value.source,
+        boardRequest.value.apiKey,
+        boardRequest.value.model,
+        buildDashboardMessages({
+          databaseType: boardRequest.value.databaseType,
+          questionBlock: fenceForPrompt(boardRequest.value.question, "assist"),
+          schemaBlock: fenceForPrompt(boardRequest.value.schemaContext, "assist"),
+          historyBlock: fenceForPrompt(JSON.stringify(boardRequest.value.history), "assist"),
+          boardBlock: fenceForPrompt(board.value, "assist"),
+        }),
+        boardRequest.value.databaseType,
+        boardRequest.value.schemaContext,
         webSearch,
       );
     }

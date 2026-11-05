@@ -915,11 +915,16 @@ describe("DashboardStudio", () => {
     storage.saveChart(chart());
     storage.saveDashboard(board("sales", ["revenue"]));
     storage.setActiveDashboardId("sales");
-    const posted: { schemaContext?: string; editorSql?: string; databaseType?: string }[] = [];
+    const posted: { schemaContext?: string; editorSql?: string; boardContext?: string; databaseType?: string }[] = [];
     mockGlobalFetch({
       "/api/ai/assist": async (req) => {
         if (req.method === "GET") return { json: { models: [] } };
-        const body = (await req.json()) as { schemaContext?: string; editorSql?: string; databaseType?: string };
+        const body = (await req.json()) as {
+          schemaContext?: string;
+          editorSql?: string;
+          boardContext?: string;
+          databaseType?: string;
+        };
         posted.push(body);
         return {
           json: {
@@ -934,14 +939,20 @@ describe("DashboardStudio", () => {
     expect(ask.className).toContain("fixed");
     fireEvent.click(ask);
     expect(view.getByLabelText("Dashboard conversation")).toBeTruthy();
-    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Chart revenue" } });
+    fireEvent.change(view.getByLabelText("Instructions for AI"), { target: { value: "Assume the latest month." } });
+    fireEvent.change(view.getByLabelText("Ask about this dashboard"), { target: { value: "Chart revenue" } });
+    expect(view.getByLabelText("Ask about this dashboard").getAttribute("placeholder")).toBe(
+      "Ask a question about this dashboard",
+    );
     fireEvent.click(view.getByRole("button", { name: "Send" }));
     expect(await view.findAllByText("East is ahead.")).toHaveLength(2);
-    expect(posted[0]?.editorSql).toBe("SELECT region, total FROM sales");
+    expect(posted[0]?.editorSql).toBeUndefined();
     expect(posted[0]?.databaseType).toBe("postgres");
-    expect(posted[0]?.schemaContext).toContain("Dashboard: sales");
-    expect(posted[0]?.schemaContext).toContain("Chart Revenue: SELECT region, total FROM sales");
-    expect(posted[0]?.schemaContext).toContain("Take the time to write a complete query");
+    expect(posted[0]?.schemaContext ?? "").not.toContain("Dashboard:");
+    expect(posted[0]?.boardContext).toContain("Instructions: Assume the latest month.");
+    expect(posted[0]?.boardContext).toContain('1. chart "Revenue" | Bar / Basic | connection "Orders"');
+    expect(posted[0]?.boardContext).toContain("trusted sql: SELECT region, total FROM sales");
+    expect(posted[0]?.boardContext).toContain("shelves region, total");
     expect(view.queryByRole("button", { name: "Add as chart" })).toBeNull();
     expect(view.queryByRole("button", { name: "Add as text" })).toBeNull();
     expect(
@@ -972,7 +983,7 @@ describe("DashboardStudio", () => {
     });
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
-    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Start" } });
+    fireEvent.change(view.getByLabelText("Ask about this dashboard"), { target: { value: "Start" } });
     fireEvent.click(view.getByRole("button", { name: "Send" }));
     expect(await view.findAllByText("A note.")).toHaveLength(2);
     expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
@@ -985,13 +996,13 @@ describe("DashboardStudio", () => {
     localStorage.clear();
     const again = render(<DashboardStudio />);
     fireEvent.click(again.getByRole("button", { name: "Ask AI" }));
-    fireEvent.change(again.getByLabelText("Build or revise a query"), { target: { value: "Write" } });
+    fireEvent.change(again.getByLabelText("Ask about this dashboard"), { target: { value: "Write" } });
     fireEvent.click(again.getByRole("button", { name: "Send" }));
     expect(await again.findAllByText("A note.")).toHaveLength(2);
     expect(storage.getSavedDashboards()).toHaveLength(1);
     expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("A note.");
     expect(storage.getSavedCharts()).toHaveLength(0);
-    fireEvent.change(again.getByLabelText("Build or revise a query"), { target: { value: "Numbers" } });
+    fireEvent.change(again.getByLabelText("Ask about this dashboard"), { target: { value: "Numbers" } });
     fireEvent.click(again.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(storage.getSavedCharts()[0]?.query).toBe("SELECT 2"));
     expect(storage.getSavedDashboards()[0]?.notes).toHaveLength(1);

@@ -479,6 +479,62 @@ describe("POST /api/ai/assist", () => {
     const plan = (await response.json()) as { queries: { sql: string }[] };
     expect(plan.queries.map((query) => query.sql)).toEqual([match]);
   });
+
+  test("reads a dashboard as a cell inventory instead of one editor statement", async () => {
+    let messages: { role: string; content: string }[] = [];
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      messages = (JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }).messages;
+      return jsonResponse({
+        choices: [{ message: { content: JSON.stringify({ explanation: "Placed.", queries: [] }) } }],
+      });
+    }) as unknown as typeof fetch;
+
+    const response = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "deepseek/deepseek-v4.1-flash-1017",
+          apiKey: "or-secret",
+          question: "What changed",
+          schemaContext: "[]",
+          databaseType: "postgres",
+          history: [],
+          editorSql: "SELECT 1",
+          boardContext: "Dashboard: Board\nCells:\n1. chart",
+        },
+      }) as never,
+    );
+    expect(response.status).toBe(200);
+    expect(messages[0]?.content).toContain("cell inventory");
+    expect(messages[0]?.content).not.toContain("The fenced statement is the query in the editor.");
+    expect(messages[1]?.content).toContain("Board:");
+    expect(messages[1]?.content).toContain("Cells:");
+    expect(messages[1]?.content).not.toContain("Current statement:");
+
+    const invalid = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { source: "openrouter", model: "openai/gpt-4o", question: "What changed", boardContext: 4 },
+      }) as never,
+    );
+    expect(invalid.status).toBe(400);
+    expect(((await invalid.json()) as { error: string }).error).toBe("The dashboard is not valid.");
+
+    const tooLong = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "openai/gpt-4o",
+          question: "What changed",
+          boardContext: "x".repeat(8_001),
+        },
+      }) as never,
+    );
+    expect(tooLong.status).toBe(400);
+    expect(((await tooLong.json()) as { error: string }).error).toBe("The dashboard is too long.");
+  });
 });
 
 describe("GET /api/ai/assist", () => {
