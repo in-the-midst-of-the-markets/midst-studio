@@ -584,6 +584,7 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Text" }));
     const frame = view.getByTitle("Text script") as HTMLIFrameElement;
     expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
+    expect(frame.getAttribute("csp")).toContain("default-src 'none'");
     expect(frame.getAttribute("srcdoc")).toContain("Hello");
     expect(frame.getAttribute("srcdoc")).toContain("root.textContent = text");
     fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello there" } });
