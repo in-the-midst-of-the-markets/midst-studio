@@ -157,6 +157,12 @@ export const REGISTRIES: readonly Listed[] = [
     reason: "the composition root, which maps each type id to its provider class",
   },
   {
+    path: "src/lib/dbt/profile.ts",
+    declaration: "DBT_TARGETS",
+    count: 1,
+    reason: "the dbt target each engine can drive, one row per engine, null where dbt is not run",
+  },
+  {
     path: "src/lib/db/graph-policy-profiles.ts",
     declaration: "GRAPH_POLICY_PROFILES",
     count: 1,

@@ -26,6 +26,7 @@ describe("/create", () => {
     expect(links).toEqual([
       { name: "AI", href: "/assist" },
       { name: "IDE", href: "/" },
+      { name: "Models", href: "/models" },
     ]);
     expect(await screen.findByRole("heading", { name: "Create" })).toBeTruthy();
     expect(screen.getByText("You have no dashboards yet.")).toBeTruthy();
