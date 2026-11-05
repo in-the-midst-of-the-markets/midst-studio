@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowUp, Plus, X } from "lucide-react";
-import { useState, type Ref } from "react";
+import { useLayoutEffect, useRef, useState, type Ref } from "react";
+import { createPortal } from "react-dom";
 
 /** One saved query the plus menu can attach. */
 export interface AssistSavedChoice {
@@ -41,10 +42,28 @@ export function AssistPromptBox({
   onToggleSaved?: (id: string) => void;
 }) {
   const [menu, setMenu] = useState<"closed" | "add" | "saved">("closed");
+  const addRef = useRef<HTMLButtonElement>(null);
+  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const choices = savedChoices ?? [];
   const canAdd = savedChoices !== undefined && onToggleSaved !== undefined;
   const selected = new Set(selectedSavedIds ?? []);
   const attached = choices.filter((choice) => selected.has(choice.id));
+
+  useLayoutEffect(() => {
+    if (menu === "closed") return;
+    const place = (): void => {
+      const button = addRef.current;
+      if (button === null) return;
+      setAnchor(menuAnchor(button));
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [menu]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -84,81 +103,86 @@ export function AssistPromptBox({
         <div className="mt-2 flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             {canAdd && (
-              <div className="relative">
+              <>
                 <button
+                  ref={addRef}
                   type="button"
                   aria-label="Add to chat"
                   aria-expanded={menu !== "closed"}
                   onClick={() => setMenu((current) => (current === "closed" ? "add" : "closed"))}
-                  className="relative z-20 inline-flex size-8 items-center justify-center rounded-full border border-hairline text-fg hover:bg-fill-subtle"
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-hairline text-fg hover:bg-fill-subtle"
                 >
                   <Plus className="size-4" aria-hidden="true" />
                 </button>
-                {menu !== "closed" && (
-                  <>
-                    <button
-                      type="button"
-                      aria-label="Close add menu"
-                      onClick={() => setMenu("closed")}
-                      className="fixed inset-0 z-10 cursor-default"
-                    />
-                    <div
-                      role="menu"
-                      aria-label={menu === "saved" ? "Saved queries" : "Add to chat"}
-                      className="absolute bottom-10 left-0 z-20 w-64 rounded-lg border border-hairline bg-raised p-1 shadow-md"
-                    >
-                      {menu === "add" ? (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => setMenu("saved")}
-                          className="flex w-full rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-fill-subtle"
-                        >
-                          Saved query
-                        </button>
-                      ) : (
-                        <div className="flex flex-col">
+                {menu !== "closed" &&
+                  anchor !== null &&
+                  createPortal(
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Close add menu"
+                        onClick={() => setMenu("closed")}
+                        className="fixed inset-0 z-40 cursor-default"
+                      />
+                      <div
+                        role="menu"
+                        aria-label={menu === "saved" ? "Saved queries" : "Add to chat"}
+                        style={{ left: anchor.left, bottom: anchor.bottom, maxHeight: anchor.maxHeight }}
+                        className="fixed z-50 flex w-64 flex-col overflow-hidden rounded-lg border border-hairline bg-raised p-1 shadow-md"
+                      >
+                        {menu === "add" ? (
                           <button
                             type="button"
-                            onClick={() => setMenu("add")}
-                            className="rounded-md px-2 py-1.5 text-left text-xs text-fg-muted hover:bg-fill-subtle"
+                            role="menuitem"
+                            onClick={() => setMenu("saved")}
+                            className="flex w-full rounded-md px-2 py-1.5 text-left text-sm text-fg hover:bg-fill-subtle"
                           >
-                            Back
+                            Saved query
                           </button>
-                          {choices.length === 0 ? (
-                            <p className="px-2 py-1.5 text-sm text-fg-muted">No saved queries yet.</p>
-                          ) : (
-                            <ul className="max-h-48 overflow-y-auto">
-                              {choices.map((choice) => {
-                                const added = selected.has(choice.id);
-                                return (
-                                  <li key={choice.id}>
-                                    <button
-                                      type="button"
-                                      role="menuitemcheckbox"
-                                      aria-checked={added}
-                                      onClick={() => onToggleSaved?.(choice.id)}
-                                      className="flex w-full flex-col rounded-md px-2 py-1.5 text-left hover:bg-fill-subtle"
-                                    >
-                                      <span className="text-sm text-fg">
-                                        {added ? "Added · " : ""}
-                                        {choice.name}
-                                      </span>
-                                      {choice.detail !== "" && (
-                                        <span className="text-xs text-fg-muted">{choice.detail}</span>
-                                      )}
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setMenu("add")}
+                              className="shrink-0 rounded-md px-2 py-1.5 text-left text-xs text-fg-muted hover:bg-fill-subtle"
+                            >
+                              Back
+                            </button>
+                            {choices.length === 0 ? (
+                              <p className="px-2 py-1.5 text-sm text-fg-muted">No saved queries yet.</p>
+                            ) : (
+                              <ul className="min-h-0 overflow-y-auto">
+                                {choices.map((choice) => {
+                                  const added = selected.has(choice.id);
+                                  return (
+                                    <li key={choice.id}>
+                                      <button
+                                        type="button"
+                                        role="menuitemcheckbox"
+                                        aria-checked={added}
+                                        onClick={() => onToggleSaved?.(choice.id)}
+                                        className="flex w-full flex-col rounded-md px-2 py-1.5 text-left hover:bg-fill-subtle"
+                                      >
+                                        <span className="text-sm text-fg">
+                                          {added ? "Added · " : ""}
+                                          {choice.name}
+                                        </span>
+                                        {choice.detail !== "" && (
+                                          <span className="text-xs text-fg-muted">{choice.detail}</span>
+                                        )}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </>,
+                    document.body,
+                  )}
+              </>
             )}
             <p className="text-xs text-fg-muted">Shift + Enter for a new line</p>
           </div>
@@ -175,4 +199,28 @@ export function AssistPromptBox({
       <p className="text-center text-xs text-fg-muted">AI can make mistakes. Review generated queries.</p>
     </div>
   );
+}
+
+/** Where the add menu sits: above the plus button, inside the viewport. */
+interface MenuAnchor {
+  readonly left: number;
+  readonly bottom: number;
+  readonly maxHeight: number;
+}
+
+const MENU_WIDTH = 256;
+const MENU_GAP = 8;
+
+/**
+ * The chat column clips overflow, so an absolute menu opening into the
+ * conversation gets cut off by the reply text. Anchor it to the viewport instead.
+ */
+function menuAnchor(button: HTMLButtonElement): MenuAnchor {
+  const rect = button.getBoundingClientRect();
+  const left = Math.min(Math.max(MENU_GAP, rect.left), Math.max(MENU_GAP, window.innerWidth - MENU_WIDTH - MENU_GAP));
+  return {
+    left,
+    bottom: window.innerHeight - rect.top + MENU_GAP,
+    maxHeight: Math.max(120, rect.top - MENU_GAP * 2),
+  };
 }
