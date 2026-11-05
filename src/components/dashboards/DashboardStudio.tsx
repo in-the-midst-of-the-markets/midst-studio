@@ -166,6 +166,8 @@ export function DashboardStudio() {
   const [menu, setMenu] = useState<null | "root" | "charts" | "components">(null);
   const [components, setComponents] = useState<SavedDashboardComponent[]>(() => storage.getSavedComponents());
   const [schemaContext, setSchemaContext] = useState("[]");
+  const [mode, setMode] = useState<"editor" | "viewer">("editor");
+  const editing = mode === "editor";
   const active = dashboards.find((item) => item.id === activeId) ?? null;
 
   useEffect(() => {
@@ -272,15 +274,17 @@ export function DashboardStudio() {
               </select>
             </label>
           )}
-          <button
-            type="button"
-            onClick={create}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand"
-          >
-            <Plus className="size-3.5" />
-            New dashboard
-          </button>
-          {active !== null && (
+          {editing && (
+            <button
+              type="button"
+              onClick={create}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand"
+            >
+              <Plus className="size-3.5" />
+              New dashboard
+            </button>
+          )}
+          {editing && active !== null && (
             <>
               <div className="mt-5 border-t border-hairline pt-5">
                 <label className="block text-xs text-fg-muted">
@@ -339,68 +343,101 @@ export function DashboardStudio() {
           )}
         </aside>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-fg">Create</h1>
-            {active !== null && (
+          <div className="flex w-full items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight text-fg">
+              {editing ? "Create" : (active?.name ?? "Dash")}
+            </h1>
+            {editing && active !== null && (
               <span className="rounded-full bg-brand-tint/15 px-2 py-0.5 text-xs font-medium text-brand">
                 {active.name}
               </span>
             )}
+            <fieldset
+              aria-label="Dashboard mode"
+              className="ml-auto m-0 flex min-w-0 items-center rounded-lg border border-hairline bg-control p-0.5"
+            >
+              <button
+                type="button"
+                aria-pressed={editing}
+                onClick={() => setMode("editor")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs font-medium",
+                  editing ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+                )}
+              >
+                Editor
+              </button>
+              <button
+                type="button"
+                aria-pressed={!editing}
+                onClick={() => setMode("viewer")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs font-medium",
+                  editing ? "text-fg-muted hover:text-fg" : "bg-brand-solid text-white",
+                )}
+              >
+                Viewer
+              </button>
+            </fieldset>
           </div>
-          <p className="mt-1 text-sm text-fg-muted">
-            Compile a dashboard from saved charts. Save more than one, and switch when you want a different view.
-          </p>
+          {editing && (
+            <p className="mt-1 text-sm text-fg-muted">
+              Compile a dashboard from saved charts. Save more than one, and switch when you want a different view.
+            </p>
+          )}
           {dashboards.length === 0 ? (
             <p className="mt-6 text-sm text-fg-muted">You have no dashboards yet.</p>
           ) : active === null ? (
             <p className="mt-6 text-sm text-fg-muted">Choose a dashboard.</p>
           ) : (
-            <div className="mt-8 flex flex-col items-start gap-6">
-              <div ref={menuRef} className="relative">
-                <button
-                  type="button"
-                  aria-label="Add content"
-                  aria-haspopup="menu"
-                  aria-expanded={menu !== null}
-                  onClick={() => setMenu((current) => (current === null ? "root" : null))}
-                  className="text-brand"
-                >
-                  <Plus className="size-16" strokeWidth={1.5} />
-                </button>
-                {menu !== null && (
-                  <AddContentMenu
-                    menu={menu}
-                    charts={available}
-                    onCharts={() => setMenu("charts")}
-                    onBack={() => setMenu("root")}
-                    onAddChart={(chartId) => {
-                      remember(withChart(active, chartId, boardWidth(boardRef.current)));
-                      setMenu(null);
-                    }}
-                    onMakeChart={() => {
-                      const chart = freshDashboardChart(charts, connections[0]?.id);
-                      storage.saveChart(chart);
-                      setCharts(storage.getSavedCharts());
-                      remember(withChart(active, chart.id, boardWidth(boardRef.current)));
-                      setMenu(null);
-                    }}
-                    onText={() => {
-                      remember(withNote(active));
-                      setMenu(null);
-                    }}
-                    onFilter={() => {
-                      remember(withFilter(active, connections[0]?.id));
-                      setMenu(null);
-                    }}
-                    components={components}
-                    onComponents={() => setMenu("components")}
-                    onAddComponent={(component) => {
-                      remember(placeSavedComponent(active, component));
-                      setMenu(null);
-                    }}
-                  />
-                )}
-              </div>
+            <div className={cn("flex flex-col items-start gap-6", editing ? "mt-8" : "mt-6")}>
+              {editing && (
+                <div ref={menuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-label="Add content"
+                    aria-haspopup="menu"
+                    aria-expanded={menu !== null}
+                    onClick={() => setMenu((current) => (current === null ? "root" : null))}
+                    className="text-brand"
+                  >
+                    <Plus className="size-16" strokeWidth={1.5} />
+                  </button>
+                  {menu !== null && (
+                    <AddContentMenu
+                      menu={menu}
+                      charts={available}
+                      onCharts={() => setMenu("charts")}
+                      onBack={() => setMenu("root")}
+                      onAddChart={(chartId) => {
+                        remember(withChart(active, chartId, boardWidth(boardRef.current)));
+                        setMenu(null);
+                      }}
+                      onMakeChart={() => {
+                        const chart = freshDashboardChart(charts, connections[0]?.id);
+                        storage.saveChart(chart);
+                        setCharts(storage.getSavedCharts());
+                        remember(withChart(active, chart.id, boardWidth(boardRef.current)));
+                        setMenu(null);
+                      }}
+                      onText={() => {
+                        remember(withNote(active));
+                        setMenu(null);
+                      }}
+                      onFilter={() => {
+                        remember(withFilter(active, connections[0]?.id));
+                        setMenu(null);
+                      }}
+                      components={components}
+                      onComponents={() => setMenu("components")}
+                      onAddComponent={(component) => {
+                        remember(placeSavedComponent(active, component));
+                        setMenu(null);
+                      }}
+                    />
+                  )}
+                </div>
+              )}
               <div ref={boardRef} className="flex w-full flex-col items-start gap-4">
                 {(active.filters ?? []).map((filter) => {
                   const size = blockFrameSize(
@@ -414,6 +451,7 @@ export function DashboardStudio() {
                       filter={filter}
                       width={size.width}
                       height={size.height}
+                      viewing={!editing}
                       connections={connections}
                       onChange={(patch) => remember(withFilterFields(active, filter.id, patch))}
                       onResize={(next) => remember(withFilterFields(active, filter.id, next))}
@@ -447,6 +485,7 @@ export function DashboardStudio() {
                       note={note}
                       width={size.width}
                       height={size.height}
+                      viewing={!editing}
                       connections={connections}
                       filters={active.filters ?? []}
                       onChange={(patch) => remember(withNoteFields(active, note.id, patch))}
@@ -464,6 +503,7 @@ export function DashboardStudio() {
                       chart={chart}
                       width={frame.width}
                       height={frame.height}
+                      viewing={!editing}
                       connections={connections}
                       filters={active.filters ?? []}
                       onRemove={() => remember(withoutChart(active, chart.id))}
@@ -507,14 +547,16 @@ export function DashboardStudio() {
           )}
         </div>
       </div>
-      <IdeQueryChat
-        placement="fixed"
-        conversationLabel="Dashboard conversation"
-        sql={dashboardEditorSql(active, charts)}
-        databaseType={assistDatabaseType(connections.map((item) => item.type))}
-        schemaContext={schemaWithDashboard(schemaContext, dashboardAssistContext(active, charts))}
-        onPlaceReply={placeAssistantReply}
-      />
+      {editing && (
+        <IdeQueryChat
+          placement="fixed"
+          conversationLabel="Dashboard conversation"
+          sql={dashboardEditorSql(active, charts)}
+          databaseType={assistDatabaseType(connections.map((item) => item.type))}
+          schemaContext={schemaWithDashboard(schemaContext, dashboardAssistContext(active, charts))}
+          onPlaceReply={placeAssistantReply}
+        />
+      )}
     </>
   );
 }
@@ -644,6 +686,7 @@ function DashboardChart({
   chart,
   width,
   height,
+  viewing,
   connections,
   filters,
   onRemove,
@@ -658,6 +701,7 @@ function DashboardChart({
   readonly chart: SavedChartConfig;
   readonly width: number;
   readonly height: number;
+  readonly viewing: boolean;
   readonly connections: readonly DatabaseConnection[];
   readonly filters: readonly DashboardFilter[];
   readonly onRemove: () => void;
@@ -752,6 +796,7 @@ function DashboardChart({
     onQuery(sqlDraft);
     setFace("chart");
   };
+  const shownFace = viewing ? "chart" : face;
   const onCodeChange = (text: string) => {
     code.onChange(text);
     const parsed = parseChartCode(text);
@@ -770,74 +815,82 @@ function DashboardChart({
         beside the actions, the actions wrap onto the line below it.
       */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4">
-        <input
-          aria-label="Chart title"
-          value={chart.name}
-          onChange={(event) => onTitle(event.target.value)}
-          className="min-w-[min(100%,max-content)] flex-1 break-words bg-transparent text-sm font-semibold text-fg outline-none"
-        />
-        <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
-          <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
-            <FaceButton pressed={face === "chart"} label="Chart" icon={BarChart3} onClick={() => setFace("chart")} />
-            <FaceButton pressed={face === "query"} label="Query" icon={Terminal} onClick={() => setFace("query")} />
-            <FaceButton pressed={face === "code"} label="Code" icon={Braces} onClick={() => setFace("code")} />
-          </div>
-          {face === "query" && (
-            <button
-              type="button"
-              aria-label={`Run ${chart.name}`}
-              onClick={runDraft}
-              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
-            >
-              Run
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label={`Unsave ${chart.name}`}
-            title={`Unsave ${chart.name}`}
-            aria-pressed="true"
-            onClick={() => setPending((current) => (current === "unsave" ? null : "unsave"))}
-            className="inline-flex size-7 items-center justify-center rounded-md bg-brand-solid text-white"
-          >
-            <Bookmark className="size-3.5 fill-current" aria-hidden="true" />
-          </button>
-          {pending === "unsave" && (
-            <button
-              type="button"
-              aria-label={`Confirm unsave ${chart.name}`}
-              onClick={onUnsave}
-              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
-            >
-              Confirm
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label={`Remove ${chart.name}`}
-            title={`Remove ${chart.name}`}
-            aria-pressed={pending === "remove"}
-            onClick={() => setPending((current) => (current === "remove" ? null : "remove"))}
-            className={cn(
-              "inline-flex size-7 items-center justify-center rounded-md",
-              pending === "remove" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+        {viewing ? (
+          <h2 className="min-w-[min(100%,max-content)] flex-1 break-words text-sm font-semibold text-fg">
+            {chart.name}
+          </h2>
+        ) : (
+          <input
+            aria-label="Chart title"
+            value={chart.name}
+            onChange={(event) => onTitle(event.target.value)}
+            className="min-w-[min(100%,max-content)] flex-1 break-words bg-transparent text-sm font-semibold text-fg outline-none"
+          />
+        )}
+        {!viewing && (
+          <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-3">
+            <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
+              <FaceButton pressed={face === "chart"} label="Chart" icon={BarChart3} onClick={() => setFace("chart")} />
+              <FaceButton pressed={face === "query"} label="Query" icon={Terminal} onClick={() => setFace("query")} />
+              <FaceButton pressed={face === "code"} label="Code" icon={Braces} onClick={() => setFace("code")} />
+            </div>
+            {face === "query" && (
+              <button
+                type="button"
+                aria-label={`Run ${chart.name}`}
+                onClick={runDraft}
+                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+              >
+                Run
+              </button>
             )}
-          >
-            <X className="size-3.5" aria-hidden="true" />
-          </button>
-          {pending === "remove" && (
             <button
               type="button"
-              aria-label={`Confirm remove ${chart.name}`}
-              onClick={onRemove}
-              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+              aria-label={`Unsave ${chart.name}`}
+              title={`Unsave ${chart.name}`}
+              aria-pressed="true"
+              onClick={() => setPending((current) => (current === "unsave" ? null : "unsave"))}
+              className="inline-flex size-7 items-center justify-center rounded-md bg-brand-solid text-white"
             >
-              Confirm
+              <Bookmark className="size-3.5 fill-current" aria-hidden="true" />
             </button>
-          )}
-        </div>
+            {pending === "unsave" && (
+              <button
+                type="button"
+                aria-label={`Confirm unsave ${chart.name}`}
+                onClick={onUnsave}
+                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+              >
+                Confirm
+              </button>
+            )}
+            <button
+              type="button"
+              aria-label={`Remove ${chart.name}`}
+              title={`Remove ${chart.name}`}
+              aria-pressed={pending === "remove"}
+              onClick={() => setPending((current) => (current === "remove" ? null : "remove"))}
+              className={cn(
+                "inline-flex size-7 items-center justify-center rounded-md",
+                pending === "remove" ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+              )}
+            >
+              <X className="size-3.5" aria-hidden="true" />
+            </button>
+            {pending === "remove" && (
+              <button
+                type="button"
+                aria-label={`Confirm remove ${chart.name}`}
+                onClick={onRemove}
+                className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+              >
+                Confirm
+              </button>
+            )}
+          </div>
+        )}
       </div>
-      {face === "chart" && queryFilters.length > 0 && (
+      {shownFace === "chart" && !viewing && queryFilters.length > 0 && (
         <QueryFilterBar
           filters={queryFilters}
           metrics={metrics}
@@ -861,7 +914,7 @@ function DashboardChart({
         {painted !== null && (
           <AssistChartCanvas option={painted} notes={code.option === null ? (built?.notes ?? []) : []} />
         )}
-        {face === "query" && (
+        {shownFace === "query" && (
           <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
             <label className="px-4 pt-3 text-xs text-fg-muted">
               Connection
@@ -894,7 +947,7 @@ function DashboardChart({
             </div>
           </div>
         )}
-        {face === "code" && (
+        {shownFace === "code" && (
           <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
             <ChartCodeEditor
               value={code.text}
@@ -908,27 +961,34 @@ function DashboardChart({
             />
           </div>
         )}
-        {face === "chart" && view.kind === "loading" && <p className="p-3 text-xs text-fg-muted">Running the query…</p>}
-        {face === "chart" && view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
-        {face === "chart" && view.kind === "error" && (
+        {shownFace === "chart" && view.kind === "loading" && (
+          <p className="p-3 text-xs text-fg-muted">Running the query…</p>
+        )}
+        {shownFace === "chart" && view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
+        {shownFace === "chart" && view.kind === "error" && (
           <p role="alert" className="p-3 text-xs text-danger">
             {view.message}
           </p>
         )}
-        {face === "chart" && view.kind === "result" && missingShelves && (
+        {shownFace === "chart" && view.kind === "result" && missingShelves && !viewing && (
           <ChartTypePicker result={view.result} onShape={onShape} />
         )}
-        {face === "chart" && view.kind === "result" && !missingShelves && built === null && (
+        {shownFace === "chart" && view.kind === "result" && missingShelves && viewing && (
+          <p className="p-3 text-xs text-fg-muted">This chart is not ready to view.</p>
+        )}
+        {shownFace === "chart" && view.kind === "result" && !missingShelves && built === null && (
           <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
         )}
       </div>
-      <ResizeHandle
-        label={`Resize ${chart.name}`}
-        width={width}
-        height={height}
-        onResize={onResize}
-        resize={dragResize}
-      />
+      {!viewing && (
+        <ResizeHandle
+          label={`Resize ${chart.name}`}
+          width={width}
+          height={height}
+          onResize={onResize}
+          resize={dragResize}
+        />
+      )}
     </article>
   );
 }
@@ -1289,6 +1349,7 @@ function NoteBody({
   draft,
   textStyle,
   look,
+  viewing,
   onChange,
   onDraft,
 }: {
@@ -1303,6 +1364,7 @@ function NoteBody({
   readonly draft: string;
   readonly textStyle: CSSProperties;
   readonly look: ReturnType<typeof noteLook>;
+  readonly viewing: boolean;
   readonly onChange: (
     patch: Partial<Pick<DashboardNote, "text" | "query" | "connectionId" | "style" | "script">>,
   ) => void;
@@ -1368,7 +1430,9 @@ function NoteBody({
   if (script !== "") {
     return (
       <div className="flex h-full min-h-0 flex-col gap-3">
-        {result === null ? <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill={false} /> : null}
+        {result === null && !viewing ? (
+          <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill={false} />
+        ) : null}
         <iframe
           title="Text script"
           sandbox="allow-scripts"
@@ -1379,7 +1443,13 @@ function NoteBody({
       </div>
     );
   }
-  if (result === null) return <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill />;
+  if (result === null) {
+    if (viewing) {
+      if (note.text === "") return null;
+      return <NoteResult text={note.text} style={textStyle} />;
+    }
+    return <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill />;
+  }
   return <NoteResult text={words} style={textStyle} />;
 }
 
@@ -1387,6 +1457,7 @@ function DashboardNoteCard({
   note,
   width,
   height,
+  viewing,
   connections,
   filters,
   onChange,
@@ -1396,6 +1467,7 @@ function DashboardNoteCard({
   readonly note: DashboardNote;
   readonly width: number;
   readonly height: number;
+  readonly viewing: boolean;
   readonly connections: readonly DatabaseConnection[];
   readonly filters: readonly DashboardFilter[];
   readonly onChange: (
@@ -1450,36 +1522,44 @@ function DashboardNoteCard({
       style={{ width, height }}
       className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
-      <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-        <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
-          <FaceButton pressed={face === "text"} label="Text" icon={Type} onClick={() => setFace("text")} />
-          <FaceButton pressed={face === "query"} label="Text query" icon={Terminal} onClick={() => setFace("query")} />
-          <FaceButton pressed={face === "code"} label="Text code" icon={Braces} onClick={() => setFace("code")} />
-        </div>
-        {face === "query" && (
+      {!viewing && (
+        <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
+          <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
+            <FaceButton pressed={face === "text"} label="Text" icon={Type} onClick={() => setFace("text")} />
+            <FaceButton
+              pressed={face === "query"}
+              label="Text query"
+              icon={Terminal}
+              onClick={() => setFace("query")}
+            />
+            <FaceButton pressed={face === "code"} label="Text code" icon={Braces} onClick={() => setFace("code")} />
+          </div>
+          {face === "query" && (
+            <button
+              type="button"
+              aria-label="Run text query"
+              onClick={runDraft}
+              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+            >
+              Run
+            </button>
+          )}
           <button
             type="button"
-            aria-label="Run text query"
-            onClick={runDraft}
-            className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+            aria-label="Remove text"
+            onClick={onRemove}
+            className="ml-auto inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
           >
-            Run
+            <X className="size-3.5" aria-hidden="true" />
           </button>
-        )}
-        <button
-          type="button"
-          aria-label="Remove text"
-          onClick={onRemove}
-          className="ml-auto inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
-        >
-          <X className="size-3.5" aria-hidden="true" />
-        </button>
-      </div>
-      {face === "text" && <NoteStyleBar note={note} onChange={onChange} />}
+        </div>
+      )}
+      {!viewing && face === "text" && <NoteStyleBar note={note} onChange={onChange} />}
       <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-4">
         <NoteBody
           note={note}
-          face={face}
+          face={viewing ? "text" : face}
+          viewing={viewing}
           view={view}
           query={query}
           connectionId={connectionId}
@@ -1493,13 +1573,15 @@ function DashboardNoteCard({
           onDraft={setDraft}
         />
       </div>
-      <ResizeHandle
-        label="Resize text box"
-        width={width}
-        height={height}
-        onResize={onResize}
-        resize={dragBlockResize}
-      />
+      {!viewing && (
+        <ResizeHandle
+          label="Resize text box"
+          width={width}
+          height={height}
+          onResize={onResize}
+          resize={dragBlockResize}
+        />
+      )}
     </article>
   );
 }
@@ -1537,6 +1619,7 @@ function DashboardFilterCard({
   filter,
   width,
   height,
+  viewing,
   connections,
   onChange,
   onResize,
@@ -1547,6 +1630,7 @@ function DashboardFilterCard({
   readonly filter: DashboardFilter;
   readonly width: number;
   readonly height: number;
+  readonly viewing: boolean;
   readonly connections: readonly DatabaseConnection[];
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
   readonly onResize: (size: { width: number; height: number }) => void;
@@ -1621,13 +1705,17 @@ function DashboardFilterCard({
       className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
     >
       <div className="flex shrink-0 flex-wrap items-center gap-3 px-4 pt-4">
-        <input
-          aria-label="Component title"
-          value={caption}
-          onChange={(event) => onChange({ label: event.target.value })}
-          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-fg outline-none"
-        />
-        {filter.control !== undefined && (
+        {viewing ? (
+          <h2 className="min-w-0 flex-1 break-words text-sm font-semibold text-fg">{caption}</h2>
+        ) : (
+          <input
+            aria-label="Component title"
+            value={caption}
+            onChange={(event) => onChange({ label: event.target.value })}
+            className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-fg outline-none"
+          />
+        )}
+        {!viewing && filter.control !== undefined && (
           <div className="ml-auto flex items-center rounded-lg border border-hairline bg-control p-0.5">
             <FaceButton
               pressed={face === "filter"}
@@ -1644,26 +1732,28 @@ function DashboardFilterCard({
             <FaceButton pressed={face === "design"} label="Design" icon={Braces} onClick={() => setFace("design")} />
           </div>
         )}
-        <button
-          type="button"
-          aria-label={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
-          title={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
-          aria-pressed={saved}
-          onClick={() => {
-            if (!saved) {
-              onSave();
-              return;
-            }
-            setPendingUnsave((current) => !current);
-          }}
-          className={cn(
-            "inline-flex size-7 items-center justify-center rounded-md",
-            saved ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-          )}
-        >
-          <Bookmark className={cn("size-3.5", saved && "fill-current")} aria-hidden="true" />
-        </button>
-        {saved && pendingUnsave && (
+        {!viewing && (
+          <button
+            type="button"
+            aria-label={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
+            title={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
+            aria-pressed={saved}
+            onClick={() => {
+              if (!saved) {
+                onSave();
+                return;
+              }
+              setPendingUnsave((current) => !current);
+            }}
+            className={cn(
+              "inline-flex size-7 items-center justify-center rounded-md",
+              saved ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+            )}
+          >
+            <Bookmark className={cn("size-3.5", saved && "fill-current")} aria-hidden="true" />
+          </button>
+        )}
+        {!viewing && saved && pendingUnsave && (
           <button
             type="button"
             aria-label={`Confirm unsave ${caption} component`}
@@ -1676,20 +1766,22 @@ function DashboardFilterCard({
             Confirm
           </button>
         )}
-        <button
-          type="button"
-          aria-label={`Remove ${filter.name} filter`}
-          onClick={onRemove}
-          className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
-        >
-          <X className="size-3.5" aria-hidden="true" />
-        </button>
+        {!viewing && (
+          <button
+            type="button"
+            aria-label={`Remove ${filter.name} filter`}
+            onClick={onRemove}
+            className="inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
+          >
+            <X className="size-3.5" aria-hidden="true" />
+          </button>
+        )}
       </div>
       <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-4">
-        {filter.control === undefined || face === "design" ? (
+        {!viewing && (filter.control === undefined || face === "design") ? (
           <FilterDesign filter={filter} reference={reference} onChange={onChange} />
         ) : null}
-        {filter.control !== undefined && face === "choices" && (
+        {!viewing && filter.control !== undefined && face === "choices" && (
           <FilterChoices
             filter={filter}
             draft={draft}
@@ -1700,22 +1792,27 @@ function DashboardFilterCard({
             onRun={runChoices}
           />
         )}
-        {filter.control !== undefined && face === "filter" && (
+        {(viewing ? filter.control !== undefined : filter.control !== undefined && face === "filter") && (
           <FilterSurface filter={filter} choices={listed ?? choices} frameRef={frameRef} onChange={onChange} />
         )}
-        {shownStatus !== null && face !== "choices" && (
+        {viewing && filter.control === undefined && (
+          <p className="text-xs text-fg-muted">This filter is not ready to view.</p>
+        )}
+        {shownStatus !== null && (viewing || face !== "choices") && (
           <p role="alert" className="mt-2 text-xs text-danger">
             {shownStatus}
           </p>
         )}
       </div>
-      <ResizeHandle
-        label={`Resize ${caption}`}
-        width={width}
-        height={height}
-        onResize={onResize}
-        resize={dragBlockResize}
-      />
+      {!viewing && (
+        <ResizeHandle
+          label={`Resize ${caption}`}
+          width={width}
+          height={height}
+          onResize={onResize}
+          resize={dragBlockResize}
+        />
+      )}
     </article>
   );
 }
