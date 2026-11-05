@@ -1,6 +1,7 @@
 import { isDestructiveNonSqlQuery, statementRefusal } from "@/lib/db/destructive-commands";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { countCodeStatements } from "@/lib/sql/statement-splitter";
+import { hasConditionalExecutionComment } from "@/lib/sql/optimizer-hints";
 import { hasLoneCarriageReturnInLineComment, hasUnterminatedSpan } from "@/lib/sql/spans";
 import { readsSqlText, resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { DatabaseType } from "@/lib/types";
@@ -33,5 +34,10 @@ export function sourceReadRefusal(type: DatabaseType, query: string): string | n
     return "A saved query in a join has to be one statement.";
   }
   if (!isReadOnlySql(query)) return READ_REQUIRED;
+  // MySQL and MariaDB execute a block comment that opens with an exclamation mark. The read
+  // check above skips every block comment, so a write in one of these would run with no confirmation.
+  if (hasConditionalExecutionComment(query)) {
+    return "A saved query in a join cannot include a comment the database executes.";
+  }
   return null;
 }

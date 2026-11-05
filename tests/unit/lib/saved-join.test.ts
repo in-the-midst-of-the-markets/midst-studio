@@ -107,6 +107,10 @@ describe("sourceReadRefusal", () => {
     expect(sourceReadRefusal("postgres", "SELECT 'oops")).toContain("one statement");
     expect(sourceReadRefusal("postgres", "SELECT 1 -- x\r; DELETE FROM t")).toContain("one statement");
     expect(sourceReadRefusal("kubernetes", "a".repeat(KUBECTL_MAX_TEXT_BYTES + 1))).toContain("byte");
+    expect(sourceReadRefusal("mysql", "SELECT * FROM t /*! INTO OUTFILE '/tmp/x' */")).toContain("executes");
+    expect(sourceReadRefusal("mysql", "SELECT 1; /*! DELETE FROM users */")).toContain("executes");
+    expect(sourceReadRefusal("mysql", "SELECT '/*! INTO OUTFILE ''/tmp/x'' */'")).toBeNull();
+    expect(sourceReadRefusal("mysql", "SELECT /* note */ 1")).toBeNull();
   });
 });
 
@@ -151,6 +155,12 @@ describe("readSavedJoinBody", () => {
       "underscores",
     );
     expect(readSavedJoinBody({ sql: "SELECT 1", saved: [{ name: "orders", query: 1 }] })).toContain("query text");
+    expect(
+      readSavedJoinBody({
+        sql: "SELECT 1",
+        saved: [{ name: "orders", query: "x".repeat(SAVED_JOIN_MAX_SQL_CHARS + 1) }],
+      }),
+    ).toContain("orders");
     expect(readSavedJoinBody({ sql: "SELECT 1", saved: [], options: [] })).toContain("object");
     expect(readSavedJoinBody({ sql: "SELECT 1", saved: [], options: { limit: -1 } })).toContain("limit");
     expect(readSavedJoinBody({ sql: "SELECT 1", saved: [], options: { unlimited: "yes" } })).toContain("boolean");
@@ -518,6 +528,11 @@ describe("runSavedJoin", () => {
     await expect(hidden("SELECT lower(current_setting('secret_directory')) FROM saved.orders")).rejects.toThrow(
       "server's settings",
     );
+    await expect(
+      hidden(
+        "SELECT json_execute_serialized_sql(json_serialize_sql('SELECT current_setting(''secret_directory'')')) FROM saved.orders",
+      ),
+    ).rejects.toThrow("hidden inside a function");
   });
 
   test("a file read inside the DuckDB statement is refused", async () => {

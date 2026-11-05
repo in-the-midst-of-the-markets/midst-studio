@@ -9,7 +9,7 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { hasOptimizerHint } from "@/lib/sql/optimizer-hints";
+import { hasConditionalExecutionComment, hasOptimizerHint } from "@/lib/sql/optimizer-hints";
 
 describe("hasOptimizerHint", () => {
   test("an ordinary statement carries none", () => {
@@ -68,5 +68,17 @@ describe("hasOptimizerHint", () => {
 
   test("empty text carries none", () => {
     expect(hasOptimizerHint("")).toBe(false);
+  });
+});
+
+describe("hasConditionalExecutionComment", () => {
+  test("is the comment MySQL and MariaDB execute, and not a plan hint or a literal", () => {
+    expect(hasConditionalExecutionComment("SELECT * FROM t /*! INTO OUTFILE '/tmp/x' */")).toBe(true);
+    expect(hasConditionalExecutionComment("SELECT /*!40001 SQL_NO_CACHE */ 1")).toBe(true);
+    expect(hasConditionalExecutionComment("SELECT /*+ INDEX(t) */ 1")).toBe(false);
+    expect(hasConditionalExecutionComment("SELECT --+ FULL(t)\n 1")).toBe(false);
+    expect(hasConditionalExecutionComment("SELECT '/*! INTO OUTFILE */'")).toBe(false);
+    expect(hasConditionalExecutionComment("SELECT /* note */ 1")).toBe(false);
+    expect(hasConditionalExecutionComment("")).toBe(false);
   });
 });

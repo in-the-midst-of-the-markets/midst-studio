@@ -45,13 +45,15 @@ const DIRECTIVE_MARKERS: Readonly<Record<string, readonly string[]>> = Object.fr
 });
 
 /**
- * True when `sql` carries at least one comment the engine reads as an instruction.
- *
- * Unterminated spans answer true as readily as closed ones: the reader reports where
- * the run ended, the opening characters are all this asks about, and refusing text
- * nobody can finish parsing is the safe direction anyway.
+ * MySQL and MariaDB execute the body of a block comment that opens with an exclamation mark,
+ * including the versioned form. Other readers in this folder skip that comment, so a write
+ * inside it is invisible to them.
  */
-export function hasOptimizerHint(sql: string): boolean {
+const EXECUTABLE_COMMENT_MARKERS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  "block-comment": Object.freeze(["/*!"]),
+});
+
+function commentOpensWith(sql: string, markers: Readonly<Record<string, readonly string[]>>): boolean {
   let index = 0;
   while (index < sql.length) {
     const span = readSqlSpan(sql, index, DEFAULT_SQL_GRAMMAR);
@@ -59,9 +61,30 @@ export function hasOptimizerHint(sql: string): boolean {
       index += 1;
       continue;
     }
-    const markers = DIRECTIVE_MARKERS[span.kind];
-    if (markers !== undefined && markers.some((marker) => sql.startsWith(marker, index))) return true;
+    const opening = markers[span.kind];
+    if (opening !== undefined && opening.some((marker) => sql.startsWith(marker, index))) return true;
     index = span.end;
   }
   return false;
+}
+
+/**
+ * True when `sql` carries at least one comment the engine reads as an instruction.
+ *
+ * Unterminated spans answer true as readily as closed ones: the reader reports where
+ * the run ended, the opening characters are all this asks about, and refusing text
+ * nobody can finish parsing is the safe direction anyway.
+ */
+export function hasOptimizerHint(sql: string): boolean {
+  return commentOpensWith(sql, DIRECTIVE_MARKERS);
+}
+
+/**
+ * True when MySQL or MariaDB would execute text inside a comment.
+ *
+ * A SELECT that hides INTO OUTFILE in that comment is one read to a scanner that skips
+ * block comments, and one file write to the server. The same characters inside a string or a name are not one.
+ */
+export function hasConditionalExecutionComment(sql: string): boolean {
+  return commentOpensWith(sql, EXECUTABLE_COMMENT_MARKERS);
 }

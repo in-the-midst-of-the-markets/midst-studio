@@ -131,6 +131,12 @@ function collectCteNames(node: unknown, names: Set<string>): void {
 const SERVER_STATE_FUNCTIONS = new Set(["current_setting"]);
 
 /**
+ * Functions that run SQL from a string. The text inside the call is not part of this
+ * statement's tree, so the checks below cannot see a `current_setting` hidden there.
+ */
+const HIDDEN_SQL_FUNCTIONS = new Set(["json_execute_serialized_sql", "query", "query_table"]);
+
+/**
  * Schemas a saved join accepts. An unqualified name and `main` are the table the editor
  * writes. `saved` remains the name a statement used before the connection existed.
  */
@@ -145,12 +151,14 @@ function collectTables(node: unknown, tables: string[], ctes: Set<string>): void
   if (node.type === "TABLE_FUNCTION" || node.type === "SHOW_REF") {
     throw new SavedJoinError("A saved join can only read saved queries by their ID.");
   }
-  if (
-    node.type === "FUNCTION" &&
-    typeof node.function_name === "string" &&
-    SERVER_STATE_FUNCTIONS.has(node.function_name.toLowerCase())
-  ) {
-    throw new SavedJoinError("A saved join cannot read the server's settings.");
+  if (node.type === "FUNCTION" && typeof node.function_name === "string") {
+    const name = node.function_name.toLowerCase();
+    if (SERVER_STATE_FUNCTIONS.has(name)) {
+      throw new SavedJoinError("A saved join cannot read the server's settings.");
+    }
+    if (HIDDEN_SQL_FUNCTIONS.has(name)) {
+      throw new SavedJoinError("A saved join cannot run SQL hidden inside a function.");
+    }
   }
   if (node.type === "BASE_TABLE") {
     const schema = typeof node.schema_name === "string" ? node.schema_name : "";
