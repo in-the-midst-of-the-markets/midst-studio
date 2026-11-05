@@ -72,7 +72,13 @@
  */
 
 import { DatabaseConfigError } from "@/lib/db/errors";
-import { endpointUrl, type HttpOrigin, httpOrigin, rejectRedirect } from "@/lib/db/http/endpoint";
+import {
+  endpointUrl,
+  type HttpOrigin,
+  httpOrigin,
+  plaintextSecretRefusal,
+  rejectRedirect,
+} from "@/lib/db/http/endpoint";
 import { httpTransportFetch } from "@/lib/db/http/egress-policy";
 import type { DatabaseConnection } from "@/lib/db/types";
 import { quoteUnsafeIntegers } from "@/lib/db/utils/json-integers";
@@ -1818,12 +1824,25 @@ export class SearchHttpTransport implements SearchTransport {
         this.dialect,
       );
     }
-    this.authorization =
-      this.spec.supportsApiKeyAuth && apiKeyId && apiKeySecret
-        ? `ApiKey ${Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64")}`
-        : config.user
-          ? `Basic ${Buffer.from(`${config.user}:${config.password ?? ""}`).toString("base64")}`
-          : undefined;
+    const apiKey = this.spec.supportsApiKeyAuth && apiKeyId !== "" && apiKeySecret !== "";
+    this.authorization = apiKey
+      ? `ApiKey ${Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64")}`
+      : config.user
+        ? `Basic ${Buffer.from(`${config.user}:${config.password ?? ""}`).toString("base64")}`
+        : undefined;
+    // A tunnel is already rewritten to its loopback end before this constructor runs, so a
+    // loopback host is the one place a secret may travel without TLS. A remote host gets
+    // the credential only over HTTPS.
+    if (this.authorization !== undefined) {
+      const refusal = plaintextSecretRefusal({
+        host: this.origin.host,
+        tunnelled: false,
+        tls: secure,
+        hasSecret: true,
+        secretLabel: apiKey ? "API key" : "password",
+      });
+      if (refusal !== undefined) throw new DatabaseConfigError(refusal, this.dialect);
+    }
   }
 
   /**

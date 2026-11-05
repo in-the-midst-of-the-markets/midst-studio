@@ -47,6 +47,17 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
+test("refuses an Elasticsearch API key over plain HTTP to a host that is not this machine", () => {
+  const connect = () =>
+    new SearchHttpTransport(
+      "elasticsearch",
+      makeConnection("elasticsearch", { host: "search.example", apiKeyId: "key-id", apiKeySecret: "key-secret" }),
+    );
+  expect(connect).toThrow(DatabaseConfigError);
+  expect(connect).toThrow(/API key/);
+  expect(calls).toHaveLength(0);
+});
+
 describe.each(["elasticsearch", "opensearch"] as const)("SearchHttpTransport (%s) endpoint", (dialect) => {
   function makeTransport(overrides: Partial<DatabaseConnection> = {}): SearchHttpTransport {
     return new SearchHttpTransport(dialect, makeConnection(dialect, overrides));
@@ -56,6 +67,32 @@ describe.each(["elasticsearch", "opensearch"] as const)("SearchHttpTransport (%s
     await makeTransport().version();
 
     expect(calls[0]?.url).toBe("http://127.0.0.1:9200/");
+  });
+
+  test("refuses a password over plain HTTP to a host that is not this machine", () => {
+    const connect = () => makeTransport({ host: "search.example", user: "reader", password: "s3cret" });
+    expect(connect).toThrow(DatabaseConfigError);
+    expect(connect).toThrow(/password/);
+    expect(connect).toThrow(/without TLS/);
+    try {
+      connect();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      expect(message).not.toContain("search.example");
+      expect(message).not.toContain("s3cret");
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  test("sends a password to a remote host once TLS is on", async () => {
+    await makeTransport({
+      host: "search.example",
+      user: "reader",
+      password: "s3cret",
+      ssl: { mode: "require" },
+    }).version();
+
+    expect(calls[0]?.url).toBe("https://search.example:9200/");
   });
 
   test("brackets an IPv6 host", async () => {

@@ -237,6 +237,10 @@ describe("dashboard layout", () => {
       id: "f1",
       value: "east",
     });
+    expect(filterFrameMessage({ source: "libredb-filter", id: "f1", value: "x".repeat(2_500) })?.value).toHaveLength(
+      2_000,
+    );
+    expect(document).toContain("default-src 'none'");
   });
 
   test("lists a dashboard's variable ids and writes one into a query", () => {
