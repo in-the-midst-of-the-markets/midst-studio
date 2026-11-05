@@ -25,9 +25,21 @@ interface SaveQueryModalProps {
   defaultQuery: string;
   /** IDs already used by other saved queries, compared without regard to case. */
   takenTableIds?: readonly string[];
+  /**
+   * The statement was written on Cross_DB_Joins. Its ID is not a table: the statement is
+   * saved to run again here, and it does not read a database of its own.
+   */
+  savedOnJoin?: boolean;
 }
 
-export function SaveQueryModal({ isOpen, onClose, onSave, defaultQuery, takenTableIds }: SaveQueryModalProps) {
+export function SaveQueryModal({
+  isOpen,
+  onClose,
+  onSave,
+  defaultQuery,
+  takenTableIds,
+  savedOnJoin = false,
+}: SaveQueryModalProps) {
   const [name, setName] = useState("");
   const [tableId, setTableId] = useState("");
   const [description, setDescription] = useState("");
@@ -98,9 +110,11 @@ export function SaveQueryModal({ isOpen, onClose, onSave, defaultQuery, takenTab
             />
             <p id="query-id-hint" className={idProblem ? "text-xs text-danger" : "text-xs text-fg-muted"}>
               {idProblem ??
-                (tableId === ""
-                  ? "Letters, numbers, and underscores. Cross_DB_Joins lists it as a table."
-                  : `Use it on Cross_DB_Joins as ${tableId}.`)}
+                (savedOnJoin
+                  ? "Letters, numbers, and underscores. Saved to run again on Cross_DB_Joins."
+                  : tableId === ""
+                    ? "Letters, numbers, and underscores. Cross_DB_Joins lists it as a table."
+                    : `Use it on Cross_DB_Joins as ${tableId}.`)}
             </p>
           </div>
           <div className="grid gap-2">

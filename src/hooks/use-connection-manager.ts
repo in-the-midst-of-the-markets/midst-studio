@@ -783,11 +783,15 @@ export function useConnectionManager(storageReady = false) {
       );
       if (active === null) {
         setActiveConnection((prev) =>
-          prev !== null && connectionAllowed(prev, currentPolicy) ? prev : (selectable[0] ?? null),
+          prev !== null && (isCrossDbJoins(prev) || connectionAllowed(prev, currentPolicy))
+            ? prev
+            : (selectable[0] ?? null),
         );
         return;
       }
-      if (selectable.some((c) => c.id === active.id)) return;
+      // Cross_DB_Joins is kept by the app, so it is never in the managed list. A refresh that
+      // treated that as removal switched the editor to another database a few seconds after a run.
+      if (isCrossDbJoins(active) || selectable.some((c) => c.id === active.id)) return;
       setActiveConnection(selectable[0] ?? null);
       toast({ title: "Connection removed", description: `${active.name} is no longer available.` });
     };

@@ -1,6 +1,7 @@
 "use client";
 
 import { appFetch } from "@/lib/config/base-path";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { useEffect, useState } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import type { ProviderMetadata } from "./use-provider-metadata";
@@ -40,6 +41,9 @@ export const CONNECTION_PULSE_INTERVAL_MS = 60_000;
  * `resumesBilledCompute` it never does, answering `not-checked` instead. That keeps a suspended
  * warehouse suspended and keeps `skipObjectScan`'s promise of zero reads on connect.
  *
+ * Cross_DB_Joins is not a database, so it is not checked either. A check can only fail, and the
+ * header would say Slow while the name says Online. It is ready as soon as it is selected.
+ *
  * Null with no active connection, before the declaration, and before the first answer for this
  * connection: an answer is kept with the id and resolution key it was for, so neither the previous
  * connection's status nor the previous target of an edited one is shown under the current target.
@@ -51,9 +55,10 @@ export function useConnectionPulse(
   const [answer, setAnswer] = useState<{ key: string; pulse: ConnectionPulse } | null>(null);
   const ready = metadata !== null;
   const silent = metadata?.capabilities.resumesBilledCompute === true;
+  const kept = connection !== null && isCrossDbJoins(connection);
 
   useEffect(() => {
-    if (connection === null || !ready || silent) return;
+    if (connection === null || !ready || silent || kept) return;
     let current = true;
     const key = answerKey(connection);
     const checkHealth = async () => {
@@ -74,9 +79,11 @@ export function useConnectionPulse(
       current = false;
       clearInterval(interval);
     };
-  }, [connection, ready, silent]);
+  }, [connection, ready, silent, kept]);
 
-  if (connection === null || !ready) return null;
+  if (connection === null) return null;
+  if (kept) return "healthy";
+  if (!ready) return null;
   if (silent) return "not-checked";
   return answer?.key === answerKey(connection) ? answer.pulse : null;
 }

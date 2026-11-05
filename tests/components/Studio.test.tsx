@@ -961,7 +961,7 @@ describe("Studio", () => {
     expect(mockStorageSaveQuery).not.toHaveBeenCalled();
   });
 
-  test("Cross_DB_Joins is listed first, its tables are saved-query IDs, and a query cannot be saved on it", async () => {
+  test("Cross_DB_Joins is listed first, its tables are saved-query IDs, and a query saved on it stays there", async () => {
     mockStorageGetSavedQueries.mockReturnValue([
       { tableId: "orders", connectionId: "c1", query: "SELECT 1" },
       { tableId: "not a name", connectionId: "c1" },
@@ -996,13 +996,14 @@ describe("Studio", () => {
     ) => boolean;
     let saved: boolean | undefined;
     act(() => {
-      saved = onSave("Join", "", [], "joined");
+      saved = onSave("Join", "", [], "monthly");
     });
-    expect(saved).toBe(false);
-    expect(mockStorageSaveQuery).not.toHaveBeenCalled();
-    expect(mockToast).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "Save it from its database", variant: "destructive" }),
-    );
+    expect(saved).toBe(true);
+    const stored = (mockStorageSaveQuery.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+    expect(stored.tableId).toBe("monthly");
+    expect(stored.connectionId).toBe("cross-db-joins");
+    expect(stored.connectionType).toBe("duckdb");
+    expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Query Saved" }));
 
     act(() => (capturedSidebarProps.onDeleteConnection as (id: string) => void)("cross-db-joins"));
     expect(mockStorageDeleteConnection).not.toHaveBeenCalled();
