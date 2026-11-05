@@ -202,7 +202,7 @@ describe("DashboardStudio", () => {
     expect(await view.findByText("That connection is no longer available.")).toBeTruthy();
     expect(await view.findByText("refused")).toBeTruthy();
     expect(await view.findByText("Those columns do not have numbers to chart.")).toBeTruthy();
-    expect(await view.findByRole("button", { name: "Use Bar chart" })).toBeTruthy();
+    expect(await view.findAllByRole("button", { name: "Use Bar chart" })).toHaveLength(2);
   });
 
   test("reruns a chart on its schedule and ignores a result after the chart is gone", async () => {
@@ -382,6 +382,11 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Use Bar Stacked chart" }));
     await view.findByTestId("assist-chart");
     expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "bar", variationId: "stacked", connectionId: "c1" });
+    expect(view.getByRole("button", { name: "Use Bar Stacked chart" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Use Line chart" }));
+    fireEvent.click(view.getByRole("button", { name: "Use Line Area chart" }));
+    expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "line", variationId: "area" });
+    expect(view.getByRole("button", { name: "Use Line Area chart" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.change(view.getByLabelText("Connection for Chart"), { target: { value: "" } });
     expect(storage.getSavedCharts()[0]?.connectionId).toBeUndefined();
@@ -1051,6 +1056,7 @@ describe("DashboardStudio", () => {
     expect(view.queryByLabelText("Chart title")).toBeNull();
     expect(view.queryByRole("button", { name: "Query" })).toBeNull();
     expect(view.queryByRole("button", { name: "Code" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Use Bar chart" })).toBeNull();
     expect(view.queryByRole("button", { name: "Unsave Revenue" })).toBeNull();
     expect(view.queryByRole("button", { name: "Remove Revenue" })).toBeNull();
     expect(view.queryByRole("button", { name: "Resize Revenue" })).toBeNull();

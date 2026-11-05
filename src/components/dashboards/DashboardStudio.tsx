@@ -910,75 +910,84 @@ function DashboardChart({
           onClear={() => onQuery(clearQueryFilters(sql))}
         />
       )}
-      <div className="relative min-h-0 flex-1">
-        {painted !== null && (
-          <AssistChartCanvas option={painted} notes={code.option === null ? (built?.notes ?? []) : []} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        {shownFace === "chart" && view.kind === "result" && !viewing && (
+          <ChartTypePicker
+            result={view.result}
+            typeId={chart.typeId ?? null}
+            variationId={chart.variationId ?? null}
+            onShape={onShape}
+          />
         )}
-        {shownFace === "query" && (
-          <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
-            <label className="px-4 pt-3 text-xs text-fg-muted">
-              Connection
-              <select
-                aria-label={`Connection for ${chart.name}`}
-                value={connectionId ?? ""}
-                onChange={(event) => onConnection(event.target.value === "" ? undefined : event.target.value)}
-                className={`mt-1.5 ${fieldClass}`}
-              >
-                <option value="">Choose a connection</option>
-                {connections.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <VariableInsert
-              filters={filters}
-              onInsert={(token) => setSqlDraft((current) => insertQueryVariable(current, token))}
-            />
-            <div className="min-h-0 flex-1">
-              <QueryEditor
-                value={sqlDraft}
-                documentId={chart.id}
-                databaseType={databaseType}
-                wordWrap
-                onContentChange={setSqlDraft}
+        <div className="relative min-h-0 flex-1">
+          {painted !== null && (
+            <AssistChartCanvas option={painted} notes={code.option === null ? (built?.notes ?? []) : []} />
+          )}
+          {shownFace === "query" && (
+            <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
+              <label className="px-4 pt-3 text-xs text-fg-muted">
+                Connection
+                <select
+                  aria-label={`Connection for ${chart.name}`}
+                  value={connectionId ?? ""}
+                  onChange={(event) => onConnection(event.target.value === "" ? undefined : event.target.value)}
+                  className={`mt-1.5 ${fieldClass}`}
+                >
+                  <option value="">Choose a connection</option>
+                  {connections.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <VariableInsert
+                filters={filters}
+                onInsert={(token) => setSqlDraft((current) => insertQueryVariable(current, token))}
+              />
+              <div className="min-h-0 flex-1">
+                <QueryEditor
+                  value={sqlDraft}
+                  documentId={chart.id}
+                  databaseType={databaseType}
+                  wordWrap
+                  onContentChange={setSqlDraft}
+                />
+              </div>
+            </div>
+          )}
+          {shownFace === "code" && (
+            <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
+              <ChartCodeEditor
+                value={code.text}
+                error={code.error}
+                edited={code.edited || storedLook !== undefined}
+                onChange={onCodeChange}
+                onReset={() => {
+                  code.reset();
+                  onLook(undefined);
+                }}
               />
             </div>
-          </div>
-        )}
-        {shownFace === "code" && (
-          <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
-            <ChartCodeEditor
-              value={code.text}
-              error={code.error}
-              edited={code.edited || storedLook !== undefined}
-              onChange={onCodeChange}
-              onReset={() => {
-                code.reset();
-                onLook(undefined);
-              }}
-            />
-          </div>
-        )}
-        {shownFace === "chart" && view.kind === "loading" && (
-          <p className="p-3 text-xs text-fg-muted">Running the query…</p>
-        )}
-        {shownFace === "chart" && view.kind === "empty" && <p className="p-3 text-xs text-fg-muted">{view.message}</p>}
-        {shownFace === "chart" && view.kind === "error" && (
-          <p role="alert" className="p-3 text-xs text-danger">
-            {view.message}
-          </p>
-        )}
-        {shownFace === "chart" && view.kind === "result" && missingShelves && !viewing && (
-          <ChartTypePicker result={view.result} onShape={onShape} />
-        )}
-        {shownFace === "chart" && view.kind === "result" && missingShelves && viewing && (
-          <p className="p-3 text-xs text-fg-muted">This chart is not ready to view.</p>
-        )}
-        {shownFace === "chart" && view.kind === "result" && !missingShelves && built === null && (
-          <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
-        )}
+          )}
+          {shownFace === "chart" && view.kind === "loading" && (
+            <p className="p-3 text-xs text-fg-muted">Running the query…</p>
+          )}
+          {shownFace === "chart" && view.kind === "empty" && (
+            <p className="p-3 text-xs text-fg-muted">{view.message}</p>
+          )}
+          {shownFace === "chart" && view.kind === "error" && (
+            <p role="alert" className="p-3 text-xs text-danger">
+              {view.message}
+            </p>
+          )}
+          {shownFace === "chart" && view.kind === "result" && missingShelves && viewing && (
+            <p className="p-3 text-xs text-fg-muted">This chart is not ready to view.</p>
+          )}
+          {shownFace === "chart" && view.kind === "result" && !missingShelves && built === null && (
+            <p className="p-3 text-xs text-fg-muted">Those columns do not have numbers to chart.</p>
+          )}
+        </div>
       </div>
       {!viewing && (
         <ResizeHandle
@@ -1110,43 +1119,53 @@ function AddContentMenu({
 
 function ChartTypePicker({
   result,
+  typeId,
+  variationId,
   onShape,
 }: {
   readonly result: { fields: string[]; rows: Record<string, unknown>[] };
+  readonly typeId: string | null;
+  readonly variationId: string | null;
   readonly onShape: (
     patch: Pick<SavedChartConfig, "chartType" | "typeId" | "variationId" | "selection" | "xAxis" | "yAxis">,
   ) => void;
 }) {
-  const [typeId, setTypeId] = useState<string | null>(null);
-  const type = typeId === null ? null : echartType(typeId);
-  const chooseVariation = (variationId: string) => {
+  const [browsing, setBrowsing] = useState<string | null>(null);
+  const shownTypeId = browsing ?? typeId;
+  const type = shownTypeId === null ? null : echartType(shownTypeId);
+  const chooseVariation = (nextVariationId: string) => {
     if (type === null) return;
+    if (type.id === typeId && nextVariationId === variationId) {
+      setBrowsing(null);
+      return;
+    }
     const columns = classifyColumns(result.fields, result.rows);
-    const picked = defaultSelection(type.id, variationId, columns);
+    const picked = defaultSelection(type.id, nextVariationId, columns);
     const selection: Record<string, string[]> = {};
     for (const [slot, names] of Object.entries(picked)) selection[slot] = [...names];
     const axes = axesFromSelection(picked);
     onShape({
       chartType: type.id,
       typeId: type.id,
-      variationId,
+      variationId: nextVariationId,
       selection,
       xAxis: axes.xAxis,
       yAxis: axes.yAxis,
     });
+    setBrowsing(null);
   };
   return (
     <div className="flex flex-col gap-2 p-3">
       <fieldset aria-label="Chart types" className="m-0 flex flex-wrap gap-2 border-0 p-0">
         {ECHART_TYPES.map((item) => {
-          const pressed = typeId === item.id;
+          const pressed = shownTypeId === item.id;
           return (
             <button
               key={item.id}
               type="button"
               aria-pressed={pressed}
               aria-label={`Use ${item.label} chart`}
-              onClick={() => setTypeId(item.id)}
+              onClick={() => setBrowsing(item.id)}
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-medium",
                 pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
@@ -1159,17 +1178,24 @@ function ChartTypePicker({
       </fieldset>
       {type !== null && (
         <fieldset aria-label="Chart variations" className="m-0 flex flex-wrap gap-2 border-0 p-0">
-          {type.variations.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-label={`Use ${type.label} ${item.label} chart`}
-              onClick={() => chooseVariation(item.id)}
-              className="rounded-lg bg-brand-tint/15 px-2.5 py-1 text-xs font-medium text-brand"
-            >
-              {item.label}
-            </button>
-          ))}
+          {type.variations.map((item) => {
+            const pressed = type.id === typeId && item.id === variationId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={pressed}
+                aria-label={`Use ${type.label} ${item.label} chart`}
+                onClick={() => chooseVariation(item.id)}
+                className={cn(
+                  "rounded-lg px-2.5 py-1 text-xs font-medium",
+                  pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
+                )}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </fieldset>
       )}
     </div>
