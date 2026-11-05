@@ -139,6 +139,15 @@ describe("POST /api/db/saved-join", () => {
     );
     expect(write.status).toBe(400);
     expect((await parseResponseJSON<{ error: string }>(write)).error).toContain("has to be a read");
+
+    const redis = await POST(
+      request({
+        sql: "SELECT * FROM saved.keys",
+        saved: [{ name: "keys", query: "FLUSHALL", connection: { ...connection, type: "redis" } }],
+      }) as never,
+    );
+    expect(redis.status).toBe(400);
+    expect((await parseResponseJSON<{ error: string }>(redis)).error).toContain("has to be a read");
     expect(mockGetOrCreateProvider).not.toHaveBeenCalled();
   });
 

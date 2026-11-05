@@ -1,4 +1,4 @@
-import { statementRefusal } from "@/lib/db/destructive-commands";
+import { isDestructiveNonSqlQuery, statementRefusal } from "@/lib/db/destructive-commands";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { countCodeStatements } from "@/lib/sql/statement-splitter";
 import { hasLoneCarriageReturnInLineComment, hasUnterminatedSpan } from "@/lib/sql/spans";
@@ -10,13 +10,19 @@ import type { DatabaseType } from "@/lib/types";
  *
  * The outer statement is DuckDB. The saved query stays in its own database's language
  * and runs there first, so it has to be one read: a join must not be a way to run a
- * write that the editor would have asked about.
+ * write that the editor would have asked about. There is no confirmation on this path,
+ * so a non-SQL command the editor would stop for is refused here instead.
  */
+const READ_REQUIRED =
+  "A saved query in a join has to be a read. The join runs it on its own database before the DuckDB statement.";
+
 export function sourceReadRefusal(type: DatabaseType, query: string): string | null {
   const refused = statementRefusal(query, type);
   if (refused !== undefined) return refused;
 
-  if (!readsSqlText(type)) return null;
+  if (!readsSqlText(type)) {
+    return isDestructiveNonSqlQuery(query, type) ? READ_REQUIRED : null;
+  }
 
   const grammar = resolveSqlGrammar(type);
   if (
@@ -26,8 +32,6 @@ export function sourceReadRefusal(type: DatabaseType, query: string): string | n
   ) {
     return "A saved query in a join has to be one statement.";
   }
-  if (!isReadOnlySql(query)) {
-    return "A saved query in a join has to be a read. The join runs it on its own database before the DuckDB statement.";
-  }
+  if (!isReadOnlySql(query)) return READ_REQUIRED;
   return null;
 }

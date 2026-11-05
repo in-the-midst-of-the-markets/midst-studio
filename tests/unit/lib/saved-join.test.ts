@@ -105,8 +105,14 @@ describe("savedJoinCatalog", () => {
 describe("sourceReadRefusal", () => {
   test("allows one read and refuses a write, a script, and an oversize console", () => {
     expect(sourceReadRefusal("postgres", "SELECT 1")).toBeNull();
-    expect(sourceReadRefusal("mongodb", "db.orders.find()")).toBeNull();
+    expect(sourceReadRefusal("mongodb", '{"collection":"orders","operation":"find"}')).toBeNull();
+    expect(sourceReadRefusal("redis", "GET user:1")).toBeNull();
     expect(sourceReadRefusal("postgres", "DELETE FROM orders")).toContain("has to be a read");
+    expect(sourceReadRefusal("redis", "FLUSHALL")).toContain("has to be a read");
+    expect(sourceReadRefusal("mongodb", '{"collection":"orders","operation":"deleteMany","filter":{}}')).toContain(
+      "has to be a read",
+    );
+    expect(sourceReadRefusal("mongodb", "db.orders.deleteMany({})")).toContain("has to be a read");
     expect(sourceReadRefusal("postgres", "SELECT 1; SELECT 2")).toContain("one statement");
     expect(sourceReadRefusal("postgres", "SELECT 'oops")).toContain("one statement");
     expect(sourceReadRefusal("postgres", "SELECT 1 -- x\r; DELETE FROM t")).toContain("one statement");
@@ -470,6 +476,27 @@ describe("runSavedJoin", () => {
     const names = Array.from({ length: SAVED_JOIN_MAX_TABLES + 1 }, (_, index) => `t${index}`);
     await expect(run(`SELECT * FROM ${names.map((name) => `saved.${name}`).join(", ")}`)).rejects.toThrow(
       `${SAVED_JOIN_MAX_TABLES}`,
+    );
+  });
+
+  test("runs an ordinary function and refuses one that reads the server's settings", async () => {
+    const lowered = await runSavedJoin({
+      sql: "SELECT lower(name) AS name FROM saved.orders ORDER BY name",
+      saved: [source("orders")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ orders }),
+    });
+    expect(lowered.rows.map((row) => row.name)).toEqual(["ada", "grace"]);
+
+    const hidden = (sql: string) =>
+      runSavedJoin({ sql, saved: [source("orders")], page, signal, limits, runSource: sheets({ orders }) });
+    await expect(hidden("SELECT current_setting('temp_directory') FROM saved.orders")).rejects.toThrow(
+      "server's settings",
+    );
+    await expect(hidden("SELECT lower(current_setting('secret_directory')) FROM saved.orders")).rejects.toThrow(
+      "server's settings",
     );
   });
 
