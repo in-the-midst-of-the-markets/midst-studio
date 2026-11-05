@@ -13,6 +13,12 @@ import { useReadGeneration } from "@/hooks/use-read-generation";
 import { useToast } from "@/hooks/use-toast";
 import { storage } from "@/lib/storage";
 import { logger } from "@/lib/logger";
+import {
+  CROSS_DB_JOINS_ID,
+  crossDbJoinsConnection,
+  crossDbJoinsSchema,
+  isCrossDbJoins,
+} from "@/lib/saved-join/connection";
 import { startManagedListRefresh } from "@/lib/connection-refresh";
 import {
   connectionAllowed,
@@ -181,7 +187,9 @@ export function useConnectionManager(storageReady = false) {
   const visibleConnections = useMemo(() => connectionsUnderPolicy(connections, policy), [connections, policy]);
   /** Null rather than a connection the server refuses, whichever path made it active. */
   const visibleActive =
-    activeConnection !== null && connectionAllowed(activeConnection, policy) ? activeConnection : null;
+    activeConnection !== null && (isCrossDbJoins(activeConnection) || connectionAllowed(activeConnection, policy))
+      ? activeConnection
+      : null;
   const [schema, setSchema] = useState<readonly DetailedObject[]>([]);
   /**
    * The container the session resolves a bare name in, as the inventory reported it, so the
@@ -253,6 +261,20 @@ export function useConnectionManager(storageReady = false) {
   */
   const readSchema = useCallback(
     async (conn: DatabaseConnection, chosenCatalog?: string) => {
+      // The saved-query list is the schema. Nothing is asked of a database, and a previous
+      // connection's catalog does not stay on screen as this one's.
+      if (isCrossDbJoins(conn)) {
+        const isCurrent = reads.begin();
+        heldIdRef.current = null;
+        if (isCurrent()) {
+          setSchema(crossDbJoinsSchema(storage.getSavedQueries()));
+          setDefaultContainer(undefined);
+          setCatalogState(null);
+          setSchemaError(null);
+          setIsLoadingSchema(false);
+        }
+        return;
+      }
       /** Whether this read is still the one on screen. Every write below asks first. */
       const isCurrent = reads.begin();
       heldIdRef.current = null;
@@ -685,7 +707,7 @@ export function useConnectionManager(storageReady = false) {
             if (merged) {
               setConnections(merged);
               setActiveConnection((prev) =>
-                prev !== null && connectionAllowed(prev, currentPolicy)
+                prev !== null && (isCrossDbJoins(prev) || connectionAllowed(prev, currentPolicy))
                   ? prev
                   : (connectionsUnderPolicy(merged, currentPolicy)[0] ?? null),
               );
@@ -818,8 +840,12 @@ export function useConnectionManager(storageReady = false) {
           variant: "destructive",
         });
       }
-      if (selectable.length === 0) return;
       const savedId = storage.getActiveConnectionId();
+      if (savedId === CROSS_DB_JOINS_ID) {
+        setActiveConnection(crossDbJoinsConnection());
+        return;
+      }
+      if (selectable.length === 0) return;
       const saved = savedId ? selectable.find((c: DatabaseConnection) => c.id === savedId) : null;
       setActiveConnection(saved ?? selectable[0]);
     };

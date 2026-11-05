@@ -1,5 +1,6 @@
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
 import type { DatabaseConnection, SavedQuery } from "@/lib/types";
+import { CROSS_DB_JOINS_ID } from "./connection";
 
 /**
  * One saved query as the join route receives it.
@@ -33,6 +34,8 @@ export function savedJoinCatalog(
     // The join names the ID, not the display name. A query saved before IDs existed
     // cannot be a table until it is saved again.
     if (query.tableId === undefined || savedQueryTableIdError(query.tableId) !== null) continue;
+    // A query saved while this connection was selected has no database to read.
+    if (query.connectionId === CROSS_DB_JOINS_ID) continue;
     const connection = connections.find((item) => item.id === query.connectionId);
     if (!connection) {
       entries.push({ name: query.tableId, query: query.query });

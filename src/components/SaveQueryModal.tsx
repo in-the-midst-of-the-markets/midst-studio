@@ -99,8 +99,8 @@ export function SaveQueryModal({ isOpen, onClose, onSave, defaultQuery, takenTab
             <p id="query-id-hint" className={idProblem ? "text-xs text-danger" : "text-xs text-fg-muted"}>
               {idProblem ??
                 (tableId === ""
-                  ? "Letters, numbers, and underscores. A join uses it as saved.<id>."
-                  : `Use it in a join as saved.${tableId}.`)}
+                  ? "Letters, numbers, and underscores. Cross_DB_Joins lists it as a table."
+                  : `Use it on Cross_DB_Joins as ${tableId}.`)}
             </p>
           </div>
           <div className="grid gap-2">

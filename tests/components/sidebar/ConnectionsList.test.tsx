@@ -63,6 +63,7 @@ import { render, fireEvent, cleanup } from "@testing-library/react";
 import React from "react";
 
 import { ConnectionsList } from "@/components/sidebar/ConnectionsList";
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import {
   mockPostgresConnection,
   mockMySQLConnection,
@@ -89,6 +90,28 @@ describe("ConnectionsList", () => {
     );
     fireEvent.click(view.getByRole("button", { name: "Duplicate connection" }));
     expect(onDuplicateConnection).toHaveBeenCalledWith(mockPostgresConnection);
+  });
+
+  test("Cross_DB_Joins stays first and offers no delete, edit, or drag", () => {
+    const join = crossDbJoinsConnection();
+    const view = render(
+      <ConnectionsList
+        connections={[mockPostgresConnection, join]}
+        activeConnection={join}
+        onSelectConnection={mock(() => {})}
+        onDeleteConnection={mock(() => {})}
+        onEditConnection={mock(() => {})}
+        onDuplicateConnection={mock(() => {})}
+        onToggleFavoriteConnection={mock(() => {})}
+        connectionOrder={[join.id, mockPostgresConnection.id]}
+        onReorderConnections={mock(() => {})}
+      />,
+    );
+    const names = view.getAllByText(/Cross_DB_Joins|Test PostgreSQL/).map((node) => node.textContent);
+    expect(names[0]).toBe("Cross_DB_Joins");
+    expect(view.getAllByRole("button", { name: "Delete connection" })).toHaveLength(1);
+    expect(view.queryByRole("button", { name: "Edit connection" })).toBeTruthy();
+    expect(view.queryByTestId(`drag-handle-${join.id}`)).toBeNull();
   });
   const defaultOnSelect = mock(() => {});
   const defaultOnDelete = mock(() => {});

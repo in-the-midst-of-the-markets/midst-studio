@@ -25,6 +25,7 @@ mock.module("@/components/QuerySafetyDialog", () => ({
 }));
 
 import { useQueryExecution } from "@/hooks/use-query-execution";
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import { onSessionEnded } from "@/lib/config/base-path";
 import { oxiaRefusal } from "@/lib/db/providers/keyvalue/oxia/guard";
 import { milvusRefusal } from "@/lib/db/providers/vector/milvus/guard";
@@ -46,6 +47,8 @@ const CANCEL_NOT_CONFIRMED_TEXT =
 // =============================================================================
 // Test Data
 // =============================================================================
+const crossDb = crossDbJoinsConnection();
+
 const mockConnection: DatabaseConnection = {
   id: "qe-pg-1",
   name: "Test PostgreSQL",
@@ -6488,16 +6491,16 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
       },
     ]);
     const listed = spyOn(storage, "getConnections").mockReturnValue([mockConnection]);
-    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ activeConnection: crossDb })));
 
     await act(async () => {
-      await result.current.executeQuery("SELECT * FROM saved.monthly_active_users");
+      await result.current.executeQuery("SELECT * FROM monthly_active_users");
     });
 
     const joinCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/api/db/saved-join"));
     expect(joinCall).toBeDefined();
     const body = JSON.parse(joinCall![1]!.body as string);
-    expect(body.sql).toBe("SELECT * FROM saved.monthly_active_users");
+    expect(body.sql).toBe("SELECT * FROM monthly_active_users");
     expect(body.saved).toEqual([
       expect.objectContaining({
         name: "monthly_active_users",
@@ -6528,7 +6531,9 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
       },
     ]);
     const listed = spyOn(storage, "getConnections").mockReturnValue([]);
-    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ connections: [mockConnection] })));
+    const { result } = renderHook(() =>
+      useQueryExecution(createDefaultParams({ activeConnection: crossDb, connections: [mockConnection] })),
+    );
 
     await act(async () => {
       await result.current.executeQuery("SELECT * FROM saved.orders");
@@ -6556,9 +6561,23 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/query"))).toBe(true);
   });
 
+  test("a saved. name on another connection stays on that connection's route", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/query": { ok: true, json: mockQueryResult },
+    });
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM saved.orders");
+    });
+
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/saved-join"))).toBe(false);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/query"))).toBe(true);
+  });
+
   test("explain of a saved join is refused before anything is sent", async () => {
     const fetchMock = mockGlobalFetch({});
-    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ activeConnection: crossDb })));
 
     await act(async () => {
       await result.current.executeQuery("SELECT * FROM saved.orders", undefined, true);
@@ -6570,7 +6589,9 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
 
   test("a saved join is refused while a transaction is open", async () => {
     const fetchMock = mockGlobalFetch({});
-    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ transactionActive: true })));
+    const { result } = renderHook(() =>
+      useQueryExecution(createDefaultParams({ activeConnection: crossDb, transactionActive: true })),
+    );
 
     await act(async () => {
       await result.current.executeQuery("SELECT * FROM saved.orders");
@@ -6585,7 +6606,9 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
       "/api/db/saved-join": { ok: true, json: mockQueryResult },
     });
     isDangerousQueryMock.mockClear();
-    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ playgroundMode: true })));
+    const { result } = renderHook(() =>
+      useQueryExecution(createDefaultParams({ activeConnection: crossDb, playgroundMode: true })),
+    );
 
     await act(async () => {
       await result.current.executeQuery("DELETE FROM saved.orders");

@@ -24,9 +24,11 @@ import type { QueryEventRequest } from "@/lib/query-events/route-events";
 /**
  * POST /api/db/saved-join
  *
- * The statement is DuckDB. Each `saved.<id>` table is a saved query, run first on the
- * connection it was saved from, under that connection's own limits. Only the finished rows
- * are loaded into a private in-memory DuckDB, which then runs the statement.
+ * The statement is DuckDB. Each table is a saved query, named by its ID (`orders`, or
+ * `saved.orders` for a statement written that way), run first on the connection it was saved
+ * from, under that connection's own limits. Only the finished rows are loaded into a private
+ * in-memory DuckDB, which then runs the statement. The editor reaches this route when
+ * Cross_DB_Joins is the selected connection.
  */
 export async function POST(req: NextRequest) {
   const guard = await guardRoute({ route: "POST /api/db/saved-join", bucket: "query", request: req });

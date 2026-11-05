@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal } from "lucide-react";
 import { DatabaseConnection } from "@/lib/types";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { applyConnectionOrder } from "@/lib/connection-order";
 import { buildConnectionSections, type ConnectionSection } from "@/lib/connection-groups";
 import type { ConnectionGroup } from "@/lib/storage/types";
@@ -152,7 +153,9 @@ export const ConnectionsList = React.memo(function ConnectionsList({
   onOpenNotes,
   notesConnectionId = null,
 }: ConnectionsListProps) {
-  const ordered = applyConnectionOrder(connections, connectionOrder ?? []);
+  const pinned = connections.filter((connection) => isCrossDbJoins(connection));
+  const listed = connections.filter((connection) => !isCrossDbJoins(connection));
+  const ordered = applyConnectionOrder(listed, connectionOrder ?? []);
   const reorderable = onReorderConnections !== undefined;
   const groups = connectionGroups ?? [];
   const sections = buildConnectionSections(ordered, groups, favoriteConnectionIds ?? new Set());
@@ -276,11 +279,21 @@ export const ConnectionsList = React.memo(function ConnectionsList({
 
   return (
     <>
-      {onSearchMarketplace && (connections.length > 0 || emptyMessage === null) && (
+      {onSearchMarketplace && (listed.length > 0 || emptyMessage === null) && (
         <div className="px-2 mb-3">
           <SearchMarketplaceButton onClick={onSearchMarketplace} fullWidth />
         </div>
       )}
+      {pinned.map((connection) => (
+        <div key={connection.id} className="mb-4">
+          <ConnectionItem
+            connection={connection}
+            isActive={activeConnection?.id === connection.id}
+            onSelect={onSelectConnection}
+            onDelete={onDeleteConnection}
+          />
+        </div>
+      ))}
       {accessUnavailable && (
         <output className="mx-2 mb-4 block rounded-lg border border-border/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
           {ACCESS_UNAVAILABLE_MESSAGE}
@@ -302,7 +315,7 @@ export const ConnectionsList = React.memo(function ConnectionsList({
 
           {!(section.kind === "group" && section.collapsed) && (
             <div className="space-y-0.5">
-              {section.kind === "connections" && connections.length === 0
+              {section.kind === "connections" && listed.length === 0
                 ? emptyMessage !== null && (
                     <div className="px-3 py-6 text-center border border-dashed border-border/50 rounded-lg mx-2">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{emptyMessage}</p>

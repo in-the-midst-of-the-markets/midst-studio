@@ -5,6 +5,7 @@ import { useCallback, useState, useEffect, useRef } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import type { ProviderCapabilities, ProviderLabels } from "@/lib/db/types";
 import { logger } from "@/lib/logger";
+import { CROSS_DB_JOINS_CAPABILITIES, isCrossDbJoins } from "@/lib/saved-join/connection";
 import { buildConnectionPayload, connectionResolutionKey } from "./use-connection-payload";
 
 export interface ProviderMetadata {
@@ -90,7 +91,7 @@ export function useProviderMetadata(connection: DatabaseConnection | null): Prov
   }
 
   useEffect(() => {
-    if (!connection || readKey === null) {
+    if (!connection || readKey === null || isCrossDbJoins(connection)) {
       lastReadKey.current = null;
       return;
     }
@@ -166,6 +167,9 @@ export function useProviderMetadata(connection: DatabaseConnection | null): Prov
   // describe and nothing can have failed, and answering null during render costs no
   // extra pass. The state itself is still cleared at request time (see above) so a
   // previous connection's capabilities can never stand in for the one being fetched.
+  if (connection !== null && isCrossDbJoins(connection)) {
+    return { metadata: { capabilities: CROSS_DB_JOINS_CAPABILITIES }, isLoading: false, error: null, retry };
+  }
   const noConnection = connection === null;
   return {
     metadata: noConnection ? null : metadataState,

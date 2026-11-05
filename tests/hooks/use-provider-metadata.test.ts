@@ -9,6 +9,7 @@ import { mockGlobalFetch, restoreGlobalFetch } from "../helpers/mock-fetch";
 
 import { useProviderMetadata } from "@/hooks/use-provider-metadata";
 import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import type { DatabaseConnection } from "@/lib/types";
 
 function makeConnection(overrides: Partial<DatabaseConnection> = {}): DatabaseConnection {
@@ -72,6 +73,19 @@ describe("useProviderMetadata", () => {
 
     expect(result.current.metadata).toBeNull();
     expect(result.current.isLoading).toBe(false);
+  });
+
+  test("Cross_DB_Joins is DuckDB on the page and never asks the server what it can do", () => {
+    const fetchMock = mockGlobalFetch({});
+    const { result } = renderHook(() => useProviderMetadata(crossDbJoinsConnection()));
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBeNull();
+    expect(result.current.metadata?.capabilities.queryLanguage).toBe("sql");
+    expect(result.current.metadata?.capabilities.supportsExplain).toBe(false);
+    expect(result.current.metadata?.capabilities.supportsTransactions).toBe(false);
+    expect(result.current.metadata?.capabilities.objectKinds?.[0]?.labelPlural).toBe("Saved queries");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   test("fetches metadata on connection change", async () => {
