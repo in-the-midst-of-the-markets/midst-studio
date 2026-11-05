@@ -136,16 +136,17 @@ export function AssistConnectors({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-6"
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-6">
+      <button
+        type="button"
+        aria-label="Dismiss connectors"
+        className="absolute inset-0 bg-black/50"
+        onClick={onClose}
+      />
+      <dialog
+        open
         aria-label="Connectors"
-        className="mt-16 flex w-full max-w-md flex-col gap-3 rounded-xl border border-hairline bg-raised p-4 text-fg"
-        onClick={(event) => event.stopPropagation()}
+        className="relative m-0 mt-16 flex w-full max-w-md flex-col gap-3 rounded-xl border border-hairline bg-raised p-4 text-fg"
       >
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold">Connectors</h2>
@@ -197,7 +198,7 @@ export function AssistConnectors({ onClose }: { onClose: () => void }) {
             onSave={(gatewayKey) => update({ gatewayKey })}
           />
         )}
-      </div>
+      </dialog>
     </div>
   );
 }
