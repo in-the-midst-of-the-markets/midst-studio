@@ -559,6 +559,7 @@ mock.module("@/components/ui/resizable", () => {
 // The dynamic import resolves against the mock registry instead.
 
 const { default: Studio } = await import("@/components/Studio");
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import type { DatabaseConnection } from "@/lib/types";
 import type { DatabaseObject } from "@/lib/db/types";
 import type { TreeRowActionHandlers } from "@/components/object-tree/row-actions";
@@ -958,6 +959,54 @@ describe("Studio", () => {
     const onSave = capturedSaveQueryModalProps.onSave as (name: string, desc: string, tags: string[]) => void;
     act(() => onSave("Noop", "", []));
     expect(mockStorageSaveQuery).not.toHaveBeenCalled();
+  });
+
+  test("Cross_DB_Joins is listed first, its tables are saved-query IDs, and a query cannot be saved on it", async () => {
+    mockStorageGetSavedQueries.mockReturnValue([
+      { tableId: "orders", connectionId: "c1", query: "SELECT 1" },
+      { tableId: "not a name", connectionId: "c1" },
+      { tableId: "joined", connectionId: "cross-db-joins" },
+    ]);
+    connMgrOverride = { activeConnection: crossDbJoinsConnection(), connections: [pgConn] };
+    render(<Studio />);
+
+    const connections = capturedSidebarProps.connections as { id: string; name: string; type: string }[];
+    expect(connections.map((connection) => connection.id)).toEqual(["cross-db-joins", "c1"]);
+    expect(connections[0]).toMatchObject({ name: "Cross_DB_Joins", type: "duckdb" });
+
+    const source = capturedSidebarProps.objectSource as (
+      connection: unknown,
+      request: { route: string; kind?: string },
+    ) => Promise<unknown>;
+    let listed: unknown;
+    await act(async () => {
+      listed = await source(null, { route: "list", kind: "table" });
+      expect(await source(null, { route: "list", kind: "view" })).toEqual([]);
+      expect(await source(null, { route: "counts" })).toEqual({});
+      expect(await source(null, { route: "containers" })).toEqual([]);
+      expect(await source(null, { route: "describe" })).toEqual({ columns: [], indexes: [] });
+    });
+    expect(listed).toEqual([{ name: "orders", kind: "table", path: ["orders"] }]);
+
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      name: string,
+      desc: string,
+      tags: string[],
+      tableId: string,
+    ) => boolean;
+    let saved: boolean | undefined;
+    act(() => {
+      saved = onSave("Join", "", [], "joined");
+    });
+    expect(saved).toBe(false);
+    expect(mockStorageSaveQuery).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Save it from its database", variant: "destructive" }),
+    );
+
+    act(() => (capturedSidebarProps.onDeleteConnection as (id: string) => void)("cross-db-joins"));
+    expect(mockStorageDeleteConnection).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("Delete connection?");
   });
 
   /**

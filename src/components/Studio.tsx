@@ -5,7 +5,7 @@ import type { CsvDelimiter } from "@/lib/export/csv";
 import { appFetch } from "@/lib/config/base-path";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Sidebar, ConnectionsList } from "@/components/sidebar";
-import { type TreeRowActionHandlers } from "@/components/object-tree";
+import { type ObjectSource, type TreeRowActionHandlers } from "@/components/object-tree";
 import { objectPathLabel, objectPathQuery } from "@/lib/db/object-path";
 import { QueryEditor, QueryEditorRef } from "@/components/QueryEditor";
 import type { ShortcutsDialogRef } from "@/components/ShortcutsDialog";
@@ -49,6 +49,7 @@ import { downloadText } from "@/lib/export/download";
 import { writeToClipboard } from "@/components/copy-button";
 import { newLocalId } from "@/lib/ids";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
+import { crossDbJoinsObjectAnswer, isCrossDbJoins, withCrossDbJoins } from "@/lib/saved-join/connection";
 import { buildConnectionPayload, catalogField, resolveAgentRunConnectionId } from "@/hooks/use-connection-payload";
 import { isMobileViewport, useIsMobile } from "@/hooks/use-mobile";
 import { useAgentCapability } from "@/hooks/use-agent-capability";
@@ -826,6 +827,14 @@ export default function Studio() {
   // of use, the save, rather than captured from the tab on every keystroke.
   const handleSaveQuery = useStableCallback((name: string, description: string, tags: string[], tableId: string) => {
     if (!conn.activeConnection) return false;
+    if (isCrossDbJoins(conn.activeConnection)) {
+      toast({
+        title: "Save it from its database",
+        description: "Cross_DB_Joins joins queries that were saved from the databases they read.",
+        variant: "destructive",
+      });
+      return false;
+    }
     const idError = savedQueryTableIdError(tableId);
     if (idError !== null) {
       toast({ title: "ID needs a change", description: idError, variant: "destructive" });
@@ -1284,11 +1293,19 @@ export default function Studio() {
     [handleGenerateSelect, handleGenerateCount, openSourceTab, runRowAction, isAdmin, openMaintenance, openCreateTable],
   );
 
+  const listedConnections = useMemo(() => withCrossDbJoins(conn.connections), [conn.connections]);
+  const crossDbObjectSource = useCallback<ObjectSource>(
+    async (_connection, request) => crossDbJoinsObjectAnswer(storage.getSavedQueries(), request),
+    [],
+  );
+
   const requestDeleteConnection = useCallback((id: string) => {
+    if (isCrossDbJoins({ id })) return;
     setPendingDeleteConnectionId(id);
   }, []);
 
   const handleDeleteConnection = (id: string) => {
+    if (isCrossDbJoins({ id })) return;
     // Clean up the server-side provider cache and close connections and tunnels, best effort. The connection is sent as
     // every route is sent one, a connection of the user's own as its record: without governance the server removes only
     // the providers that record's own key names, and refuses a bare id outside the seed namespace (docs/API_DOCS.md, the
@@ -1416,7 +1433,7 @@ export default function Studio() {
           <>
             <ResizablePanel id="studio-sidebar" defaultSize="22" minSize="15" maxSize="35">
               <Sidebar
-                connections={conn.connections}
+                connections={listedConnections}
                 activeConnection={conn.activeConnection}
                 onSelectConnection={conn.setActiveConnection}
                 onDeleteConnection={requestDeleteConnection}
@@ -1441,6 +1458,7 @@ export default function Studio() {
                 objectScanDeferred={conn.objectScanDeferred || billedComputeHold}
                 deferredForBilledCompute={billedComputeHold && !conn.objectScanDeferred}
                 onLoadObjects={conn.loadObjects}
+                objectSource={isCrossDbJoins(conn.activeConnection) ? crossDbObjectSource : undefined}
                 objectRefreshToken={objectRefreshToken}
                 connectionPulse={connectionPulse}
                 schema={conn.schema}
@@ -1563,7 +1581,7 @@ export default function Studio() {
                     </div>
                   </div>
                   <ConnectionsList
-                    connections={conn.connections}
+                    connections={listedConnections}
                     activeConnection={conn.activeConnection}
                     onSelectConnection={(c) => {
                       conn.setActiveConnection(c);

@@ -130,6 +130,12 @@ function collectCteNames(node: unknown, names: Set<string>): void {
 /** Scalar functions that read this process's DuckDB configuration, which names directories on the server. */
 const SERVER_STATE_FUNCTIONS = new Set(["current_setting"]);
 
+/**
+ * Schemas a saved join accepts. An unqualified name and `main` are the table the editor
+ * writes. `saved` remains the name a statement used before the connection existed.
+ */
+const JOIN_TABLE_SCHEMAS = new Set(["", "main", "saved"]);
+
 function collectTables(node: unknown, tables: string[], ctes: Set<string>): void {
   if (Array.isArray(node)) {
     for (const entry of node) collectTables(entry, tables, ctes);
@@ -137,7 +143,7 @@ function collectTables(node: unknown, tables: string[], ctes: Set<string>): void
   }
   if (!isRecord(node)) return;
   if (node.type === "TABLE_FUNCTION" || node.type === "SHOW_REF") {
-    throw new SavedJoinError("A saved join can only read saved queries. Name each one as saved.<id>.");
+    throw new SavedJoinError("A saved join can only read saved queries by their ID.");
   }
   if (
     node.type === "FUNCTION" &&
@@ -151,23 +157,17 @@ function collectTables(node: unknown, tables: string[], ctes: Set<string>): void
     const table = typeof node.table_name === "string" ? node.table_name : "";
     const catalog = typeof node.catalog_name === "string" ? node.catalog_name : "";
     if (catalog !== "" || node.at_clause != null) {
-      throw new SavedJoinError("A saved join can only read saved queries. Name each one as saved.<id>.");
+      throw new SavedJoinError("A saved join can only read saved queries by their ID.");
     }
-    if (schema === "") {
-      if (!ctes.has(table.toLowerCase())) {
-        throw new SavedJoinError(
-          `Name the saved query as saved.${table === "" ? "<id>" : table}. The join reads saved queries, then runs this DuckDB statement.`,
-        );
-      }
-    } else if (schema.toLowerCase() !== "saved") {
-      throw new SavedJoinError(
-        `A saved join can only read the saved schema. "${schema}.${table}" is not a saved query.`,
-      );
-    } else if (table === "") {
-      throw new SavedJoinError("A saved join needs the saved query's ID after saved.");
-    } else {
-      tables.push(table);
+    const schemaKey = schema.toLowerCase();
+    if (!JOIN_TABLE_SCHEMAS.has(schemaKey)) {
+      throw new SavedJoinError(`A saved join can only read saved queries. "${schema}.${table}" is not one.`);
     }
+    if (table === "") throw new SavedJoinError("A saved join needs the saved query's ID.");
+    // A common-table expression is not a saved query. A qualified name is, even when a
+    // common-table expression uses the same spelling.
+    const isCte = schemaKey === "" && ctes.has(table.toLowerCase());
+    if (!isCte) tables.push(table);
   }
   for (const value of Object.values(node)) collectTables(value, tables, ctes);
 }
@@ -212,10 +212,17 @@ async function parseJoin(client: DuckDBClient, sql: string): Promise<ParsedJoin>
   collectCteNames(statements[0].node, ctes);
   const tables: string[] = [];
   collectTables(statements[0].node, tables, ctes);
-  const unique = [...new Set(tables)];
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const table of tables) {
+    const key = table.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(table);
+  }
   if (unique.length === 0) {
     throw new SavedJoinError(
-      "Name at least one saved query, as saved.<id>. The join runs that query first, then this DuckDB statement.",
+      "Name at least one saved query by its ID. The join runs that query first, then this DuckDB statement.",
     );
   }
   if (unique.length > SAVED_JOIN_MAX_TABLES) {
@@ -254,14 +261,19 @@ async function loadTable(client: DuckDBClient, table: string, sheet: SavedJoinTa
   }
   const types = sheet.fields.map((field) => columnType(sheet.rows.map((row) => row[field])));
   const columns = sheet.fields.map((field, index) => `${quoteIdent(field)} ${types[index]}`).join(", ");
-  await client.run(`CREATE TABLE ${quoteIdent("saved")}.${quoteIdent(table)} (${columns})`);
+  // DuckDB's default schema is `main`, which is where an unqualified name looks. The view
+  // keeps `saved.<id>` working for a statement written that way. The view names `main`
+  // explicitly: `SELECT * FROM orders` inside `saved.orders` would bind the view to itself.
+  const name = `${quoteIdent("main")}.${quoteIdent(table)}`;
+  await client.run(`CREATE TABLE ${name} (${columns})`);
   const placeholders = sheet.fields.map(() => "?").join(", ");
-  const insert = `INSERT INTO ${quoteIdent("saved")}.${quoteIdent(table)} VALUES (${placeholders})`;
+  const insert = `INSERT INTO ${name} VALUES (${placeholders})`;
   for (const row of sheet.rows) {
     const values = sheet.fields.map((field, index) => bindValue(row[field], types[index] ?? "VARCHAR"));
     // oxlint-disable-next-line no-await-in-loop -- one connection inserts one row at a time.
     await client.run(insert, values);
   }
+  await client.run(`CREATE VIEW ${quoteIdent("saved")}.${quoteIdent(table)} AS SELECT * FROM ${name}`);
 }
 
 function pageOf(

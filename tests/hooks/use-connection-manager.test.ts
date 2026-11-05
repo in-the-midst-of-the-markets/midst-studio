@@ -12,6 +12,7 @@ import {
   managedRefreshIntervalMs,
 } from "@/lib/connection-refresh";
 import { useConnectionManager } from "@/hooks/use-connection-manager";
+import { CROSS_DB_JOINS_ID, crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import { SEED_CONFIG_UNREADABLE_REASON, type ManagedConnectionPayload } from "@/hooks/use-connection-payload";
 import { useTabManager } from "@/hooks/use-tab-manager";
 import { logger } from "@/lib/logger";
@@ -196,6 +197,73 @@ describe("useConnectionManager", () => {
 
     expect(result.current.connections[0].id).toBe("conn-1");
     expect(result.current.connections[0].name).toBe("Test DB");
+  });
+
+  test("restores Cross_DB_Joins without writing it into the saved connection list", async () => {
+    storage.setActiveConnectionId(CROSS_DB_JOINS_ID);
+    const fetchMock = mockGlobalFetch({
+      "/api/connections/managed": { ok: true, json: { connections: [] } },
+    });
+
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await waitFor(() => {
+      expect(result.current.activeConnection?.id).toBe(CROSS_DB_JOINS_ID);
+    });
+    expect(result.current.activeConnection?.name).toBe("Cross_DB_Joins");
+    expect(storage.getConnections()).toEqual([]);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/"))).toBe(false);
+  });
+
+  test("Cross_DB_Joins stays selected when custom connections are off", async () => {
+    mockGlobalFetch({
+      "/api/connections/policy": { ok: true, json: { customConnections: false } },
+      "/api/connections/managed": { ok: true, json: { connections: [] } },
+    });
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await waitFor(() => {
+      expect(result.current.customConnections).toBe(false);
+    });
+    act(() => {
+      result.current.setActiveConnection(crossDbJoinsConnection());
+    });
+    expect(result.current.activeConnection?.id).toBe(CROSS_DB_JOINS_ID);
+  });
+
+  test("Cross_DB_Joins lists saved-query IDs and does not open a database", async () => {
+    storage.saveQuery({
+      id: "q1",
+      name: "Orders",
+      tableId: "orders",
+      query: "SELECT 1",
+      connectionType: "postgres",
+      connectionId: "conn-1",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    storage.saveQuery({
+      id: "q2",
+      name: "Draft",
+      query: "SELECT 2",
+      connectionType: "postgres",
+      connectionId: "conn-1",
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    const fetchMock = mockGlobalFetch({});
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await act(async () => {
+      await result.current.fetchSchema(crossDbJoinsConnection());
+    });
+
+    expect(result.current.schema.map((object) => [object.name, object.path, object.columns])).toEqual([
+      ["orders", ["orders"], []],
+    ]);
+    expect(result.current.schemaError).toBeNull();
+    expect(result.current.isLoadingSchema).toBe(false);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/"))).toBe(false);
   });
 
   // ── Active Connection from Persisted ID ───────────────────────────────────

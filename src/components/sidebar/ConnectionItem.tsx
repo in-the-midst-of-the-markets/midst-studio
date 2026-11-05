@@ -1,5 +1,6 @@
 import React from "react";
 import { DatabaseConnection, ENVIRONMENT_LABELS } from "@/lib/types";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { Lock, Trash2, Pencil, Copy, Star, GripVertical, FolderInput, Check, StickyNote } from "lucide-react";
 import { getDBIcon } from "@/lib/db-ui-config";
 import {
@@ -73,6 +74,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
   onOpenNotes,
   notesOpen = false,
 }: ConnectionItemProps) {
+  const keptByApp = isCrossDbJoins(conn);
   return (
     <div
       // A real `<button>` cannot wrap the edit/duplicate/delete buttons below (nested
@@ -111,7 +113,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
         }
       }}
     >
-      {draggable && (
+      {draggable && !keptByApp && (
         <span
           data-testid={`drag-handle-${conn.id}`}
           className="cursor-grab active:cursor-grabbing text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
@@ -139,7 +141,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
           <span className="truncate min-w-[4ch] block font-medium text-xs" title={conn.name}>
             {conn.name}
           </span>
-          {onOpenNotes && (
+          {onOpenNotes && !keptByApp && (
             <button
               type="button"
               aria-pressed={notesOpen}
@@ -172,7 +174,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
         </div>
       </div>
       <div className="flex items-center gap-0.5">
-        {onToggleFavorite && (
+        {onToggleFavorite && !keptByApp && (
           <button
             className={cn(
               "p-1 rounded transition-opacity hover:bg-warning/10 hover:text-warning",
@@ -192,7 +194,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
           </button>
         )}
         {conn.readOnly === true && <ReadOnlyMarker compact />}
-        {onMoveToGroup && (
+        {onMoveToGroup && !keptByApp && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
@@ -234,7 +236,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
             <Lock strokeWidth={1.5} className="w-3 h-3" />
           </div>
         )}
-        {!conn.managed && onEdit && (
+        {!conn.managed && !keptByApp && onEdit && (
           <button
             className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-tint/20 hover:text-brand"
             aria-label="Edit connection"
@@ -247,7 +249,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
             <Pencil strokeWidth={1.5} className="w-3 h-3" />
           </button>
         )}
-        {!conn.managed && onDuplicate && (
+        {!conn.managed && !keptByApp && onDuplicate && (
           <button
             className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-tint/20 hover:text-brand"
             aria-label="Duplicate connection"
@@ -260,7 +262,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
             <Copy strokeWidth={1.5} className="w-3 h-3" />
           </button>
         )}
-        {!conn.managed && (
+        {!conn.managed && !keptByApp && (
           <button
             className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-danger-tint/20 hover:text-danger"
             aria-label="Delete connection"

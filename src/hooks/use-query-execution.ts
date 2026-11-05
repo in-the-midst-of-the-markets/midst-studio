@@ -27,7 +27,7 @@ import { sandboxRefusal } from "@/lib/editor/sandbox-refusal";
 import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
-import { mentionsSavedSchema } from "@/lib/saved-join/mentions";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { buildConnectionPayload } from "./use-connection-payload";
 import { transactionGone } from "./use-transaction-control";
 
@@ -424,9 +424,9 @@ export function useQueryExecution({
         return false;
       }
 
-      // `saved.<name>` is a saved query, and the statement around it is DuckDB. It does not run on
-      // the active connection, so that connection's refusal, safety dialog and transaction do not apply.
-      const savedJoin = typeof queryToExecute === "string" && mentionsSavedSchema(queryToExecute);
+      // Cross_DB_Joins is the DuckDB statement over saved queries. It does not run on a database
+      // the user added, so that connection's refusal, safety dialog and transaction do not apply.
+      const savedJoin = isCrossDbJoins(activeConnection);
       if (savedJoin && transactionActive) {
         toast({
           title: "Finish the transaction",

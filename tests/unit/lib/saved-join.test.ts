@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
 import { readSavedJoinBody } from "@/lib/saved-join/body";
-import { mentionsSavedSchema } from "@/lib/saved-join/mentions";
+import { CROSS_DB_JOINS_ID } from "@/lib/saved-join/connection";
 import {
   SAVED_JOIN_MAX_SQL_CHARS,
   SAVED_JOIN_MAX_TABLES,
@@ -56,22 +56,6 @@ const people: SavedJoinTable = {
   ],
 };
 
-describe("mentionsSavedSchema", () => {
-  test("sees a saved schema and ignores the word inside comments, strings, and other names", () => {
-    expect(mentionsSavedSchema("SELECT * FROM saved.orders")).toBe(true);
-    expect(mentionsSavedSchema("SELECT * FROM SAVED . orders")).toBe(true);
-    expect(mentionsSavedSchema("SELECT 'saved.orders'")).toBe(false);
-    expect(mentionsSavedSchema('SELECT "saved.orders"')).toBe(false);
-    expect(mentionsSavedSchema("SELECT 'saved.''orders' , 1")).toBe(false);
-    expect(mentionsSavedSchema("-- saved.orders\nSELECT 1")).toBe(false);
-    expect(mentionsSavedSchema("/* saved.orders */ SELECT 1")).toBe(false);
-    expect(mentionsSavedSchema("SELECT * FROM unsaved.orders")).toBe(false);
-    expect(mentionsSavedSchema("SELECT saved")).toBe(false);
-    expect(mentionsSavedSchema("SELECT 'saved.orders")).toBe(false);
-    expect(mentionsSavedSchema("/* saved.orders")).toBe(false);
-  });
-});
-
 describe("savedJoinCatalog", () => {
   const query = (tableId: string | undefined, connectionId?: string): SavedQuery => ({
     id: "q1",
@@ -98,6 +82,12 @@ describe("savedJoinCatalog", () => {
   test("keeps a query whose connection is gone, and drops an ID that is not a table name", () => {
     expect(savedJoinCatalog([query("orders", "missing"), query("my query")], [])).toEqual([
       { name: "orders", query: "SELECT 1" },
+    ]);
+  });
+
+  test("drops a query that was saved on Cross_DB_Joins", () => {
+    expect(savedJoinCatalog([query("orders", "c1"), query("joined", CROSS_DB_JOINS_ID)], [inline])).toEqual([
+      { name: "orders", query: "SELECT 1", connection: inline },
     ]);
   });
 });
@@ -452,6 +442,36 @@ describe("runSavedJoin", () => {
     expect(union.rowCount).toBe(2);
   });
 
+  test("an unqualified name is the saved query, and main. names the same table", async () => {
+    const joined = await runSavedJoin({
+      sql: "SELECT orders.name, people.email FROM orders JOIN people ON orders.id = people.id ORDER BY orders.name",
+      saved: [source("orders"), source("people")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ orders, people }),
+    });
+    expect(joined.rows).toEqual([
+      { name: "Ada", email: "ada@example.com" },
+      { name: "Grace", email: "grace@example.com" },
+    ]);
+
+    let reads = 0;
+    const once = await runSavedJoin({
+      sql: "SELECT a.name FROM orders a JOIN main.Orders b ON a.id = b.id ORDER BY a.name",
+      saved: [source("orders")],
+      page,
+      signal,
+      limits,
+      runSource: async () => {
+        reads += 1;
+        return orders;
+      },
+    });
+    expect(reads).toBe(1);
+    expect(once.rows.map((row) => row.name)).toEqual(["Ada", "Grace"]);
+  });
+
   test("refuses anything that is not one DuckDB select of saved-query IDs", async () => {
     const run = (sql: string) =>
       runSavedJoin({
@@ -465,12 +485,12 @@ describe("runSavedJoin", () => {
     await expect(run("SELECT * FROM saved.orders; SELECT * FROM saved.people")).rejects.toThrow("one DuckDB statement");
     await expect(run("INSERT INTO saved.orders VALUES (1, 'a')")).rejects.toThrow("one DuckDB SELECT");
     await expect(run("SELECT FROM")).rejects.toThrow("syntax error");
-    await expect(run("SELECT * FROM read_csv_auto('x.csv')")).rejects.toThrow("saved.<id>");
-    await expect(run("SHOW TABLES")).rejects.toThrow("saved.<id>");
-    await expect(run("SELECT * FROM public.orders")).rejects.toThrow("saved schema");
-    await expect(run("SELECT * FROM mem.saved.orders")).rejects.toThrow("saved.<id>");
-    await expect(run("SELECT * FROM saved.orders AT (VERSION => 1)")).rejects.toThrow("saved.<id>");
-    await expect(run("SELECT * FROM saved.orders JOIN other ON true")).rejects.toThrow("saved.other");
+    await expect(run("SELECT * FROM read_csv_auto('x.csv')")).rejects.toThrow("by their ID");
+    await expect(run("SHOW TABLES")).rejects.toThrow("by their ID");
+    await expect(run("SELECT * FROM public.orders")).rejects.toThrow("not one");
+    await expect(run("SELECT * FROM mem.saved.orders")).rejects.toThrow("by their ID");
+    await expect(run("SELECT * FROM saved.orders AT (VERSION => 1)")).rejects.toThrow("by their ID");
+    await expect(run("SELECT * FROM saved.orders JOIN other ON true")).rejects.toThrow('ID "other"');
     await expect(run('SELECT * FROM saved."a b"')).rejects.toThrow("underscores");
     await expect(run("SELECT 1")).rejects.toThrow("at least one saved query");
     const names = Array.from({ length: SAVED_JOIN_MAX_TABLES + 1 }, (_, index) => `t${index}`);
