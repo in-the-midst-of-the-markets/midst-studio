@@ -46,6 +46,9 @@ export function readSavedJoinBody(body: Record<string, unknown>): SavedJoinBody 
     const idError = savedQueryTableIdError(entry.name);
     if (idError !== null) return idError;
     if (typeof entry.query !== "string") return `Saved query "${entry.name}" needs its query text.`;
+    if (entry.query.length > SAVED_JOIN_MAX_SQL_CHARS) {
+      return `Saved query "${entry.name}" is longer than ${SAVED_JOIN_MAX_SQL_CHARS.toLocaleString("en-US")} characters.`;
+    }
     const connection = readConnection(entry.connection);
     const connectionId =
       typeof entry.connectionId === "string" && entry.connectionId !== "" ? entry.connectionId : undefined;
