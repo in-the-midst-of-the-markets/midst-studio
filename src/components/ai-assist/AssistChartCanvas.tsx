@@ -16,16 +16,22 @@ import {
   TreemapChart,
 } from "echarts/charts";
 import {
+  BrushComponent,
+  CalendarComponent,
+  DataZoomComponent,
   GeoComponent,
   GridComponent,
   LegendComponent,
   RadarComponent,
   TitleComponent,
+  ToolboxComponent,
   TooltipComponent,
   VisualMapComponent,
 } from "echarts/components";
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
+import { CirclePackChart } from "@/components/charts/CirclePackChart";
+import { isCirclePack } from "@/lib/charts/circle-pack";
 import { watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 
 registerECharts([
@@ -48,6 +54,10 @@ registerECharts([
   GeoComponent,
   TitleComponent,
   VisualMapComponent,
+  CalendarComponent,
+  BrushComponent,
+  DataZoomComponent,
+  ToolboxComponent,
   CanvasRenderer,
 ]);
 
@@ -88,6 +98,23 @@ export function AssistChartCanvas({
     optionRef.current = option;
     chartRef.current?.setOption(option, true);
   }, [option]);
+
+  if (isCirclePack(option)) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div data-testid="assist-chart" className="min-h-0 w-full flex-1">
+          <CirclePackChart option={option} />
+        </div>
+        {notes.length > 0 && (
+          <ul className="px-3 py-1 text-xs text-fg-muted">
+            {notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">

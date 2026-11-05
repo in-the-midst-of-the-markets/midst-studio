@@ -25,6 +25,8 @@ export interface ChartVariation {
   readonly require?: readonly string[];
   /** Shelves this variation adds. */
   readonly slots?: readonly ChartSlot[];
+  /** Shelves that replace the type's shelves. The variation's columns are a different shape. */
+  readonly shelves?: readonly ChartSlot[];
 }
 
 export interface EChartType {
@@ -70,6 +72,7 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "stacked-area", label: "Stacked area" },
       { id: "dashed", label: "Dashed" },
       { id: "marker", label: "Marker" },
+      { id: "sparkline", label: "Sparklines" },
     ],
   },
   {
@@ -121,6 +124,15 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "ripple", label: "Ripple" },
       { id: "connected", label: "Connected" },
       { id: "diamond", label: "Diamond" },
+      {
+        id: "pack",
+        label: "Circle packing",
+        shelves: [
+          one("name", "Name", "dimension"),
+          one("size", "Size", "metric"),
+          one("parent", "Parent", "dimension", false),
+        ],
+      },
     ],
   },
   {
@@ -155,6 +167,20 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "volume", label: "Volume", slots: [volumeSlot] },
       { id: "average-volume", label: "Average and volume", slots: [volumeSlot] },
       { id: "themed", label: "Themed" },
+      {
+        id: "brush",
+        label: "Brush",
+        slots: [
+          {
+            id: "volume",
+            label: "Volume",
+            kind: "metric",
+            many: false,
+            required: false,
+            preset: 0,
+          },
+        ],
+      },
     ],
   },
   {
@@ -191,6 +217,25 @@ export const ECHART_TYPES: readonly EChartType[] = [
       { id: "pieces", label: "Pieces" },
       { id: "labeled-pieces", label: "Labeled pieces" },
       { id: "diverging", label: "Diverging" },
+      {
+        id: "calendar",
+        label: "Calendar",
+        shelves: [one("date", "Date", "dimension"), one("value", "Value", "metric")],
+      },
+      {
+        id: "correlation",
+        label: "Correlation",
+        shelves: [
+          {
+            id: "metrics",
+            label: "Metrics",
+            kind: "metric",
+            many: true,
+            required: true,
+            preset: "all",
+          },
+        ],
+      },
     ],
   },
   {
@@ -231,7 +276,14 @@ export const ECHART_TYPES: readonly EChartType[] = [
     label: "Sankey",
     slots: [
       one("source", "Source", "dimension"),
-      one("target", "Target", "dimension"),
+      {
+        id: "target",
+        label: "Target",
+        kind: "dimension",
+        many: true,
+        required: true,
+        preset: 1,
+      },
       one("value", "Value", "metric"),
     ],
     variations: [
@@ -277,6 +329,7 @@ export function slotsFor(typeId: string, variationId: string): readonly ChartSlo
   const type = echartType(typeId);
   const variation = type?.variations.find((item) => item.id === variationId);
   if (type === null || variation === undefined) return null;
+  if (variation.shelves !== undefined) return variation.shelves;
   const required = new Set(variation.require ?? []);
   const base = type.slots.map((slot) => {
     if (!required.has(slot.id) || slot.required) return slot;

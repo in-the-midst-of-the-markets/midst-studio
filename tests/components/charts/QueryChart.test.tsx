@@ -65,6 +65,10 @@ mock.module("echarts/components", () => ({
   GeoComponent: {},
   TitleComponent: {},
   VisualMapComponent: {},
+  CalendarComponent: {},
+  BrushComponent: {},
+  DataZoomComponent: {},
+  ToolboxComponent: {},
 }));
 
 mock.module("echarts/renderers", () => ({
@@ -73,6 +77,7 @@ mock.module("echarts/renderers", () => ({
 
 setupChartCodeMonacoMock();
 
+import { CirclePackChart } from "@/components/charts/CirclePackChart";
 import { QueryChart } from "@/components/charts/QueryChart";
 
 afterEach(() => {
@@ -122,6 +127,47 @@ describe("QueryChart", () => {
     expect(registered).toContain("midst-world");
     view.unmount();
     expect(charts.at(-1)?.disposed).toBe(true);
+  });
+
+  test("circle packing under scatter draws D3 circles", () => {
+    const view = render(
+      React.createElement(QueryChart, {
+        result: resultOf(
+          ["region", "total", "group"],
+          [
+            { region: "east", total: 50, group: "Americas" },
+            { region: "west", total: 1, group: "Americas" },
+          ],
+        ),
+      }),
+    );
+    fireEvent.click(view.getByRole("button", { name: "Scatter" }));
+    expect(view.getByRole("button", { name: "Circle packing" })).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Circle packing" }));
+    fireEvent.click(within(view.getByRole("group", { name: "Parent" })).getByRole("button", { name: "group" }));
+    const packed = view.getByTestId("circle-pack");
+    expect(packed.querySelectorAll("circle").length).toBeGreaterThan(1);
+    expect(Array.from(packed.querySelectorAll("text")).some((node) => node.textContent === "east")).toBe(true);
+    expect(view.queryByTestId("query-chart")).toBe(packed.parentElement);
+    view.unmount();
+    const bare = render(React.createElement(CirclePackChart, { option: { libredb: "circle-pack", data: [{}] } }));
+    expect(bare.container.querySelector("svg")).toBeNull();
+    const drawn = render(
+      React.createElement(CirclePackChart, {
+        option: {
+          libredb: "circle-pack",
+          ink: "#111",
+          data: [
+            { name: "Group", value: 11, x: 50, y: 50, r: 40, depth: 1, leaf: false, color: "#333" },
+            { name: "Big", value: 10, x: 50, y: 50, r: 20, depth: 2, leaf: true, color: "#111" },
+            { name: "Tiny", value: 1, x: 10, y: 10, r: 2, depth: 2, leaf: true, color: "#222" },
+          ],
+        },
+      }),
+    );
+    expect(drawn.getByText("Big")).toBeTruthy();
+    expect(drawn.queryByText("Tiny")).toBeNull();
+    expect(drawn.getByText("Big").getAttribute("fill")).toBe("#111");
   });
 
   test("a waterfall draws the change as a floating bar", () => {

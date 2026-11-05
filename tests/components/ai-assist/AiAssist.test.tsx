@@ -46,6 +46,10 @@ mock.module("echarts/components", () => ({
   GeoComponent: {},
   TitleComponent: {},
   VisualMapComponent: {},
+  CalendarComponent: {},
+  BrushComponent: {},
+  DataZoomComponent: {},
+  ToolboxComponent: {},
 }));
 mock.module("echarts/renderers", () => ({ CanvasRenderer: {} }));
 mock.module("@/components/QueryEditor", () => ({

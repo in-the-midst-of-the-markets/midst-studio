@@ -7,6 +7,7 @@
 
 import { applyChartSettings, type ChartSettings } from "@/lib/charts/chart-settings";
 import { applyChartTitle } from "@/lib/charts/chart-title";
+import { CIRCLE_PACK, layoutCircles, type PackTree } from "@/lib/charts/circle-pack";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 import { echartType, type SlotSelection } from "@/lib/charts/echarts-catalog";
 
@@ -242,10 +243,59 @@ function categorySeries(input: ChartBuildInput, mark: "line" | "bar"): BuiltChar
     capNote(shownGroups.length, grouped.length - shownGroups.length, "categories"),
     capNote(shownMetrics.length, metrics.length - shownMetrics.length, "metrics"),
   ].filter((note): note is string => note !== null);
+  if (mark === "line" && variation === "sparkline") {
+    return { option: sparklineOption(theme, categories, series), notes };
+  }
   return { option: frame(theme, { ...categoryAxes(categories, theme, horizontal), series }), notes };
 }
 
+/** One quiet line per metric. Axes and the legend stay hidden so the line is the whole chart. */
+function sparklineOption(
+  theme: ChartTheme,
+  categories: readonly string[],
+  series: readonly { readonly name?: string; readonly data?: unknown }[],
+): Record<string, unknown> {
+  const count = Math.max(series.length, 1);
+  const band = 100 / count;
+  return frame(theme, {
+    legend: { show: false },
+    axisPointer: { link: [{ xAxisIndex: "all" }] },
+    grid: series.map((_, index) => ({
+      left: 8,
+      right: 8,
+      top: `${index * band + 1}%`,
+      height: `${Math.max(band - 2, 1)}%`,
+    })),
+    xAxis: series.map((_, index) => ({
+      type: "category" as const,
+      gridIndex: index,
+      data: [...categories],
+      boundaryGap: false,
+      show: false,
+      splitLine: { show: false },
+    })),
+    yAxis: series.map((_, index) => ({
+      type: "value" as const,
+      gridIndex: index,
+      show: false,
+      scale: true,
+      splitLine: { show: false },
+    })),
+    series: series.map((item, index) => ({
+      name: item.name,
+      type: "line" as const,
+      data: item.data,
+      xAxisIndex: index,
+      yAxisIndex: index,
+      showSymbol: false,
+      smooth: true,
+      areaStyle: { opacity: 0.2 },
+    })),
+  });
+}
+
 function scatter(input: ChartBuildInput): BuiltChart | null {
+  if (input.variationId === "pack") return circlePack(input);
   const x = first(input.selection, "x");
   const y = first(input.selection, "y");
   if (x === null || y === null) return null;
@@ -384,9 +434,9 @@ function candlestick(input: ChartBuildInput): BuiltChart | null {
   if (time === null || open === null || close === null || low === null || high === null) return null;
   const theme = themeOf(input);
   const variation = input.variationId;
-  const volumeColumn =
-    variation === "volume" || variation === "average-volume" ? first(input.selection, "volume") : null;
-  if ((variation === "volume" || variation === "average-volume") && volumeColumn === null) return null;
+  const volumeRequired = variation === "volume" || variation === "average-volume";
+  const volumeColumn = volumeRequired || variation === "brush" ? first(input.selection, "volume") : null;
+  if (volumeRequired && volumeColumn === null) return null;
   const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
   const groupedAll = groupsOf(input.rows, time, input.mask);
   const grouped = groupedAll.slice(0, categoryCap);
@@ -433,11 +483,80 @@ function candlestick(input: ChartBuildInput): BuiltChart | null {
       smooth: true,
     });
   }
-  if (volumeColumn !== null) series.push({ name: "Volume", type: "bar", data: volumes });
+  if (volumeColumn !== null)
+    series.push({
+      name: "Volume",
+      type: "bar",
+      data: volumes,
+      ...(variation === "brush" ? { xAxisIndex: 1, yAxisIndex: 1 } : {}),
+    });
   const omitted = groupedAll.length - grouped.length;
+  const notes = omitted > 0 ? [`Showing the first ${grouped.length} of ${groupedAll.length} categories.`] : [];
+  if (variation === "brush") {
+    const withVolume = volumeColumn !== null;
+    return {
+      option: frame(theme, {
+        brush: { xAxisIndex: "all", brushLink: "all", outOfBrush: { colorAlpha: 0.1 } },
+        toolbox: { right: 8, top: 8, feature: { brush: { type: ["lineX", "clear"] } } },
+        dataZoom: [
+          { type: "inside", xAxisIndex: withVolume ? [0, 1] : [0], start: 0, end: 100 },
+          { type: "slider", xAxisIndex: withVolume ? [0, 1] : [0], bottom: 8, start: 0, end: 100 },
+        ],
+        grid: withVolume
+          ? [
+              { left: 48, right: 16, top: 32, height: "52%" },
+              { left: 48, right: 16, top: "72%", height: "12%" },
+            ]
+          : [{ left: 48, right: 16, top: 32, bottom: 56 }],
+        xAxis: [
+          {
+            type: "category",
+            data: categories,
+            boundaryGap: false,
+            axisLine: { onZero: false, lineStyle: { color: theme.axis } },
+            axisLabel: { color: theme.axis },
+            splitLine: { show: false },
+            min: "dataMin",
+            max: "dataMax",
+          },
+          ...(withVolume
+            ? [
+                {
+                  type: "category",
+                  gridIndex: 1,
+                  data: categories,
+                  boundaryGap: false,
+                  axisLabel: { show: false },
+                  axisTick: { show: false },
+                  splitLine: { show: false },
+                  min: "dataMin",
+                  max: "dataMax",
+                },
+              ]
+            : []),
+        ],
+        yAxis: [
+          { scale: true, axisLabel: { color: theme.axis }, splitLine: { lineStyle: { color: theme.grid } } },
+          ...(withVolume
+            ? [
+                {
+                  scale: true,
+                  gridIndex: 1,
+                  axisLabel: { show: false },
+                  axisTick: { show: false },
+                  splitLine: { show: false },
+                },
+              ]
+            : []),
+        ],
+        series: [{ ...series[0], name: "Price" }, ...series.slice(1)],
+      }),
+      notes,
+    };
+  }
   return {
     option: frame(theme, { ...categoryAxes(categories, theme, false), series }),
-    notes: omitted > 0 ? [`Showing the first ${grouped.length} of ${groupedAll.length} categories.`] : [],
+    notes,
   };
 }
 
@@ -562,6 +681,8 @@ function heatScale(theme: ChartTheme, flat: readonly number[], variation: string
 }
 
 function heatmap(input: ChartBuildInput): BuiltChart | null {
+  if (input.variationId === "calendar") return calendarHeatmap(input);
+  if (input.variationId === "correlation") return correlationHeatmap(input);
   const xColumn = first(input.selection, "x");
   const yColumn = first(input.selection, "y");
   const valueColumn = first(input.selection, "value");
@@ -624,6 +745,212 @@ function heatmap(input: ChartBuildInput): BuiltChart | null {
       ],
     }),
     notes: omitted > 0 ? [`Showing the first ${cap} values on each axis. ${omitted} rows are outside that grid.`] : [],
+  };
+}
+
+/** A calendar day, or null when the cell is not a date. */
+function calendarDay(value: unknown): string | null {
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().slice(0, 10);
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toISOString().slice(0, 10);
+  }
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(trimmed);
+  if (match !== null) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  const parsed = Date.parse(trimmed);
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toISOString().slice(0, 10);
+}
+
+function calendarHeatmap(input: ChartBuildInput): BuiltChart | null {
+  const dateColumn = first(input.selection, "date");
+  const valueColumn = first(input.selection, "value");
+  if (dateColumn === null || valueColumn === null) return null;
+  const theme = themeOf(input);
+  const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
+  const totals = new Map<string, number>();
+  const order: string[] = [];
+  let omitted = 0;
+  for (const row of input.rows) {
+    const day = calendarDay(row[dateColumn]);
+    const value = finite(row[valueColumn]);
+    if (day === null || value === null) continue;
+    if (!totals.has(day) && order.length === categoryCap) {
+      omitted += 1;
+      continue;
+    }
+    if (!totals.has(day)) order.push(day);
+    totals.set(day, (totals.get(day) ?? 0) + value);
+  }
+  if (order.length === 0) return null;
+  const sorted = [...order].sort();
+  const data = order.map((day) => [day, totals.get(day) ?? 0]);
+  return {
+    option: frame(theme, {
+      tooltip: { trigger: "item" },
+      legend: { show: false },
+      visualMap: heatScale(
+        theme,
+        data.map((cell) => Number(cell[1])),
+        "grid",
+      ),
+      calendar: {
+        range: [sorted[0], sorted[sorted.length - 1]],
+        cellSize: ["auto", 16],
+        itemStyle: { color: theme.grid, borderColor: theme.axis, borderWidth: 1 },
+        dayLabel: { color: theme.axis },
+        monthLabel: { color: theme.axis },
+        yearLabel: { color: theme.ink },
+      },
+      series: [{ type: "heatmap", coordinateSystem: "calendar", data }],
+    }),
+    notes: omitted > 0 ? [`Showing the first ${order.length} days. ${omitted} rows are outside that range.`] : [],
+  };
+}
+
+function pearson(xs: readonly number[], ys: readonly number[]): number | null {
+  const count = xs.length;
+  if (count < 2 || ys.length !== count) return null;
+  let sumX = 0;
+  let sumY = 0;
+  for (let index = 0; index < count; index += 1) {
+    sumX += xs[index] ?? 0;
+    sumY += ys[index] ?? 0;
+  }
+  const meanX = sumX / count;
+  const meanY = sumY / count;
+  let numerator = 0;
+  let squareX = 0;
+  let squareY = 0;
+  for (let index = 0; index < count; index += 1) {
+    const dx = (xs[index] ?? 0) - meanX;
+    const dy = (ys[index] ?? 0) - meanY;
+    numerator += dx * dy;
+    squareX += dx * dx;
+    squareY += dy * dy;
+  }
+  if (squareX === 0 || squareY === 0) return null;
+  return numerator / Math.sqrt(squareX * squareY);
+}
+
+function correlationHeatmap(input: ChartBuildInput): BuiltChart | null {
+  const metrics = many(input.selection, "metrics");
+  if (metrics.length < 2) return null;
+  const theme = themeOf(input);
+  const cap = input.heatmapCap ?? HEATMAP_AXIS_CAP;
+  const shown = metrics.slice(0, cap);
+  const columns = shown.map((metric) => input.rows.map((row) => finite(row[metric])));
+  const data: number[][] = [];
+  for (let x = 0; x < shown.length; x += 1) {
+    for (let y = 0; y < shown.length; y += 1) {
+      const left = columns[x] ?? [];
+      const right = columns[y] ?? [];
+      const xs: number[] = [];
+      const ys: number[] = [];
+      const count = Math.min(left.length, right.length);
+      for (let index = 0; index < count; index += 1) {
+        const a = left[index];
+        const b = right[index];
+        if (a === null || a === undefined || b === null || b === undefined) continue;
+        xs.push(a);
+        ys.push(b);
+      }
+      const value = pearson(xs, ys);
+      if (value === null) continue;
+      data.push([x, y, Math.round(value * 1000) / 1000]);
+    }
+  }
+  if (data.length === 0) return null;
+  const high = theme.series[0] ?? theme.ink;
+  const mid = theme.series[1] ?? theme.axis;
+  return {
+    option: frame(theme, {
+      tooltip: { trigger: "item" },
+      grid: { left: 16, right: 16, top: 16, bottom: 16, containLabel: true },
+      xAxis: { type: "category", data: [...shown], axisLabel: { color: theme.axis } },
+      yAxis: { type: "category", data: [...shown], axisLabel: { color: theme.axis } },
+      visualMap: {
+        min: -1,
+        max: 1,
+        calculable: false,
+        inRange: { color: [mid, theme.grid, high] },
+        textStyle: { color: theme.ink },
+      },
+      series: [{ type: "heatmap", data, label: { show: true, color: theme.ink } }],
+    }),
+    notes: shown.length < metrics.length ? [`Showing the first ${shown.length} of ${metrics.length} metrics.`] : [],
+  };
+}
+
+function blankCell(value: unknown): boolean {
+  return value === null || value === undefined || (typeof value === "string" && value.trim() === "");
+}
+
+function circlePack(input: ChartBuildInput): BuiltChart | null {
+  const nameColumn = first(input.selection, "name");
+  const sizeColumn = first(input.selection, "size");
+  if (nameColumn === null || sizeColumn === null) return null;
+  const parentColumn = first(input.selection, "parent");
+  const theme = themeOf(input);
+  const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
+  const leaves = new Map<string, { name: string; parent: string | null; value: number }>();
+  let seen = 0;
+  let omitted = 0;
+  for (const row of input.rows) {
+    const amount = finite(row[sizeColumn]);
+    if (amount === null || amount <= 0) continue;
+    if (seen === categoryCap) {
+      omitted += 1;
+      continue;
+    }
+    seen += 1;
+    const name = chartLabel(row[nameColumn], nameColumn, input.mask);
+    const parentRaw = parentColumn === null ? undefined : row[parentColumn];
+    const parent =
+      parentColumn === null || blankCell(parentRaw) ? null : chartLabel(parentRaw, parentColumn, input.mask);
+    const groupedParent = parent === name ? null : parent;
+    const key = `${groupedParent ?? ""}\0${name}`;
+    const existing = leaves.get(key);
+    if (existing === undefined) leaves.set(key, { name, parent: groupedParent, value: amount });
+    else existing.value += amount;
+  }
+  const shown = [...leaves.values()];
+  if (shown.length === 0) return null;
+  const groups = new Map<string, PackTree>();
+  const roots: PackTree[] = [];
+  for (const leaf of shown) {
+    const node: PackTree = { name: leaf.name, value: leaf.value };
+    if (leaf.parent === null) {
+      roots.push(node);
+      continue;
+    }
+    const group = groups.get(leaf.parent);
+    if (group === undefined) groups.set(leaf.parent, { name: leaf.parent, children: [node] });
+    else group.children?.push(node);
+  }
+  const circles = layoutCircles({ name: "", children: [...groups.values(), ...roots] }, theme.series, theme.grid);
+  if (circles === null) return null;
+  return {
+    option: frame(theme, {
+      libredb: CIRCLE_PACK,
+      ink: theme.ink,
+      legend: { show: false },
+      data: circles,
+    }),
+    notes: omitted > 0 ? [`Showing the first ${seen} circles. ${omitted} rows are not drawn.`] : [],
   };
 }
 
@@ -745,9 +1072,9 @@ function treemap(input: ChartBuildInput): BuiltChart | null {
 
 function sankey(input: ChartBuildInput): BuiltChart | null {
   const source = first(input.selection, "source");
-  const target = first(input.selection, "target");
+  const targets = many(input.selection, "target");
   const valueColumn = first(input.selection, "value");
-  if (source === null || target === null || valueColumn === null) return null;
+  if (source === null || targets.length === 0 || valueColumn === null) return null;
   const theme = themeOf(input);
   const cap = input.nodeCap ?? GRAPH_NODE_CAP;
   const nodes: string[] = [];
@@ -763,17 +1090,21 @@ function sankey(input: ChartBuildInput): BuiltChart | null {
   };
   for (const row of input.rows) {
     const from = chartLabel(row[source], source, input.mask);
-    const to = chartLabel(row[target], target, input.mask);
     const value = finite(row[valueColumn]);
-    if (from === to || value === null || value <= 0) continue;
-    if (!remember(from) || !remember(to)) {
-      omitted += 1;
-      continue;
+    if (value === null || value <= 0) continue;
+    for (const target of targets) {
+      if (blankCell(row[target])) continue;
+      const to = chartLabel(row[target], target, input.mask);
+      if (from === to) continue;
+      if (!remember(from) || !remember(to)) {
+        omitted += 1;
+        continue;
+      }
+      const key = `${from}\0${to}`;
+      const existing = links.get(key);
+      if (existing === undefined) links.set(key, { source: from, target: to, value });
+      else existing.value += value;
     }
-    const key = `${from}\0${to}`;
-    const existing = links.get(key);
-    if (existing === undefined) links.set(key, { source: from, target: to, value });
-    else existing.value += value;
   }
   if (links.size === 0) return null;
   const variation = input.variationId;

@@ -68,6 +68,15 @@ describe("the type list", () => {
       "high",
       "volume",
     ]);
+    expect(slotsFor("scatter", "pack")?.map((slot) => slot.id)).toEqual(["name", "size", "parent"]);
+    expect(slotsFor("scatter", "pack")?.find((slot) => slot.id === "parent")?.required).toBe(false);
+    expect(slotsFor("heatmap", "calendar")?.map((slot) => slot.id)).toEqual(["date", "value"]);
+    expect(slotsFor("heatmap", "correlation")?.map((slot) => slot.id)).toEqual(["metrics"]);
+    expect(slotsFor("sankey", "horizontal")?.find((slot) => slot.id === "target")).toMatchObject({
+      many: true,
+      preset: 1,
+    });
+    expect(defaultSelection("sankey", "horizontal", columns).target).toEqual(["total"]);
     expect(slotsFor("line", "nope")).toBeNull();
     expect(slotsFor("nope", "basic")).toBeNull();
   });

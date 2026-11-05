@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { isCirclePack, layoutCircles } from "@/lib/charts/circle-pack";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 import {
   buildChartOption,
@@ -104,6 +105,23 @@ describe("line and bar", () => {
     expect(flags("smooth-area")?.areaStyle).toEqual({});
     expect(flags("dashed")?.lineStyle).toEqual({ type: "dashed" });
     expect(flags("marker")?.symbolSize).toBe(8);
+  });
+
+  test("a sparkline hides the axes and gives each metric its own band", () => {
+    const chart = draw({
+      typeId: "line",
+      variationId: "sparkline",
+      rows,
+      selection: { category: ["region"], values: ["total", "units"] },
+      categoryCap: 1,
+    });
+    expect(part<{ show: boolean }>(chart, "legend").show).toBe(false);
+    expect(seriesOf(chart)).toHaveLength(2);
+    expect(seriesOf(chart)[0]).toMatchObject({ showSymbol: false, smooth: true, xAxisIndex: 0, yAxisIndex: 0 });
+    expect(seriesOf(chart)[1]?.xAxisIndex).toBe(1);
+    expect(part<{ show: boolean }[]>(chart, "xAxis")[0]?.show).toBe(false);
+    expect(part<{ splitLine: { show: boolean } }[]>(chart, "yAxis")[1]?.splitLine.show).toBe(false);
+    expect(chart?.notes[0]).toContain("categories");
   });
 
   test("a title is title.text and makes room under the legend", () => {
@@ -393,6 +411,20 @@ describe("candlestick, radar and box plot", () => {
       selection,
       theme: emptyTheme,
     });
+    const brush = draw({ typeId: "candlestick", variationId: "brush", rows: rows.slice(0, 2), selection });
+    expect(part<{ brushLink: string }>(brush, "brush").brushLink).toBe("all");
+    expect(part<{ type: string }[]>(brush, "dataZoom")).toHaveLength(2);
+    expect(seriesOf(brush)[0]?.name).toBe("Price");
+    expect(part<unknown[]>(brush, "xAxis")).toHaveLength(1);
+    const brushed = draw({
+      typeId: "candlestick",
+      variationId: "brush",
+      rows: rows.slice(0, 2).map((row) => ({ ...row, volume: 3 })),
+      selection: { ...selection, volume: ["volume"] },
+    });
+    expect(seriesOf(brushed).map((series) => series.type)).toEqual(["candlestick", "bar"]);
+    expect(seriesOf(brushed)[1]?.xAxisIndex).toBe(1);
+    expect(part<unknown[]>(brushed, "xAxis")).toHaveLength(2);
     expect(seriesOf(bare)[0]?.itemStyle).toEqual({
       color: "#fff",
       color0: "#222",
@@ -590,6 +622,96 @@ describe("heatmap, graph and treemap", () => {
       selection: { x: ["x"], y: ["y"], value: ["n"] },
     });
     expect(part<{ inRange: { color: string[] } }>(warm, "visualMap").inRange.color[1]).toBe(theme.series[0]);
+
+    const named = new Date(Date.parse("January 2, 2026")).toISOString().slice(0, 10);
+    const calendar = draw({
+      typeId: "heatmap",
+      variationId: "calendar",
+      rows: [
+        { day: "2026-01-01", n: 2 },
+        { day: "2026-01-01T15:00:00.000Z", n: 3 },
+        { day: new Date("2026-01-04T00:00:00.000Z"), n: 4 },
+        { day: Date.UTC(2026, 0, 5), n: 5 },
+        { day: named, n: 6 },
+        { day: "January 3, 2026", n: 7 },
+        { day: new Date("not-a-date"), n: 1 },
+        { day: "2026-02-31", n: 1 },
+        { day: "nope", n: 1 },
+        { day: "2026-01-06", n: null },
+        { day: null, n: 1 },
+      ],
+      selection: { date: ["day"], value: ["n"] },
+    });
+    expect(seriesOf(calendar)[0]?.coordinateSystem).toBe("calendar");
+    expect(seriesOf(calendar)[0]?.data).toEqual([
+      ["2026-01-01", 5],
+      ["2026-01-04", 4],
+      ["2026-01-05", 5],
+      [named, 6],
+      [new Date(Date.parse("January 3, 2026")).toISOString().slice(0, 10), 7],
+    ]);
+    expect(part<{ range: string[] }>(calendar, "calendar").range).toEqual(["2026-01-01", "2026-01-05"]);
+    expect(draw({ typeId: "heatmap", variationId: "calendar", rows, selection: { date: ["x"] } })).toBeNull();
+    expect(
+      draw({
+        typeId: "heatmap",
+        variationId: "calendar",
+        rows: [{ day: "nope", n: 1 }],
+        selection: { date: ["day"], value: ["n"] },
+      }),
+    ).toBeNull();
+    const capped = draw({
+      typeId: "heatmap",
+      variationId: "calendar",
+      rows: [
+        { day: "2026-01-01", n: 1 },
+        { day: "2026-01-02", n: 1 },
+      ],
+      selection: { date: ["day"], value: ["n"] },
+      categoryCap: 1,
+    });
+    expect(seriesOf(capped)[0]?.data).toEqual([["2026-01-01", 1]]);
+    expect(capped?.notes[0]).toContain("outside that range");
+
+    expect(
+      draw({
+        typeId: "heatmap",
+        variationId: "correlation",
+        rows: [{ a: 1, b: 2 }],
+        selection: { metrics: ["a"] },
+      }),
+    ).toBeNull();
+    const correlated = draw({
+      typeId: "heatmap",
+      variationId: "correlation",
+      rows: [
+        { a: 1, b: 3, c: 1 },
+        { a: 2, b: 2, c: 1 },
+        { a: 3, b: 1, c: null },
+      ],
+      selection: { metrics: ["a", "b", "c"] },
+      heatmapCap: 2,
+      theme: emptyTheme,
+    });
+    expect(seriesOf(correlated)[0]?.data).toEqual([
+      [0, 0, 1],
+      [0, 1, -1],
+      [1, 0, -1],
+      [1, 1, 1],
+    ]);
+    expect(part<{ min: number; max: number }>(correlated, "visualMap")).toMatchObject({ min: -1, max: 1 });
+    expect(correlated?.notes[0]).toContain("metrics");
+    expect(
+      draw({
+        typeId: "heatmap",
+        variationId: "correlation",
+        rows: [
+          { a: 1, b: 4 },
+          { a: 1, b: 4 },
+        ],
+        selection: { metrics: ["a", "b"] },
+      }),
+    ).toBeNull();
   });
 
   test("links two different nodes and can lay them out in a circle", () => {
@@ -821,6 +943,62 @@ describe("waterfall", () => {
   });
 });
 
+describe("circle packing", () => {
+  test("packs named sizes, nests a parent, and skips rows that have no size", () => {
+    expect(layoutCircles({ name: "", children: [{ name: "a", value: 0 }] }, ["#111"], "#eee")).toBeNull();
+    expect(isCirclePack({ libredb: "other", data: [] })).toBe(false);
+    expect(isCirclePack({ libredb: "circle-pack", data: [{ name: 1 }] })).toBe(false);
+    expect(
+      draw({
+        typeId: "scatter",
+        variationId: "pack",
+        rows: [{ name: "a", n: 1 }],
+        selection: { name: ["name"] },
+      }),
+    ).toBeNull();
+    expect(
+      draw({
+        typeId: "scatter",
+        variationId: "pack",
+        rows: [{ name: "a", n: 0 }],
+        selection: { name: ["name"], size: ["n"] },
+      }),
+    ).toBeNull();
+    const chart = draw({
+      typeId: "scatter",
+      variationId: "pack",
+      rows: [
+        { name: "east", n: 4, group: "Americas" },
+        { name: "east", n: 1, group: "Americas" },
+        { name: "south", n: 2, group: "Americas" },
+        { name: "west", n: 2, group: "  " },
+        { name: "solo", n: 3, group: "solo" },
+        { name: "late", n: 9, group: "Americas" },
+      ],
+      selection: { name: ["name"], size: ["n"], parent: ["group"] },
+      categoryCap: 5,
+      mask: (_column, value) => `m:${String(value)}`,
+    });
+    const circles = must(chart).option.data as { name: string; leaf: boolean; r: number; value: number }[];
+    expect(isCirclePack(must(chart).option)).toBe(true);
+    expect(circles.find((circle) => circle.name === "m:east" && circle.leaf)?.value).toBe(5);
+    expect(circles.some((circle) => circle.name === "m:Americas" && !circle.leaf)).toBe(true);
+    expect(circles.some((circle) => circle.leaf && circle.name === "m:west" && circle.value === 2)).toBe(true);
+    expect(circles.every((circle) => circle.r > 0)).toBe(true);
+    expect(chart?.notes[0]).toContain("not drawn");
+    const plain = draw({
+      typeId: "scatter",
+      variationId: "pack",
+      rows: [{ name: "east", n: 4 }],
+      selection: { name: ["name"], size: ["n"] },
+      theme: emptyTheme,
+    });
+    const leaf = (must(plain).option.data as { color: string; leaf: boolean }[])[0];
+    expect(leaf?.leaf).toBe(true);
+    expect(leaf?.color).toBe("#111");
+  });
+});
+
 describe("sankey, funnel and gauge", () => {
   test("sums a repeated link and stands the diagram up", () => {
     const rows = [
@@ -885,6 +1063,29 @@ describe("sankey, funnel and gauge", () => {
       selection: { source: ["source"], target: ["target"], value: ["value"] },
     });
     expect(seriesOf(left)[0]?.nodeAlign).toBe("left");
+    const split = draw({
+      typeId: "sankey",
+      variationId: "horizontal",
+      rows: [
+        { source: "a", email: "opened", web: "clicked", value: 4 },
+        { source: "a", email: "opened", web: "", value: 1 },
+        { source: "a", email: "a", web: "clicked", value: 2 },
+      ],
+      selection: { source: ["source"], target: ["email", "web"], value: ["value"] },
+    });
+    expect(seriesOf(split)[0]?.links).toEqual([
+      { source: "a", target: "opened", value: 5 },
+      { source: "a", target: "clicked", value: 6 },
+    ]);
+    const crowded = draw({
+      typeId: "sankey",
+      variationId: "horizontal",
+      rows: [{ source: "a", email: "opened", web: "clicked", value: 4 }],
+      selection: { source: ["source"], target: ["email", "web"], value: ["value"] },
+      nodeCap: 2,
+    });
+    expect(seriesOf(crowded)[0]?.links).toEqual([{ source: "a", target: "opened", value: 4 }]);
+    expect(crowded?.notes[0]).toContain("not drawn");
   });
 
   test("orders a funnel down and a pyramid up", () => {
