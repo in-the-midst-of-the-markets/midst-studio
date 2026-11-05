@@ -734,6 +734,93 @@ describe("heatmap, graph and treemap", () => {
   });
 });
 
+describe("waterfall", () => {
+  const rows = [
+    { month: "Jan", change: 100 },
+    { month: "Feb", change: 40 },
+    { month: "Mar", change: -30 },
+  ];
+  const selection = { category: ["month"], value: ["change"] };
+
+  test("floats each change on the running total", () => {
+    expect(draw({ typeId: "waterfall", variationId: "change", rows, selection: { value: ["change"] } })).toBeNull();
+    expect(
+      draw({
+        typeId: "waterfall",
+        variationId: "change",
+        rows: [{ month: "Jan", change: null }],
+        selection,
+      }),
+    ).toBeNull();
+    const chart = draw({ typeId: "waterfall", variationId: "change", rows, selection });
+    const series = seriesOf(chart);
+    expect(series.map((item) => item.name)).toEqual(["Base", "Increase", "Decrease"]);
+    expect(series[0]?.data).toEqual([0, 100, 110]);
+    expect(series[1]?.data).toEqual([{ value: 100, signed: 100 }, { value: 40, signed: 40 }, "-"]);
+    expect(series[2]?.data).toEqual(["-", "-", { value: 30, signed: -30 }]);
+    expect(series[0]?.itemStyle).toEqual({ color: "transparent", borderColor: "transparent" });
+    expect(series[1]?.itemStyle).toEqual({ color: theme.series[2] });
+    expect(series[2]?.itemStyle).toEqual({ color: theme.series[7] });
+    expect(part<{ data: string[] }>(chart, "legend").data).toEqual(["Increase", "Decrease"]);
+    expect(part<{ data: string[] }>(chart, "xAxis").data).toEqual(["Jan", "Feb", "Mar"]);
+    const label = series[1]?.label as { show: boolean; formatter: (params: { data?: unknown }) => string };
+    expect(label.show).toBe(false);
+    expect(label.formatter({ data: { value: 40, signed: 40 } })).toBe("+40");
+    expect(label.formatter({ data: { value: 30, signed: -30 } })).toBe("-30");
+    expect(label.formatter({ data: { value: 0, signed: 0 } })).toBe("0");
+    expect(label.formatter({ data: { signed: Number.NaN } })).toBe("");
+    expect(label.formatter({ data: "-" })).toBe("");
+    expect(label.formatter({ data: 5 })).toBe("");
+    expect(label.formatter({})).toBe("");
+    expect(label.formatter({ data: null })).toBe("");
+  });
+
+  test("a balance is the step from the previous level", () => {
+    const chart = draw({
+      typeId: "waterfall",
+      variationId: "balance",
+      rows: [
+        { month: "Jan", change: 100 },
+        { month: "Feb", change: 140 },
+        { month: "Mar", change: 90 },
+      ],
+      selection,
+    });
+    const series = seriesOf(chart);
+    expect(series[0]?.data).toEqual([0, 100, 90]);
+    expect(series[1]?.data).toEqual([{ value: 100, signed: 100 }, { value: 40, signed: 40 }, "-"]);
+    expect(series[2]?.data).toEqual(["-", "-", { value: 50, signed: -50 }]);
+  });
+
+  test("horizontal puts the categories on the value axis's pair, and a total closes from zero", () => {
+    const sideways = draw({ typeId: "waterfall", variationId: "horizontal", rows, selection });
+    expect(part<{ type: string }>(sideways, "xAxis").type).toBe("value");
+    expect(part<{ type: string }>(sideways, "yAxis").type).toBe("category");
+    const label = seriesOf(sideways)[1]?.label as { position: string };
+    expect(label.position).toBe("right");
+    const closed = draw({ typeId: "waterfall", variationId: "total", rows, selection });
+    expect(part<{ data: string[] }>(closed, "xAxis").data).toEqual(["Jan", "Feb", "Mar", "Total"]);
+    const series = seriesOf(closed);
+    expect(series[0]?.data).toEqual([0, 100, 110, 0]);
+    expect(series[1]?.data?.[3]).toEqual({ value: 110, signed: 110 });
+    const down = draw({
+      typeId: "waterfall",
+      variationId: "total",
+      rows: [
+        { month: "Jan", change: 10 },
+        { month: "Feb", change: -40 },
+      ],
+      selection,
+    });
+    const fallen = seriesOf(down);
+    expect(fallen[0]?.data).toEqual([0, -30, -30]);
+    expect(fallen[2]?.data?.[2]).toEqual({ value: 30, signed: -30 });
+    const marked = draw({ typeId: "waterfall", variationId: "labeled", rows, selection, categoryCap: 1 });
+    expect((seriesOf(marked)[1]?.label as { show: boolean }).show).toBe(true);
+    expect(marked?.notes).toEqual(["Showing the first 1 of 3 categories."]);
+  });
+});
+
 describe("sankey, funnel and gauge", () => {
   test("sums a repeated link and stands the diagram up", () => {
     const rows = [

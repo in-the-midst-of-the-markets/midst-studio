@@ -87,6 +87,18 @@ export const ECHART_TYPES: readonly EChartType[] = [
     ],
   },
   {
+    id: "waterfall",
+    label: "Waterfall",
+    slots: [one("category", "Dimension", "dimension"), one("value", "Value", "metric")],
+    variations: [
+      { id: "change", label: "Change" },
+      { id: "balance", label: "Balance" },
+      { id: "horizontal", label: "Horizontal" },
+      { id: "total", label: "With total" },
+      { id: "labeled", label: "Labeled" },
+    ],
+  },
+  {
     id: "pie",
     label: "Pie",
     slots: [one("name", "Dimension", "dimension"), one("value", "Metric", "metric")],

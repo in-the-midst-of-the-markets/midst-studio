@@ -136,6 +136,15 @@ const barControls: readonly ChartControl[] = [
   { id: "gridlines", label: "Gridlines", defaultValue: true, lock: [], apply: showGridlines },
 ];
 
+function showWaterfallLabels(option: Record<string, unknown>, show: boolean): Record<string, unknown> {
+  return mapSeries(option, (series) => (series.name === "Base" ? series : withNested(series, "label", { show })));
+}
+
+const waterfallControls: readonly ChartControl[] = [
+  { id: "gridlines", label: "Gridlines", defaultValue: true, lock: [], apply: showGridlines },
+  { id: "labels", label: "Bar labels", defaultValue: false, lock: ["labeled"], apply: showWaterfallLabels },
+];
+
 const pieControls: readonly ChartControl[] = [
   {
     id: "labels",
@@ -256,6 +265,7 @@ const gaugeControls: readonly ChartControl[] = [
 const CONTROLS: Readonly<Record<string, readonly ChartControl[]>> = {
   line: lineControls,
   bar: barControls,
+  waterfall: waterfallControls,
   pie: pieControls,
   scatter: scatterControls,
   geo: geoControls,
