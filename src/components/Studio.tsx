@@ -1,7 +1,5 @@
 "use client";
 
-import type { CsvDelimiter } from "@/lib/export/csv";
-
 import { appFetch } from "@/lib/config/base-path";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Sidebar, ConnectionsList } from "@/components/sidebar";
@@ -23,7 +21,6 @@ import { AgentRail } from "@/components/agent/AgentRail";
 import { editorChatQuery, IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
 import { DatabaseConnection, type ColumnSchema, SavedQuery } from "@/lib/types";
 import type { DatabaseObject } from "@/lib/db/types";
-import { splitMaskedColumns } from "@/lib/db/masking-exemption";
 import {
   activationRowActionForKind,
   catalogOfPath,
@@ -38,15 +35,6 @@ import { lazyRetry } from "@/lib/lazy";
 import { useStableCallback } from "@/hooks/use-stable-callback";
 import { useReturnFocus } from "@/hooks/use-return-focus";
 import { editorLanguageForTabType, resolveTabType } from "@/lib/editor/tab-language";
-import {
-  buildResultExport,
-  FALLBACK_TABLE_NAME,
-  resultExportFileName,
-  type ResultExportFormat,
-  type ResultExportSource,
-} from "@/lib/export/result-export";
-import { downloadText } from "@/lib/export/download";
-import { writeToClipboard } from "@/components/copy-button";
 import { newLocalId } from "@/lib/ids";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
 import { crossDbJoinsObjectAnswer, isCrossDbJoins, withCrossDbJoins } from "@/lib/saved-join/connection";
@@ -79,8 +67,6 @@ import {
   saveMaskingConfig,
   shouldMask,
   canToggleMasking,
-  detectSensitiveColumnsFromConfig,
-  applyMaskingToRows,
 } from "@/lib/data-masking";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -928,113 +914,6 @@ export default function Studio() {
   );
 
   /**
-   * Write what is on screen to a file.
-   *
-   * `hydrated` is the agent artifact the bottom panel is showing, or null when the
-   * tab's own rows are what the user is looking at. It is passed in rather than read
-   * back off the tab because the two disagree exactly when it matters (B34): a run's
-   * result is hydrated into the grid without touching the tab, so an export that read
-   * `currentTab.result` wrote rows nobody was looking at. That is why the menu used to
-   * be hidden over a hydrated view instead of retargeted.
-   */
-  const buildExportSource = useCallback(
-    (hydrated: AgentArtifactHydration | null): ResultExportSource | null => {
-      const source = hydrated?.result ?? tabMgr.currentTab.result;
-      if (!source) return null;
-      // The columns the engine declared for THIS result. The writers read every row by
-      // these names rather than by whatever keys row 0 happens to carry, so a row with
-      // a different key order — or a document store's row missing a field entirely —
-      // lands in the right column instead of shifting the rest.
-      const fields = source.fields;
-      // The same split the grid makes, from the same function: a column this engine excused must
-      // not arrive starred out in the rows a run is handed, or the grid would draw it open over
-      // values that are already asterisks.
-      const { masked: sensitiveColumns } = splitMaskedColumns(
-        fields,
-        maskingConfig,
-        metadata?.capabilities.maskingExemptColumns,
-      );
-      const rows = effectiveMasking ? applyMaskingToRows(source.rows, fields, sensitiveColumns) : source.rows;
-      return {
-        rows,
-        fields,
-        // A run's rows did not come from this tab, so the SQL forms take the neutral
-        // fallback name: naming the tab's table would attribute them to a table that
-        // never produced them.
-        tabName: hydrated === null ? tabMgr.currentTab.name : FALLBACK_TABLE_NAME,
-        // The statement that fetched the tab's own rows names their table when it reads
-        // exactly one (#1386); a run's rows were fetched by no statement of this tab.
-        query: hydrated === null ? tabMgr.currentTab.resultQuery : undefined,
-        dialect: conn.activeConnection?.type,
-        // The types the engine declared for THIS result, which is what the DDL form
-        // writes when they are there — the only source for a computed column.
-        columnTypes: source.columnTypes,
-      };
-    },
-    [
-      tabMgr.currentTab.result,
-      tabMgr.currentTab.name,
-      tabMgr.currentTab.resultQuery,
-      maskingConfig,
-      effectiveMasking,
-      conn.activeConnection?.type,
-    ],
-  );
-
-  const buildResultFile = useCallback(
-    (format: ResultExportFormat, hydrated: AgentArtifactHydration | null, csvDelimiter?: CsvDelimiter) => {
-      const source = buildExportSource(hydrated);
-      if (source === null) return null;
-      return buildResultExport(format, { ...source, csvDelimiter });
-    },
-    [buildExportSource],
-  );
-
-  const exportResults = useCallback(
-    (format: ResultExportFormat, hydrated: AgentArtifactHydration | null = null, csvDelimiter?: CsvDelimiter) => {
-      const fileName = (extension: string) => resultExportFileName(extension, hydrated?.runId);
-      const file = buildResultFile(format, hydrated, csvDelimiter);
-      if (file === null) return;
-      downloadText(file.content, file.mimeType, fileName(file.extension));
-    },
-    [buildResultFile],
-  );
-
-  /**
-   * The same rows, in the same format, onto the clipboard (#701).
-   *
-   * Two things this shares with the export above, and both are the reason it is built
-   * from the same function rather than beside it: the masking, so the clipboard is not
-   * a way around a masked column, and the rows, so a hydrated run's result is copied
-   * as what is on screen rather than as the tab's own.
-   *
-   * What it does NOT share is the byte-order mark. That is added by `downloadText` for
-   * a spreadsheet reading bytes off disk; a paste carrying it would open with an
-   * invisible character wherever it landed.
-   *
-   * The outcome is reported only once the write has one (B43). `writeToClipboard`
-   * falls back to the editing command where there is no secure context — several
-   * distribution channels serve plain HTTP — and when both routes are gone the user is
-   * told, because the alternative is discovering an empty clipboard mid-paste.
-   */
-  const copyResults = useCallback(
-    (format: ResultExportFormat, hydrated: AgentArtifactHydration | null = null, csvDelimiter?: CsvDelimiter) => {
-      const file = buildResultFile(format, hydrated, csvDelimiter);
-      if (file === null) return;
-      void writeToClipboard(file.content).then((copied) => {
-        if (copied) toast({ title: `Copied ${file.extension.toUpperCase()} to clipboard` });
-        else
-          toast({
-            title: "Could not copy to clipboard",
-            description: "Select the text and copy it yourself, or export the result as a file.",
-            variant: "destructive",
-          });
-      });
-    },
-    [buildResultFile, toast],
-  );
-
-  /**
    * Every tab-opening gesture, and the ONE refusal they share (D82).
    *
    * REFUSED while an object apply is in flight, on the same rule and with the same words as the
@@ -1805,8 +1684,6 @@ export default function Studio() {
                           tabMgr.currentTab.result?.pagination?.hasMore ? queryExec.handleLoadMore : undefined
                         }
                         isLoadingMore={tabMgr.currentTab.isLoadingMore}
-                        onExportResults={exportResults}
-                        onCopyResults={copyResults}
                         agentArtifact={agentArtifact.artifact}
                         onDismissAgentArtifact={agentArtifact.dismiss}
                       />

@@ -173,8 +173,7 @@ mock.module("@/components/results-graph/GraphView", () => ({
 // ---- Now import bun:test, testing-library, and the component ----
 
 import { describe, test, expect, afterEach, beforeAll, spyOn } from "bun:test";
-import { render, fireEvent, cleanup, act, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, fireEvent, cleanup, act } from "@testing-library/react";
 import React from "react";
 
 import { BottomPanel } from "@/components/studio/BottomPanel";
@@ -230,8 +229,6 @@ function createDefaultProps(overrides: Partial<Record<string, unknown>> = {}) {
     onLoadQuery: mock(() => {}),
     onLoadMore: undefined,
     isLoadingMore: false,
-    onExportResults: mock(() => {}),
-    onCopyResults: mock(() => {}),
     ...rest,
   };
 }
@@ -643,67 +640,6 @@ describe("BottomPanel", () => {
       expect(capturedResultsGridProps.resultQuery).toBe("SELECT * FROM orders");
       expect(capturedResultsGridProps.databaseType).toBe("postgres");
     });
-
-    /**
-     * The export dialog and the grid speak about the SAME offer.
-     *
-     * `hasMore` alone is not it. On a 50-row table preview on Cassandra or Elasticsearch
-     * the route answers `hasMore: true` when its probe found a row past the bound, while
-     * those providers declare `supportsResultPagination: false` and the grid offers no
-     * control. Without a page to offer, the menu says the result was cut instead of
-     * telling the user to load rows nothing can load.
-     */
-    test.each([
-      [true, "More rows are still on the server — load them first to include them."],
-      [false, "The result was cut, so the file is not the whole result."],
-    ])("with paging %p the export dialog's shortfall follows the grid's offer", async (supported, shortfall) => {
-      const props = pagedProps({ supportsResultPagination: supported });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const scope = within(document.body as HTMLElement).getByTestId("export-scope");
-
-      expect(capturedResultsGridProps.supportsResultPagination).toBe(supported);
-      expect(scope.textContent).toContain(shortfall);
-      if (!supported) expect(scope.textContent).toContain("Writes the 1 row shown.");
-    });
-
-    test.each([true, false])(
-      "a provider-cut result with paging %p reads as the rows shown, names no load, and counts 3",
-      async (supported) => {
-        const props = pagedProps(
-          { supportsResultPagination: supported },
-          {
-            currentTab: {
-              id: "tab-1",
-              name: "Query 1",
-              query: "SELECT * FROM orders",
-              resultQuery: "SELECT * FROM orders",
-              result: {
-                rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
-                fields: ["id"],
-                rowCount: 3,
-                executionTime: 3,
-                pagination: { limit: 500, offset: 0, hasMore: false, totalReturned: 3, wasLimited: true },
-              },
-              isExecuting: false,
-              type: "sql" as const,
-            },
-          },
-        );
-        const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-        await userEvent.click(getByText("Export"));
-        const body = within(document.body as HTMLElement);
-        const scope = body.getByTestId("export-scope");
-
-        expect(scope.textContent).toContain("Writes the 3 rows shown.");
-        expect(scope.textContent).toContain("The result was cut, so the file is not the whole result.");
-        expect(scope.textContent).not.toContain("Writes all");
-        expect(scope.textContent).not.toContain("load them first");
-        expect(body.getByTestId("export-row-count").textContent).toBe("3");
-      },
-    );
   });
 
   describe("the Graph tab (graph view spec)", () => {
@@ -752,7 +688,7 @@ describe("BottomPanel", () => {
         userRole: "user",
         maskingConfig,
       });
-      const { getByTestId, getByText, queryByTestId } = render(
+      const { getByTestId, getByText, queryByTestId, queryByText } = render(
         <BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />,
       );
       expect(getByTestId("graphview")).not.toBeNull();
@@ -762,8 +698,7 @@ describe("BottomPanel", () => {
       expect(capturedGraphViewProps.maskingEnabled).toBe(true);
       expect(capturedGraphViewProps.userRole).toBe("user");
       expect(capturedGraphViewProps.maskingConfig).toBe(maskingConfig);
-      // The result's own export menu belongs to the grid; the graph has its own.
-      expect(queryByTestId("export-row-count")).toBeNull();
+      expect(queryByText("Export")).toBeNull();
     });
 
     test("a graph mode left over from a graph result shows the grid for a result without one", () => {
@@ -774,7 +709,6 @@ describe("BottomPanel", () => {
       expect(queryByTestId("graphview")).toBeNull();
       expect(getByTestId("resultsgrid")).not.toBeNull();
       expect(getByText("Results").closest("button")?.className).toContain("text-brand");
-      expect(queryByTestId("export-row-count")).not.toBeNull();
     });
   });
 
@@ -847,7 +781,7 @@ describe("BottomPanel", () => {
     expect(queryByTestId("visualexplain")).not.toBeNull();
   });
 
-  test("Export dropdown shows when results exist and mode is results", () => {
+  test("results do not offer an Export button", () => {
     const props = createDefaultProps({
       mode: "results",
       currentTab: {
@@ -860,129 +794,7 @@ describe("BottomPanel", () => {
       },
     });
     const { queryByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(queryByText("Export")).not.toBeNull();
-  });
-
-  // A masked result is exported masked, and the menu says so (#1433). The notice names only the
-  // columns the file builder will actually mask, and SQL INSERT is withheld while there are any.
-  describe("export of a masked result (#1433)", () => {
-    const EMAIL_RESULT = {
-      rows: [{ id: 1, email: "a@b.co" }],
-      fields: ["id", "email"],
-      rowCount: 1,
-      executionTime: 3,
-    };
-    const emailMasking = {
-      enabled: true,
-      patterns: [
-        {
-          id: "p-email",
-          name: "Email",
-          columnPatterns: ["email"],
-          maskType: "email" as const,
-          enabled: true,
-          isBuiltin: true,
-        },
-      ],
-      roleSettings: {
-        admin: { canToggle: true, canReveal: true },
-        user: { canToggle: false, canReveal: false },
-      },
-    };
-    const maskedProps = (overrides: Record<string, unknown>) =>
-      createDefaultProps({
-        mode: "results",
-        currentTab: { result: EMAIL_RESULT },
-        maskingConfig: emailMasking,
-        ...overrides,
-      });
-
-    test("names the masked columns and withholds SQL INSERT in both lists", async () => {
-      const props = maskedProps({ maskingEnabled: true });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-
-      expect(menu.getByTestId("export-masked").textContent).toContain("Masked columns (email)");
-      expect(menu.queryByText("Export as SQL INSERT")).toBeNull();
-      expect(menu.queryByText("Copy as SQL INSERT")).toBeNull();
-      expect(menu.queryByText("Export as CSV")).not.toBeNull();
-      expect(menu.queryByText("Export as DDL (CREATE TABLE)")).not.toBeNull();
-    });
-
-    test("says nothing while masking is off", async () => {
-      const props = maskedProps({ maskingEnabled: false });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-
-      expect(menu.queryByTestId("export-masked")).toBeNull();
-      expect(menu.queryByText("Export as SQL INSERT")).not.toBeNull();
-    });
-
-    test("says nothing when masking is on but no column of the result matches a pattern", async () => {
-      const props = maskedProps({
-        maskingEnabled: true,
-        currentTab: { result: { ...EMAIL_RESULT, rows: [{ id: 1 }], fields: ["id"] } },
-      });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-
-      expect(menu.queryByTestId("export-masked")).toBeNull();
-      expect(menu.queryByText("Copy as SQL INSERT")).not.toBeNull();
-    });
-  });
-
-  // An export writes the rows the grid HOLDS, and the grid holds one page. The count
-  // is on the button because a file of 500 rows off a table of two million is
-  // indistinguishable from a complete answer once it has left the product.
-  test("Export button carries the number of rows the file will contain", () => {
-    const props = createDefaultProps({
-      mode: "results",
-      currentTab: {
-        id: "tab-1",
-        name: "Q",
-        query: "SELECT 1",
-        result: {
-          rows: Array.from({ length: 1234 }, (_, i) => ({ id: i })),
-          fields: ["id"],
-          rowCount: 1234,
-          executionTime: 42,
-        },
-        isExecuting: false,
-        type: "sql" as const,
-      },
-    });
-    const { getByTestId } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(getByTestId("export-row-count").textContent).toBe("1,234");
-  });
-
-  test("Export button counts the loaded rows, not the number the run reported", () => {
-    const props = createDefaultProps({
-      mode: "results",
-      currentTab: {
-        id: "tab-1",
-        name: "Q",
-        query: "SELECT 1",
-        result: {
-          rows: [{ id: 1 }, { id: 2 }],
-          fields: ["id"],
-          // An engine can report a different count than the rows it handed back;
-          // only the rows are written to the file.
-          rowCount: 900,
-          executionTime: 42,
-          pagination: { limit: 2, offset: 0, hasMore: true, totalReturned: 2, wasLimited: true },
-        },
-        isExecuting: false,
-        type: "sql" as const,
-      },
-    });
-    const { getByTestId } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-    expect(getByTestId("export-row-count").textContent).toBe("2");
+    expect(queryByText("Export")).toBeNull();
   });
 
   test("Export dropdown is hidden when result is null", () => {
@@ -1113,17 +925,6 @@ describe("BottomPanel", () => {
    * dismissing the artifact leaves it exactly as it was.
    */
   describe("agent artifact hydration", () => {
-    test.each([
-      ["semicolon", ";"],
-      ["tab", "\t"],
-    ])("CSV delimiter option %s carries the selected artifact", async (label, delimiter) => {
-      const onExportResults = mock(() => {});
-      const props = hydratedProps({ onExportResults }) as React.ComponentProps<typeof BottomPanel>;
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-      await userEvent.click(getByText("Export"));
-      await userEvent.click(within(document.body as HTMLElement).getByText(`Export as CSV (${label})`));
-      expect(onExportResults).toHaveBeenCalledWith("csv", props.agentArtifact, delimiter);
-    });
     const TAB_RESULT = { rows: [{ id: 1 }], fields: ["id"], rowCount: 1, executionTime: 10 };
     const ARTIFACT_RESULT = {
       rows: [
@@ -1204,51 +1005,6 @@ describe("BottomPanel", () => {
       // run's, and the tab's own statement did not produce them, so naming it here would
       // state a fact about the wrong statement (#816).
       expect(capturedResultsGridProps.resultQuery).toBeUndefined();
-    });
-
-    // B34: the menu used to be hidden here, because the export serialized the tab's
-    // own rows. It is now retargeted — the artifact travels with the format, so the
-    // file is the rows on screen and is named after the run that produced them.
-    test("the export menu is offered over a hydrated result and carries the artifact", async () => {
-      const onExportResults = mock(() => {});
-      const artifact = {
-        runId: "arun_1",
-        correlationId: "corr_9",
-        operationId: "sql.query.read",
-        surface: "results",
-        result: ARTIFACT_RESULT,
-        explainPlan: null,
-      };
-      const props = hydratedProps({ onExportResults, agentArtifact: artifact });
-      const { getByText, getByTestId } = render(
-        <BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />,
-      );
-
-      // The count is the artifact's rows, not the tab's — two, not one.
-      expect(getByTestId("export-row-count").textContent).toBe("2");
-      // The menu's items are portalled into the body, so they are queried there.
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-      // Said in the menu as well as in the name, because the name is the only part of
-      // a file that survives being renamed by whoever receives it. Read while the menu
-      // is still open: choosing a format closes it.
-      expect(menu.getByTestId("export-provenance").textContent).toContain("arun_1");
-      await userEvent.click(menu.getByText("Export as CSV"));
-
-      expect(onExportResults).toHaveBeenCalledWith("csv", artifact);
-    });
-
-    test("without an artifact the export menu carries none, and stays the tab's own", async () => {
-      const onExportResults = mock(() => {});
-      const props = hydratedProps({ agentArtifact: null, onExportResults });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-      await userEvent.click(menu.getByText("Export as JSON"));
-
-      expect(onExportResults).toHaveBeenCalledWith("json", null);
-      expect(menu.queryByTestId("export-provenance")).toBeNull();
     });
 
     test("dismissing it is a user action, and the tab's own result is what returns", () => {
@@ -1343,88 +1099,6 @@ describe("BottomPanel", () => {
 
       expect(queryByTestId("agent-provenance")).toBeNull();
       expect(capturedResultsGridProps.result).toEqual(TAB_RESULT);
-    });
-  });
-  /**
-   * Copying the result instead of saving it (#701).
-   *
-   * The same writers, the same scope line, a different destination. The menu offers
-   * every format it already offers as a file, because a format that is worth a file is
-   * worth a paste, and a menu that carried a subset would only raise the question of
-   * which subset.
-   */
-  describe("copy to clipboard", () => {
-    const COPY_RESULT = { rows: [{ id: 1 }], fields: ["id"], rowCount: 1, executionTime: 42 };
-
-    function copyProps(overrides: Record<string, unknown> = {}) {
-      return createDefaultProps({
-        mode: "results",
-        currentTab: {
-          id: "tab-1",
-          name: "Q",
-          query: "SELECT 1",
-          result: COPY_RESULT,
-          isExecuting: false,
-          type: "sql" as const,
-        },
-        ...overrides,
-      });
-    }
-
-    test.each([
-      ["Copy as CSV", "csv", undefined],
-      ["Copy as CSV (semicolon)", "csv", ";"],
-      ["Copy as CSV (tab)", "csv", "\t"],
-      ["Copy as JSON", "json", undefined],
-      ["Copy as SQL INSERT", "sql-insert", undefined],
-      ["Copy as DDL (CREATE TABLE)", "sql-ddl", undefined],
-    ])("%s asks for that format on the clipboard", async (label, format, delimiter) => {
-      const onCopyResults = mock(() => {});
-      const props = copyProps({ onCopyResults });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      await userEvent.click(within(document.body as HTMLElement).getByText(label));
-
-      // The delimiter is passed only where the entry has one: "CSV" means the
-      // writer's own default, and an explicit `undefined` would be a different call
-      // for the same choice.
-      if (delimiter === undefined) expect(onCopyResults).toHaveBeenCalledWith(format, null);
-      else expect(onCopyResults).toHaveBeenCalledWith(format, null, delimiter);
-    });
-
-    // The scope line says the file holds one page of rows, and a paste looks even more
-    // like a complete answer than a file does. So it is read before the copy items,
-    // not only before the export ones.
-    test("the scope line is stated above the copy items", async () => {
-      const props = copyProps();
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      const menu = within(document.body as HTMLElement);
-      const scope = menu.getByTestId("export-scope");
-      const copy = menu.getByText("Copy as JSON");
-
-      expect(scope.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    });
-
-    test("a copy over a hydrated result carries the run it came from", async () => {
-      const onCopyResults = mock(() => {});
-      const artifact = {
-        runId: "arun_1",
-        correlationId: "corr_9",
-        operationId: "sql.query.read",
-        surface: "results",
-        result: COPY_RESULT,
-        explainPlan: null,
-      };
-      const props = copyProps({ onCopyResults, agentArtifact: artifact, onDismissAgentArtifact: mock(() => {}) });
-      const { getByText } = render(<BottomPanel {...(props as React.ComponentProps<typeof BottomPanel>)} />);
-
-      await userEvent.click(getByText("Export"));
-      await userEvent.click(within(document.body as HTMLElement).getByText("Copy as JSON"));
-
-      expect(onCopyResults).toHaveBeenCalledWith("json", artifact);
     });
   });
 });
