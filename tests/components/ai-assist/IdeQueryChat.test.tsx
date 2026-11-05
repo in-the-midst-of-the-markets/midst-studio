@@ -203,6 +203,7 @@ describe("IdeQueryChat", () => {
       openRouterKey: "",
       fireworksKey: "fw-secret",
       gatewayKey: "gw-secret",
+      historyMessages: 5,
     });
     fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
     expect(await view.findByRole("option", { name: "DeepSeek V4.1 Flash" })).toBeTruthy();
@@ -222,6 +223,7 @@ describe("IdeQueryChat", () => {
       openRouterKey: "",
       fireworksKey: "fw-secret",
       gatewayKey: "gw-secret",
+      historyMessages: 5,
     });
     expect(await view.findByText("The Vercel AI Gateway catalog could not be loaded.")).toBeTruthy();
     const before = gets;
@@ -259,6 +261,7 @@ describe("IdeQueryChat", () => {
       openRouterKey: "",
       fireworksKey: "fw-secret",
       gatewayKey: "",
+      historyMessages: 5,
     });
     fireEvent.change(await view.findByLabelText("Fireworks model"), {
       target: { value: "accounts/acme/models/other" },

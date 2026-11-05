@@ -139,7 +139,7 @@ describe("readAssistResults", () => {
             p: path,
             linked,
             tags: ["east", "west"],
-            odd: { n: 1n },
+            odd: { n: BigInt(1) },
             empty: emptyPath,
           },
         ],

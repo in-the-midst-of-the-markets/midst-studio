@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createErrorResponse } from "@/lib/api/errors";
 import { INVALID_REQUEST_BODY, readJsonObject } from "@/lib/api/json-object-body";
 import { guardRoute } from "@/lib/api/require-session";
@@ -7,7 +7,7 @@ import { resolveConnection } from "@/lib/seed/resolve-connection";
 import type { DatabaseConnection } from "@/lib/types";
 
 /** POST /api/dbt/project — the models and metrics in a GitHub dbt project. */
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const guard = await guardRoute({ route: "POST /api/dbt/project", bucket: "query", request: req });
   if ("response" in guard) return guard.response;
   try {

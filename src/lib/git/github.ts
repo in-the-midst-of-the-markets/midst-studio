@@ -132,8 +132,11 @@ function isModelFile(relative: string, modelPaths: readonly string[]): boolean {
   return modelPaths.some((modelPath) => relative === modelPath || relative.startsWith(`${modelPath}/`));
 }
 
+/** A fetch implementation. Compile and project reads never call `preconnect`. */
+export type GitHubFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
 interface GitHubClient {
-  readonly fetch: typeof fetch;
+  readonly fetch: GitHubFetch;
   readonly signal?: AbortSignal;
   readonly token: string;
 }
@@ -141,7 +144,7 @@ interface GitHubClient {
 /** Reads the dbt project at `repo`. A problem is a sentence. */
 export async function readGitHubProject(
   repo: GitHubRepo,
-  options: { ref: string; directory: string; token: string; fetch: typeof fetch; signal?: AbortSignal },
+  options: { ref: string; directory: string; token: string; fetch: GitHubFetch; signal?: AbortSignal },
 ): Promise<GitHubProject | string> {
   const client: GitHubClient = { fetch: options.fetch, signal: options.signal, token: options.token };
   const branch = options.ref === "" ? await defaultBranch(repo, client) : { ok: true as const, value: options.ref };
@@ -158,7 +161,7 @@ export async function readGitHubProject(
   if (typeof selected === "string") return selected;
   const files: GitFile[] = [];
   for (const request of selected) {
-    let text = project;
+    let text: GitResult<string> = project;
     if (request.relative !== "dbt_project.yml") {
       // oxlint-disable-next-line no-await-in-loop -- the first file GitHub refuses stops the read.
       text = await readRawFile(repo, branch.value, request.path, client);

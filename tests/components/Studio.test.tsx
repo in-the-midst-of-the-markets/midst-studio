@@ -93,7 +93,7 @@ const mockStorageSaveConnection = mock(() => {});
 const mockStorageGetConnections = mock(() => [] as unknown[]);
 const mockStorageDeleteConnection = mock(() => {});
 const mockStorageSaveQuery = mock(() => {});
-const mockStorageGetSavedQueries = mock(() => [] as { tableId?: string }[]);
+const mockStorageGetSavedQueries = mock(() => [] as { tableId?: string; connectionId?: string; query?: string }[]);
 const mockStorageGetFavoriteConnectionIds = mock(() => [] as string[]);
 const mockStorageToggleFavoriteConnection = mock(() => [] as string[]);
 const mockStorageGetConnectionOrder = mock(() => [] as string[]);
