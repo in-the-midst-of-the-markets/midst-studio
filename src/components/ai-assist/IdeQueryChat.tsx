@@ -11,6 +11,7 @@ import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-r
 import { acceptAssistPlan, recentAssistHistory, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
 import {
   DEFAULT_ASSIST_SETTINGS,
+  assistModelSearches,
   normalizeModels,
   readAssistSettings,
   subscribeAssistSettings,
@@ -197,6 +198,7 @@ function IdeQueryChatSession({
           databaseType,
           history: recentAssistHistory(history, settings.historyMessages),
           editorSql: sql,
+          webSearch: assistModelSearches(settings.source, model, models, gatewayModels),
         }),
       });
       const body: unknown = await response.json().catch(() => null);

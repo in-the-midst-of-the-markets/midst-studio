@@ -152,6 +152,44 @@ describe("POST /api/ai/assist", () => {
     expect(joined.slice(0, begin)).not.toContain(HOSTILE);
   });
 
+  test("gives a model that can search the web its search tool", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      return jsonResponse({
+        choices: [{ message: { content: JSON.stringify({ explanation: "Checked.", queries: [] }) } }],
+      });
+    }) as unknown as typeof fetch;
+    const searched = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "openai/gpt-4o",
+          apiKey: "secret",
+          question: "What changed this week?",
+          webSearch: true,
+        },
+      }) as never,
+    );
+    expect(searched.status).toBe(200);
+    expect(bodies[0]?.tools).toEqual([{ type: "openrouter:web_search", parameters: { max_results: 5, max_uses: 2 } }]);
+    const ignored = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: {
+          source: "openrouter",
+          model: "openai/gpt-4o",
+          apiKey: "secret",
+          question: "What changed this week?",
+          webSearch: "yes",
+        },
+      }) as never,
+    );
+    expect(ignored.status).toBe(200);
+    expect(bodies[1]).not.toHaveProperty("tools");
+  });
+
   test("calls Vercel AI Gateway with the browser key", async () => {
     let url = "";
     let authorization = "";

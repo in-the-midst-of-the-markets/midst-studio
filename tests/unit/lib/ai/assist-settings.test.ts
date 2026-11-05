@@ -1,6 +1,7 @@
 import "../../../setup-dom";
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  assistModelSearches,
   DEFAULT_ASSIST_SETTINGS,
   normalizeModels,
   readAssistSettings,
@@ -38,6 +39,23 @@ describe("normalizeModels", () => {
       { id: "openai/num", name: "Num" },
     ]);
     expect(normalizeModels("no")).toEqual([]);
+    expect(normalizeModels([{ id: "openai/gpt-4o", name: "GPT-4o", webSearch: true }])).toEqual([
+      { id: "openai/gpt-4o", name: "GPT-4o", webSearch: true },
+    ]);
+    expect(normalizeModels([{ id: "plain", webSearch: false }])).toEqual([{ id: "plain", name: "plain" }]);
+  });
+});
+
+describe("assistModelSearches", () => {
+  const searchable = { id: "openai/gpt-4o", name: "GPT-4o", webSearch: true as const };
+  const plain = { id: "local/small", name: "Small" };
+
+  test("uses the catalog for the source that was chosen", () => {
+    expect(assistModelSearches("openrouter", "openai/gpt-4o", [searchable], [])).toBe(true);
+    expect(assistModelSearches("openrouter", "local/small", [plain], [searchable])).toBe(false);
+    expect(assistModelSearches("gateway", "openai/gpt-4o", [], [searchable])).toBe(true);
+    expect(assistModelSearches("gateway", "openai/gpt-4o", [searchable], [plain])).toBe(false);
+    expect(assistModelSearches("fireworks", "openai/gpt-4o", [searchable], [searchable])).toBe(false);
   });
 });
 

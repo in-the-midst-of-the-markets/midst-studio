@@ -31,6 +31,10 @@ function missingKeyMessage(source: AssistSource): string {
   return "Add a Vercel AI Gateway API key under Connectors.";
 }
 
+function wantsWebSearch(value: unknown): boolean {
+  return value === true;
+}
+
 async function answerWith(
   source: AssistSource,
   apiKey: string,
@@ -38,10 +42,11 @@ async function answerWith(
   messages: { role: "system" | "user"; content: string }[],
   databaseType: string,
   schemaContext: string,
+  webSearch: boolean,
 ): Promise<NextResponse> {
   const key = resolveAssistKey(source, apiKey);
   if (key === null) return NextResponse.json({ error: missingKeyMessage(source) }, { status: 400 });
-  const answer = await completeChat({ source, apiKey: key, model, messages });
+  const answer = await completeChat({ source, apiKey: key, model, messages, webSearch });
   return NextResponse.json(parseAssistPlan(answer, databaseType, schemaContext));
 }
 
@@ -63,6 +68,7 @@ export async function POST(req: NextRequest) {
       results: "results" in record ? record.results : undefined,
       pass: "pass" in record ? record.pass : undefined,
     };
+    const webSearch = "webSearch" in record ? wantsWebSearch(record.webSearch) : false;
 
     // A reading already has rows. They are fenced on their own, as the question is,
     // so a cell cannot be read as this route's instruction.
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
         }),
         reading.value.databaseType,
         reading.value.schemaContext,
+        webSearch,
       );
     }
 
@@ -104,6 +111,7 @@ export async function POST(req: NextRequest) {
         }),
         editorRequest.value.databaseType,
         editorRequest.value.schemaContext,
+        webSearch,
       );
     }
 
@@ -121,6 +129,7 @@ export async function POST(req: NextRequest) {
       }),
       request.value.databaseType,
       request.value.schemaContext,
+      webSearch,
     );
   } catch (error) {
     return createErrorResponse(error, { route: "api/ai/assist" });

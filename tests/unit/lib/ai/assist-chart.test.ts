@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   assistChoiceForVariation,
   nextAssistChoice,
+  suggestAssistChart,
   titleForQuery,
   type AssistChartChoice,
 } from "@/lib/ai/assist-chart";
@@ -22,6 +23,14 @@ const revenue = result(
     { month: "Feb", revenue: 12 },
   ],
 );
+
+describe("suggestAssistChart", () => {
+  test("draws a month series and skips rows with nothing to plot", () => {
+    expect(suggestAssistChart(revenue)?.typeId).toBe("line");
+    expect(suggestAssistChart(result(["month"], []))).toBeNull();
+    expect(suggestAssistChart(result(["note"], [{ note: "a" }]))).toBeNull();
+  });
+});
 
 describe("nextAssistChoice", () => {
   test("opens a month series as a line even when the model said bar", () => {
@@ -163,7 +172,7 @@ describe("assistChoiceForVariation", () => {
   });
 
   test("ignores a type or variation that is not in the catalog", () => {
-    expect(assistChoiceForVariation("pie", "basic", columns)).toBeNull();
+    expect(assistChoiceForVariation("not-a-chart", "basic", columns)).toBeNull();
     expect(assistChoiceForVariation("line", "missing", columns)).toBeNull();
   });
 });

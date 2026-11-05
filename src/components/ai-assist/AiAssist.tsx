@@ -38,13 +38,15 @@ import {
   readAssistResults,
 } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
-import { titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { suggestAssistChart, titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { assistSavedAsk, assistSavedPicks, toggleAssistSaved, type AssistSavedPick } from "@/lib/ai/assist-saved";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import {
   DEFAULT_ASSIST_SETTINGS,
+  assistModelSearches,
   normalizeModels,
   readAssistSettings,
   subscribeAssistSettings,
@@ -284,6 +286,38 @@ function plannedCards(
   });
 }
 
+/** Cards for the saved queries attached to this question. A query that cannot run says why. */
+function savedCards(picks: readonly AssistSavedPick[], connections: readonly DatabaseConnection[]): AssistCard[] {
+  return picks.map((pick) => {
+    const target =
+      pick.connectionId === null ? null : (connections.find((item) => item.id === pick.connectionId) ?? null);
+    const runnable = target === null ? null : assistRunnableStatement(pick.sql, target.type);
+    const error =
+      target === null
+        ? "This saved query has no connected database."
+        : runnable === null
+          ? "AI Assist only runs read-only queries."
+          : null;
+    return {
+      id: nextId(),
+      title: pick.name,
+      titledSql: pick.sql,
+      modelSql: pick.sql,
+      locked: true,
+      sql: pick.sql,
+      connectionId: target?.id ?? null,
+      connectionName: target?.name ?? "",
+      chart: null,
+      color: null,
+      result: null,
+      error,
+      view: null,
+      code: null,
+      running: error === null,
+    };
+  });
+}
+
 async function groundResults(input: {
   readonly source: AssistSettings["source"];
   readonly model: string;
@@ -294,6 +328,7 @@ async function groundResults(input: {
   readonly history: readonly AssistHistoryTurn[];
   readonly results: ReturnType<typeof resultPayload>[];
   readonly pass: "follow" | "final";
+  readonly webSearch: boolean;
 }): Promise<AssistPlan | null> {
   try {
     const response = await appFetch("/api/ai/assist", {
@@ -318,6 +353,23 @@ function errorText(body: unknown, fallback: string): string {
 }
 
 const EMPTY_CONNECTIONS: readonly DatabaseConnection[] = [];
+const EMPTY_SAVED: readonly AssistSavedPick[] = [];
+
+let savedRaw = "\u0000";
+let savedSnapshot: readonly AssistSavedPick[] = EMPTY_SAVED;
+
+function readSavedCatalog(): readonly AssistSavedPick[] {
+  const next = assistSavedPicks(storage.getSavedQueries());
+  const raw = JSON.stringify(next);
+  if (raw === savedRaw) return savedSnapshot;
+  savedRaw = raw;
+  savedSnapshot = next;
+  return savedSnapshot;
+}
+
+function subscribeSaved(): () => void {
+  return () => {};
+}
 
 let connectionRaw = "\u0000";
 let connectionSnapshot: readonly DatabaseConnection[] = EMPTY_CONNECTIONS;
@@ -396,6 +448,9 @@ export function AiAssist() {
   const chartsRef = useRef<HTMLElement>(null);
   const askRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
+  const [attached, setAttached] = useState<readonly AssistSavedPick[]>([]);
+  const savedCatalog = useSyncExternalStore(subscribeSaved, readSavedCatalog, () => EMPTY_SAVED);
+  const attachedLive = attached.filter((item) => savedCatalog.some((pick) => pick.id === item.id));
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -554,23 +609,118 @@ export function AiAssist() {
   };
 
   const send = async () => {
-    const question = draft.trim();
-    if (question === "" || sendingRef.current) return;
+    const starting = attachedLive;
+    const asked = assistSavedAsk(draft, starting);
+    if (asked.question === "" || sendingRef.current) return;
     const model = modelFor(settings);
     if (model === "") {
       setNotice("Name the model to use.");
       return;
     }
     const apiKey = keyFor(settings);
+    const question = asked.question;
+    const webSearch = assistModelSearches(settings.source, model, models, gatewayModels);
     sendingRef.current = true;
     setSending(true);
     setNotice(null);
     setDraft("");
+    setAttached([]);
     const history = historyOf(turnsRef.current, settings.historyMessages);
     const databaseType = assistDatabaseType(connections.map((item) => item.type));
     const at = askedAt();
-    commit([...turnsRef.current, { id: nextId(), role: "user", text: question, at, cards: [] }], true);
+    commit([...turnsRef.current, { id: nextId(), role: "user", text: asked.display, at, cards: [] }], true);
     try {
+      const executeCards = async (batch: readonly AssistCard[]) => {
+        await Promise.all(
+          batch.map(async (card) => {
+            const target =
+              card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
+            if (target === null) return;
+            const statement = assistRunnableStatement(card.sql, target.type);
+            if (statement === null) {
+              updateCard(card.id, { running: false, error: "AI Assist only runs read-only queries." }, true);
+              return;
+            }
+            const outcome = await runAssistQuery(target, statement, appFetch);
+            updateCard(
+              card.id,
+              {
+                running: false,
+                ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
+              },
+              true,
+            );
+          }),
+        );
+      };
+      const expandResearch = async (researchId: string, ids: Set<string>, fallback: string) => {
+        const ranCards = () => turnsRef.current.flatMap((turn) => turn.cards).filter((card) => ids.has(card.id));
+        const readingInput = {
+          source: settings.source,
+          model,
+          apiKey,
+          question,
+          schemaContext,
+          databaseType,
+          history,
+          webSearch,
+        };
+        let followPlan: AssistPlan | null = null;
+        for (let run = 0; run < FOLLOW_RUNS; run += 1) {
+          // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
+          const reading = await groundResults({
+            ...readingInput,
+            pass: "follow",
+            results: ranCards().map(resultPayload),
+          });
+          if (reading !== null) followPlan = reading;
+          const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
+          const extra = reading === null ? [] : followUpQueries(reading.queries, existingSql);
+          const extraCards = plannedCards(extra, connections, schemas);
+          for (const card of extraCards) ids.add(card.id);
+          if (extraCards.length === 0) {
+            if (reading !== null) break;
+          } else {
+            commit(
+              turnsRef.current.map((turn) =>
+                turn.id === researchId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
+              ),
+              true,
+            );
+            // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
+            await executeCards(extraCards);
+          }
+        }
+        const final = await groundResults({ ...readingInput, pass: "final", results: ranCards().map(resultPayload) });
+        const analyzed = [final, followPlan].map((item) => item?.explanation.trim() ?? "").find((text) => text !== "");
+        commit(
+          turnsRef.current.map((turn) => (turn.id === researchId ? { ...turn, text: analyzed ?? fallback } : turn)),
+          true,
+        );
+      };
+      if (starting.length > 0) {
+        const seeded = savedCards(starting, connections);
+        const researchId = nextId();
+        const ids = new Set(seeded.map((card) => card.id));
+        commit(
+          [...turnsRef.current, { id: researchId, role: "assistant", text: "", at: askedAt(), cards: seeded }],
+          true,
+        );
+        await executeCards(seeded);
+        commit(
+          turnsRef.current.map((turn) => ({
+            ...turn,
+            cards: turn.cards.map((card) => {
+              if (!ids.has(card.id) || card.result === null || card.view !== null) return card;
+              const view = suggestAssistChart(card.result);
+              return view === null ? card : { ...card, view };
+            }),
+          })),
+          true,
+        );
+        await expandResearch(researchId, ids, "The saved queries ran.");
+        return;
+      }
       const response = await appFetch("/api/ai/assist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -582,6 +732,7 @@ export function AiAssist() {
           schemaContext,
           databaseType,
           history,
+          webSearch,
         }),
       });
       const body: unknown = await response.json().catch(() => null);
@@ -623,76 +774,9 @@ export function AiAssist() {
         ],
         true,
       );
-      const executeCards = async (batch: readonly AssistCard[]) => {
-        await Promise.all(
-          batch.map(async (card) => {
-            const target =
-              card.connectionId === null ? null : (connections.find((item) => item.id === card.connectionId) ?? null);
-            if (target === null) return;
-            const statement = assistRunnableStatement(card.sql, target.type);
-            if (statement === null) {
-              updateCard(card.id, { running: false, error: "AI Assist only runs read-only queries." }, true);
-              return;
-            }
-            const outcome = await runAssistQuery(target, statement, appFetch);
-            updateCard(
-              card.id,
-              {
-                running: false,
-                ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
-              },
-              true,
-            );
-          }),
-        );
-      };
       await executeCards(cards);
       if (cards.length > 0) {
-        const ids = new Set(cards.map((card) => card.id));
-        const ranCards = () => turnsRef.current.flatMap((turn) => turn.cards).filter((card) => ids.has(card.id));
-        const readingInput = {
-          source: settings.source,
-          model,
-          apiKey,
-          question,
-          schemaContext,
-          databaseType,
-          history,
-        };
-        let follow: AssistPlan | null = null;
-        for (let run = 0; run < FOLLOW_RUNS; run += 1) {
-          // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
-          const reading = await groundResults({
-            ...readingInput,
-            pass: "follow",
-            results: ranCards().map(resultPayload),
-          });
-          if (reading !== null) follow = reading;
-          const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
-          const extra = reading === null ? [] : followUpQueries(reading.queries, existingSql);
-          const extraCards = plannedCards(extra, connections, schemas);
-          for (const card of extraCards) ids.add(card.id);
-          if (extraCards.length === 0) {
-            if (reading !== null) break;
-          } else {
-            commit(
-              turnsRef.current.map((turn) =>
-                turn.id === assistantId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
-              ),
-              true,
-            );
-            // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
-            await executeCards(extraCards);
-          }
-        }
-        const final = await groundResults({ ...readingInput, pass: "final", results: ranCards().map(resultPayload) });
-        const analyzed = [final, follow].map((item) => item?.explanation.trim() ?? "").find((text) => text !== "");
-        commit(
-          turnsRef.current.map((turn) =>
-            turn.id === assistantId ? { ...turn, text: analyzed ?? plan.explanation } : turn,
-          ),
-          true,
-        );
+        await expandResearch(assistantId, new Set(cards.map((card) => card.id)), plan.explanation);
       }
     } catch {
       commit(
@@ -714,7 +798,7 @@ export function AiAssist() {
     }
   };
 
-  const canSend = draft.trim() !== "" && !sending && modelFor(settings) !== "";
+  const canSend = (draft.trim() !== "" || attachedLive.length > 0) && !sending && modelFor(settings) !== "";
 
   const queries = turns.flatMap((turn) => turn.cards);
   const activeQuery = queries.at(-1) ?? null;
@@ -948,6 +1032,17 @@ export function AiAssist() {
                 onChange={setDraft}
                 onSubmit={() => void send()}
                 inputRef={askRef}
+                savedChoices={savedCatalog.map((pick) => ({
+                  id: pick.id,
+                  name: pick.name,
+                  detail: pick.connectionType,
+                }))}
+                selectedSavedIds={attachedLive.map((pick) => pick.id)}
+                onToggleSaved={(id) => {
+                  const pick = savedCatalog.find((item) => item.id === id);
+                  if (pick === undefined) return;
+                  setAttached((current) => toggleAssistSaved(current, pick));
+                }}
               />
             </div>
           </form>

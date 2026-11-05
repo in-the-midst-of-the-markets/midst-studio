@@ -68,6 +68,12 @@ function fallbackChoice(result: QueryResult): AssistChartChoice | null {
   return readyChoice("bar", "basic", defaultSelection("bar", "basic", columns));
 }
 
+/** A chart for rows the model did not place. Null when the rows have nothing to draw. */
+export function suggestAssistChart(result: QueryResult): AssistChartChoice | null {
+  if (result.rows.length === 0) return null;
+  return fallbackChoice(result);
+}
+
 /**
  * A basic bar is the model's usual answer. Open a line or a scatter when the columns
  * are a series over time or two measures. A stacked bar and any other type stay.
