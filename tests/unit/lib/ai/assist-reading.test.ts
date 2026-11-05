@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { AssistQueryPlan } from "@/lib/ai/assist-plan";
+import { ASSIST_TEXT_CAP, type AssistQueryPlan } from "@/lib/ai/assist-plan";
 import {
   ASSIST_RESULT_CAP,
   FOLLOW_RUNS,
@@ -257,11 +257,11 @@ describe("explanationWithResults", () => {
     ]);
     expect(noted).toContain("Revenue rose.\nResults:\n");
     expect(noted).toContain("10");
-    const capped = explanationWithResults("e".repeat(3990), [
+    const capped = explanationWithResults("e".repeat(ASSIST_TEXT_CAP - 10), [
       { title: "Revenue", sql: select, fields: ["revenue"], rows: [["10"]], rowCount: 1, error: null },
     ]);
-    expect(capped).toHaveLength(4000);
-    expect(capped.startsWith("e".repeat(3990))).toBe(true);
+    expect(capped).toHaveLength(ASSIST_TEXT_CAP);
+    expect(capped.startsWith("e".repeat(ASSIST_TEXT_CAP - 10))).toBe(true);
   });
 });
 

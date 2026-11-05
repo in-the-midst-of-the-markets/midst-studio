@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { queryIdentity } from "@/lib/charts/query-filters";
 import {
+  ASSIST_TEXT_CAP,
   acceptAssistPlan,
   buildAssistMessages,
   explanationWithEdits,
@@ -243,9 +244,9 @@ describe("readAssistRequest", () => {
   });
 
   test("rejects a question, a schema, and a turn that are too long", () => {
-    expect(request({ question: "a".repeat(4001) }).ok).toBe(false);
+    expect(request({ question: "a".repeat(ASSIST_TEXT_CAP + 1) }).ok).toBe(false);
     expect(request({ schemaContext: "a".repeat(30_001) }).ok).toBe(false);
-    expect(request({ history: [{ question: "a".repeat(4001), explanation: "b" }] }).ok).toBe(false);
+    expect(request({ history: [{ question: "a".repeat(ASSIST_TEXT_CAP + 1), explanation: "b" }] }).ok).toBe(false);
     expect(request({ apiKey: "a".repeat(501) }).ok).toBe(false);
   });
 });
@@ -458,8 +459,8 @@ describe("queries the user edited", () => {
     expect(explanationWithEdits("Revenue rose.", ["  ", "SELECT region, cost FROM sales"])).toBe(
       "Revenue rose.\nUser-edited query (leave it unchanged): SELECT region, cost FROM sales",
     );
-    const long = explanationWithEdits("Revenue rose.", ["x".repeat(5000)]);
+    const long = explanationWithEdits("Revenue rose.", ["x".repeat(ASSIST_TEXT_CAP)]);
     expect(long.startsWith("Revenue rose.\nUser-edited query (leave it unchanged):")).toBe(true);
-    expect(long).toHaveLength(4000);
+    expect(long).toHaveLength(ASSIST_TEXT_CAP);
   });
 });
