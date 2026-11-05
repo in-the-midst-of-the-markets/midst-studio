@@ -19,6 +19,14 @@ export const CROSS_DB_JOINS_CAPABILITIES: ProviderCapabilities = {
   queryLanguage: "sql",
   supportsExplain: false,
   supportsTransactions: false,
+  // Required by the capability type. This connection has no engine to limit, maintain, or dial.
+  supportsExternalQueryLimiting: false,
+  supportsMaintenance: false,
+  maintenanceOperations: [],
+  supportsConnectionString: false,
+  defaultPort: null,
+  // A statement here never changes a database, so the tree is not reloaded from one.
+  schemaRefreshPattern: "(?!)",
   identifierQuoting: "double",
   statementTerminator: "none",
   objectKinds: [
