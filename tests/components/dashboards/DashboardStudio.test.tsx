@@ -860,14 +860,28 @@ describe("DashboardStudio", () => {
     );
     fireEvent.click(view.getByRole("button", { name: "Design" }));
     fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Area" } });
-    fireEvent.click(view.getByRole("button", { name: "Save Area component" }));
+    const unsave = view.getByRole("button", { name: "Unsave Area component" });
+    expect(unsave.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(unsave);
+    expect(storage.getSavedComponents()).toHaveLength(1);
+    expect(view.getByRole("button", { name: "Confirm unsave Area component" })).toBeTruthy();
+    fireEvent.click(unsave);
+    expect(view.queryByRole("button", { name: "Confirm unsave Area component" })).toBeNull();
+    fireEvent.click(unsave);
+    fireEvent.click(view.getByRole("button", { name: "Confirm unsave Area component" }));
+    expect(storage.getSavedComponents()).toEqual([]);
+    expect(storage.getSavedDashboards().find((item) => item.id === "sales")?.filters?.[0]?.componentId).toBeUndefined();
+    expect(view.getByLabelText("Component title")).toBeTruthy();
+    const saveAgain = view.getByRole("button", { name: "Save Area component" });
+    expect(saveAgain.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(saveAgain);
     expect(storage.getSavedComponents()).toHaveLength(1);
     expect(storage.getSavedComponents()[0]?.name).toBe("Area");
     fireEvent.click(view.getByRole("button", { name: "New dashboard" }));
     fireEvent.click(view.getByRole("button", { name: "Add content" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Saved component" }));
     fireEvent.click(view.getByRole("menuitem", { name: "Area" }));
-    const placedSave = view.getByRole("button", { name: "Save Area component" });
+    const placedSave = view.getByRole("button", { name: "Unsave Area component" });
     expect(placedSave.getAttribute("aria-pressed")).toBe("true");
     expect(placedSave.className).toContain("bg-brand-solid");
     const placed = storage.getSavedDashboards().find((item) => item.id !== "sales" && (item.filters?.length ?? 0) > 0);
@@ -877,7 +891,7 @@ describe("DashboardStudio", () => {
       query: "SELECT region FROM sales",
       value: "east",
       control: "select",
-      componentId: saved[0]?.id,
+      componentId: storage.getSavedComponents()[0]?.id,
     });
     expect(placed?.filters?.[0]?.id).not.toBe("f1");
     fireEvent.click(view.getByRole("button", { name: "Design" }));

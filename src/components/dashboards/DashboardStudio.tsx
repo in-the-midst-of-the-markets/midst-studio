@@ -426,6 +426,12 @@ export function DashboardStudio() {
                           remember(withFilterFields(active, filter.id, { componentId: libraryId }));
                         }
                       }}
+                      onUnsave={() => {
+                        if (filter.componentId === undefined) return;
+                        storage.deleteComponent(filter.componentId);
+                        setComponents(storage.getSavedComponents());
+                        setDashboards(storage.getSavedDashboards());
+                      }}
                     />
                   );
                 })}
@@ -1536,6 +1542,7 @@ function DashboardFilterCard({
   onResize,
   onRemove,
   onSave,
+  onUnsave,
 }: {
   readonly filter: DashboardFilter;
   readonly width: number;
@@ -1545,7 +1552,10 @@ function DashboardFilterCard({
   readonly onResize: (size: { width: number; height: number }) => void;
   readonly onRemove: () => void;
   readonly onSave: () => void;
+  readonly onUnsave: () => void;
 }) {
+  const saved = filter.componentId !== undefined;
+  const [pendingUnsave, setPendingUnsave] = useState(false);
   const [face, setFace] = useState<"filter" | "choices" | "design">(filter.control === undefined ? "design" : "filter");
   const [draft, setDraft] = useState(filter.query);
   const [seenQuery, setSeenQuery] = useState(filter.query);
@@ -1636,16 +1646,36 @@ function DashboardFilterCard({
         )}
         <button
           type="button"
-          aria-label={`Save ${caption} component`}
-          aria-pressed={filter.componentId !== undefined}
-          onClick={onSave}
+          aria-label={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
+          title={saved ? `Unsave ${caption} component` : `Save ${caption} component`}
+          aria-pressed={saved}
+          onClick={() => {
+            if (!saved) {
+              onSave();
+              return;
+            }
+            setPendingUnsave((current) => !current);
+          }}
           className={cn(
             "inline-flex size-7 items-center justify-center rounded-md",
-            filter.componentId !== undefined ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+            saved ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
           )}
         >
-          <Bookmark className={cn("size-3.5", filter.componentId !== undefined && "fill-current")} aria-hidden="true" />
+          <Bookmark className={cn("size-3.5", saved && "fill-current")} aria-hidden="true" />
         </button>
+        {saved && pendingUnsave && (
+          <button
+            type="button"
+            aria-label={`Confirm unsave ${caption} component`}
+            onClick={() => {
+              setPendingUnsave(false);
+              onUnsave();
+            }}
+            className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
+          >
+            Confirm
+          </button>
+        )}
         <button
           type="button"
           aria-label={`Remove ${filter.name} filter`}
