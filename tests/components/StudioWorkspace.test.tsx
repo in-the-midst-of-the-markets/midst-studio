@@ -560,26 +560,57 @@ describe("StudioWorkspace", () => {
 
   test("handleSaveQuery delegates to onSaveQuery and shows success toast", async () => {
     renderWorkspace();
-    const onSave = capturedSaveQueryModalProps.onSave as (n: string, d: string, t: string[]) => Promise<void>;
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      n: string,
+      d: string,
+      t: string[],
+      tableId: string,
+    ) => Promise<void>;
     await act(async () => {
-      await onSave("My Query", "A test query", ["tag1"]);
+      await onSave("My Query", "A test query", ["tag1"], "my_query");
     });
     expect(mockOnSaveQuery).toHaveBeenCalledTimes(1);
     const saved = mockOnSaveQuery.mock.calls[0][0];
     expect(saved.name).toBe("My Query");
+    expect(saved.tableId).toBe("my_query");
     expect(saved.query).toBe("SELECT 1");
     expect(saved.description).toBe("A test query");
     expect(saved.connectionType).toBe("postgres");
+    expect(saved.connectionId).toBe("c1");
     expect(saved.tags).toEqual(["tag1"]);
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Query Saved" }));
+  });
+
+  test("handleSaveQuery refuses an ID that is not a table name", async () => {
+    renderWorkspace();
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      n: string,
+      d: string,
+      t: string[],
+      tableId: string,
+    ) => Promise<boolean>;
+    let saved: boolean | undefined;
+    await act(async () => {
+      saved = await onSave("My Query", "", [], "my query");
+    });
+    expect(saved).toBe(false);
+    expect(mockOnSaveQuery).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "ID needs a change", variant: "destructive" }),
+    );
   });
 
   test("handleSaveQuery shows destructive toast when onSaveQuery rejects", async () => {
     mockOnSaveQuery.mockImplementationOnce(() => Promise.reject(new Error("save exploded")));
     renderWorkspace();
-    const onSave = capturedSaveQueryModalProps.onSave as (n: string, d: string, t: string[]) => Promise<void>;
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      n: string,
+      d: string,
+      t: string[],
+      tableId: string,
+    ) => Promise<void>;
     await act(async () => {
-      await onSave("Broken", "", []);
+      await onSave("Broken", "", [], "broken");
     });
     expect(mockToast).toHaveBeenCalledWith(
       expect.objectContaining({

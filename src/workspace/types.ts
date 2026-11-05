@@ -345,9 +345,13 @@ export const DEFAULT_WORKSPACE_FEATURES: Required<WorkspaceFeatures> = {
 
 export interface SavedQueryInput {
   name: string;
+  /** The table name a join uses, as `saved.<tableId>`. */
+  tableId: string;
   query: string;
   description?: string;
   connectionType?: string;
+  /** The connection the query was saved from, so a join can run it there. */
+  connectionId?: string;
   tags?: string[];
 }
 

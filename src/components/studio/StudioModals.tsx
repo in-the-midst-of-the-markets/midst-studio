@@ -50,8 +50,15 @@ interface StudioModalsProps {
   showSaveQuery: boolean;
   saveQueryModalOpen: boolean;
   onCloseSaveQuery: () => void;
-  onSaveQuery: (name: string, description: string, tags: string[]) => void;
+  onSaveQuery: (
+    name: string,
+    description: string,
+    tags: string[],
+    tableId: string,
+  ) => void | boolean | Promise<void | boolean>;
   defaultQuery: string;
+  /** IDs already used, so the dialog can refuse a second query with the same one. */
+  takenTableIds?: readonly string[];
 
   // Data import (both shells).
   showImport: boolean;
@@ -103,6 +110,7 @@ export function StudioModals({
   onCloseSaveQuery,
   onSaveQuery,
   defaultQuery,
+  takenTableIds,
   showImport,
   importModalOpen,
   onCloseImport,
@@ -133,6 +141,7 @@ export function StudioModals({
           onClose={onCloseSaveQuery}
           onSave={onSaveQuery}
           defaultQuery={defaultQuery}
+          takenTableIds={takenTableIds}
         />
       )}
 

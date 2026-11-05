@@ -93,6 +93,7 @@ const mockStorageSaveConnection = mock(() => {});
 const mockStorageGetConnections = mock(() => [] as unknown[]);
 const mockStorageDeleteConnection = mock(() => {});
 const mockStorageSaveQuery = mock(() => {});
+const mockStorageGetSavedQueries = mock(() => [] as { tableId?: string }[]);
 const mockStorageGetFavoriteConnectionIds = mock(() => [] as string[]);
 const mockStorageToggleFavoriteConnection = mock(() => [] as string[]);
 const mockStorageGetConnectionOrder = mock(() => [] as string[]);
@@ -289,6 +290,7 @@ mock.module("@/lib/storage", () => ({
     getConnections: mockStorageGetConnections,
     deleteConnection: mockStorageDeleteConnection,
     saveQuery: mockStorageSaveQuery,
+    getSavedQueries: mockStorageGetSavedQueries,
     getActiveConnectionId: mock(() => null),
     getFavoriteConnectionIds: mockStorageGetFavoriteConnectionIds,
     toggleFavoriteConnection: mockStorageToggleFavoriteConnection,
@@ -666,6 +668,8 @@ describe("Studio", () => {
     mockStorageGetConnections.mockReturnValue([]);
     mockStorageDeleteConnection.mockClear();
     mockStorageSaveQuery.mockClear();
+    mockStorageGetSavedQueries.mockClear();
+    mockStorageGetSavedQueries.mockReturnValue([]);
     mockStorageGetFavoriteConnectionIds.mockClear();
     mockStorageGetFavoriteConnectionIds.mockReturnValue([]);
     mockStorageToggleFavoriteConnection.mockClear();
@@ -892,13 +896,61 @@ describe("Studio", () => {
   test("handleSaveQuery saves query and shows toast", () => {
     connMgrOverride = { activeConnection: pgConn };
     render(<Studio />);
-    const onSave = capturedSaveQueryModalProps.onSave as (name: string, desc: string, tags: string[]) => void;
-    act(() => onSave("My Query", "A test query", ["test"]));
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      name: string,
+      desc: string,
+      tags: string[],
+      tableId: string,
+    ) => void;
+    act(() => onSave("My Query", "A test query", ["test"], "my_query"));
     expect(mockStorageSaveQuery).toHaveBeenCalledTimes(1);
     const saved = (mockStorageSaveQuery.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
     expect(saved.name).toBe("My Query");
+    expect(saved.tableId).toBe("my_query");
+    expect(saved.connectionId).toBe("c1");
     expect(saved.connectionType).toBe("postgres");
     expect(mockToast).toHaveBeenCalledTimes(1);
+  });
+
+  test("handleSaveQuery refuses an ID that is not a table name", () => {
+    connMgrOverride = { activeConnection: pgConn };
+    render(<Studio />);
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      name: string,
+      desc: string,
+      tags: string[],
+      tableId: string,
+    ) => boolean;
+    let saved: boolean | undefined;
+    act(() => {
+      saved = onSave("My Query", "", [], "my query");
+    });
+    expect(saved).toBe(false);
+    expect(mockStorageSaveQuery).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "ID needs a change", variant: "destructive" }),
+    );
+  });
+
+  test("handleSaveQuery refuses an ID another saved query already uses", () => {
+    mockStorageGetSavedQueries.mockReturnValue([{ tableId: "My_Query" }]);
+    connMgrOverride = { activeConnection: pgConn };
+    render(<Studio />);
+    const onSave = capturedSaveQueryModalProps.onSave as (
+      name: string,
+      desc: string,
+      tags: string[],
+      tableId: string,
+    ) => boolean;
+    let saved: boolean | undefined;
+    act(() => {
+      saved = onSave("My Query", "", [], "my_query");
+    });
+    expect(saved).toBe(false);
+    expect(mockStorageSaveQuery).not.toHaveBeenCalled();
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "ID already used", variant: "destructive" }),
+    );
   });
 
   test("handleSaveQuery returns early without activeConnection", () => {

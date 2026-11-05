@@ -48,6 +48,7 @@ import {
 import { downloadText } from "@/lib/export/download";
 import { writeToClipboard } from "@/components/copy-button";
 import { newLocalId } from "@/lib/ids";
+import { savedQueryTableIdError } from "@/lib/saved-query-id";
 import { buildConnectionPayload, catalogField, resolveAgentRunConnectionId } from "@/hooks/use-connection-payload";
 import { isMobileViewport, useIsMobile } from "@/hooks/use-mobile";
 import { useAgentCapability } from "@/hooks/use-agent-capability";
@@ -442,6 +443,7 @@ export default function Studio() {
     onTransactionEnded: txn.markTransactionEnded,
     onStatementSent: conn.markActiveUsed,
     queryEditorRef,
+    connections: conn.connections,
   });
   const { executeQuery, cancelQuery } = queryExec;
   const runEditorQuery = useCallback(() => executeQuery(), [executeQuery]);
@@ -822,14 +824,30 @@ export default function Studio() {
 
   // One identity for the memoized surface this reaches (X5): the statement is read at the point
   // of use, the save, rather than captured from the tab on every keystroke.
-  const handleSaveQuery = useStableCallback((name: string, description: string, tags: string[]) => {
-    if (!conn.activeConnection) return;
+  const handleSaveQuery = useStableCallback((name: string, description: string, tags: string[], tableId: string) => {
+    if (!conn.activeConnection) return false;
+    const idError = savedQueryTableIdError(tableId);
+    if (idError !== null) {
+      toast({ title: "ID needs a change", description: idError, variant: "destructive" });
+      return false;
+    }
+    const taken = storage.getSavedQueries().some((query) => query.tableId?.toLowerCase() === tableId.toLowerCase());
+    if (taken) {
+      toast({
+        title: "ID already used",
+        description: `Another saved query already uses "${tableId}". Pick a different ID.`,
+        variant: "destructive",
+      });
+      return false;
+    }
     const newSavedQuery: SavedQuery = {
       id: newLocalId(),
       name,
+      tableId,
       query: tabMgr.currentTab.query,
       description,
       connectionType: conn.activeConnection.type,
+      connectionId: conn.activeConnection.id,
       tags,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -837,6 +855,7 @@ export default function Studio() {
     storage.saveQuery(newSavedQuery);
     setSavedKey((prev) => prev + 1);
     toast({ title: "Query Saved", description: `"${name}" has been added to your saved queries.` });
+    return true;
   });
 
   // === Modal and overlay handlers (handed to `StudioModals`) ===
@@ -1846,6 +1865,10 @@ export default function Studio() {
         onCloseSaveQuery={closeSaveQuery}
         onSaveQuery={handleSaveQuery}
         defaultQuery={tabMgr.currentTab.query}
+        takenTableIds={storage
+          .getSavedQueries()
+          .map((query) => query.tableId)
+          .filter((id): id is string => typeof id === "string")}
         showImport
         importModalOpen={isImportModalOpen}
         onCloseImport={closeImport}

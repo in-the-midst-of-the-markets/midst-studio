@@ -6470,4 +6470,129 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
       description: "Only a single statement can be explained.",
     });
   });
+
+  test("a saved join posts the DuckDB statement and the saved-query IDs", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/saved-join": { ok: true, json: mockQueryResult },
+    });
+    const queries = spyOn(storage, "getSavedQueries").mockReturnValue([
+      {
+        id: "s1",
+        name: "Monthly Active Users",
+        tableId: "monthly_active_users",
+        query: "SELECT 1",
+        connectionType: "postgres",
+        connectionId: "qe-pg-1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    const listed = spyOn(storage, "getConnections").mockReturnValue([mockConnection]);
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM saved.monthly_active_users");
+    });
+
+    const joinCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/api/db/saved-join"));
+    expect(joinCall).toBeDefined();
+    const body = JSON.parse(joinCall![1]!.body as string);
+    expect(body.sql).toBe("SELECT * FROM saved.monthly_active_users");
+    expect(body.saved).toEqual([
+      expect.objectContaining({
+        name: "monthly_active_users",
+        query: "SELECT 1",
+        connection: expect.objectContaining({ id: "qe-pg-1" }),
+      }),
+    ]);
+    expect(body.connection).toBeUndefined();
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/query"))).toBe(false);
+    queries.mockRestore();
+    listed.mockRestore();
+  });
+
+  test("a saved join uses the connections the editor was given", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/saved-join": { ok: true, json: mockQueryResult },
+    });
+    const queries = spyOn(storage, "getSavedQueries").mockReturnValue([
+      {
+        id: "s1",
+        name: "Orders",
+        tableId: "orders",
+        query: "SELECT 1",
+        connectionType: "postgres",
+        connectionId: "qe-pg-1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    const listed = spyOn(storage, "getConnections").mockReturnValue([]);
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ connections: [mockConnection] })));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM saved.orders");
+    });
+
+    const joinCall = fetchMock.mock.calls.find((call) => String(call[0]).includes("/api/db/saved-join"));
+    const body = JSON.parse(joinCall![1]!.body as string);
+    expect(body.saved[0].connection.id).toBe("qe-pg-1");
+    expect(listed).not.toHaveBeenCalled();
+    queries.mockRestore();
+    listed.mockRestore();
+  });
+
+  test("a saved word inside a string stays on the connection's own route", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/query": { ok: true, json: mockQueryResult },
+    });
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT 'saved.orders'");
+    });
+
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/saved-join"))).toBe(false);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/query"))).toBe(true);
+  });
+
+  test("explain of a saved join is refused before anything is sent", async () => {
+    const fetchMock = mockGlobalFetch({});
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM saved.orders", undefined, true);
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledWith("Explain is not available", expect.any(Object));
+  });
+
+  test("a saved join is refused while a transaction is open", async () => {
+    const fetchMock = mockGlobalFetch({});
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ transactionActive: true })));
+
+    await act(async () => {
+      await result.current.executeQuery("SELECT * FROM saved.orders");
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mockToastError).toHaveBeenCalledWith("Finish the transaction", expect.any(Object));
+  });
+
+  test("a saved join does not open the sandbox or the safety dialog", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/saved-join": { ok: true, json: mockQueryResult },
+    });
+    isDangerousQueryMock.mockClear();
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams({ playgroundMode: true })));
+
+    await act(async () => {
+      await result.current.executeQuery("DELETE FROM saved.orders");
+    });
+
+    expect(isDangerousQueryMock).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/transaction"))).toBe(false);
+    expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/saved-join"))).toBe(true);
+  });
 });

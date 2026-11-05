@@ -82,6 +82,14 @@ describe("SavedQueries", () => {
     expect(onSelectQuery).not.toHaveBeenCalled();
   });
 
+  test("shows a saved query's join id and finds it by that id", () => {
+    mockGetSavedQueries.mockReturnValue([{ ...mockSavedQueries[0], tableId: "active_users" }]);
+    const view = render(<SavedQueries onSelectQuery={mock(() => {})} />);
+    expect(view.getByText("saved.active_users")).toBeTruthy();
+    fireEvent.change(view.getByPlaceholderText("Search saved queries..."), { target: { value: "active_users" } });
+    expect(view.getByText("Active Users")).toBeTruthy();
+  });
+
   test("imports valid saved queries, reloads the library and retains search without executing", async () => {
     const imported = { ...mockSavedQueries[0], id: "new", name: "Imported Query", query: "SELECT '你好';" };
     const onSelectQuery = mock(() => {});

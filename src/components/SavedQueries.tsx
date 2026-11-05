@@ -35,7 +35,9 @@ export function SavedQueries({ onSelectQuery, connectionType, refreshTrigger }: 
 
   const filteredQueries = queries.filter((q) => {
     const matchesSearch =
-      q.name.toLowerCase().includes(search.toLowerCase()) || q.query.toLowerCase().includes(search.toLowerCase());
+      q.name.toLowerCase().includes(search.toLowerCase()) ||
+      q.query.toLowerCase().includes(search.toLowerCase()) ||
+      (q.tableId?.toLowerCase().includes(search.toLowerCase()) ?? false);
     const matchesType = !connectionType || q.connectionType === connectionType;
     return matchesSearch && matchesType;
   });
@@ -147,6 +149,7 @@ export function SavedQueries({ onSelectQuery, connectionType, refreshTrigger }: 
                         {q.name}
                       </button>
                     </h4>
+                    {q.tableId && <p className="text-[0.625rem] font-mono text-fg-muted">saved.{q.tableId}</p>}
                     {q.description && <p className="text-xs text-fg-muted line-clamp-1">{q.description}</p>}
                   </div>
                   <div className="relative z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">

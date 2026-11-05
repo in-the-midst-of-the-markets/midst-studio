@@ -135,6 +135,7 @@ const REVIEWED_CALLERS: Readonly<Record<string, Readonly<Record<string, string>>
     "src/app/api/db/profile/route.ts": RESOLVED_BY_THE_ROUTE,
     "src/app/api/db/provider-meta/route.ts": RESOLVED_BY_THE_ROUTE,
     "src/app/api/db/query/route.ts": RESOLVED_BY_THE_ROUTE,
+    "src/app/api/db/saved-join/route.ts": RESOLVED_BY_THE_ROUTE,
     "src/app/api/db/test-connection/route.ts": RESOLVED_BY_THE_ROUTE,
     "src/app/api/db/transaction/route.ts": RESOLVED_BY_THE_ROUTE,
     "src/app/api/agent/classify/route.ts": RESOLVED_BY_THE_AGENT_ROUTE,
@@ -256,6 +257,7 @@ const REVIEWED_CALLERS: Readonly<Record<string, Readonly<Record<string, string>>
     "src/app/api/db/pool-stats/route.ts": BUILDS_WHAT_THE_ROUTE_RESOLVED,
     "src/app/api/db/profile/route.ts": BUILDS_WHAT_THE_ROUTE_RESOLVED,
     "src/app/api/db/query/route.ts": BUILDS_WHAT_THE_ROUTE_RESOLVED,
+    "src/app/api/db/saved-join/route.ts": BUILDS_WHAT_THE_ROUTE_RESOLVED,
     "src/app/api/db/transaction/route.ts": BUILDS_WHAT_THE_ROUTE_RESOLVED,
   },
   cachedEditorProvider: {

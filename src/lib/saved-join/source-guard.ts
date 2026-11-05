@@ -1,0 +1,33 @@
+import { statementRefusal } from "@/lib/db/destructive-commands";
+import { isReadOnlySql } from "@/lib/ai/assist-readonly";
+import { countCodeStatements } from "@/lib/sql/statement-splitter";
+import { hasLoneCarriageReturnInLineComment, hasUnterminatedSpan } from "@/lib/sql/spans";
+import { readsSqlText, resolveSqlGrammar } from "@/lib/sql/grammar";
+import type { DatabaseType } from "@/lib/types";
+
+/**
+ * Why this saved query cannot be a table in a join, or null when it can run.
+ *
+ * The outer statement is DuckDB. The saved query stays in its own database's language
+ * and runs there first, so it has to be one read: a join must not be a way to run a
+ * write that the editor would have asked about.
+ */
+export function sourceReadRefusal(type: DatabaseType, query: string): string | null {
+  const refused = statementRefusal(query, type);
+  if (refused !== undefined) return refused;
+
+  if (!readsSqlText(type)) return null;
+
+  const grammar = resolveSqlGrammar(type);
+  if (
+    countCodeStatements(query, grammar) > 1 ||
+    hasUnterminatedSpan(query, grammar) ||
+    hasLoneCarriageReturnInLineComment(query, grammar)
+  ) {
+    return "A saved query in a join has to be one statement.";
+  }
+  if (!isReadOnlySql(query)) {
+    return "A saved query in a join has to be a read. The join runs it on its own database before the DuckDB statement.";
+  }
+  return null;
+}
