@@ -1,17 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parse } from "yaml";
 import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { openDbtProject, readDbtRequest } from "@/lib/dbt/open";
-import { DBT_TARGETS, dbtProfile, dbtSchema } from "@/lib/dbt/profile";
+import { DBT_TARGETS, connectionSecrets, dbtCompileProfile, dbtProfile, dbtSchema } from "@/lib/dbt/profile";
 import { previewModel, readDbtProject, refsIn, sourceSchemas, sourcesIn } from "@/lib/dbt/project";
-import { compileProject, prepareProject, spawnCaptured } from "@/lib/dbt/runner";
+import { compileEnvironment, compileProject, prepareProject, redactSecrets, spawnCaptured } from "@/lib/dbt/runner";
 import { readMetrics } from "@/lib/metricflow/metrics";
 import {
   GITHUB_FILE_CAP,
   GITHUB_FILE_CHARS,
+  GITHUB_JSON_CAP,
   modelPathsOf,
   parseGitDirectory,
   parseGitHubRepo,
@@ -47,11 +48,15 @@ function githubFetch(
   tree: Record<string, string>,
   options: { status?: number; truncated?: boolean; branch?: unknown; json?: boolean; throw?: boolean } = {},
 ) {
-  const seen: { url: string; authorization: string | null }[] = [];
+  const seen: { url: string; authorization: string | null; redirect: RequestRedirect | null }[] = [];
   const fetchImpl = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     if (options.throw) throw new Error("offline");
     const url = String(input);
-    seen.push({ url, authorization: new Headers(init?.headers).get("authorization") });
+    seen.push({
+      url,
+      authorization: new Headers(init?.headers).get("authorization"),
+      redirect: init?.redirect ?? null,
+    });
     if (options.status !== undefined && !url.includes("/contents/"))
       return new Response("no", { status: options.status });
     if (url.includes("/git/trees/")) {
@@ -139,6 +144,7 @@ describe("GitHub repository", () => {
     ]);
     expect(seen.some((call) => call.authorization === "Bearer ghp_abc")).toBe(true);
     expect(seen.every((call) => !call.url.includes("ghp_abc"))).toBe(true);
+    expect(seen.every((call) => call.redirect === "manual")).toBe(true);
   });
 
   test("uses the requested ref and directory", async () => {
@@ -229,6 +235,70 @@ describe("GitHub repository", () => {
     expect(await readGitHubProject(repo, { ...base, fetch: broken.fetchImpl })).toBe(
       "This repository could not be read. Check the name and the token.",
     );
+    const oversized = async (input: RequestInfo | URL): Promise<Response> => {
+      const url = String(input);
+      if (url.includes("/git/trees/")) {
+        return new Response("{}", { status: 200, headers: { "content-length": String(GITHUB_JSON_CAP + 1) } });
+      }
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: oversized })).toBe(
+      "GitHub returned a response that is too large.",
+    );
+    const fatBody = async (input: RequestInfo | URL): Promise<Response> => {
+      if (String(input).includes("/git/trees/"))
+        return new Response(`{${" ".repeat(GITHUB_JSON_CAP)}}`, { status: 200 });
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: fatBody })).toBe(
+      "GitHub returned a response that is too large.",
+    );
+    const fatFile = async (input: RequestInfo | URL): Promise<Response> => {
+      const url = String(input);
+      if (url.includes("/git/trees/")) return Response.json({ tree: [{ path: "dbt_project.yml", type: "blob" }] });
+      if (url.includes("/contents/")) {
+        return new Response("name: analytics\n", {
+          status: 200,
+          headers: { "content-length": String(GITHUB_FILE_CHARS + 1) },
+        });
+      }
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: fatFile })).toBe("A model file is larger than 200KB.");
+    const lyingLength = async (input: RequestInfo | URL): Promise<Response> => {
+      const url = String(input);
+      if (url.includes("/git/trees/")) return Response.json({ tree: [{ path: "dbt_project.yml", type: "blob" }] });
+      if (url.includes("/contents/")) {
+        return new Response("x".repeat(GITHUB_FILE_CHARS + 1), { status: 200, headers: { "content-length": "10" } });
+      }
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: lyingLength })).toBe("A model file is larger than 200KB.");
+    const redirected = async (): Promise<Response> =>
+      new Response("no", { status: 302, headers: { location: "http://127.0.0.1/secret" } });
+    expect(await readGitHubProject(repo, { ...base, fetch: redirected })).toBe(
+      "This repository could not be read. Check the name and the token.",
+    );
+    const emptyBody = async (input: RequestInfo | URL): Promise<Response> => {
+      if (String(input).includes("/git/trees/")) return new Response(null);
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: emptyBody })).toBe(
+      "GitHub returned a response that could not be read.",
+    );
+    const brokenStream = async (input: RequestInfo | URL): Promise<Response> => {
+      if (String(input).includes("/git/trees/")) {
+        return new Response(
+          new ReadableStream({
+            pull(controller) {
+              controller.error(new Error("broken"));
+            },
+          }),
+        );
+      }
+      return Response.json({ default_branch: "main" });
+    };
+    expect(await readGitHubProject(repo, { ...base, fetch: brokenStream })).toBe("GitHub could not be reached.");
   });
 
   test("reads model paths from either YAML shape", () => {
@@ -277,6 +347,9 @@ describe("dbt project", () => {
 
   test("refuses a project it cannot name", () => {
     expect(readDbtProject([])).toBe("This repository has no dbt_project.yml.");
+    expect(readDbtProject([{ path: "dbt_project.yml", text: "name: &a analytics\nx: [*a]\n" }])).toBe(
+      "dbt_project.yml could not be read.",
+    );
     expect(readDbtProject([{ path: "dbt_project.yml", text: "name: [" }])).toBe("dbt_project.yml could not be read.");
     expect(readDbtProject([{ path: "dbt_project.yml", text: "name: 1\n" }])).toBe(
       "dbt_project.yml needs a project name.",
@@ -326,6 +399,30 @@ describe("dbt profile", () => {
     expect(dbtSchema(connection("postgres", { host: "db.example", password: "secret", schema: "analytics" }))).toBe(
       "analytics",
     );
+    expect(
+      dbtSchema(connection("duckdb", { connectionString: "md:motherduck_token=s3cret-token", schema: "main" })),
+    ).toBe("main");
+    const secrets = connectionSecrets(
+      connection("postgres", {
+        host: "db.example",
+        password: "s3cret-password",
+        connectionString: "postgres://db.example/app",
+        sshTunnel: {
+          enabled: true,
+          host: "bastion",
+          port: 22,
+          username: "jump",
+          authMethod: "privateKey",
+          privateKey: "private-key-material",
+          passphrase: "key-passphrase",
+        },
+        ssl: { mode: "require", clientKey: "client-key-material" },
+      }),
+    );
+    expect(secrets).toContain("s3cret-password");
+    expect(secrets).toContain("private-key-material");
+    expect(secrets).toContain("client-key-material");
+    expect(secrets).not.toContain(":memory:");
     const mysql = dbtProfile(
       connection("mysql", { host: "db.example", password: "secret", database: "app", schema: "other" }),
     );
@@ -349,6 +446,28 @@ describe("dbt profile", () => {
     expect("yaml" in duck && parse(duck.yaml).midst.outputs.dev.path).toBe("/tmp/warehouse.duckdb");
     expect(dbtProfile(connection("duckdb", { database: "file.duckdb" }))).toHaveProperty("yaml");
     expect(dbtProfile(connection("duckdb"))).toHaveProperty("yaml");
+    const compiling = dbtCompileProfile(
+      connection("postgres", {
+        host: "db.example",
+        password: "s3cret-password",
+        sshTunnel: {
+          enabled: true,
+          host: "bastion",
+          port: 22,
+          username: "jump",
+          authMethod: "privateKey",
+          privateKey: "private-key-material",
+          password: "tunnel-password",
+          passphrase: "key-passphrase",
+        },
+        ssl: { mode: "require", caCert: "ca-material", clientCert: "cert-material", clientKey: "client-key-material" },
+      }),
+    );
+    expect("yaml" in compiling && compiling.yaml.includes("s3cret-password")).toBe(false);
+    expect("yaml" in compiling && compiling.yaml.includes("private-key-material")).toBe(false);
+    expect("yaml" in compiling && compiling.yaml.includes("client-key-material")).toBe(false);
+    const duckCompile = dbtCompileProfile(connection("duckdb", { connectionString: "/tmp/warehouse.duckdb" }));
+    expect("yaml" in duckCompile && parse(duckCompile.yaml).midst.outputs.dev.path).toBe(":memory:");
   });
 
   test("refuses a connection dbt cannot use", () => {
@@ -366,6 +485,15 @@ describe("dbt profile", () => {
     });
     expect(dbtProfile(connection("postgres", { host: "db\n.example", password: "secret" }))).toEqual({
       error: "This connection has a value that cannot be written into a profile.",
+    });
+    expect(dbtProfile(connection("postgres", { host: "db.example/evil", password: "secret" }))).toEqual({
+      error: "This connection has a value that cannot be written into a profile.",
+    });
+    expect(dbtProfile(connection("postgres", { host: "db.example", password: "secret", port: 0 }))).toEqual({
+      error: "This connection has a value that cannot be written into a profile.",
+    });
+    expect(dbtProfile(connection("snowflake", { host: "org/account", password: "secret" }))).toEqual({
+      error: "This connection has no Snowflake account for dbt.",
     });
     expect(dbtProfile(connection("mysql", { password: "secret", database: "app" }))).toEqual({
       error: "This connection has no host for dbt.",
@@ -411,6 +539,21 @@ semantic_models:
       - name: rows
         agg: count
         expr: "*"
+      - name: product
+        agg: sum
+        expr: "amount * price"
+      - name: injected
+        agg: sum
+        expr: "(SELECT password FROM secrets)"
+      - name: open_paren
+        agg: sum
+        expr: "(amount"
+      - name: close_paren
+        agg: sum
+        expr: ")"
+      - name: empty_expr
+        agg: sum
+        expr: ""
       - name: bad_expr
         agg: sum
         expr: "amount; drop"
@@ -433,6 +576,11 @@ metrics:
     type: simple
     type_params:
       measure: revenue
+  - name: product
+    label: "${"P".repeat(201)}"
+    type: simple
+    type_params:
+      measure: product
   - name: buyers
     type: simple
     type_params:
@@ -476,6 +624,9 @@ metrics:
     );
     const revenue = metrics.find((metric) => metric.name === "revenue");
     expect(revenue?.sql).toContain("SUM(amount) AS revenue");
+    expect(metrics.find((metric) => metric.name === "product")?.sql).toContain("SUM(amount * price)");
+    expect(metrics.find((metric) => metric.name === "product")?.label).toBe("product");
+    expect(metrics.some((metric) => metric.sql?.includes("SELECT password"))).toBe(false);
     expect(revenue?.sql).toContain("GROUP BY ordered_at");
     expect(revenue?.timeDimension).toBe("ordered_at");
     expect(metrics.find((metric) => metric.name === "buyers")?.label).toBe("buyers");
@@ -497,6 +648,16 @@ metrics:
     );
     expect(plain[0]?.sql).toContain("'all' AS bucket");
     expect(plain[0]?.sql).toContain("public.orders");
+    const called = readMetrics(
+      [
+        {
+          path: "models/orders.yml",
+          text: "semantic_models:\n  - name: orders\n    model: ref('orders')\n    measures:\n      - name: leaked\n        agg: sum\n        expr: pg_read_file(amount)\nmetrics:\n  - name: leaked\n    type: simple\n    type_params:\n      measure: leaked\n",
+        },
+      ],
+      "public",
+    );
+    expect(called[0]?.sql).toBeNull();
   });
 });
 
@@ -646,6 +807,66 @@ describe("dbt compile", () => {
     expect(await compileProject([{ path: "../secret", text: "x" }], "profile: yes\n")).toEqual({
       error: "A project file has a path dbt will not be given.",
     });
+    const many = Array.from({ length: GITHUB_FILE_CAP + 1 }, (_item, index) => ({
+      path: `models/m${index}.sql`,
+      text: "select 1",
+    }));
+    expect(await prepareProject(many, "profile: yes\n")).toBe(
+      `This project has more than ${GITHUB_FILE_CAP} model files.`,
+    );
+    expect(await prepareProject([{ path: "dbt_project.yml", text: "x".repeat(GITHUB_FILE_CHARS + 1) }], "x")).toBe(
+      "A model file is larger than 200KB.",
+    );
+    const leaked = await compileProject(
+      [{ path: "dbt_project.yml", text: "name: demo\n" }],
+      "profile: yes\n",
+      {
+        prepare: async () => ({ projectDir: tmpdir(), profilesDir: tmpdir(), cleanup: async () => {} }),
+        spawn: async () => ({ code: 1, stdout: "", stderr: "saw s3cret-password" }),
+      },
+      1000,
+      ["s3cret-password", "short"],
+    );
+    expect(leaked).toEqual({ error: "saw [redacted]" });
+    expect(redactSecrets("plain", ["short"])).toBe("plain");
+    const refused = { error: "This project uses a dbt feature compile will not run." };
+    expect(await compileProject([{ path: "models/orders.sql", text: "{{ env_var('JWT_SECRET') }}" }], "x")).toEqual(
+      refused,
+    );
+    expect(await compileProject([{ path: "models/orders.sql", text: "{{ modules.datetime.date }}" }], "x")).toEqual(
+      refused,
+    );
+    expect(await compileProject([{ path: "models/orders.sql", text: "select {{ name__id }}" }], "x")).toEqual(refused);
+    expect(
+      await compileProject([{ path: "models/orders.sql", text: "{% call statement('x') %}select 1" }], "x"),
+    ).toEqual(refused);
+    const hugeSql = await compileProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x", {
+      prepare: async () => {
+        const prepared = await prepareProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x");
+        if (typeof prepared === "string") throw new Error(prepared);
+        const { mkdir, writeFile } = await import("node:fs/promises");
+        await mkdir(join(prepared.projectDir, "target", "compiled"), { recursive: true });
+        await writeFile(join(prepared.projectDir, "target", "compiled", "big.sql"), "x".repeat(200_001));
+        return prepared;
+      },
+      spawn: async () => ({ code: 0, stdout: "", stderr: "" }),
+    });
+    expect(hugeSql).toEqual({ error: "dbt produced SQL that is too large." });
+    const linked = await compileProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x", {
+      prepare: async () => {
+        const prepared = await prepareProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x");
+        if (typeof prepared === "string") throw new Error(prepared);
+        const compiled = join(prepared.projectDir, "target", "compiled");
+        await mkdir(compiled, { recursive: true });
+        const outside = join(prepared.profilesDir, "outside.txt");
+        await writeFile(outside, "secret-file");
+        await symlink(outside, join(compiled, "leak.sql"));
+        await writeFile(join(compiled, "ok.sql"), "select 1");
+        return prepared;
+      },
+      spawn: async () => ({ code: 0, stdout: "", stderr: "" }),
+    });
+    expect(linked).toEqual({ files: { "ok.sql": "select 1" } });
   });
 
   test("runs a process without a shell", async () => {
@@ -657,6 +878,23 @@ describe("dbt compile", () => {
     expect(ok.code).toBe(0);
     expect(ok.stdout.length).toBe(8000);
     expect(ok.stderr.length).toBe(8000);
+    const planted = "MIDST_PLANTED_SECRET";
+    const previous = process.env[planted];
+    process.env[planted] = "super-secret-value";
+    const seen = await spawnCaptured(
+      process.execPath,
+      ["-e", "process.stdout.write(process.env.MIDST_PLANTED_SECRET ?? 'absent')"],
+      { cwd: tmpdir(), timeoutMs: 5000 },
+    );
+    if (previous === undefined) delete process.env[planted];
+    else process.env[planted] = previous;
+    expect(seen.stdout).toBe("absent");
+    expect(compileEnvironment({ PATH: "/bin", [planted]: "nope" }).PATH).toBe("/bin");
+    expect(compileEnvironment({ PATH: "/bin" })[planted]).toBeUndefined();
+    expect(compileEnvironment({ NODE_ENV: "development" }).NODE_ENV).toBe("development");
+    expect(compileEnvironment({ NODE_ENV: "test" }).NODE_ENV).toBe("test");
+    expect(compileEnvironment({ NODE_ENV: "production" }).NODE_ENV).toBe("production");
+    expect(compileEnvironment({ NODE_ENV: "staging" }).NODE_ENV).toBe("production");
     const failed = await spawnCaptured(process.execPath, ["-e", "process.exit(1)"], { cwd: tmpdir(), timeoutMs: 5000 });
     expect(failed.code).toBe(1);
     const missing = await spawnCaptured("dbt-not-installed-midst", [], { cwd: tmpdir(), timeoutMs: 1000 });

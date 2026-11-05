@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createErrorResponse } from "@/lib/api/errors";
 import { INVALID_REQUEST_BODY, readJsonObject } from "@/lib/api/json-object-body";
 import { guardRoute } from "@/lib/api/require-session";
-import { dbtProfile } from "@/lib/dbt/profile";
+import { connectionSecrets, dbtCompileProfile } from "@/lib/dbt/profile";
 import { readDbtRequest } from "@/lib/dbt/open";
 import { compileProject } from "@/lib/dbt/runner";
 import { readGitHubProject } from "@/lib/git/github";
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const request = readDbtRequest(body, true);
     if (typeof request === "string") return NextResponse.json({ error: request }, { status: 400 });
     const connection = await resolveConnection({ connectionId: request.connectionId ?? "" }, guard.session);
-    const profile = dbtProfile(connection);
+    const profile = dbtCompileProfile(connection);
     if ("error" in profile) return NextResponse.json({ error: profile.error }, { status: 400 });
     const project = await readGitHubProject(request.repo, {
       ref: request.ref,
@@ -27,7 +27,10 @@ export async function POST(req: Request) {
       fetch: globalThis.fetch,
     });
     if (typeof project === "string") return NextResponse.json({ error: project }, { status: 400 });
-    const compiled = await compileProject(project.files, profile.yaml);
+    const compiled = await compileProject(project.files, profile.yaml, {}, undefined, [
+      ...connectionSecrets(connection),
+      request.token,
+    ]);
     if ("error" in compiled) return NextResponse.json({ error: compiled.error }, { status: 400 });
     return NextResponse.json({ ref: project.ref, files: compiled.files });
   } catch (error) {
