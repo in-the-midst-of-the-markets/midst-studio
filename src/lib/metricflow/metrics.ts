@@ -1,8 +1,28 @@
-import { parse } from "yaml";
+import { parseUntrustedYaml } from "@/lib/dbt/yaml";
 import type { GitFile } from "@/lib/git/github";
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
-const EXPR = /^[A-Za-z0-9_.*+\-/(), ]+$/;
+const RESERVED = new Set([
+  "select",
+  "from",
+  "where",
+  "union",
+  "insert",
+  "update",
+  "delete",
+  "drop",
+  "alter",
+  "create",
+  "grant",
+  "into",
+  "join",
+  "with",
+  "copy",
+  "call",
+  "execute",
+  "table",
+  "values",
+]);
 
 export interface MetricModel {
   readonly name: string;
@@ -42,7 +62,7 @@ export function readMetrics(files: readonly GitFile[], schema: string): ProjectM
     if (!/\.ya?ml$/.test(file.path)) continue;
     let parsed: unknown;
     try {
-      parsed = parse(file.text);
+      parsed = parseUntrustedYaml(file.text);
     } catch {
       continue;
     }
@@ -62,7 +82,7 @@ function semanticModels(files: readonly GitFile[], schema: string): Map<string, 
     if (!/\.ya?ml$/.test(file.path)) continue;
     let parsed: unknown;
     try {
-      parsed = parse(file.text);
+      parsed = parseUntrustedYaml(file.text);
     } catch {
       continue;
     }
@@ -105,15 +125,37 @@ function oneMeasure(value: unknown): MetricMeasure | null {
   if (typeof name !== "string" || !IDENT.test(name) || typeof agg !== "string" || AGG[agg] === undefined) return null;
   const expr = row?.expr;
   const column = expr === undefined ? name : expr;
-  if (typeof column !== "string" || !EXPR.test(column)) return null;
-  return { name, agg, expr: column };
+  if (typeof column !== "string") return null;
+  const safe = metricExpression(column);
+  if (safe === null) return null;
+  return { name, agg, expr: safe };
+}
+
+/** A column expression a chart can run. Words that start a statement are refused. */
+function metricExpression(expr: string): string | null {
+  const trimmed = expr.trim();
+  if (trimmed.length === 0 || trimmed.length > 200) return null;
+  if (trimmed === "*") return "*";
+  if (!/^[A-Za-z0-9_+\-*/(). ]+$/.test(trimmed)) return null;
+  const words = trimmed.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
+  if (words.length === 0) return null;
+  if (words.some((word) => RESERVED.has(word.toLowerCase()))) return null;
+  let depth = 0;
+  for (const char of trimmed) {
+    if (char === "(") depth += 1;
+    else if (char === ")") depth -= 1;
+    if (depth < 0) return null;
+  }
+  if (depth !== 0) return null;
+  return trimmed.replace(/\s+/g, " ");
 }
 
 function oneMetric(value: unknown, models: ReadonlyMap<string, MetricModel>): ProjectMetric | null {
   const row = asRecord(value);
   const name = row?.name;
   if (typeof name !== "string" || !IDENT.test(name)) return null;
-  const label = typeof row?.label === "string" && row.label.trim() !== "" ? row.label : name;
+  const offered = typeof row?.label === "string" ? row.label.trim() : "";
+  const label = offered !== "" && offered.length <= 200 ? offered : name;
   const type = row?.type;
   const params = asRecord(row?.type_params);
   if (type === "simple") return simpleMetric(name, label, params, models);
