@@ -991,4 +991,105 @@ describe("DashboardStudio", () => {
     expect(storage.getSavedDashboards()[0]?.notes).toHaveLength(1);
     expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(1);
   });
+
+  test("viewer mode shows charts, filters, and text without the editing controls", async () => {
+    storage.saveConnection(connection);
+    storage.saveChart(chart());
+    storage.saveChart(
+      chart({
+        id: "plain",
+        name: "Plain",
+        query: "SELECT 1",
+        chartType: "bar",
+        typeId: undefined,
+        variationId: undefined,
+        selection: undefined,
+        xAxis: undefined,
+        yAxis: undefined,
+      }),
+    );
+    storage.saveDashboard({
+      ...board("sales", ["revenue", "plain"], "Sales board"),
+      filters: [
+        { id: "region", name: "region", label: "Region", query: "", value: "east", control: "search" },
+        { id: "open", name: "open", query: "", value: "" },
+      ],
+      notes: [
+        { id: "hello", text: "Hello from the board" },
+        { id: "blank", text: "" },
+        { id: "drawn", text: "Drawn", script: "root.textContent = text;" },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    mockGlobalFetch({ "/api/db/query": { json: rows } });
+    const view = render(<DashboardStudio />);
+    expect(view.getByRole("button", { name: "Editor" }).getAttribute("aria-pressed")).toBe("true");
+    expect(view.getByRole("button", { name: "Add content" })).toBeTruthy();
+    expect(view.getByLabelText("Dashboard name")).toBeTruthy();
+    expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
+    expect(view.getAllByLabelText("Component title")).toHaveLength(2);
+    expect(view.getAllByRole("textbox", { name: "Text box" }).length).toBeGreaterThan(0);
+
+    fireEvent.click(view.getByRole("button", { name: "Viewer" }));
+    expect(view.getByRole("button", { name: "Viewer" }).getAttribute("aria-pressed")).toBe("true");
+    expect(view.getByRole("heading", { name: "Sales board" })).toBeTruthy();
+    expect(view.getByLabelText("Dashboard")).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Add content" })).toBeNull();
+    expect(view.queryByRole("button", { name: "New dashboard" })).toBeNull();
+    expect(view.queryByLabelText("Dashboard name")).toBeNull();
+    expect(view.queryByRole("button", { name: "Delete dashboard" })).toBeNull();
+    expect(view.queryByText("Make it your own")).toBeNull();
+    expect(view.queryByText("ON THIS DASHBOARD")).toBeNull();
+    expect(
+      view.queryByText(
+        "Compile a dashboard from saved charts. Save more than one, and switch when you want a different view.",
+      ),
+    ).toBeNull();
+    expect(view.queryByRole("button", { name: "Ask AI" })).toBeNull();
+    expect(view.queryByLabelText("Dashboard conversation")).toBeNull();
+    expect(view.queryByLabelText("Chart title")).toBeNull();
+    expect(view.queryByRole("button", { name: "Query" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Code" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Unsave Revenue" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Remove Revenue" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Resize Revenue" })).toBeNull();
+    expect(view.queryByLabelText("Component title")).toBeNull();
+    expect(view.queryByRole("button", { name: "Design" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Save Region component" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Remove region filter" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Text query" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Text code" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Remove text" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Bold" })).toBeNull();
+    expect(view.queryByLabelText("Text font")).toBeNull();
+    expect(view.queryByRole("button", { name: "Resize text box" })).toBeNull();
+    expect(view.queryByRole("textbox", { name: "Text box" })).toBeNull();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Region" })).toBeTruthy();
+    expect(view.getByText("This filter is not ready to view.")).toBeTruthy();
+    expect(view.getByLabelText("Text box").textContent).toBe("Hello from the board");
+    expect(view.getByTitle("Text script")).toBeTruthy();
+    expect(await view.findByTestId("assist-chart")).toBeTruthy();
+    expect(await view.findByText("This chart is not ready to view.")).toBeTruthy();
+
+    fireEvent.change(view.getByLabelText("Filter search"), { target: { value: "west" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.find((item) => item.id === "region")?.value).toBe("west");
+
+    fireEvent.click(view.getByRole("button", { name: "Editor" }));
+    expect(view.getByRole("heading", { name: "Create" })).toBeTruthy();
+    expect(view.getByRole("button", { name: "Add content" })).toBeTruthy();
+    expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
+    expect(view.getByRole("button", { name: "Ask AI" })).toBeTruthy();
+  });
+
+  test("viewer mode on an empty page names the page Dash", () => {
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Viewer" }));
+    expect(view.getByRole("heading", { name: "Dash" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "New dashboard" })).toBeNull();
+    expect(view.getByText("You have no dashboards yet.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Editor" }));
+    expect(view.getByRole("heading", { name: "Create" })).toBeTruthy();
+    expect(view.getByRole("button", { name: "New dashboard" })).toBeTruthy();
+  });
 });
