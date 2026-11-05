@@ -16,17 +16,22 @@ import {
   TreemapChart,
 } from "echarts/charts";
 import {
+  BrushComponent,
+  CalendarComponent,
+  DataZoomComponent,
   GeoComponent,
   GridComponent,
   LegendComponent,
   RadarComponent,
   TitleComponent,
+  ToolboxComponent,
   TooltipComponent,
   VisualMapComponent,
 } from "echarts/components";
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
+import { CirclePackChart } from "@/components/charts/CirclePackChart";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
 import { stripChartValues } from "@/lib/charts/chart-code";
 import { chartTitleText } from "@/lib/charts/chart-title";
@@ -47,6 +52,7 @@ import {
   type ClassifiedColumns,
 } from "@/lib/charts/echarts-catalog";
 import { useChartSettings } from "@/components/charts/use-chart-settings";
+import { isCirclePack } from "@/lib/charts/circle-pack";
 import { buildChartOption, watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 import {
   clearQueryFilters,
@@ -88,6 +94,10 @@ registerECharts([
   GeoComponent,
   TitleComponent,
   VisualMapComponent,
+  CalendarComponent,
+  BrushComponent,
+  DataZoomComponent,
+  ToolboxComponent,
   CanvasRenderer,
 ]);
 
@@ -204,10 +214,12 @@ export function QueryChart({
   const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const [codeOpen, setCodeOpen] = useState(false);
 
+  const drawn = code.option ?? built?.option ?? null;
+  const pack = drawn !== null && isCirclePack(drawn);
   const hostRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = hostRef.current;
-    if (codeOpen || built === null || element === null) return;
+    if (codeOpen || built === null || pack || element === null) return;
     registerMap(WORLD_MAP_NAME, WORLD_OUTLINE);
     const chart = init(element);
     chart.setOption(code.option ?? built.option, true);
@@ -216,7 +228,7 @@ export function QueryChart({
       stop();
       chart.dispose();
     };
-  }, [built, code.option, codeOpen]);
+  }, [built, code.option, codeOpen, pack]);
 
   const selectType = (typeId: string) => {
     setChoice((current) => (current.typeId === typeId ? current : { typeId, variationId: null, selection: {} }));
@@ -424,7 +436,13 @@ export function QueryChart({
                 />
               ) : (
                 <>
-                  <div ref={hostRef} data-testid="query-chart" className="min-h-48 flex-1" />
+                  {pack && drawn !== null ? (
+                    <div data-testid="query-chart" className="min-h-48 flex-1">
+                      <CirclePackChart option={drawn} />
+                    </div>
+                  ) : (
+                    <div ref={hostRef} data-testid="query-chart" className="min-h-48 flex-1" />
+                  )}
                   {code.option === null && built.notes.length > 0 && (
                     <ul className="px-3 py-1 text-xs text-fg-muted">
                       {built.notes.map((note) => (
