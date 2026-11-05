@@ -8,7 +8,15 @@
 # so we use Node.js for the Next.js build step.
 FROM oven/bun:1.4.4 AS deps
 WORKDIR /usr/src/app
-RUN apt-get update && apt-get install -y python3 make g++ --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# CVE-2026-109518 (DSA-6607-1) is fixed in apt 3.0.4 on trixie and 2.6.2 on
+# bookworm. The pinned bases predate that update. Retries stay off while the
+# current client fetches its own replacement; the later installs then run
+# under the updated client. This is not a dist-upgrade: util-linux, acl,
+# sqlite3, ncurses, perl, and systemd have no trixie security update to take.
+RUN apt-get update \
+ && apt-get -o Acquire::Retries=0 install -y --no-install-recommends apt \
+ && apt-get install -y python3 make g++ --no-install-recommends \
+ && rm -rf /var/lib/apt/lists/*
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
@@ -252,9 +260,13 @@ RUN addgroup --system --gid 1001 nodejs && \
     chmod g=u,+t /app/.next
 
 # gosu lets the entrypoint drop from root to the app user after fixing the
-# permissions of a mounted (often root-owned) data volume.
-RUN apt-get update && apt-get install -y --no-install-recommends gosu && \
-    rm -rf /var/lib/apt/lists/*
+# permissions of a mounted (often root-owned) data volume. apt is upgraded
+# first, with retries off, for the same DSA-6607-1 reason as the deps stage:
+# this layer is the one that ships in the published image.
+RUN apt-get update \
+ && apt-get -o Acquire::Retries=0 install -y --no-install-recommends apt \
+ && apt-get install -y --no-install-recommends gosu \
+ && rm -rf /var/lib/apt/lists/*
 
 # Entrypoint makes the SQLite data dir writable by `nextjs` then drops privileges.
 # The container starts as root only long enough to chown the volume mount; the
