@@ -12,6 +12,8 @@ export interface AssistModelOption {
   readonly name: string;
   /** The dated slug OpenRouter ranks, when it is not the same as `id`. */
   readonly canonicalSlug?: string;
+  /** The catalog said this model can call a web search tool. */
+  readonly webSearch?: boolean;
 }
 
 export interface AssistSettings {
@@ -97,9 +99,23 @@ export function normalizeModels(value: unknown): AssistModelOption[] {
     if (id === "") continue;
     const name = "name" in item && typeof item.name === "string" && item.name.trim() !== "" ? item.name.trim() : id;
     const slug = "canonicalSlug" in item && typeof item.canonicalSlug === "string" ? item.canonicalSlug.trim() : "";
-    options.push(slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name });
+    const webSearch = "webSearch" in item && item.webSearch === true;
+    const option = slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name };
+    options.push(webSearch ? { ...option, webSearch: true } : option);
   }
   return options;
+}
+
+/** Whether the chosen model was listed as able to search the web. Fireworks has no search tool. */
+export function assistModelSearches(
+  source: AssistSource,
+  modelId: string,
+  models: readonly AssistModelOption[],
+  gatewayModels: readonly AssistModelOption[],
+): boolean {
+  if (source === "fireworks") return false;
+  const list = source === "gateway" ? gatewayModels : models;
+  return list.some((item) => item.id === modelId && item.webSearch === true);
 }
 
 function settingsFrom(raw: string | null): AssistSettings {

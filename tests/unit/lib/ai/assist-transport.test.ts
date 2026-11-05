@@ -3,6 +3,7 @@ import { LLMAuthError, LLMError, LLMRateLimitError } from "@/lib/llm/types";
 import {
   completeChat,
   FIREWORKS_CHAT_URL,
+  modelOffersWebSearch,
   GATEWAY_CHAT_URL,
   GATEWAY_MODELS_URL,
   listGatewayModels,
@@ -66,6 +67,33 @@ describe("completeChat", () => {
       reasoning: { effort: "max" },
     });
     expect(seen?.body).not.toHaveProperty("max_tokens");
+    expect(seen?.body).not.toHaveProperty("tools");
+  });
+
+  test("offers web search only to an OpenRouter or Gateway model that can use it", async () => {
+    const seen: { source: string; body: Record<string, unknown> }[] = [];
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      seen.push({ source: "", body: JSON.parse(String(init?.body)) as Record<string, unknown> });
+      return jsonResponse({ choices: [{ message: { content: "looked it up" } }] });
+    }) as unknown as typeof fetch;
+    await completeChat({ source: "openrouter", apiKey: "k", model: "openai/gpt-4o", messages, webSearch: true });
+    await completeChat({ source: "gateway", apiKey: "k", model: "openai/gpt-4o", messages, webSearch: true });
+    await completeChat({
+      source: "fireworks",
+      apiKey: "k",
+      model: "accounts/acme/models/tuned",
+      messages,
+      webSearch: true,
+    });
+    await completeChat({ source: "openrouter", apiKey: "k", model: "openai/gpt-4o", messages, webSearch: false });
+    expect(seen[0]?.body.tools).toEqual([
+      { type: "openrouter:web_search", parameters: { max_results: 5, max_uses: 2 } },
+    ]);
+    expect(seen[0]?.body).not.toHaveProperty("tool_choice");
+    expect(seen[1]?.body.tools).toEqual([{ type: "vercel:perplexity_search", config: { max_results: 5 } }]);
+    expect(seen[1]?.body.tool_choice).toBe("auto");
+    expect(seen[2]?.body).not.toHaveProperty("tools");
+    expect(seen[3]?.body).not.toHaveProperty("tools");
   });
 
   test("posts to Fireworks and joins text parts", async () => {
@@ -180,10 +208,21 @@ describe("completeChat", () => {
   });
 });
 
+describe("modelOffersWebSearch", () => {
+  test("accepts a tool-calling model or one that advertises search", () => {
+    expect(modelOffersWebSearch({ supported_parameters: ["temperature", "tools"] })).toBe(true);
+    expect(modelOffersWebSearch({ tags: ["web-search"] })).toBe(true);
+    expect(modelOffersWebSearch({ tags: ["tool-use", 1] })).toBe(true);
+    expect(modelOffersWebSearch({ supported_parameters: ["temperature"] })).toBe(false);
+    expect(modelOffersWebSearch({ tags: "web-search", supported_parameters: "tools" })).toBe(false);
+    expect(modelOffersWebSearch({})).toBe(false);
+  });
+});
+
 describe("listOpenRouterModels", () => {
   test("sorts, drops blanks and duplicates, and caps the list", async () => {
     const data = [
-      { id: "openai/blank", name: "000 Blank", canonical_slug: "   " },
+      { id: "openai/blank", name: "000 Blank", canonical_slug: "   ", supported_parameters: ["tools"] },
       { id: "anthropic/claude-opus-5.5", name: "000 Opus", canonical_slug: " anthropic/claude-opus-5.5-20260921 " },
       { id: "openai/same", name: "000 Same", canonical_slug: "openai/same" },
       { id: "b/two", name: "Beta" },
@@ -204,7 +243,7 @@ describe("listOpenRouterModels", () => {
     expect(url).toBe(OPENROUTER_MODELS_URL);
     expect(models).toHaveLength(800);
     expect(models[0]?.name.localeCompare(models[1]?.name ?? "") ?? 0).toBeLessThanOrEqual(0);
-    expect(models[0]).toEqual({ id: "openai/blank", name: "000 Blank" });
+    expect(models[0]).toEqual({ id: "openai/blank", name: "000 Blank", webSearch: true });
     expect(models[1]).toEqual({
       id: "anthropic/claude-opus-5.5",
       name: "000 Opus",

@@ -2407,6 +2407,114 @@ describe("AiAssist page", () => {
     await ask("blank", "I will total revenue.", "January revenue is 10.");
     await ask("throw", "I will total revenue.", "January revenue is 10.");
   });
+
+  test("adds saved queries from the bottom of the chat and lets the assistant expand on them", async () => {
+    saveConnection();
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "q1",
+          name: "Orders",
+          query: "SELECT region, total FROM sales",
+          connectionType: "postgres",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "q2",
+          name: "People",
+          query: "SELECT city FROM people",
+          connectionType: "postgres",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "q3",
+          name: "Blank",
+          query: "   ",
+          connectionType: "postgres",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "q4",
+          name: "Wipe",
+          query: "DELETE FROM sales",
+          connectionType: "postgres",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "q5",
+          name: "Missing",
+          query: "SELECT 1",
+          connectionType: "postgres",
+          connectionId: "gone",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const view = render(<AiAssist />);
+    const box = view.getByLabelText("How can I help?");
+    const add = view.getByRole("button", { name: "Add to chat" });
+    expect(box.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(view.getByRole("button", { name: "Send" }).hasAttribute("disabled")).toBe(true);
+
+    fireEvent.click(add);
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
+    expect(view.queryByRole("menuitemcheckbox", { name: /Blank/ })).toBeNull();
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /Orders/ }));
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /People/ }));
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /Wipe/ }));
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /Missing/ }));
+    expect(view.getByRole("menuitemcheckbox", { name: /Orders/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Remove People" }));
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /People/ }));
+    fireEvent.click(view.getByRole("button", { name: "Close add menu" }));
+    expect(view.queryByRole("menu", { name: "Saved queries" })).toBeNull();
+
+    fireEvent.change(box, { target: { value: "What stands out?" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+
+    expect(await view.findByText(/What stands out\?/)).toBeTruthy();
+    expect(await view.findByText("AI Assist only runs read-only queries.")).toBeTruthy();
+    expect(view.getByText("This saved query has no connected database.")).toBeTruthy();
+    await waitFor(() => {
+      const ran = calls.filter((call) => call.url.includes("/api/db/query")).map((call) => call.body);
+      const sql = ran.map((body) => (body !== null && typeof body === "object" && "sql" in body ? body.sql : ""));
+      expect(sql).toContain("SELECT region, total FROM sales");
+      expect(sql).toContain("SELECT city FROM people");
+      expect(sql).not.toContain("DELETE FROM sales");
+    });
+    await waitFor(() => {
+      const reading = posts().find((call) => {
+        const body = call.body;
+        return body !== null && typeof body === "object" && "pass" in body && body.pass === "follow";
+      });
+      const body = reading?.body as { question?: string; results?: { title?: string }[] } | undefined;
+      expect(body?.question).toContain("expand the research");
+      expect(body?.results?.map((item) => item.title)).toEqual(expect.arrayContaining(["Orders", "People"]));
+    });
+    expect(planPosts()).toEqual([]);
+    expect(await view.findByText("Revenue rose.")).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Remove Orders" })).toBeNull();
+  });
+
+  test("says when there is no saved query to add", () => {
+    saveConnection();
+    const view = render(<AiAssist />);
+    fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
+    expect(view.getByText("No saved queries yet.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Back" }));
+    expect(view.getByRole("menuitem", { name: "Saved query" })).toBeTruthy();
+  });
 });
 
 function readStored(): { source?: string } {

@@ -21,6 +21,8 @@ export interface AssistModelOption {
   readonly name: string;
   /** The dated slug OpenRouter ranks, when it is not the same as `id`. */
   readonly canonicalSlug?: string;
+  /** The model can call a web search tool. Models that cannot are left without one. */
+  readonly webSearch?: boolean;
 }
 
 export interface AssistChatMessage {
@@ -98,12 +100,20 @@ export function assistServerKeyConfigured(): boolean {
   return openRouterServerKey() !== "";
 }
 
+interface WebSearchTool {
+  readonly type: string;
+  readonly parameters?: { readonly max_results: number; readonly max_uses: number };
+  readonly config?: { readonly max_results: number };
+}
+
 /** One non-streaming completion. The key is sent as a bearer token and not written here. */
 export async function completeChat(input: {
   readonly source: AssistSource;
   readonly apiKey: string;
   readonly model: string;
   readonly messages: readonly AssistChatMessage[];
+  /** Attach web search when this model can call it. */
+  readonly webSearch?: boolean;
   readonly fetchImpl?: typeof fetch;
 }): Promise<string> {
   const fetchImpl = input.fetchImpl ?? fetch;
@@ -121,6 +131,8 @@ export async function completeChat(input: {
     temperature: number;
     stream: false;
     reasoning?: { effort: "max" };
+    tools?: readonly WebSearchTool[];
+    tool_choice?: "auto";
   } = {
     model: input.model,
     messages: input.messages,
@@ -131,6 +143,15 @@ export async function completeChat(input: {
   // reasoning and the answer share the model's own budget. OpenRouter ignores
   // this field on a model that does not reason.
   if (input.source === "openrouter") body.reasoning = { effort: "max" };
+  // The model decides whether a question needs the web. A model that cannot
+  // call tools is not offered the tool, because the request would be rejected.
+  if (input.webSearch === true && input.source === "openrouter") {
+    body.tools = [{ type: "openrouter:web_search", parameters: { max_results: 5, max_uses: 2 } }];
+  }
+  if (input.webSearch === true && input.source === "gateway") {
+    body.tools = [{ type: "vercel:perplexity_search", config: { max_results: 5 } }];
+    body.tool_choice = "auto";
+  }
   const response = await fetchImpl(chatUrl(input.source), {
     method: "POST",
     headers,
@@ -147,6 +168,19 @@ export async function completeChat(input: {
   return text;
 }
 
+function listedStrings(value: unknown): readonly string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+/** A catalog row that can take a web search tool. Anything else is left without one. */
+export function modelOffersWebSearch(item: object): boolean {
+  const tags = "tags" in item ? listedStrings(item.tags) : [];
+  if (tags.includes("web-search") || tags.includes("tool-use")) return true;
+  const parameters = "supported_parameters" in item ? listedStrings(item.supported_parameters) : [];
+  return parameters.includes("tools");
+}
+
 function catalogModels(payload: unknown): AssistModelOption[] {
   const data = payload !== null && typeof payload === "object" && "data" in payload ? payload.data : null;
   if (!Array.isArray(data)) return [];
@@ -157,7 +191,8 @@ function catalogModels(payload: unknown): AssistModelOption[] {
     if (id === "" || byId.has(id)) continue;
     const name = "name" in item && typeof item.name === "string" && item.name.trim() !== "" ? item.name.trim() : id;
     const slug = "canonical_slug" in item && typeof item.canonical_slug === "string" ? item.canonical_slug.trim() : "";
-    byId.set(id, slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name });
+    const option = slug !== "" && slug !== id ? { id, name, canonicalSlug: slug } : { id, name };
+    byId.set(id, modelOffersWebSearch(item) ? { ...option, webSearch: true } : option);
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(0, MODEL_CAP);
 }
