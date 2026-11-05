@@ -296,6 +296,26 @@ describe("chart settings", () => {
       tuned("sankey", "labels", false),
     );
     expect(seriesAt(sankey).label).toMatchObject({ show: false });
+    const waterfall = optionOf(
+      "waterfall",
+      "change",
+      [
+        { month: "Jan", change: 10 },
+        { month: "Feb", change: -4 },
+      ],
+      { category: ["month"], value: ["change"] },
+      tuned("waterfall", "labels", true),
+    );
+    expect(seriesAt(waterfall, 0).label).toBeUndefined();
+    expect(seriesAt(waterfall, 1).label).toMatchObject({ show: true });
+    const locked = optionOf(
+      "waterfall",
+      "labeled",
+      [{ month: "Jan", change: 10 }],
+      { category: ["month"], value: ["change"] },
+      tuned("waterfall", "labels", false),
+    );
+    expect(seriesAt(locked, 1).label).toMatchObject({ show: true });
     const funnel = optionOf(
       "funnel",
       "funnel",

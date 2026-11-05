@@ -96,7 +96,7 @@ const sales = resultOf(
 describe("QueryChart", () => {
   test("shows the type names and no chart until a variation is chosen", () => {
     const view = render(React.createElement(QueryChart, { result: sales }));
-    expect(within(view.getByRole("group", { name: "Chart types" })).getAllByRole("button")).toHaveLength(14);
+    expect(within(view.getByRole("group", { name: "Chart types" })).getAllByRole("button")).toHaveLength(15);
     expect(view.queryByRole("group", { name: "Chart variations" })).toBeNull();
     expect(view.queryByTestId("query-chart")).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Bar" }));
@@ -122,6 +122,24 @@ describe("QueryChart", () => {
     expect(registered).toContain("midst-world");
     view.unmount();
     expect(charts.at(-1)?.disposed).toBe(true);
+  });
+
+  test("a waterfall draws the change as a floating bar", () => {
+    const view = render(React.createElement(QueryChart, { result: sales }));
+    fireEvent.click(view.getByRole("button", { name: "Waterfall" }));
+    expect(
+      within(view.getByRole("group", { name: "Chart variations" }))
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Change", "Balance", "Horizontal", "With total", "Labeled"]);
+    fireEvent.click(view.getByRole("button", { name: "Change" }));
+    const option = charts.at(-1)?.option as { series: { name: string; data: unknown[] }[] };
+    expect(option.series.map((series) => series.name)).toEqual(["Base", "Increase", "Decrease"]);
+    expect(option.series[0]?.data).toEqual([0, 1]);
+    expect(option.series[1]?.data).toEqual([
+      { value: 1, signed: 1 },
+      { value: 2, signed: 2 },
+    ]);
   });
 
   test("a variation changes the one chart, and another type clears it", () => {

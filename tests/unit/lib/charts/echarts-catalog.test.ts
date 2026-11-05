@@ -26,6 +26,7 @@ describe("the type list", () => {
     expect(ECHART_TYPES.map((type) => type.label)).toEqual([
       "Line",
       "Bar",
+      "Waterfall",
       "Pie",
       "Scatter",
       "Geo",

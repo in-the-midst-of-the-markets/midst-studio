@@ -934,9 +934,136 @@ function pie(input: ChartBuildInput): BuiltChart | null {
   };
 }
 
+/** The signed change drawn on a waterfall bar, or nothing for the invisible base. */
+function waterfallLabel(data: unknown): string {
+  if (typeof data !== "object" || data === null || !("signed" in data)) return "";
+  const signed = data.signed;
+  if (typeof signed !== "number" || !Number.isFinite(signed)) return "";
+  if (signed > 0) return `+${signed}`;
+  return String(signed);
+}
+
+interface WaterfallStep {
+  readonly label: string;
+  readonly change: number;
+  /** A total stands on zero instead of on the bar before it. */
+  readonly fromZero: boolean;
+}
+
+function waterfallSteps(
+  points: readonly { label: string; value: number }[],
+  variation: string,
+): readonly WaterfallStep[] {
+  if (variation === "balance") {
+    const steps: WaterfallStep[] = [];
+    let previous: number | null = null;
+    for (const point of points) {
+      const change = previous === null ? point.value : point.value - previous;
+      steps.push({ label: point.label, change, fromZero: false });
+      previous = point.value;
+    }
+    return steps;
+  }
+  const steps = points.map((point) => ({ label: point.label, change: point.value, fromZero: false }));
+  if (variation !== "total") return steps;
+  let sum = 0;
+  for (const step of steps) sum += step.change;
+  return [...steps, { label: "Total", change: sum, fromZero: true }];
+}
+
+function waterfall(input: ChartBuildInput): BuiltChart | null {
+  const dimension = first(input.selection, "category");
+  const metric = first(input.selection, "value");
+  if (dimension === null || metric === null) return null;
+  const theme = themeOf(input);
+  const categoryCap = input.categoryCap ?? CHART_CATEGORY_CAP;
+  const grouped = groupsOf(input.rows, dimension, input.mask);
+  const shownGroups = grouped.slice(0, categoryCap);
+  const points: { label: string; value: number }[] = [];
+  for (const group of shownGroups) {
+    const value = sumOf(group.rows, metric);
+    if (value === null) continue;
+    points.push({ label: group.label, value });
+  }
+  const steps = waterfallSteps(points, input.variationId);
+  if (steps.length === 0) return null;
+  const variation = input.variationId;
+  const horizontal = variation === "horizontal";
+  const assist: number[] = [];
+  const rise: ({ value: number; signed: number } | "-")[] = [];
+  const fall: ({ value: number; signed: number } | "-")[] = [];
+  let running = 0;
+  for (const step of steps) {
+    const base = step.fromZero ? 0 : running;
+    if (step.change >= 0) {
+      assist.push(base);
+      rise.push({ value: step.change, signed: step.change });
+      fall.push("-");
+      running = base + step.change;
+    } else {
+      assist.push(base + step.change);
+      rise.push("-");
+      fall.push({ value: -step.change, signed: step.change });
+      running = base + step.change;
+    }
+  }
+  const label = {
+    show: variation === "labeled",
+    position: horizontal ? "right" : "top",
+    color: theme.ink,
+    formatter: (params: { data?: unknown }) => waterfallLabel(params.data),
+  };
+  return {
+    option: frame(theme, {
+      ...categoryAxes(
+        steps.map((step) => step.label),
+        theme,
+        horizontal,
+      ),
+      legend: {
+        type: "scroll",
+        top: 4,
+        textStyle: { color: theme.ink },
+        data: ["Increase", "Decrease"],
+      },
+      series: [
+        {
+          name: "Base",
+          type: "bar",
+          stack: "waterfall",
+          itemStyle: { color: "transparent", borderColor: "transparent" },
+          emphasis: { itemStyle: { color: "transparent", borderColor: "transparent" } },
+          tooltip: { show: false },
+          data: assist,
+        },
+        {
+          name: "Increase",
+          type: "bar",
+          stack: "waterfall",
+          itemStyle: { color: theme.series[2] },
+          label,
+          data: rise,
+        },
+        {
+          name: "Decrease",
+          type: "bar",
+          stack: "waterfall",
+          itemStyle: { color: theme.series[7] },
+          label,
+          data: fall,
+        },
+      ],
+    }),
+    notes: [capNote(shownGroups.length, grouped.length - shownGroups.length, "categories")].filter(
+      (note): note is string => note !== null,
+    ),
+  };
+}
+
 const BUILDERS: Record<string, (input: ChartBuildInput) => BuiltChart | null> = {
   line: (input) => categorySeries(input, "line"),
   bar: (input) => categorySeries(input, "bar"),
+  waterfall,
   pie,
   scatter,
   geo,
