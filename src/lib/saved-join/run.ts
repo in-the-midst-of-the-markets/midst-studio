@@ -127,6 +127,9 @@ function collectCteNames(node: unknown, names: Set<string>): void {
   for (const value of Object.values(node)) collectCteNames(value, names);
 }
 
+/** Scalar functions that read this process's DuckDB configuration, which names directories on the server. */
+const SERVER_STATE_FUNCTIONS = new Set(["current_setting"]);
+
 function collectTables(node: unknown, tables: string[], ctes: Set<string>): void {
   if (Array.isArray(node)) {
     for (const entry of node) collectTables(entry, tables, ctes);
@@ -135,6 +138,13 @@ function collectTables(node: unknown, tables: string[], ctes: Set<string>): void
   if (!isRecord(node)) return;
   if (node.type === "TABLE_FUNCTION" || node.type === "SHOW_REF") {
     throw new SavedJoinError("A saved join can only read saved queries. Name each one as saved.<id>.");
+  }
+  if (
+    node.type === "FUNCTION" &&
+    typeof node.function_name === "string" &&
+    SERVER_STATE_FUNCTIONS.has(node.function_name.toLowerCase())
+  ) {
+    throw new SavedJoinError("A saved join cannot read the server's settings.");
   }
   if (node.type === "BASE_TABLE") {
     const schema = typeof node.schema_name === "string" ? node.schema_name : "";
