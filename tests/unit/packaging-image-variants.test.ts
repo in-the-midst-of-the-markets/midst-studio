@@ -405,6 +405,22 @@ describe("published image variants", () => {
     expect(String(dispatch?.if)).toContain("variant");
   });
 
+  test("the Debian image upgrades apt, with retries off, before it installs anything else", () => {
+    // CVE-2026-109518 needs a nonzero Acquire::Retries on the client that
+    // fetches the package. The pinned node and bun bases do not yet carry
+    // Debian's fix, so each apt transaction replaces apt first. Alpine has
+    // no apt client.
+    const cmds = commands(readRepoFile("Dockerfile"));
+    const upgrades = cmds.flatMap((line, index) =>
+      line.includes("Acquire::Retries=0") && line.includes(" install ") ? [index] : [],
+    );
+
+    expect(upgrades).toHaveLength(2);
+    expect(cmds[upgrades[0] + 1]).toBe("apt-get install -y python3 make g++ --no-install-recommends");
+    expect(cmds[upgrades[1] + 1]).toBe("apt-get install -y --no-install-recommends gosu");
+    expect(readRepoFile("Dockerfile.alpine")).not.toContain("Acquire::Retries");
+  });
+
   test("the payload deny-list drops every root Dockerfile, not just the default one", () => {
     const prune = readRepoFile("scripts/lib/prune-standalone-payload.sh");
 
