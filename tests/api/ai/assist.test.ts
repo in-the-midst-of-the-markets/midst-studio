@@ -330,6 +330,17 @@ describe("POST /api/ai/assist", () => {
     expect(messages[0]?.content).not.toContain("several paragraphs");
     expect(messages[0]?.content).toContain("a description of the field");
     expect(messages[0]?.content).not.toContain("East led");
+    expect(messages[0]?.content).not.toContain("augment these query results");
+
+    const searched = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { ...posted, pass: "final", webSearch: true },
+      }) as never,
+    );
+    expect(searched.status).toBe(200);
+    expect(messages[0]?.content).toContain("You can search the web.");
+    expect(messages[0]?.content).toContain("augment these query results");
 
     const badResults = await POST(
       createMockRequest("/api/ai/assist", {

@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
           schemaBlock: fenceForPrompt(reading.value.schemaContext, "assist"),
           historyBlock: fenceForPrompt(JSON.stringify(reading.value.history), "assist"),
           resultsBlock: fenceForPrompt(formatAssistResults(reading.value.results), "assist"),
+          webSearch,
         }),
         reading.value.databaseType,
         reading.value.schemaContext,
