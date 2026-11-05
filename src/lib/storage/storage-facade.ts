@@ -382,6 +382,36 @@ export const storage = {
     dispatchChange("saved_components", components);
   },
 
+  /**
+   * Drops a saved component from the library. Placements stay on their dashboards
+   * and lose the saved mark, so the bookmark can save them again.
+   */
+  deleteComponent: (id: string) => {
+    const components = storage.getSavedComponents().filter((item) => item.id !== id);
+    writeJSON("saved_components", components);
+    dispatchChange("saved_components", components);
+    const dashboards = storage.getSavedDashboards();
+    let changed = false;
+    const next = dashboards.map((dashboard) => {
+      const filters = dashboard.filters;
+      if (filters === undefined || !filters.some((filter) => filter.componentId === id)) return dashboard;
+      changed = true;
+      return {
+        ...dashboard,
+        updatedAt: new Date(),
+        filters: filters.map((filter) => {
+          if (filter.componentId !== id) return filter;
+          const placed = { ...filter };
+          delete placed.componentId;
+          return placed;
+        }),
+      };
+    });
+    if (!changed) return;
+    writeJSON("saved_dashboards", next);
+    dispatchChange("saved_dashboards", next);
+  },
+
   setActiveDashboardId: (id: string | null) => {
     if (typeof window === "undefined") return;
     if (id) {

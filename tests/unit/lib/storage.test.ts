@@ -473,4 +473,52 @@ describe("storage: components", () => {
     expect(saved[0]?.createdAt).toEqual(created?.createdAt);
     expect(saved[0]?.filter.query).toBe("SELECT 2");
   });
+
+  test("deleteComponent drops the library entry and the saved mark on each placement", () => {
+    storage.saveComponent({
+      id: "lib",
+      name: "Region",
+      createdAt: new Date("2026-01-01"),
+      filter: { name: "region", query: "SELECT 1", value: "east" },
+    });
+    storage.saveComponent({
+      id: "other",
+      name: "City",
+      createdAt: new Date("2026-01-01"),
+      filter: { name: "city", query: "SELECT 2", value: "" },
+    });
+    storage.saveDashboard({
+      id: "board",
+      name: "board",
+      charts: [],
+      filters: [
+        { id: "f1", name: "region", query: "SELECT 1", value: "east", componentId: "lib" },
+        { id: "f2", name: "city", query: "SELECT 2", value: "", componentId: "other" },
+      ],
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    });
+    storage.saveDashboard({
+      id: "plain",
+      name: "plain",
+      charts: [],
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    });
+    const collections: string[] = [];
+    const handler = (event: Event) => {
+      collections.push((event as CustomEvent).detail.collection);
+    };
+    window.addEventListener("libredb-storage-change", handler);
+    storage.deleteComponent("missing");
+    expect(collections).toEqual(["saved_components"]);
+    storage.deleteComponent("lib");
+    window.removeEventListener("libredb-storage-change", handler);
+    expect(storage.getSavedComponents().map((item) => item.id)).toEqual(["other"]);
+    const board = storage.getSavedDashboards().find((item) => item.id === "board");
+    expect(board?.filters?.map((filter) => filter.componentId)).toEqual([undefined, "other"]);
+    expect(board?.filters?.[0]).toMatchObject({ id: "f1", name: "region", value: "east" });
+    expect(storage.getSavedDashboards().find((item) => item.id === "plain")?.filters).toBeUndefined();
+    expect(collections).toEqual(["saved_components", "saved_components", "saved_dashboards"]);
+  });
 });
