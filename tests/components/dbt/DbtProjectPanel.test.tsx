@@ -65,6 +65,8 @@ describe("Models", () => {
     mockGlobalFetch({ "/api/storage/config": { json: { provider: "local", serverMode: false } } });
     render(<ModelsPage />);
     expect(await screen.findByRole("heading", { name: "Models" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "dbt project on GitHub" })).toBeTruthy();
+    expect(screen.getByText(/GitHub stores the dbt project/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "IDE" }).getAttribute("href")).toBe("/");
     expect(screen.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
   });
@@ -81,9 +83,9 @@ describe("Models", () => {
     });
     const user = userEvent.setup();
     render(<DbtProjectPanel />);
-    await user.type(screen.getByLabelText("Repository"), "acme/analytics");
-    await user.selectOptions(screen.getByLabelText("Connection"), "warehouse");
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.type(screen.getByLabelText("GitHub repository"), "acme/analytics");
+    await user.selectOptions(screen.getByLabelText("Warehouse connection"), "warehouse");
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByRole("heading", { name: /analytics/ })).toBeTruthy();
     expect(screen.getByText(/refs stg_orders/)).toBeTruthy();
     expect(screen.getByText("Compile with dbt to expand the rest of this model.")).toBeTruthy();
@@ -130,8 +132,8 @@ describe("Models", () => {
     });
     const user = userEvent.setup();
     render(<DbtProjectPanel />);
-    await user.type(screen.getByLabelText("Repository"), "acme/analytics");
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.type(screen.getByLabelText("GitHub repository"), "acme/analytics");
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByText("Choose a connection to compile with dbt.")).toBeTruthy();
     const save = screen.getByRole("button", { name: "Save query" }) as HTMLButtonElement;
     expect(save.disabled).toBe(true);
@@ -139,16 +141,16 @@ describe("Models", () => {
     await user.click(save);
     expect(storage.getSavedQueries()).toHaveLength(0);
     expect((screen.getByRole("button", { name: "Chart this metric" }) as HTMLButtonElement).disabled).toBe(true);
-    await user.selectOptions(screen.getByLabelText("Connection"), "warehouse");
+    await user.selectOptions(screen.getByLabelText("Warehouse connection"), "warehouse");
     await user.click(screen.getByRole("button", { name: "Chart this metric" }));
     expect(storage.getSavedCharts()[0]?.chartType).toBe("bar");
     expect(storage.getSavedCharts()[0]?.xAxis).toBe("bucket");
     expect(storage.getSavedDashboards()[0]?.name).toBe("Dashboard 1");
     await user.click(screen.getByRole("button", { name: "Compile with dbt" }));
     expect((screen.getByRole("button", { name: "Compile with dbt" }) as HTMLButtonElement).disabled).toBe(true);
-    await user.clear(screen.getByLabelText("Repository"));
-    await user.type(screen.getByLabelText("Repository"), "missing/repo");
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.clear(screen.getByLabelText("GitHub repository"));
+    await user.type(screen.getByLabelText("GitHub repository"), "missing/repo");
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByText("This repository could not be read. Check the name and the token.")).toBeTruthy();
   });
 
@@ -160,8 +162,8 @@ describe("Models", () => {
     });
     const user = userEvent.setup();
     render(<DbtProjectPanel />);
-    await user.type(screen.getByLabelText("Repository"), "acme/analytics");
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.type(screen.getByLabelText("GitHub repository"), "acme/analytics");
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByText("The project could not be opened.")).toBeTruthy();
   });
 
@@ -184,11 +186,11 @@ describe("Models", () => {
     });
     const user = userEvent.setup();
     render(<DbtProjectPanel />);
-    await user.type(screen.getByLabelText("Repository"), "acme/analytics");
-    await user.selectOptions(screen.getByLabelText("Connection"), "warehouse");
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.type(screen.getByLabelText("GitHub repository"), "acme/analytics");
+    await user.selectOptions(screen.getByLabelText("Warehouse connection"), "warehouse");
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByText("The project could not be opened.")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Open project" }));
+    await user.click(screen.getByRole("button", { name: "Open dbt project" }));
     expect(await screen.findByRole("heading", { name: /analytics/ })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Compile with dbt" }));
     expect(await screen.findByText("dbt compile failed.")).toBeTruthy();

@@ -122,6 +122,13 @@ export default function DbtProjectPanel() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-base font-medium">dbt project on GitHub</h2>
+        <p className="max-w-2xl text-sm text-fg-muted">
+          Both. GitHub stores the dbt project. Repository, directory, branch, and token read it from there. The
+          connection is the warehouse those models run on.
+        </p>
+      </div>
       <form
         className="grid gap-3 sm:grid-cols-2"
         onSubmit={(event) => {
@@ -130,10 +137,9 @@ export default function DbtProjectPanel() {
         }}
       >
         <label className="flex flex-col gap-1 text-sm sm:col-span-2" htmlFor="dbt-repo">
-          Repository
+          GitHub repository
           <Input
             id="dbt-repo"
-            aria-label="Repository"
             value={repo}
             onChange={(event) => setRepo(event.target.value)}
             placeholder="owner/repo"
@@ -143,43 +149,40 @@ export default function DbtProjectPanel() {
           Directory
           <Input
             id="dbt-directory"
-            aria-label="Directory"
             value={directory}
             onChange={(event) => setDirectory(event.target.value)}
-            placeholder="optional"
+            placeholder="folder in the repo, or blank for the root"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm" htmlFor="dbt-branch">
           Branch
           <Input
             id="dbt-branch"
-            aria-label="Branch"
             value={ref}
             onChange={(event) => setRef(event.target.value)}
             placeholder="default branch"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm" htmlFor="dbt-token">
-          Token
+          GitHub token
           <Input
             id="dbt-token"
-            aria-label="Token"
             type="password"
             value={token}
             onChange={(event) => setToken(event.target.value)}
+            placeholder="blank for a public repository"
             autoComplete="off"
           />
         </label>
         <label className="flex flex-col gap-1 text-sm" htmlFor="dbt-connection">
-          Connection
+          Warehouse connection
           <select
             id="dbt-connection"
-            aria-label="Connection"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={connectionId}
             onChange={(event) => setConnectionId(event.target.value)}
           >
-            <option value="">Choose a connection</option>
+            <option value="">Choose a warehouse</option>
             {connections.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -189,7 +192,7 @@ export default function DbtProjectPanel() {
         </label>
         <div className="sm:col-span-2">
           <Button type="submit" disabled={busy || repo.trim() === ""}>
-            Open project
+            Open dbt project
           </Button>
         </div>
       </form>
