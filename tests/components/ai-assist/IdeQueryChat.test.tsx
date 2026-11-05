@@ -2,6 +2,7 @@ import "../../setup-dom";
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import { editorChatQuery, IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
+import { BOARD_CONTEXT_CAP } from "@/lib/ai/dashboard-prompt";
 import { writeAssistSettings } from "@/lib/ai/assist-settings";
 
 const originalFetch = globalThis.fetch;
@@ -428,5 +429,31 @@ describe("IdeQueryChat", () => {
     expect(view.queryByRole("button", { name: "Add as chart" })).toBeNull();
     expect(view.queryByRole("button", { name: "Add as text" })).toBeNull();
     expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
+  });
+
+  test("sends the dashboard inventory instead of the editor statement", async () => {
+    install(() => jsonResponse({ explanation: "Noted.", queries: [] }));
+    const board = `Cells:\n${"x".repeat(BOARD_CONTEXT_CAP)}`;
+    const view = render(
+      <IdeQueryChat
+        sql="SELECT 1"
+        databaseType="postgres"
+        schemaContext="[]"
+        boardContext={board}
+        promptLabel="Ask about this dashboard"
+        promptPlaceholder="Ask a question about this dashboard"
+        onPlaceReply={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    const box = view.getByLabelText("Ask about this dashboard");
+    expect(box.getAttribute("placeholder")).toBe("Ask a question about this dashboard");
+    fireEvent.change(box, { target: { value: "What changed" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("Noted.")).toBeTruthy();
+    const sent = calls[0]?.body as { editorSql?: string; boardContext?: string };
+    expect(sent.editorSql).toBeUndefined();
+    expect(sent.boardContext).toHaveLength(BOARD_CONTEXT_CAP);
+    expect(sent.boardContext?.startsWith("Cells:")).toBe(true);
   });
 });

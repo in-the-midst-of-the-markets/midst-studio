@@ -1333,6 +1333,11 @@ export interface SavedDashboard {
   notes?: DashboardNote[];
   /** Absent on a dashboard saved before filters existed. */
   filters?: DashboardFilter[];
+  /**
+   * A rule for the assistant that an example query cannot say, such as which date
+   * to assume. Absent when the charts on the board are enough.
+   */
+  instructions?: string;
   createdAt: Date;
   updatedAt: Date;
 }

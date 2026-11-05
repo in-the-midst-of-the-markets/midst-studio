@@ -1,13 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { ASSIST_SCHEMA_CAP } from "@/lib/ai/assist-plan";
 import {
   blockFrameSize,
   chartFrameSize,
   chartLabel,
   CUSTOM_FILTER_SCRIPT,
-  DASHBOARD_ASSIST_GUIDE,
+  DASHBOARD_INSTRUCTIONS_CAP,
   dashboardAssistContext,
-  dashboardEditorSql,
   dashboardName,
   dashboardVariables,
   DEFAULT_DASHBOARD_BLOCK_WIDTH,
@@ -37,7 +35,7 @@ import {
   withFrame,
   MIN_DASHBOARD_BLOCK_HEIGHT,
   MAX_DASHBOARD_BLOCK_HEIGHT,
-  schemaWithDashboard,
+  withInstructions,
   withName,
   noteFrameDocument,
   noteLook,
@@ -314,59 +312,140 @@ describe("dashboard layout", () => {
     expect(placeSavedComponent(board(), blank, "b").filters?.[0]?.name).toBe("filter");
   });
 
-  test("describes the board for the assistant and keeps it inside the schema", () => {
-    expect(dashboardEditorSql(null, [])).toBe("");
-    const empty = board();
-    expect(dashboardEditorSql(empty, [])).toBe("");
+  test("describes the board as a cell inventory and trusted examples", () => {
+    expect(dashboardAssistContext(null, [])).toBe(
+      ["Dashboard: (none)", "Instructions: (none)", "", "Cells:", "(none)"].join("\n"),
+    );
+    expect(dashboardAssistContext(board(), [])).toBe(
+      ["Dashboard: Board", "Instructions: (none)", "", "Cells:", "(none)"].join("\n"),
+    );
+    const blankName = dashboardAssistContext({ ...board(), name: "  " }, []);
+    expect(blankName.startsWith("Dashboard: Untitled")).toBe(true);
+    const instructed = withInstructions(board(), "  Assume the latest month.\nAsk when the region is missing.  ");
+    expect(instructed.instructions).toBe("  Assume the latest month.\nAsk when the region is missing.  ");
+    expect(withInstructions(board(), "   ").instructions).toBeUndefined();
+    expect(withInstructions(board(), "x".repeat(DASHBOARD_INSTRUCTIONS_CAP + 5)).instructions).toHaveLength(
+      DASHBOARD_INSTRUCTIONS_CAP,
+    );
     const withCharts = board([
       { chartId: "gone", width: 1, height: 1 },
       { chartId: "plain", width: 1, height: 1 },
       { chartId: "revenue", width: 1, height: 1 },
+      { chartId: "axes", width: 1, height: 1 },
     ]);
-    const charts = [
-      { id: "plain", name: "Plain" },
-      { id: "revenue", name: "Revenue", query: " SELECT 1 " },
-    ];
-    expect(dashboardEditorSql(withCharts, charts)).toBe(" SELECT 1 ");
-    expect(dashboardEditorSql(board([{ chartId: "plain", width: 1, height: 1 }]), charts)).toBe("");
     const noted = withNoteFields(withNoteText(withNote(withCharts, "n1"), "n1", "  Hello  "), "n1", {
-      query: " SELECT 'Hello' ",
+      query: " SELECT 'Hello' WHERE region = {{region}} ",
+      connectionId: "missing",
     });
     const described = dashboardAssistContext(
       {
         ...noted,
+        instructions: "Assume the latest month.",
         notes: [
           ...(noted.notes ?? []),
-          { id: "n2", text: "  ", query: " SELECT 2 ", script: " use text;\nreturn rows; " },
+          { id: "n2", text: "  ", query: " SELECT 2 ", script: " use text;\nreturn rows; ", connectionId: "c1" },
           { id: "n3", text: "", query: "   ", script: "   " },
         ],
         filters: [
-          { id: "f1", name: "region", label: " Area ", query: "", value: "east", control: "select" },
-          { id: "f2", name: "  ", query: "", value: "" },
+          {
+            id: "f1",
+            name: "region",
+            label: ' Area | "east" ',
+            query: "SELECT region",
+            value: "east",
+            control: "select",
+            connectionId: "c1",
+          },
+          { id: "f2", name: "  ", query: "", value: "  " },
+          {
+            id: "f3",
+            name: "not valid",
+            query: "",
+            value: "x".repeat(90),
+            choiceSource: "values",
+            control: "custom",
+            script: `setValue(${"v".repeat(130)});`,
+          },
         ],
       },
-      charts,
-    );
-    expect(described).toBe(
       [
-        DASHBOARD_ASSIST_GUIDE,
-        "Dashboard: Board",
-        "Chart Plain: (no query)",
-        "Chart Revenue: SELECT 1",
-        "Text: Hello",
-        "Text query: SELECT 'Hello'",
-        "Text query: SELECT 2",
-        "Text code: use text; return rows;",
-        "Component Area (select) = east",
-        "Component Component (unset) = ",
-      ].join("\n"),
+        { id: "plain", name: "  ", query: "   ", connectionId: "", typeId: "" },
+        {
+          id: "revenue",
+          name: 'Revenue "east"',
+          query: `SELECT 1 WHERE region = {{ region }} AND year = {{year:2024}} AND region = {{region:east|east,west}} ${"a".repeat(500)}`,
+          connectionId: "c1",
+          typeId: "bar",
+          variationId: "stacked",
+          metricName: " revenue ",
+          title: "Revenue by region",
+          selection: { category: ["region", "region"], values: ["total"] },
+          xAxis: "ignored",
+          yAxis: ["also"],
+        },
+        {
+          id: "axes",
+          name: "Axes",
+          query: "",
+          typeId: "nope",
+          variationId: "basic",
+          title: "Axes",
+          metricName: " ",
+          xAxis: " month ",
+          yAxis: ["amount", ""],
+        },
+        { id: "bare", name: "Bare", typeId: "bar", variationId: "missing" },
+      ],
+      [
+        { id: "c1", name: "Orders" },
+        { id: "", name: "Blank" },
+      ],
     );
-    expect(dashboardAssistContext(null, [])).toBe(DASHBOARD_ASSIST_GUIDE);
-    expect(schemaWithDashboard("[]", "  ")).toBe("[]");
-    expect(schemaWithDashboard("[]", "Dashboard: Board")).toBe("[]\n\nDashboard:\nDashboard: Board");
-    expect(schemaWithDashboard("x".repeat(ASSIST_SCHEMA_CAP), "Dashboard: Board")).toBe("x".repeat(ASSIST_SCHEMA_CAP));
-    const near = "y".repeat(ASSIST_SCHEMA_CAP - 10);
-    expect(schemaWithDashboard(near, "Dashboard: Board")).toBe(`${near}\n\nDashboar`);
+    expect(described).toContain("Instructions: Assume the latest month.");
+    expect(described).toContain(
+      '1. component "Area / \'east\'" | select | publishes {{region}} | value east | choices from query | connection "Orders"',
+    );
+    expect(described).toContain('2. component "Component" | unset');
+    expect(described).not.toContain("publishes {{not");
+    expect(described).toContain("choices listed");
+    expect(described).toContain("script preview:");
+    expect(described).toContain('3. component "not valid" | custom | value ');
+    expect(described).toContain("choices listed | script preview:");
+    expect(described).toContain("4. text | text: Hello | depends on {{region}} | ready");
+    expect(described).toContain("trusted sql: SELECT 'Hello' WHERE region = {{region}}");
+    expect(described).toContain('5. text | connection "Orders" | ready');
+    expect(described).toContain("trusted sql: SELECT 2");
+    expect(described).toContain("script preview: use text; return rows;");
+    expect(described).toContain("6. text | empty");
+    expect(described).toContain('7. chart "Untitled" | empty');
+    expect(described).toContain("question: Untitled");
+    expect(described).toContain(
+      '8. chart "Revenue \'east\'" | Bar / Stacked | connection "Orders" | metric "revenue" | shelves region, total | depends on {{region}}, {{year}} | ready',
+    );
+    expect(described).toContain("question: Revenue by region");
+    expect(described).toContain("trusted sql: SELECT 1 WHERE region");
+    expect(described).toContain("… truncated,");
+    expect(described).not.toContain("ignored");
+    expect(described).toContain('9. chart "Axes" | shelves month, amount | empty');
+    expect(described).toContain("question: Axes");
+    expect(described).not.toContain("nope");
+    const shapeOnly = dashboardAssistContext(board([{ chartId: "bare", width: 1, height: 1 }]), [
+      { id: "bare", name: "Bare", typeId: "bar", variationId: "missing", xAxis: "day" },
+    ]);
+    expect(shapeOnly).toContain('1. chart "Bare" | Bar | shelves day | empty');
+    expect(shapeOnly).not.toContain("Bar /");
+    const verbose = dashboardAssistContext(
+      { ...board(), instructions: "i".repeat(DASHBOARD_INSTRUCTIONS_CAP + 20) },
+      [],
+    );
+    expect(verbose).toContain("… truncated, 20 characters omitted");
+    const longNotes = Array.from({ length: 40 }, (_, index) => ({
+      id: `n${index}`,
+      text: "word ".repeat(80),
+    }));
+    const truncated = dashboardAssistContext({ ...board(), notes: longNotes }, []);
+    expect(truncated.endsWith("characters omitted")).toBe(true);
+    expect(truncated).toContain("… truncated,");
   });
 
   test("draws a text box from a usable font, size, color, and alignment", () => {

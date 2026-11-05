@@ -6,6 +6,7 @@ import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
 import { AssistPromptBox } from "@/components/ai-assist/AssistPromptBox";
 import { HistoryLimitButton } from "@/components/ai-assist/HistoryLimitButton";
 import { renderProse } from "@/components/rich-text";
+import { BOARD_CONTEXT_CAP } from "@/lib/ai/dashboard-prompt";
 import { appFetch } from "@/lib/config/base-path";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { acceptAssistPlan, recentAssistHistory, type AssistHistoryTurn } from "@/lib/ai/assist-plan";
@@ -78,6 +79,13 @@ interface IdeQueryChatProps {
   conversationLabel?: string;
   useQueryLabel?: string;
   noteLabel?: string;
+  /**
+   * The dashboard's cell inventory. When set, the question is about that board
+   * and the editor statement is not sent.
+   */
+  boardContext?: string;
+  promptLabel?: string;
+  promptPlaceholder?: string;
 }
 
 /**
@@ -108,6 +116,9 @@ function IdeQueryChatSession({
   conversationLabel = "IDE conversation",
   useQueryLabel = "Use this query",
   noteLabel = "Add as text",
+  boardContext,
+  promptLabel = "Build or revise a query",
+  promptPlaceholder = "Tell me what query to build or optimize",
 }: {
   sql: string;
   databaseType: string;
@@ -121,6 +132,9 @@ function IdeQueryChatSession({
   conversationLabel?: string;
   useQueryLabel?: string;
   noteLabel?: string;
+  boardContext?: string;
+  promptLabel?: string;
+  promptPlaceholder?: string;
 }) {
   const anchored = placement === "fixed" ? "fixed" : "absolute";
   const settings = useSyncExternalStore(subscribeAssistSettings, readAssistSettings, () => DEFAULT_ASSIST_SETTINGS);
@@ -197,7 +211,9 @@ function IdeQueryChatSession({
           schemaContext: schemaContext.replace(/[\r\n]+/g, " ").slice(0, 30_000),
           databaseType,
           history: recentAssistHistory(history, settings.historyMessages),
-          editorSql: sql,
+          ...(boardContext === undefined
+            ? { editorSql: sql }
+            : { boardContext: boardContext.slice(0, BOARD_CONTEXT_CAP) }),
           webSearch: assistModelSearches(settings.source, model, models, gatewayModels),
         }),
       });
@@ -349,7 +365,8 @@ function IdeQueryChatSession({
               </p>
             )}
             <AssistPromptBox
-              label="Build or revise a query"
+              label={promptLabel}
+              placeholder={promptPlaceholder}
               value={draft}
               sending={sending}
               disabled={draft.trim() === "" || sending}

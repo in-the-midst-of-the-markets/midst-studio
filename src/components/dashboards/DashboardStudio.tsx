@@ -45,7 +45,6 @@ import { appFetch } from "@/lib/config/base-path";
 import {
   blockFrameSize,
   dashboardAssistContext,
-  dashboardEditorSql,
   dashboardName,
   dashboardVariables,
   DEFAULT_DASHBOARD_BLOCK_WIDTH,
@@ -53,9 +52,9 @@ import {
   DEFAULT_DASHBOARD_NOTE_HEIGHT,
   dragBlockResize,
   dragResize,
-  schemaWithDashboard,
   CUSTOM_FILTER_SCRIPT,
   DASHBOARD_FRAME_CSP,
+  DASHBOARD_INSTRUCTIONS_CAP,
   filterChoices,
   filterControlPatch,
   filterFrameDocument,
@@ -80,6 +79,7 @@ import {
   withFilter,
   withFilterFields,
   withFrame,
+  withInstructions,
   withName,
   withNote,
   withNoteFields,
@@ -153,8 +153,9 @@ function ChartGlyph({ typeId }: { readonly typeId: string | undefined }) {
 /**
  * Compiles dashboards from saved charts.
  * Each chart, text box, and component keeps the size the user dragged it to, and a
- * chart with a query can rerun that query on its own schedule. Ask AI places a
- * chart or a text box from the reply. The IDE is the page that waits for a click.
+ * chart with a query can rerun that query on its own schedule. Ask AI reads the
+ * board as a cell inventory and places a chart or a text box from the reply.
+ * The IDE is the page that waits for a click.
  */
 export function DashboardStudio() {
   const boardRef = useRef<HTMLDivElement>(null);
@@ -297,6 +298,22 @@ export function DashboardStudio() {
                   />
                 </label>
                 <p className="mt-1.5 text-xs text-fg-muted">Choose a name to make this dashboard easy to find.</p>
+                <label className="mt-4 block text-xs text-fg-muted">
+                  Instructions for AI
+                  <textarea
+                    aria-label="Instructions for AI"
+                    value={active.instructions ?? ""}
+                    maxLength={DASHBOARD_INSTRUCTIONS_CAP}
+                    rows={4}
+                    placeholder="Only a rule an example query cannot say"
+                    onChange={(event) => remember(withInstructions(active, event.target.value))}
+                    className="mt-1.5 min-h-20 w-full rounded-lg border border-hairline-strong bg-canvas px-2 py-1.5 text-sm text-fg"
+                  />
+                </label>
+                <p className="mt-1.5 text-xs text-fg-muted">
+                  The charts on this board are the examples. Write a rule here only when an example cannot say it, such
+                  as which date to assume or when to ask a follow-up.
+                </p>
               </div>
               <div className="mt-5 border-t border-hairline pt-5">
                 <div className="flex items-center justify-between">
@@ -551,9 +568,16 @@ export function DashboardStudio() {
         <IdeQueryChat
           placement="fixed"
           conversationLabel="Dashboard conversation"
-          sql={dashboardEditorSql(active, charts)}
+          sql=""
+          promptLabel="Ask about this dashboard"
+          promptPlaceholder="Ask a question about this dashboard"
           databaseType={assistDatabaseType(connections.map((item) => item.type))}
-          schemaContext={schemaWithDashboard(schemaContext, dashboardAssistContext(active, charts))}
+          schemaContext={schemaContext}
+          boardContext={dashboardAssistContext(
+            active,
+            charts,
+            connections.map((item) => ({ id: item.id, name: item.name })),
+          )}
           onPlaceReply={placeAssistantReply}
         />
       )}

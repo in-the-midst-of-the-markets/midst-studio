@@ -26,6 +26,7 @@ export function AssistPromptBox({
   onChange,
   onSubmit,
   inputRef,
+  placeholder = "Tell me what query to build or optimize",
   savedChoices,
   selectedSavedIds,
   onToggleSaved,
@@ -37,6 +38,7 @@ export function AssistPromptBox({
   onChange: (value: string) => void;
   onSubmit: () => void;
   inputRef?: Ref<HTMLTextAreaElement>;
+  placeholder?: string;
   savedChoices?: readonly AssistSavedChoice[];
   selectedSavedIds?: readonly string[];
   onToggleSaved?: (id: string) => void;
@@ -72,7 +74,7 @@ export function AssistPromptBox({
           ref={inputRef}
           aria-label={label}
           value={value}
-          placeholder="Tell me what query to build or optimize"
+          placeholder={placeholder}
           rows={2}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {

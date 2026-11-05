@@ -1,4 +1,4 @@
-import { ASSIST_SCHEMA_CAP } from "@/lib/ai/assist-plan";
+import { echartType } from "@/lib/charts/echarts-catalog";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
 import type {
   DashboardFilter,
@@ -161,6 +161,21 @@ export function withFrame(
 
 export function withName(dashboard: SavedDashboard, name: string): SavedDashboard {
   return { ...dashboard, name, updatedAt: new Date() };
+}
+
+/** The longest instruction the assistant is given for one dashboard. */
+export const DASHBOARD_INSTRUCTIONS_CAP = 2_000;
+
+/** Stores the author's rule, or drops it when the text is blank. */
+export function withInstructions(dashboard: SavedDashboard, instructions: string): SavedDashboard {
+  const clipped = instructions.slice(0, DASHBOARD_INSTRUCTIONS_CAP);
+  const next: SavedDashboard = { ...dashboard, updatedAt: new Date() };
+  if (clipped.trim() === "") {
+    delete next.instructions;
+    return next;
+  }
+  next.instructions = clipped;
+  return next;
 }
 
 const FILTER_NAME = /^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
@@ -434,67 +449,186 @@ export function noteFrameDocument(
   ].join("");
 }
 
-/** The query the dashboard assistant revises: the latest chart that is still saved. */
-export function dashboardEditorSql(
-  dashboard: SavedDashboard | null,
-  charts: readonly { id: string; query?: string }[],
-): string {
-  if (dashboard === null) return "";
-  for (let index = dashboard.charts.length - 1; index >= 0; index -= 1) {
-    const frame = dashboard.charts[index];
-    const chart = charts.find((item) => item.id === frame?.chartId);
-    if (chart === undefined) continue;
-    return chart.query ?? "";
-  }
-  return "";
+/** How long one query stays in the inventory before the rest is named as omitted. */
+const CELL_SQL_CAP = 480;
+/** The inventory stays this long. A longer board says how many characters were omitted. */
+const BOARD_MAP_CAP = 6_000;
+
+/** A chart the inventory can describe. Fields the chart has not saved yet are absent. */
+interface AssistChart {
+  readonly id: string;
+  readonly name: string;
+  readonly query?: string;
+  readonly connectionId?: string;
+  readonly typeId?: string;
+  readonly variationId?: string;
+  readonly xAxis?: string;
+  readonly yAxis?: readonly string[];
+  readonly metricName?: string;
+  readonly title?: string;
+  readonly selection?: Readonly<Record<string, string[]>>;
+}
+
+/** A connection name for a cell that names a warehouse. */
+interface AssistConnection {
+  readonly id: string;
+  readonly name: string;
 }
 
 /**
- * What this page can do, sent with every Dash question.
- * The reply is placed on the board, so the assistant should take the time to
- * choose a complete query and a chart variation instead of a first guess.
+ * The board as a cell inventory and a knowledge store.
+ *
+ * Components come first, then text, then charts, so a {{token}} is declared
+ * before the cells that depend on it. A chart or text query is a trusted
+ * example, and its question line is how a person asks for that result.
+ * Instructions are the author's rule for a case an example cannot say.
+ * A long query is cut, and the line says how many characters were omitted.
  */
-export const DASHBOARD_ASSIST_GUIDE =
-  "Dash builds a board. A reply is placed at once: the query becomes a chart and the explanation becomes a text box. The person can also add a saved chart, make a new chart, add a text box, or add a component (dropdown, slider, search, or custom JavaScript). Charts, text, and components can be resized. A text box can run a query, and that result is the text, so the SQL can include the words. Its color, font, and size can be changed on the box. JavaScript on the box can draw it, and can read the text and the query rows. A chart runs one query, can refresh on a schedule, and is drawn as a type and then a variation, such as bar (basic, stacked, horizontal) or line (basic, area, smooth). A component whose name is a query id is inserted as {{name}}. Read the board and the schema before answering. Take the time to write a complete query and a clear explanation rather than a short first guess.";
-
-/** Charts, text, and components on the board, so the assistant can see what is already there. */
 export function dashboardAssistContext(
   dashboard: SavedDashboard | null,
-  charts: readonly { id: string; name: string; query?: string }[],
+  charts: readonly AssistChart[],
+  connections: readonly AssistConnection[] = [],
 ): string {
-  const lines = [DASHBOARD_ASSIST_GUIDE];
-  if (dashboard === null) return lines.join("\n");
-  lines.push(`Dashboard: ${dashboard.name}`);
+  if (dashboard === null) {
+    return ["Dashboard: (none)", "Instructions: (none)", "", "Cells:", "(none)"].join("\n");
+  }
+  const instructions = dashboard.instructions?.trim() ?? "";
+  const lines = [
+    `Dashboard: ${quoteName(dashboard.name)}`,
+    instructions === "" ? "Instructions: (none)" : `Instructions: ${oneLine(instructions, DASHBOARD_INSTRUCTIONS_CAP)}`,
+    "",
+    "Cells:",
+  ];
+  const cells: string[] = [];
+  let index = 1;
+  for (const filter of dashboard.filters ?? []) {
+    cells.push(filterCell(index, filter, connections));
+    index += 1;
+  }
+  for (const note of dashboard.notes ?? []) {
+    cells.push(textCell(index, note, connections));
+    index += 1;
+  }
   for (const frame of dashboard.charts) {
     const chart = charts.find((item) => item.id === frame.chartId);
     if (chart === undefined) continue;
-    const query = chart.query?.trim() ?? "";
-    lines.push(`Chart ${chart.name}: ${query === "" ? "(no query)" : query}`);
+    cells.push(chartCell(index, chart, connections));
+    index += 1;
   }
-  for (const note of dashboard.notes ?? []) {
-    const text = note.text.trim();
-    const query = note.query?.trim() ?? "";
-    const code = note.script?.trim().replace(/\s+/g, " ") ?? "";
-    if (text !== "") lines.push(`Text: ${text}`);
-    if (query !== "") lines.push(`Text query: ${query}`);
-    if (code !== "") lines.push(`Text code: ${code}`);
+  lines.push(cells.length === 0 ? "(none)" : cells.join("\n"));
+  return capBoard(lines.join("\n"));
+}
+
+function capBoard(text: string): string {
+  if (text.length <= BOARD_MAP_CAP) return text;
+  const omitted = text.length - BOARD_MAP_CAP;
+  return `${text.slice(0, BOARD_MAP_CAP)} … truncated, ${omitted} characters omitted`;
+}
+
+function oneLine(text: string, cap: number): string {
+  const flat = text
+    .replace(/[\r\n]+/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+  if (flat.length <= cap) return flat;
+  const omitted = flat.length - cap;
+  return `${flat.slice(0, cap)} … truncated, ${omitted} characters omitted`;
+}
+
+function quoteName(name: string): string {
+  const cleaned = oneLine(name, 120).replaceAll('"', "'").replaceAll("|", "/");
+  return cleaned === "" ? "Untitled" : cleaned;
+}
+
+function connectionName(id: string | undefined, connections: readonly AssistConnection[]): string {
+  if (id === undefined || id === "") return "";
+  return connections.find((item) => item.id === id)?.name ?? "";
+}
+
+function tokensIn(sql: string): string[] {
+  const found: string[] = [];
+  const seen = new Set<string>();
+  for (const match of sql.matchAll(/\{\{\s*([A-Za-z_][A-Za-z0-9_]{0,39})/g)) {
+    const name = match[1];
+    if (name === undefined || seen.has(name)) continue;
+    seen.add(name);
+    found.push(name);
   }
-  for (const filter of dashboard.filters ?? []) {
-    const label = filter.label?.trim() || filter.name.trim() || "Component";
-    lines.push(`Component ${label} (${filter.control ?? "unset"}) = ${filter.value}`);
+  return found;
+}
+
+function chartShape(chart: AssistChart): string {
+  if (chart.typeId === undefined || chart.typeId === "") return "";
+  const type = echartType(chart.typeId);
+  if (type === null) return "";
+  const variation = type.variations.find((item) => item.id === chart.variationId);
+  return variation === undefined ? type.label : `${type.label} / ${variation.label}`;
+}
+
+function shelvesOf(chart: AssistChart): string {
+  const selected = chart.selection === undefined ? [] : Object.values(chart.selection).flat();
+  const names = selected.length > 0 ? selected : [chart.xAxis ?? "", ...(chart.yAxis ?? [])];
+  const cleaned: string[] = [];
+  for (const name of names) {
+    const trimmed = name.trim();
+    if (trimmed !== "" && !cleaned.includes(trimmed)) cleaned.push(trimmed);
   }
+  return cleaned.join(", ");
+}
+
+function chartCell(index: number, chart: AssistChart, connections: readonly AssistConnection[]): string {
+  const query = chart.query?.trim() ?? "";
+  const parts = [`${index}. chart "${quoteName(chart.name)}"`];
+  const shape = chartShape(chart);
+  if (shape !== "") parts.push(shape);
+  const connection = connectionName(chart.connectionId, connections);
+  if (connection !== "") parts.push(`connection "${quoteName(connection)}"`);
+  const metric = chart.metricName?.trim() ?? "";
+  if (metric !== "") parts.push(`metric "${quoteName(metric)}"`);
+  const shelves = shelvesOf(chart);
+  if (shelves !== "") parts.push(`shelves ${shelves}`);
+  const tokens = tokensIn(query);
+  if (tokens.length > 0) parts.push(`depends on ${tokens.map((token) => `{{${token}}}`).join(", ")}`);
+  parts.push(query === "" ? "empty" : "ready");
+  const named = chart.name.trim();
+  const titled = chart.title?.trim() ?? "";
+  const question = titled !== "" && titled !== named ? titled : named;
+  const lines = [parts.join(" | "), `question: ${quoteName(question)}`];
+  if (query !== "") lines.push(`trusted sql: ${oneLine(query, CELL_SQL_CAP)}`);
   return lines.join("\n");
 }
 
-/** The schema text plus the board, kept inside the size a question allows. */
-export function schemaWithDashboard(schemaContext: string, board: string): string {
-  const trimmed = board.trim();
-  if (trimmed === "") return schemaContext;
-  const extra = `\n\nDashboard:\n${trimmed}`;
-  const room = ASSIST_SCHEMA_CAP - schemaContext.length;
-  if (room <= 0) return schemaContext;
-  if (extra.length <= room) return schemaContext + extra;
-  return schemaContext + extra.slice(0, room);
+function textCell(index: number, note: DashboardNote, connections: readonly AssistConnection[]): string {
+  const text = note.text.trim();
+  const query = note.query?.trim() ?? "";
+  const script = note.script?.trim() ?? "";
+  const parts = [`${index}. text`];
+  if (text !== "") parts.push(`text: ${oneLine(text, 240)}`);
+  const connection = connectionName(note.connectionId, connections);
+  if (connection !== "") parts.push(`connection "${quoteName(connection)}"`);
+  const tokens = tokensIn(query);
+  if (tokens.length > 0) parts.push(`depends on ${tokens.map((token) => `{{${token}}}`).join(", ")}`);
+  parts.push(text === "" && query === "" && script === "" ? "empty" : "ready");
+  const lines = [parts.join(" | ")];
+  if (query !== "") lines.push(`trusted sql: ${oneLine(query, CELL_SQL_CAP)}`);
+  if (script !== "") lines.push(`script preview: ${oneLine(script, 120)}`);
+  return lines.join("\n");
+}
+
+function filterCell(index: number, filter: DashboardFilter, connections: readonly AssistConnection[]): string {
+  const label = filter.label?.trim() || filter.name.trim() || "Component";
+  const parts = [`${index}. component "${quoteName(label)}"`, filter.control ?? "unset"];
+  const token = filterReference(filter.name);
+  if (token !== null) parts.push(`publishes ${token}`);
+  const value = filter.value.trim();
+  if (value !== "") parts.push(`value ${oneLine(value, 80)}`);
+  if (filter.choiceSource === "values") parts.push("choices listed");
+  else if (filter.query.trim() !== "") parts.push("choices from query");
+  const connection = connectionName(filter.connectionId, connections);
+  if (connection !== "") parts.push(`connection "${quoteName(connection)}"`);
+  const script = filter.script?.trim() ?? "";
+  if (script !== "") parts.push(`script preview: ${oneLine(script, 120)}`);
+  return parts.join(" | ");
 }
 
 export function withFilter(dashboard: SavedDashboard, connectionId?: string, id = crypto.randomUUID()): SavedDashboard {
