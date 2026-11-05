@@ -12,6 +12,7 @@ const TOKEN = /^[A-Za-z0-9._-]{1,256}$/;
 
 export const GITHUB_FILE_CAP = 80;
 export const GITHUB_FILE_CHARS = 200_000;
+export const GITHUB_JSON_CAP = 2_000_000;
 
 const UNREADABLE = "This repository could not be read. Check the name and the token.";
 const UNREACHABLE = "GitHub could not be reached.";
@@ -234,6 +235,10 @@ async function readRawFile(
   );
   if (!response.ok) return response;
   if (!response.value.ok) return { ok: false, error: UNREADABLE };
+  const declared = response.value.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared) && Number(declared) > GITHUB_FILE_CHARS) {
+    return { ok: false, error: "A model file is larger than 200KB." };
+  }
   return { ok: true, value: await response.value.text() };
 }
 
@@ -241,11 +246,23 @@ async function githubJson(path: string, client: GitHubClient): Promise<GitResult
   const response = await githubResponse(path, client, "application/vnd.github+json");
   if (!response.ok) return response;
   if (!response.value.ok) return { ok: false, error: UNREADABLE };
+  const text = await cappedText(response.value, GITHUB_JSON_CAP);
+  if (!text.ok) return text;
   try {
-    return { ok: true, value: await response.value.json() };
+    return { ok: true, value: JSON.parse(text.value) as unknown };
   } catch {
     return { ok: false, error: "GitHub returned a response that could not be read." };
   }
+}
+
+async function cappedText(response: Response, cap: number): Promise<GitResult<string>> {
+  const declared = response.headers.get("content-length");
+  if (declared !== null && /^\d+$/.test(declared) && Number(declared) > cap) {
+    return { ok: false, error: "GitHub returned a response that is too large." };
+  }
+  const text = await response.text();
+  if (text.length > cap) return { ok: false, error: "GitHub returned a response that is too large." };
+  return { ok: true, value: text };
 }
 
 async function githubResponse(path: string, client: GitHubClient, accept: string): Promise<GitResult<Response>> {

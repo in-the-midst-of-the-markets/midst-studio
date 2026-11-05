@@ -5,6 +5,7 @@ import { clearRateLimitState } from "@/lib/api/rate-limit";
 const mockGetSession = mock(
   async (): Promise<{ role: string; username: string } | null> => ({ role: "admin", username: "admin" }),
 );
+let compiledProfile = "";
 const mockCompile = mock(
   async (): Promise<{ files: Record<string, string> } | { error: string }> => ({
     files: { "models/orders.sql": "select 1" },
@@ -92,7 +93,11 @@ describe("dbt routes", () => {
   beforeEach(() => {
     clearRateLimitState();
     mockGetSession.mockResolvedValue({ role: "admin", username: "admin" });
-    mockCompile.mockResolvedValue({ files: { "models/orders.sql": "select 1" } });
+    compiledProfile = "";
+    mockCompile.mockImplementation(async (_files: unknown, yaml: string) => {
+      compiledProfile = yaml;
+      return { files: { "models/orders.sql": "select 1" } };
+    });
     globalThis.fetch = githubFetch();
   });
 
@@ -175,6 +180,8 @@ describe("dbt routes", () => {
     expect(body.files["models/orders.sql"]).toBe("select 1");
     expect(JSON.stringify(body)).not.toContain(TOKEN);
     expect(JSON.stringify(body)).not.toContain("s3cret-password");
+    expect(compiledProfile).not.toContain("s3cret-password");
+    expect(compiledProfile).toContain("midst");
   });
 
   test("reports a compile that cannot run", async () => {

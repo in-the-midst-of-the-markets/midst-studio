@@ -1,4 +1,4 @@
-import { parse } from "yaml";
+import { parseUntrustedYaml } from "@/lib/dbt/yaml";
 import type { GitFile } from "@/lib/git/github";
 
 const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -27,7 +27,7 @@ export function readDbtProject(files: readonly GitFile[]): DbtProject | string {
   if (project === undefined) return "This repository has no dbt_project.yml.";
   let parsed: unknown;
   try {
-    parsed = parse(project.text);
+    parsed = parseUntrustedYaml(project.text);
   } catch {
     return "dbt_project.yml could not be read.";
   }
@@ -99,7 +99,7 @@ export function sourceSchemas(files: readonly GitFile[]): Map<string, string> {
     if (!/\.ya?ml$/.test(file.path) || file.path === "dbt_project.yml") continue;
     let parsed: unknown;
     try {
-      parsed = parse(file.text);
+      parsed = parseUntrustedYaml(file.text);
     } catch {
       continue;
     }
