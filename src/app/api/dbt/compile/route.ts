@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createErrorResponse } from "@/lib/api/errors";
 import { INVALID_REQUEST_BODY, readJsonObject } from "@/lib/api/json-object-body";
 import { guardRoute } from "@/lib/api/require-session";
-import { dbtCompileProfile } from "@/lib/dbt/profile";
+import { connectionSecrets, dbtCompileProfile } from "@/lib/dbt/profile";
 import { readDbtRequest } from "@/lib/dbt/open";
 import { compileProject } from "@/lib/dbt/runner";
 import { readGitHubProject } from "@/lib/git/github";
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     });
     if (typeof project === "string") return NextResponse.json({ error: project }, { status: 400 });
     const compiled = await compileProject(project.files, profile.yaml, {}, undefined, [
-      connection.password ?? "",
+      ...connectionSecrets(connection),
       request.token,
     ]);
     if ("error" in compiled) return NextResponse.json({ error: compiled.error }, { status: 400 });

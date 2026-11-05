@@ -137,6 +137,7 @@ function metricExpression(expr: string): string | null {
   if (trimmed.length === 0 || trimmed.length > 200) return null;
   if (trimmed === "*") return "*";
   if (!/^[A-Za-z0-9_+\-*/(). ]+$/.test(trimmed)) return null;
+  if (/[A-Za-z_][A-Za-z0-9_]*\s*\(/.test(trimmed)) return null;
   const words = trimmed.match(/[A-Za-z_][A-Za-z0-9_]*/g) ?? [];
   if (words.length === 0) return null;
   if (words.some((word) => RESERVED.has(word.toLowerCase()))) return null;

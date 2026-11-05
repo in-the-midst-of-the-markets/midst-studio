@@ -59,14 +59,38 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
 const DBT_PROFILE_NAME = "midst";
 
 /**
- * A profile dbt can compile with. The warehouse password is not written into it, and a DuckDB
- * file is not opened: compile renders SQL, and the project being compiled is untrusted.
+ * A copy compile can render. The warehouse password, the DuckDB path, and tunnel or TLS
+ * key material stay on the original connection and are not written into this copy.
  */
-export function dbtCompileProfile(connection: DatabaseConnection): { yaml: string } | { error: string } {
-  const placeholder = `compile-${crypto.randomUUID()}`;
+function compileConnection(connection: DatabaseConnection): DatabaseConnection {
   const next: DatabaseConnection = { ...connection, connectionString: ":memory:" };
-  if (next.password !== undefined && next.password !== "") next.password = placeholder;
-  return dbtProfile(next);
+  if (next.password !== undefined && next.password !== "") next.password = `compile-${crypto.randomUUID()}`;
+  if (next.sshTunnel !== undefined) {
+    next.sshTunnel = { ...next.sshTunnel, password: undefined, privateKey: undefined, passphrase: undefined };
+  }
+  if (next.ssl !== undefined) {
+    next.ssl = { ...next.ssl, caCert: undefined, clientCert: undefined, clientKey: undefined };
+  }
+  return next;
+}
+
+/** Secrets a compile error or compiled file must not echo. Short values are left for the redactor. */
+export function connectionSecrets(connection: DatabaseConnection): string[] {
+  const values = [
+    connection.password,
+    connection.connectionString,
+    connection.sshTunnel?.password,
+    connection.sshTunnel?.privateKey,
+    connection.sshTunnel?.passphrase,
+    connection.ssl?.caCert,
+    connection.ssl?.clientCert,
+    connection.ssl?.clientKey,
+  ];
+  return values.filter((value): value is string => typeof value === "string" && value !== "" && value !== ":memory:");
+}
+
+export function dbtCompileProfile(connection: DatabaseConnection): { yaml: string } | { error: string } {
+  return dbtProfile(compileConnection(connection));
 }
 
 /** A profiles document for `connection`, or a sentence when dbt cannot use it. */
@@ -84,7 +108,7 @@ export function dbtProfile(connection: DatabaseConnection): { yaml: string } | {
 export function dbtSchema(connection: DatabaseConnection): string {
   const build = DBT_TARGETS[connection.type];
   if (build === null) return "public";
-  const output = build(connection);
+  const output = build(compileConnection(connection));
   if (typeof output === "string") return "public";
   const schema = output.schema;
   return typeof schema === "string" ? schema : "public";

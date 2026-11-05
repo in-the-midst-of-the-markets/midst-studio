@@ -1,4 +1,4 @@
-import { dbtProfile, dbtSchema } from "@/lib/dbt/profile";
+import { dbtCompileProfile, dbtSchema } from "@/lib/dbt/profile";
 import { previewModel, readDbtProject, sourceSchemas, type DbtSourceRef } from "@/lib/dbt/project";
 import {
   parseGitDirectory,
@@ -81,7 +81,7 @@ export async function openDbtProject(
   if (typeof parsed === "string") return parsed;
   const schema = connection === null ? "public" : dbtSchema(connection);
   const schemas = sourceSchemas(project.files);
-  const built = connection === null ? null : dbtProfile(connection);
+  const built = connection === null ? null : dbtCompileProfile(connection);
   return {
     name: parsed.name,
     ref: project.ref,

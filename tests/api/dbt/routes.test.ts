@@ -7,7 +7,7 @@ const mockGetSession = mock(
 );
 let compiledProfile = "";
 const mockCompile = mock(
-  async (): Promise<{ files: Record<string, string> } | { error: string }> => ({
+  async (_files?: unknown, _yaml?: string): Promise<{ files: Record<string, string> } | { error: string }> => ({
     files: { "models/orders.sql": "select 1" },
   }),
 );
@@ -94,8 +94,8 @@ describe("dbt routes", () => {
     clearRateLimitState();
     mockGetSession.mockResolvedValue({ role: "admin", username: "admin" });
     compiledProfile = "";
-    mockCompile.mockImplementation(async (_files: unknown, yaml: string) => {
-      compiledProfile = yaml;
+    mockCompile.mockImplementation(async (_files?: unknown, yaml?: string) => {
+      compiledProfile = yaml ?? "";
       return { files: { "models/orders.sql": "select 1" } };
     });
     globalThis.fetch = githubFetch();

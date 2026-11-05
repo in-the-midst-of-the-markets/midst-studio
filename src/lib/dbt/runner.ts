@@ -9,7 +9,12 @@ const STDERR_CAP = 8_000;
 const COMPILED_FILE_CAP = 200_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
 const COMPILE_ENV_KEYS = ["PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "TEMP", "TMP", "SYSTEMROOT"];
-const UNSAFE_COMPILE = /\b(env_var|run_query|modules)\s*\(/;
+
+function nodeEnv(value: string | undefined): "development" | "production" | "test" {
+  if (value === "development" || value === "production" || value === "test") return value;
+  return "production";
+}
+const UNSAFE_COMPILE = /\b(env_var|run_query|modules)\b|\bstatement\s*\(|__/;
 
 export interface SpawnCapture {
   readonly code: number | null;
@@ -77,7 +82,10 @@ export async function compileProject(
   }
 }
 
-/** Jinja that can read the server environment or query the warehouse during compile. */
+/**
+ * Jinja that can read the server, query the warehouse, or reach Python during compile.
+ * A dunder name is refused as well as the call form: attribute access is enough.
+ */
 export function projectCompileRefusal(files: readonly GitFile[]): string | null {
   for (const file of files) {
     if (UNSAFE_COMPILE.test(file.text)) return "This project uses a dbt feature compile will not run.";
@@ -96,8 +104,10 @@ export function redactSecrets(text: string, secrets: readonly string[]): string 
 }
 
 /** The environment dbt is allowed to see. The server's own secrets are not in it. */
-export function compileEnvironment(source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = {};
+export function compileEnvironment(
+  source: Readonly<Record<string, string | undefined>> = process.env,
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { NODE_ENV: nodeEnv(source.NODE_ENV) };
   for (const key of COMPILE_ENV_KEYS) {
     const value = source[key];
     if (typeof value === "string") env[key] = value;
@@ -189,7 +199,10 @@ async function readCompiled(projectDir: string): Promise<Record<string, string> 
       continue;
     }
     for (const entry of entries) {
+      if (entry.isSymbolicLink() || entry.name === "." || entry.name === "..") continue;
       const full = join(dir, entry.name);
+      const rel = relative(root, full);
+      if (rel.startsWith("..")) continue;
       if (entry.isDirectory()) pending.push(full);
       else if (entry.name.endsWith(".sql")) {
         // oxlint-disable-next-line no-await-in-loop -- each compiled model is read after the one before it.

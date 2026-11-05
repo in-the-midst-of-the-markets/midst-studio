@@ -238,18 +238,14 @@ async function readRawFile(
   );
   if (!response.ok) return response;
   if (!response.value.ok) return { ok: false, error: UNREADABLE };
-  const declared = response.value.headers.get("content-length");
-  if (declared !== null && /^\d+$/.test(declared) && Number(declared) > GITHUB_FILE_CHARS) {
-    return { ok: false, error: "A model file is larger than 200KB." };
-  }
-  return { ok: true, value: await response.value.text() };
+  return readCapped(response.value, GITHUB_FILE_CHARS, "A model file is larger than 200KB.");
 }
 
 async function githubJson(path: string, client: GitHubClient): Promise<GitResult<unknown>> {
   const response = await githubResponse(path, client, "application/vnd.github+json");
   if (!response.ok) return response;
   if (!response.value.ok) return { ok: false, error: UNREADABLE };
-  const text = await cappedText(response.value, GITHUB_JSON_CAP);
+  const text = await readCapped(response.value, GITHUB_JSON_CAP, "GitHub returned a response that is too large.");
   if (!text.ok) return text;
   try {
     return { ok: true, value: JSON.parse(text.value) as unknown };
@@ -258,14 +254,40 @@ async function githubJson(path: string, client: GitHubClient): Promise<GitResult
   }
 }
 
-async function cappedText(response: Response, cap: number): Promise<GitResult<string>> {
+/** Reads at most `cap` bytes. A longer body is dropped instead of buffered. */
+async function readCapped(response: Response, cap: number, tooLarge: string): Promise<GitResult<string>> {
   const declared = response.headers.get("content-length");
   if (declared !== null && /^\d+$/.test(declared) && Number(declared) > cap) {
-    return { ok: false, error: "GitHub returned a response that is too large." };
+    return { ok: false, error: tooLarge };
   }
-  const text = await response.text();
-  if (text.length > cap) return { ok: false, error: "GitHub returned a response that is too large." };
-  return { ok: true, value: text };
+  const body = response.body;
+  if (body === null) return { ok: true, value: await response.text() };
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      // oxlint-disable-next-line no-await-in-loop -- the next chunk is the one that may cross the cap.
+      const next = await reader.read();
+      if (next.done) break;
+      size += next.value.byteLength;
+      if (size > cap) {
+        // oxlint-disable-next-line no-await-in-loop -- the stream is cancelled before the function returns.
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, error: tooLarge };
+      }
+      chunks.push(next.value);
+    }
+  } catch {
+    return { ok: false, error: UNREACHABLE };
+  }
+  const merged = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { ok: true, value: new TextDecoder().decode(merged) };
 }
 
 async function githubResponse(path: string, client: GitHubClient, accept: string): Promise<GitResult<Response>> {
@@ -278,7 +300,11 @@ async function githubResponse(path: string, client: GitHubClient, accept: string
   try {
     return {
       ok: true,
-      value: await client.fetch(`https://api.github.com/${path}`, { headers, signal: client.signal }),
+      value: await client.fetch(`https://api.github.com/${path}`, {
+        headers,
+        signal: client.signal,
+        redirect: "manual",
+      }),
     };
   } catch {
     return { ok: false, error: UNREACHABLE };
