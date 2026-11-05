@@ -1213,6 +1213,8 @@ export interface SavedChartConfig {
   yAxis: string[];
   query?: string;
   connectionId?: string;
+  /** The MetricFlow metric this chart was built from, when it was. */
+  metricName?: string;
   createdAt: Date;
   aggregation?: AggregationType;
   dateGrouping?: DateGrouping;

@@ -4,13 +4,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { withBasePath } from "@/lib/config/base-path";
 import { cn } from "@/lib/utils";
 
-/** The three top-level surfaces. Each page links to the other two. */
-type StudioSurface = "ide" | "assist" | "dash";
+/** The top-level surfaces. Each page links to the others. */
+type StudioSurface = "ide" | "assist" | "dash" | "models";
 
 const SURFACES: readonly { id: StudioSurface; href: string; label: string }[] = [
   { id: "assist", href: "/assist", label: "AI" },
   { id: "ide", href: "/", label: "IDE" },
   { id: "dash", href: "/create", label: "Dash" },
+  { id: "models", href: "/models", label: "Models" },
 ];
 
 /**
@@ -22,7 +23,7 @@ export const IDE_MODE_LINK_CLASS =
 
 /**
  * The other surfaces, as buttons beside each other.
- * The IDE offers AI and Dash, the AI page offers the IDE and Dash, and the dashboard offers AI and IDE.
+ * The IDE offers AI, Dash and Models. Each other page offers the surfaces it is not.
  * `outline` is the quieter pair on the Analytics and dashboard headers.
  */
 export function ModeLinks({
