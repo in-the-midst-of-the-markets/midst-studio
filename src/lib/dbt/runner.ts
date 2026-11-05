@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import type { Dirent } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
@@ -140,10 +141,10 @@ async function readCompiled(projectDir: string): Promise<Record<string, string>>
   while (pending.length > 0) {
     const dir = pending.pop();
     if (dir === undefined) break;
-    let entries: Awaited<ReturnType<typeof readdir>>;
+    let entries: Dirent<string>[] = [];
     try {
       // oxlint-disable-next-line no-await-in-loop -- one directory of compiled SQL at a time.
-      entries = await readdir(dir, { withFileTypes: true });
+      entries = await readdir(dir, { encoding: "utf8", withFileTypes: true });
     } catch {
       continue;
     }

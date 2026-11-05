@@ -6,6 +6,7 @@ import {
   parseGitRef,
   parseGitToken,
   readGitHubProject,
+  type GitHubFetch,
   type GitHubRepo,
 } from "@/lib/git/github";
 import { readMetrics, type ProjectMetric } from "@/lib/metricflow/metrics";
@@ -66,7 +67,7 @@ function readConnectionId(value: unknown, required: boolean): string | null | { 
 /** Reads the repository and the models and metrics in it. A problem is a sentence. */
 export async function openDbtProject(
   request: DbtOpenRequest,
-  fetchImpl: typeof fetch,
+  fetchImpl: GitHubFetch,
   connection: DatabaseConnection | null,
 ): Promise<OpenedDbtProject | string> {
   const project = await readGitHubProject(request.repo, {

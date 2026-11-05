@@ -524,18 +524,18 @@ describe("DashboardStudio", () => {
       notes: [{ id: "n1", text: "", query: "SELECT 1", connectionId: "c1" }],
     });
     storage.setActiveDashboardId("sales");
-    let release: (() => void) | null = null;
+    const pending: { release: (() => void) | null } = { release: null };
     mockGlobalFetch({
       "/api/db/query": () =>
         new Promise((resolve) => {
-          release = () => resolve({ json: rows });
+          pending.release = () => resolve({ json: rows });
         }),
     });
     const view = render(<DashboardStudio />);
     expect(view.getByText("Running the query…")).toBeTruthy();
-    await waitFor(() => expect(release).not.toBeNull());
+    await waitFor(() => expect(pending.release).not.toBeNull());
     view.unmount();
-    release?.();
+    pending.release?.();
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 

@@ -924,7 +924,8 @@ describe("waterfall", () => {
     expect(part<{ data: string[] }>(closed, "xAxis").data).toEqual(["Jan", "Feb", "Mar", "Total"]);
     const series = seriesOf(closed);
     expect(series[0]?.data).toEqual([0, 100, 110, 0]);
-    expect(series[1]?.data?.[3]).toEqual({ value: 110, signed: 110 });
+    const totalBar = series[1]?.data;
+    expect(Array.isArray(totalBar) ? totalBar[3] : undefined).toEqual({ value: 110, signed: 110 });
     const down = draw({
       typeId: "waterfall",
       variationId: "total",
@@ -936,7 +937,8 @@ describe("waterfall", () => {
     });
     const fallen = seriesOf(down);
     expect(fallen[0]?.data).toEqual([0, -30, -30]);
-    expect(fallen[2]?.data?.[2]).toEqual({ value: 30, signed: -30 });
+    const downBar = fallen[2]?.data;
+    expect(Array.isArray(downBar) ? downBar[2] : undefined).toEqual({ value: 30, signed: -30 });
     const marked = draw({ typeId: "waterfall", variationId: "labeled", rows, selection, categoryCap: 1 });
     const markedLabel = seriesOf(marked)[1]?.label;
     expect(markedLabel !== null && typeof markedLabel === "object" && "show" in markedLabel && markedLabel.show).toBe(
