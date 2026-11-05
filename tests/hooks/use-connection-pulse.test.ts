@@ -6,6 +6,7 @@ import { mockGlobalFetch, restoreGlobalFetch } from "../helpers/mock-fetch";
 
 import { CONNECTION_PULSE_INTERVAL_MS, useConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { ProviderMetadata } from "@/hooks/use-provider-metadata";
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
 import type { DatabaseConnection } from "@/lib/types";
 
 const makeConnection = (overrides: Partial<DatabaseConnection> = {}): DatabaseConnection => ({
@@ -139,6 +140,23 @@ describe("useConnectionPulse", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  test("Cross_DB_Joins stays online and never asks the server whether it is up", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/health": { status: 503, json: { error: "Database file path is required" } },
+    });
+    const join = crossDbJoinsConnection();
+
+    const { result, rerender } = renderPulse({ connection: join, metadata: null });
+    expect(result.current).toBe("healthy");
+
+    rerender({ connection: join, metadata: metadata() });
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    expect(result.current).toBe("healthy");
+    expect(healthPosts(fetchMock)).toHaveLength(0);
+    expect(pulseTimers).toHaveLength(0);
   });
 
   test("with resumesBilledCompute sends zero /api/db/health posts across two activations, starts no timer and sets not-checked", async () => {

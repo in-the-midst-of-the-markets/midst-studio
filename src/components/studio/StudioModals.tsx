@@ -7,6 +7,7 @@ import type { ProviderCapabilities } from "@/lib/db/types";
 import type { MaskingConfig } from "@/lib/data-masking";
 import { objectAtPath } from "@/lib/db/detailed-object";
 import { catalogOfPath } from "@/lib/db/object-kinds";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { DataImportModal } from "@/components/DataImportModal";
 import { QuerySafetyDialog } from "@/components/QuerySafetyDialog";
 import { DataProfiler } from "@/components/DataProfiler";
@@ -142,6 +143,7 @@ export function StudioModals({
           onSave={onSaveQuery}
           defaultQuery={defaultQuery}
           takenTableIds={takenTableIds}
+          savedOnJoin={isCrossDbJoins(activeConnection)}
         />
       )}
 

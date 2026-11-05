@@ -1669,6 +1669,36 @@ describe("useConnectionManager", () => {
       expect(mockToastSuccess).not.toHaveBeenCalled();
     });
 
+    test("a refresh leaves Cross_DB_Joins selected and does not store it", async () => {
+      process.env.NEXT_PUBLIC_MANAGED_REFRESH_FLOOR_MS = "60000";
+      let managedCalls = 0;
+      mockGlobalFetch({
+        "/api/connections/managed": () => {
+          managedCalls += 1;
+          return { ok: true, json: { connections: [firstManaged()] } };
+        },
+        "/api/db/health": healthy,
+      });
+
+      const { result } = renderHook(() => useConnectionManager(true));
+      await waitFor(() => {
+        expect(result.current.activeConnection?.id).toBe("managed-1");
+      });
+      act(() => {
+        result.current.setActiveConnection(crossDbJoinsConnection());
+      });
+      expect(result.current.activeConnection?.id).toBe(CROSS_DB_JOINS_ID);
+
+      focusWindow();
+      await waitFor(() => {
+        expect(managedCalls).toBeGreaterThan(1);
+      });
+      expect(result.current.activeConnection?.id).toBe(CROSS_DB_JOINS_ID);
+      expect(result.current.activeConnection?.name).toBe("Cross_DB_Joins");
+      expect(result.current.connections.some((connection) => connection.id === CROSS_DB_JOINS_ID)).toBe(false);
+      expect(mockToastSuccess).not.toHaveBeenCalled();
+    });
+
     test("the user's own active connection stays the list's entry after a refresh with no managed connection", async () => {
       process.env.NEXT_PUBLIC_MANAGED_REFRESH_FLOOR_MS = "60000";
       storage.saveConnection(makeConnection({ id: "plain-1", name: "Plain" }));

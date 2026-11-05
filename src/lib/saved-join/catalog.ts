@@ -34,7 +34,8 @@ export function savedJoinCatalog(
     // The join names the ID, not the display name. A query saved before IDs existed
     // cannot be a table until it is saved again.
     if (query.tableId === undefined || savedQueryTableIdError(query.tableId) !== null) continue;
-    // A query saved while this connection was selected has no database to read.
+    // A statement saved on Cross_DB_Joins is DuckDB over other saved queries. It is reopened
+    // from Saved Queries. It is not a source table, because it has no database to read.
     if (query.connectionId === CROSS_DB_JOINS_ID) continue;
     const connection = connections.find((item) => item.id === query.connectionId);
     if (!connection) {

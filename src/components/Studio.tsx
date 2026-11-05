@@ -827,14 +827,6 @@ export default function Studio() {
   // of use, the save, rather than captured from the tab on every keystroke.
   const handleSaveQuery = useStableCallback((name: string, description: string, tags: string[], tableId: string) => {
     if (!conn.activeConnection) return false;
-    if (isCrossDbJoins(conn.activeConnection)) {
-      toast({
-        title: "Save it from its database",
-        description: "Cross_DB_Joins joins queries that were saved from the databases they read.",
-        variant: "destructive",
-      });
-      return false;
-    }
     const idError = savedQueryTableIdError(tableId);
     if (idError !== null) {
       toast({ title: "ID needs a change", description: idError, variant: "destructive" });
