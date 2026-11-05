@@ -337,6 +337,30 @@ describe("buildAssistReadingMessages", () => {
     });
     expect(graphFinal[0]?.content).toContain("Cite those names.");
     expect(final[0]?.content).toContain("Do not plan another query.");
+    expect(final[0]?.content).not.toContain("augment these query results");
     expect(final[1]?.content).toContain("Results:\nr");
+
+    const searched = buildAssistReadingMessages({
+      pass: "final",
+      databaseType: "postgres",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+      webSearch: true,
+    });
+    expect(searched[0]?.content).toContain("You can search the web.");
+    expect(searched[0]?.content).toContain("augment these query results");
+    expect(searched[0]?.content).toContain("The message you return is still one JSON object.");
+    const followSearch = buildAssistReadingMessages({
+      pass: "follow",
+      databaseType: "postgres",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+      webSearch: false,
+    });
+    expect(followSearch[0]?.content).not.toContain("You can search the web.");
   });
 });
