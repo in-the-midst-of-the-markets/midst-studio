@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { presentChartOption } from "@/lib/charts/chart-present";
+import { presentChartOption, withBlankAffixes } from "@/lib/charts/chart-present";
 
 const untitled = {
   legend: { top: 4 },
@@ -91,5 +91,25 @@ describe("presentChartOption", () => {
     expect(tips[1].formatter({ value: 8 })).toBe("8%");
 
     expect(presentChartOption({ title: { text: "" } }, {}).tooltip).toBeUndefined();
+  });
+
+  test("a new chart starts with an empty prefix and suffix", () => {
+    const option = withBlankAffixes({
+      yAxis: { type: "value", axisLabel: { color: "red", prefix: "$" } },
+      xAxis: [{ type: "category" }, "skip"],
+      angleAxis: "round",
+      radiusAxis: { axisLabel: { prefix: 4, suffix: "x" } },
+      tooltip: [{ trigger: "item", suffix: "%" }, "axis"],
+    });
+    expect(option.yAxis).toEqual({
+      type: "value",
+      axisLabel: { color: "red", prefix: "$", suffix: "" },
+    });
+    expect(option.xAxis).toEqual([{ type: "category", axisLabel: { prefix: "", suffix: "" } }, "skip"]);
+    expect(option.angleAxis).toBe("round");
+    expect(option.radiusAxis).toEqual({ axisLabel: { prefix: "", suffix: "x" } });
+    expect(option.tooltip).toEqual([{ trigger: "item", prefix: "", suffix: "%" }, "axis"]);
+    expect(withBlankAffixes({ series: [] }).tooltip).toBeUndefined();
+    expect(withBlankAffixes({ tooltip: "item" }).tooltip).toBe("item");
   });
 });

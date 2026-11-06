@@ -143,6 +143,11 @@ describe("line and bar", () => {
     });
     expect(part<{ text: string }>(untitled, "title").text).toBe("");
     expect(part<{ top: number }>(untitled, "legend").top).toBe(4);
+    expect(part<{ axisLabel: { prefix: string; suffix: string } }>(untitled, "yAxis").axisLabel).toMatchObject({
+      prefix: "",
+      suffix: "",
+    });
+    expect(part<{ prefix: string; suffix: string }>(untitled, "tooltip")).toMatchObject({ prefix: "", suffix: "" });
   });
 
   test("bar variations stack and turn the category axis sideways", () => {

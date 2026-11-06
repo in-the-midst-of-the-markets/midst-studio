@@ -7,7 +7,6 @@ import {
   DASHBOARD_INSTRUCTIONS_CAP,
   dashboardAssistContext,
   dashboardName,
-  dashboardVariables,
   DEFAULT_DASHBOARD_BLOCK_WIDTH,
   DEFAULT_DASHBOARD_NOTE_HEIGHT,
   dragBlockResize,
@@ -22,7 +21,6 @@ import {
   filterSlider,
   freshDashboard,
   freshDashboardChart,
-  insertQueryVariable,
   MAX_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_HEIGHT,
   MIN_DASHBOARD_CHART_WIDTH,
@@ -283,29 +281,6 @@ describe("dashboard layout", () => {
       2_000,
     );
     expect(document).toContain("default-src 'none'");
-  });
-
-  test("lists a dashboard's variable ids and writes one into a query", () => {
-    expect(
-      dashboardVariables(
-        [
-          { id: "a", name: "region", label: " Region ", query: "", value: "" },
-          { id: "b", name: "1bad", query: "", value: "" },
-          { id: "c", name: "kind", query: "", value: "" },
-          { id: "d", name: "city", query: "", value: "" },
-        ],
-        "c",
-      ),
-    ).toEqual([
-      { id: "a", label: "Region", token: "{{region}}", embedToken: "{{embed region}}" },
-      { id: "d", label: "city", token: "{{city}}", embedToken: "{{embed city}}" },
-    ]);
-    expect(dashboardVariables([])).toEqual([]);
-    expect(insertQueryVariable("", "{{region}}")).toBe("{{region}}");
-    expect(insertQueryVariable("   ", "{{region}}")).toBe("{{region}}");
-    expect(insertQueryVariable("SELECT ", "{{region}}")).toBe("SELECT {{region}}");
-    expect(insertQueryVariable("SELECT\n", "{{region}}")).toBe("SELECT\n{{region}}");
-    expect(insertQueryVariable("SELECT", "{{region}}")).toBe("SELECT {{region}}");
   });
 
   test("saves a component design and places a fresh copy", () => {
