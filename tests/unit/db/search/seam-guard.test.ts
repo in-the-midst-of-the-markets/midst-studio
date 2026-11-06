@@ -85,6 +85,14 @@ const WIRE_TOKENS = [
   // indices the SQL endpoint reads for it.
   "/_resolve/index",
   "/_field_caps",
+  // A Dev Tools search. The path stays in the transport; the editor's parser does not spell it.
+  "/_search",
+  "/_count",
+  "/_validate/query",
+  "/_rank_eval",
+  "/_eql/search",
+  "/_async_search",
+  "/_explain",
   // The agent open's login probes on OpenSearch: the security plugin's own answer, and a delete by query on a fresh name.
   "/_plugins/_security",
   "/_delete_by_query",
@@ -132,16 +140,15 @@ const WIRE_TOKENS = [
  * - `/_query` is ES|QL. It exists only on Elasticsearch (and works on a basic
  *   licence), and a surface only one of the two products has cannot be the shared
  *   query language, so it is deliberately unused (`transport.ts:21-24`).
- * - `/_search` and `/_bulk` are the document APIs. SQL is the query language here
- *   and writes go through APIs this seam does not expose
- *   (`transport.ts:64-71`), so reaching for them is a change of scope, not a fix.
+ * - `/_bulk` is the bulk document API. A search runs, and one document insert or
+ *   update runs. A delete, and a request that changes more than one document, does
+ *   not, so reaching for bulk is still a change of scope.
  * - `root_cause` and `caused_by` are members of Elasticsearch's error envelope
  *   that nothing reads: the fault name comes from `error.type` and the wording
  *   from `error.reason` (measured, `transport.ts:16-20`).
  */
 const UNUSED_WIRE_TOKENS = [
   "/_query",
-  "/_search",
   "/_bulk",
   "root_cause",
   "caused_by",

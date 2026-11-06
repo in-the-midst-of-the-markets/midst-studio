@@ -346,6 +346,40 @@ describe("POST /api/db/query", () => {
     expect(data.error).toContain("Authentication required");
   });
 
+  test("a document insert is refused for a user and sent for an admin", async () => {
+    const sql = 'PUT orders/_doc/1\n{"title":"mug"}';
+    mockGetSession.mockImplementation(async () => ({ role: "user", username: "ada" }));
+    const refused = await POST(
+      createMockRequest("/api/db/query", { method: "POST", body: { connection: validConnection, sql } }) as never,
+    );
+    const refusedBody = await parseResponseJSON<{ error: string }>(refused);
+    expect(refused.status).toBe(403);
+    expect(refusedBody.error).toContain("admin");
+    expect(mockGetOrCreateProvider).not.toHaveBeenCalled();
+
+    mockGetSession.mockImplementation(async () => ({ role: "admin", username: "admin" }));
+    (mockProvider.query as ReturnType<typeof mock>).mockResolvedValueOnce({
+      rows: [{ result: "created" }],
+      fields: ["result"],
+      rowCount: 1,
+      executionTime: 1,
+    });
+    const allowed = await POST(
+      createMockRequest("/api/db/query", { method: "POST", body: { connection: validConnection, sql } }) as never,
+    );
+    expect(allowed.status).toBe(200);
+    expect(mockProvider.query).toHaveBeenCalled();
+
+    mockGetSession.mockImplementation(async () => ({ role: "user", username: "ada" }));
+    const read = await POST(
+      createMockRequest("/api/db/query", {
+        method: "POST",
+        body: { connection: validConnection, sql: "SELECT 1" },
+      }) as never,
+    );
+    expect(read.status).toBe(200);
+  });
+
   test("a queryId that is not a string returns 400 (#1364)", async () => {
     const req = createMockRequest("/api/db/query", {
       method: "POST",

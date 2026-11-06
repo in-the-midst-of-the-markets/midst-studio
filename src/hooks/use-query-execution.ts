@@ -27,6 +27,7 @@ import { sandboxRefusal } from "@/lib/editor/sandbox-refusal";
 import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { embeddingRequestFields } from "@/lib/embeddings/ids";
+import { readDevToolsRequest } from "@/lib/db/search-dev-tools";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
 import { readJoinSizeChoice } from "@/lib/saved-join/size-choice";
 import { isCrossDbJoins } from "@/lib/saved-join/connection";
@@ -713,7 +714,10 @@ export function useQueryExecution({
         const dialectIsSql =
           consoleTextByteLimit(activeConnection.type) === undefined &&
           (metadata?.capabilities.queryLanguage ?? "sql") === "sql";
+        // A Dev Tools search is one request. A `;` inside its JSON is not a second statement.
+        const nativeSearch = readDevToolsRequest(queryToExecute).kind !== "sql";
         const useMultiQuery =
+          !nativeSearch &&
           !isExplain &&
           !isLoadMore &&
           !transactionActive &&

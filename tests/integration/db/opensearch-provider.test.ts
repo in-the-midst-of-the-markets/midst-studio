@@ -1247,6 +1247,23 @@ describe("OpenSearchProvider query preparation", () => {
     expect(elasticsearch.query).toBe(opensearch.query);
   });
 
+  test("leaves a Dev Tools request as it was written", () => {
+    const prepared = provider().prepareQuery('GET orders/_search\n{"size":1}', { limit: 25, offset: 10 });
+
+    expect(prepared).toEqual({
+      query: 'GET orders/_search\n{"size":1}',
+      wasLimited: false,
+      limit: 25,
+      offset: 10,
+    });
+    const open = provider().prepareQuery("GET orders/_search", { unlimited: true });
+    expect(open.query).toBe("GET orders/_search");
+    expect(open.wasLimited).toBe(false);
+    expect(open.limit).toBeGreaterThan(25);
+    const plain = provider().prepareQuery("HEAD /_cluster/health");
+    expect(plain).toEqual({ query: "HEAD /_cluster/health", wasLimited: false, limit: 500, offset: 0 });
+  });
+
   test("keeps a trailing semicolon, which OpenSearch accepts and Elasticsearch does not", () => {
     // Measured: `SELECT customer FROM probe_orders LIMIT 25;` is HTTP 200 here,
     // while a trailing semicolon is a syntax error on Elasticsearch. The shared
@@ -1264,6 +1281,36 @@ describe("OpenSearchProvider query preparation", () => {
 // ============================================================================
 
 describe("OpenSearchProvider query", () => {
+  test("runs a Dev Tools search and one document write, and does not send a delete", async () => {
+    const provider = await connectProvider();
+    overridePath(
+      "/orders/_search",
+      ok(
+        JSON.stringify({
+          hits: {
+            total: { value: 1, relation: "eq" },
+            hits: [{ _index: "orders", _id: "1", _score: 1, _source: { title: "mug" } }],
+          },
+        }),
+      ),
+    );
+
+    const searched = await provider.query('GET orders/_search\n{"size":1}');
+
+    expect(searched.rows).toEqual([{ _index: "orders", _id: "1", _score: 1, title: "mug" }]);
+    expect(sentPaths.at(-1)).toContain("/orders/_search");
+
+    overridePath("/orders/_doc/1", ok(JSON.stringify({ _index: "orders", _id: "1", _version: 1, result: "created" })));
+    const written = await provider.query('PUT orders/_doc/1\n{"title":"mug"}');
+    expect(written.rows).toEqual([{ _index: "orders", _id: "1", result: "created", _version: 1 }]);
+    expect(sentPaths.at(-1)).toBe("/orders/_doc/1");
+
+    const before = sentPaths.length;
+    await expect(provider.query("DELETE orders/_doc/1")).rejects.toBeInstanceOf(QueryError);
+    await expect(provider.query("GET orders/_search\n[1]")).rejects.toThrow(/one JSON object/);
+    expect(sentPaths).toHaveLength(before);
+  });
+
   test("keeps a long past 2^53 exact, as its digits, on every page", async () => {
     // Measured on 3.9.0 on 2026-10-04: `datarows` carries a `long` as an UNQUOTED JSON
     // number, and a plain JSON.parse showed 9223372036854776000 and 9007199254740992 in

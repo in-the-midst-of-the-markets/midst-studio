@@ -1653,3 +1653,160 @@ describe("SearchHttpTransport (opensearch) login probes", () => {
     expect(calls).toHaveLength(0);
   });
 });
+
+function jsonBody(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+}
+
+describe("SearchHttpTransport native query", () => {
+  function transport(): SearchHttpTransport {
+    return new SearchHttpTransport("opensearch", makeConnection("opensearch"));
+  }
+
+  test("sends a search that carries a body as POST and reads the hits", async () => {
+    handler = () =>
+      jsonBody({
+        hits: {
+          total: { value: 2, relation: "eq" },
+          hits: [
+            { _index: "orders", _id: "1", _score: 1.5, _source: { title: "mug", n: 2, on: true, extra: null } },
+            null,
+            { _index: "orders", _id: "2", _score: null, _source: { title: "cup", nested: { a: 1 } } },
+          ],
+        },
+      });
+
+    const result = await transport().nativeQuery("GET", "orders/_search/?pretty#skip", '{"size":1}');
+
+    const url = new URL(calls[0]?.url ?? "");
+    expect(url.pathname).toBe("/orders/_search");
+    expect(url.search).toBe("?pretty=");
+    expect(calls[0]?.init?.method).toBe("POST");
+    expect(calls[0]?.init?.body).toBe('{"size":1}');
+    expect(result.fieldNames).toEqual(["_index", "_id", "_score", "title", "n", "on", "extra", "nested"]);
+    expect(result.rows[0]).toEqual({
+      _index: "orders",
+      _id: "1",
+      _score: 1.5,
+      title: "mug",
+      n: 2,
+      on: true,
+      extra: null,
+      nested: null,
+    });
+    expect(result.rows[1]).toEqual({
+      _index: "orders",
+      _id: "2",
+      _score: null,
+      title: "cup",
+      n: null,
+      on: null,
+      extra: null,
+      nested: '{"a":1}',
+    });
+    expect(result.totalHits).toBe(2);
+  });
+
+  test("reads an old total, a count, empty hits, aggregations, and anything else", async () => {
+    handler = () => jsonBody({ hits: { total: 4, hits: [{ _id: "1" }] } });
+    const numbered = await transport().nativeQuery("GET", "/orders/_search");
+    expect(numbered.totalHits).toBe(4);
+    expect(numbered.rows[0]?._index).toBeNull();
+    expect(calls[0]?.init?.method).toBe("GET");
+
+    handler = () => jsonBody({ count: 3 });
+    const counted = await transport().nativeQuery("POST", "orders/_count", "{}");
+    expect(counted.rows).toEqual([{ count: 3 }]);
+    expect(calls.at(-1)?.init?.method).toBe("POST");
+
+    handler = () => jsonBody({ hits: { hits: [] }, aggregations: { bad: null, empty: { buckets: [] } } });
+    const empty = await transport().nativeQuery("GET", "/orders/_search");
+    expect(empty.rows).toEqual([]);
+    expect(empty.fieldNames).toEqual(["_index", "_id", "_score"]);
+
+    handler = () =>
+      jsonBody({
+        aggregations: {
+          skip: null,
+          terms: { buckets: [null, { key: "a", doc_count: 2 }, { key_as_string: "2020", key: 1, doc_count: 1 }] },
+          avg: { value: { n: 1 } },
+        },
+      });
+    const aggs = await transport().nativeQuery("POST", "/orders/_search", '{"size":0}');
+    expect(aggs.fieldNames).toEqual(["aggregation", "key", "doc_count", "value"]);
+    expect(aggs.rows).toEqual([
+      { aggregation: "terms", key: "a", doc_count: 2, value: null },
+      { aggregation: "terms", key: "2020", doc_count: 1, value: null },
+      { aggregation: "avg", key: null, doc_count: null, value: '{"n":1}' },
+    ]);
+
+    handler = () => jsonBody({ aggregations: { avg: { value: 1.5 } } });
+    const metric = await transport().nativeQuery("GET", "/orders/_search", '{"size":0}');
+    expect(metric.rows).toEqual([{ aggregation: "avg", key: null, doc_count: null, value: 1.5 }]);
+
+    handler = () => jsonBody({ status: "green" });
+    const health = await transport().nativeQuery("GET", "/_cluster/health");
+    expect(health.rows).toEqual([{ response: '{"status":"green"}' }]);
+    const head = await transport().nativeQuery("HEAD", "/_cluster/health");
+    expect(calls.at(-1)?.init?.method).toBe("HEAD");
+    expect(head.rows).toEqual([{ response: '{"status":"green"}' }]);
+
+    handler = () => jsonBody(null);
+    const nothing = await transport().nativeQuery("GET", "/");
+    expect(nothing.rows).toEqual([{ response: null }]);
+
+    handler = () => jsonBody([1]);
+    const list = await transport().nativeQuery("GET", "/_cat/indices");
+    expect(list.rows[0]?.response).toBe("[1]");
+  });
+
+  test("sends one document insert or update and shows what the cluster answered", async () => {
+    handler = () => jsonBody({ _index: "orders", _id: "1", _version: 1, result: "created" });
+    const created = await transport().nativeQuery("PUT", "orders/_doc/1", '{"title":"mug"}');
+    expect(calls[0]?.init?.method).toBe("PUT");
+    expect(calls[0]?.init?.body).toBe('{"title":"mug"}');
+    expect(created.rows).toEqual([{ _index: "orders", _id: "1", result: "created", _version: 1 }]);
+
+    handler = () => jsonBody({ _index: "orders", result: "updated" });
+    const updated = await transport().nativeQuery("POST", "/orders/_update/1?refresh=true", '{"doc":{"title":"cup"}}');
+    const url = new URL(calls.at(-1)?.url ?? "");
+    expect(url.pathname).toBe("/orders/_update/1");
+    expect(url.search).toBe("?refresh=true");
+    expect(calls.at(-1)?.init?.method).toBe("POST");
+    expect(updated.rows[0]).toEqual({ _index: "orders", _id: null, result: "updated", _version: null });
+
+    handler = () => jsonBody({ result: "noop" });
+    const noop = await transport().nativeQuery("POST", "/orders/_doc", "{}");
+    expect(noop.rows).toEqual([{ response: '{"result":"noop"}' }]);
+  });
+
+  test("refuses a path it cannot send, and a request that is not a search or one document write", async () => {
+    const refused = async (method: string, path: string, body?: string) => {
+      const before = calls.length;
+      const caught = await transport()
+        .nativeQuery(method, path, body)
+        .then(
+          () => null,
+          (error: unknown) => error,
+        );
+      expect(caught).toBeInstanceOf(SearchTransportError);
+      expect(calls).toHaveLength(before);
+      return caught as Error;
+    };
+
+    expect((await refused("GET", " ")).message).toContain("not a path");
+    expect((await refused("GET", "a\\b")).message).toContain("not a path");
+    expect((await refused("GET", "a b")).message).toContain("not a path");
+    expect((await refused("GET", "http://evil/orders")).message).toContain("not a path");
+    expect((await refused("GET", "//evil/orders")).message).toContain("not a path");
+    expect((await refused("GET", `/${"a".repeat(4000)}`)).message).toContain("not a path");
+    expect((await refused("GET", "a//b")).message).toContain("not a path");
+    expect((await refused("GET", "a/./b")).message).toContain("not a path");
+    expect((await refused("GET", "a/../b")).message).toContain("not a path");
+    expect((await refused("DELETE", "orders/_doc/1")).message).toContain("not sent");
+    expect((await refused("POST", "orders/_delete_by_query", "{}")).message).toContain("not sent");
+    expect((await refused("PUT", "orders/_doc/1")).message).toContain("needs one JSON body");
+    expect((await refused("HEAD", "/_cluster/health", "{}")).message).toContain("only on a search");
+    expect((await refused("GET", "/_cluster/health", "{}")).message).toContain("only on a search");
+  });
+});

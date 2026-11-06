@@ -31,6 +31,7 @@ import type { UserPayload } from "@/lib/auth";
 import { clientAddress } from "@/lib/api/client-address";
 import type { GovernedConnection } from "@/lib/governance/visible";
 import { expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
+import { documentWriteRefusal } from "@/lib/db/search-dev-tools";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import type { QueryEventStart } from "@/lib/query-events/types";
@@ -455,6 +456,16 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: embedded.error }, { status: 400 });
         }
         const runnable = embedded.sql;
+
+        // The same admin gate as POST /api/db/query. A transaction query is another way
+        // to send the text, so an insert is refused here before the provider runs it.
+        const writeRefusal = documentWriteRefusal(
+          [runnable, ...splitExecutionUnits(runnable, resolveSqlGrammar(connection.type)).map((unit) => unit.sql)],
+          guard.session.role,
+        );
+        if (writeRefusal !== undefined) {
+          return NextResponse.json({ error: writeRefusal }, { status: 403 });
+        }
 
         // Under governance one `open` event per query action, carrying the text the user submitted
         // (docs/GOVERNANCE.md#query-events).

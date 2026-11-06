@@ -29,6 +29,7 @@ import {
   sequenceInCode,
   wordsFollow,
 } from "@/lib/sql/confirm-forms";
+import { isDocumentWrite } from "@/lib/db/search-dev-tools";
 import { readsSqlText, resolveSqlGrammar, type SqlGrammar } from "@/lib/sql/grammar";
 import { readLeadingKeyword } from "@/lib/sql/leading-keyword";
 import { readOperativeKeyword } from "@/lib/sql/operative-keyword";
@@ -1239,6 +1240,9 @@ export function writesUnderGrammar(text: string, grammar: SqlGrammar): boolean {
  * confirmation at all. Omitting it keeps the dialect-less reading.
  */
 export function isDangerousQuery(query: string, databaseType?: DatabaseType): boolean {
+  // A Dev Tools insert or update changes a document. It asks, on every connection,
+  // before the SQL reading below, which does not see a PUT as a write.
+  if (isDocumentWrite(query)) return true;
   const grammar = resolveSqlGrammar(databaseType);
 
   // Asked FIRST because it is the only question here whose answer does not depend

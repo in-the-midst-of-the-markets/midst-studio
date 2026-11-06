@@ -165,6 +165,24 @@ describe("POST /api/db/multi-query", () => {
     expect(data.error).toContain("Authentication required");
   });
 
+  test("a document update in a script is refused for a user before any statement runs", async () => {
+    mockGetSession.mockImplementation(async () => ({ role: "user", username: "ada" }));
+    const req = createMockRequest("/api/db/multi-query", {
+      method: "POST",
+      body: {
+        connection: validConnection,
+        sql: 'SELECT 1; POST orders/_update/1\n{"doc":{"title":"mug"}}',
+      },
+    });
+
+    const res = await POST(req as never);
+    const data = await parseResponseJSON<{ error: string }>(res);
+
+    expect(res.status).toBe(403);
+    expect(data.error).toContain("admin");
+    expect(mockGetOrCreateProvider).not.toHaveBeenCalled();
+  });
+
   test("single statement returns multiStatement results", async () => {
     const req = createMockRequest("/api/db/multi-query", {
       method: "POST",

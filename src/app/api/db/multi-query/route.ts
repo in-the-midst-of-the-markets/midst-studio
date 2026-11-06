@@ -20,6 +20,7 @@ import type { DatabaseProvider, OpenQueryTransactionOutcome } from "@/lib/db/typ
 import { rowsWithNonFiniteWords } from "@/lib/non-finite";
 import type { DatabaseConnection } from "@/lib/types";
 import { auditTextAt, expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
+import { documentWriteRefusal } from "@/lib/db/search-dev-tools";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -290,6 +291,16 @@ export async function POST(req: NextRequest) {
 
     if (statements.length === 0) {
       return NextResponse.json({ error: "No valid SQL statements found" }, { status: 400 });
+    }
+
+    // The same admin gate as POST /api/db/query, on the text and on each fragment the
+    // splitter would run, so a script cannot carry an insert past the single-statement route.
+    const writeRefusal = documentWriteRefusal(
+      [embedded.sql, ...statements.map((unit) => unit.sql)],
+      guard.session.role,
+    );
+    if (writeRefusal !== undefined) {
+      return NextResponse.json({ error: writeRefusal }, { status: 403 });
     }
 
     // Before the provider: a request the gate refuses opens nothing and runs nothing.

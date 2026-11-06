@@ -1718,6 +1718,30 @@ describe("useQueryExecution", () => {
     expect(JSON.parse(singleCall![1]!.body as string).sql).toBe(buffer);
   });
 
+  test("executeQuery keeps a Dev Tools request on /api/db/query, semicolon and all", async () => {
+    const fetchMock = mockGlobalFetch({
+      "/api/db/multi-query": { ok: true, json: mockQueryResult },
+      "/api/db/query": { ok: true, json: mockQueryResult },
+    });
+    const buffer = 'GET orders/_search\n{"size":1}\n; GET orders/_count';
+
+    const { result } = renderHook(() => useQueryExecution(createDefaultParams()));
+
+    await act(async () => {
+      await result.current.executeQuery(buffer);
+    });
+
+    const multiCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("/api/db/multi-query"),
+    );
+    expect(multiCall).toBeUndefined();
+    const singleCall = fetchMock.mock.calls.find(
+      (call) => typeof call[0] === "string" && call[0].includes("/api/db/query"),
+    );
+    expect(singleCall).toBeDefined();
+    expect(JSON.parse(singleCall![1]!.body as string).sql).toBe(buffer);
+  });
+
   test("executeQuery keeps a Cypher buffer on /api/db/query whole, semicolons and all (Neo4j spec 6.5)", async () => {
     // Correct as is: `dialectIsSql` is false for every declared language but SQL. The buffer reaches the
     // provider as written, whose read policy reads it with the Cypher lexer and refuses a second statement

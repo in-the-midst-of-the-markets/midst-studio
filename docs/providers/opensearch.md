@@ -21,7 +21,7 @@
 | **Connection pooling** | None — each statement is one stateless HTTP request |
 | **Connection string** | Paste of an OpenSearch `http(s)://` URL fills host, port, user and password. A stored `connectionString` is not read ([§4.2](#42-a-pasted-opensearch-url-is-not-clickhouse)) |
 | **EXPLAIN** | **None.** `supportsExplain: false` and no `explainFormat`. `EXPLAIN <select>` as a *statement* is refused here; a plan exists only behind a second endpoint this seam does not carry ([§3.10](#310-no-explain-the-statement-form-is-refused)) |
-| **Writes** | **None reach documents.** Every mutation is refused outright; the `DELETE` the grammar names is gone on 3.8.0 and off by default on 2.19.4 ([§5.6](#56-this-grammar-has-delete-and-it-is-off)) |
+| **Writes** | SQL mutations do not reach documents; the `DELETE` the grammar names is gone on 3.8.0 and off by default on 2.19.4 ([§5.6](#56-this-grammar-has-delete-and-it-is-off)). An admin can insert or update one document with a Dev Tools request. A delete is not sent |
 | **Agent mode** | Executes read-only statements on 3.8, after the open proves the `DELETE` off ([§5.9](#59-the-agent-read-only-profile-rests-on-the-plugins-refusals)) |
 | **Transactions** | Not exposed (the engine has none) |
 | **Maintenance** | None — nothing in `MaintenanceType` has a SQL-reachable analogue ([§8](#8-maintenance)) |
@@ -37,7 +37,10 @@
 
 OpenSearch is the Apache-2.0 fork of Elasticsearch 7.10. Its **SQL surface is a bundled plugin** —
 `POST /_plugins/_sql`, present on a stock node with nothing to install and no tier gate — and
-that endpoint is the whole query surface this provider speaks. Schema and monitoring come from the
+that endpoint is the SQL query surface. The editor also runs one Dev Tools request: a `GET` or
+`POST` and a path such as `orders/_search`, with one JSON object, and an admin can insert or update
+one document (`PUT orders/_doc/1`, `POST orders/_update/1`). A request that deletes documents is not
+sent. Schema and monitoring come from the
 REST APIs instead (`_cat/indices`, `<index>/_mapping`, `_cluster/health`, `_cluster/stats`), because
 the mapping is the index's own declaration while a `SELECT` only ever describes a statement
 ([§6](#6-schema-introspection)).
@@ -1629,7 +1632,9 @@ is what Redis and LibreDB declare.
 spelling differs from the upstream one because its alternatives do: the SQL plugin ships **PPL** beside
 SQL, and ES|QL does not exist here. The run that made the field necessary was on *this* product — a
 plan run answered with a native aggregation body, correct for the cluster and unrunnable through the
-SQL endpoint (measured in the browser, 2026-08-19). See
+SQL endpoint the agent speaks to (measured in the browser, 2026-08-19). The editor runs that body
+when the statement is a Dev Tools request (`GET` or `POST` plus the path). The agent still speaks
+SQL, which is what this label is for. See
 [elasticsearch.md §9](./elasticsearch.md#9-capabilities--labels) for the mechanism, which is shared.
 
 `slowQueriesEmptyState` is the monitoring Queries panel's empty state, and it says what §7 already

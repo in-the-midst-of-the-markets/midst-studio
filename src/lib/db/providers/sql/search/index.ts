@@ -43,8 +43,8 @@
  *    among them) and OpenSearch answers `SQLFeatureNotSupportedException` ("Query
  *    must start with SELECT, DELETE, SHOW or DESCRIBE: ..."). So the provider
  *    declares no `createTable` and `supportsInlineRowEdit` is false as a fact
- *    about the grammars, not as an unimplemented feature. Documents change through the
- *    document APIs, which this provider does not expose.
+ *    about the grammars, not as an unimplemented feature. The editor can also run a Dev
+ *    Tools search. A request that changes or deletes documents is not sent.
  * 3. **An index has no schema above it, and both products say so in SQL.**
  *    Elasticsearch's `SHOW TABLES` answers a `catalog` of `docker-cluster` (the
  *    cluster name) and OpenSearch's answers `TABLE_CAT` `docker-cluster` with
@@ -98,6 +98,8 @@ import {
   RefusedBeforeSendError,
   TimeoutError,
 } from "@/lib/db/errors";
+import { readDevToolsRequest } from "@/lib/db/search-dev-tools";
+import { DEFAULT_QUERY_LIMIT, MAX_UNLIMITED_ROWS } from "@/lib/db/utils/query-limiter";
 import {
   applySourceBound,
   callerBoundTruncationReason,
@@ -1028,6 +1030,10 @@ abstract class SearchProvider extends SQLBaseProvider {
    * this repo behaves for that case.
    */
   public override prepareQuery(query: string, options: QueryPrepareOptions = {}): PreparedQuery {
+    if (readDevToolsRequest(query).kind !== "sql") {
+      const { limit = DEFAULT_QUERY_LIMIT, offset = 0, unlimited = false } = options;
+      return { query, wasLimited: false, limit: unlimited ? MAX_UNLIMITED_ROWS : limit, offset };
+    }
     const prepared = super.prepareQuery(query, options);
     if (this.product.acceptsOffsetClause || !prepared.wasLimited || prepared.offset === 0) return prepared;
 
@@ -1336,10 +1342,9 @@ abstract class SearchProvider extends SQLBaseProvider {
   /**
    * One statement.
    *
-   * Parameters are refused rather than inlined - see the file header. A write is not
-   * special-cased either: both grammars reject every mutation and each one's message
-   * names what it expected instead, which is more useful than anything substituted
-   * here.
+   * Parameters are refused rather than inlined - see the file header. A Dev Tools
+   * request is a search and is sent as one. SQL is unchanged: both grammars reject
+   * every mutation and each one's message names what it expected instead.
    */
   public async query(sql: string, params?: unknown[]): Promise<QueryResult> {
     const transport = this.requireTransport();
@@ -1351,9 +1356,20 @@ abstract class SearchProvider extends SQLBaseProvider {
       );
     }
 
+    const native = readDevToolsRequest(sql);
+    if (native.kind === "invalid") throw new QueryError(native.error, this.type, sql);
+
     return this.trackQuery(async () => {
       const { result, executionTime } = await this.measureExecution(async () => {
         try {
+          if (native.kind === "request") {
+            return await transport.nativeQuery(
+              native.request.method,
+              native.request.path,
+              native.request.body,
+              this.deadline(),
+            );
+          }
           return await transport.query(sql, this.deadline());
         } catch (error) {
           throw this.mapSearchError(error, sql);
