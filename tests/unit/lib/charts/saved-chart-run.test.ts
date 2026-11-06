@@ -153,6 +153,8 @@ describe("saved chart run", () => {
           title: { text: "Daily_Active_Users by date", left: "center" },
           legend: { top: 28 },
           grid: { top: 64 },
+          yAxis: { axisLabel: { prefix: "$" } },
+          tooltip: { trigger: "axis", suffix: "%" },
           filters: { region: { control: "slider", min: 0, max: 10 } },
         },
       },
@@ -163,9 +165,13 @@ describe("saved chart run", () => {
     expect((painted.option.color as string[])[0]).toBe("#9546de");
     expect((painted.option.series as { itemStyle?: { color?: string } }[])[0]?.itemStyle?.color).toBe("#9546de");
     expect(painted.option.filters).toBeUndefined();
-    expect(painted.option.title).toBeUndefined();
-    expect((painted.option.legend as { top: number }).top).toBe(4);
-    expect((painted.option.grid as { top: number }).top).toBe(40);
+    expect(painted.option.title).toEqual({ text: "Daily_Active_Users by date", left: "center" });
+    expect((painted.option.legend as { top: number }).top).toBe(28);
+    expect((painted.option.grid as { top: number }).top).toBe(64);
+    const axisLabel = (painted.option.yAxis as { axisLabel: { formatter?: (value: unknown) => string } }).axisLabel;
+    expect(axisLabel.formatter?.(12)).toBe("$12");
+    const tooltip = painted.option.tooltip as { formatter?: (params: unknown) => string; suffix?: string };
+    expect(tooltip.formatter?.({ seriesName: "total", value: 12, marker: "<span>" })).toBe("<span>total: 12%");
     const light = chartTheme("light");
     const themed = optionForSavedChart(
       {

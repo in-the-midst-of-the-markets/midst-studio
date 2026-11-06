@@ -212,8 +212,9 @@ export function ChartCodeEditor({ value, error, edited, onChange, onReset }: Cha
     <div className="flex h-full min-h-48 flex-col gap-2 p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-fg-muted">
-          This JSON is the whole chart. The query fills in data, links, and a radar indicator, so leave those out. A
-          filter control is filters.name.control: text, select, number, or slider.
+          This JSON is the whole chart. The query fills in data, links, and a radar indicator, so leave those out.
+          title.text is drawn on the chart. An axis or the tooltip can set prefix and suffix, such as "$" or "%", or the
+          tooltip can set formatter. A filter control is filters.name.control: text, select, number, or slider.
         </span>
         {edited && (
           <button type="button" onClick={onReset} className="shrink-0 text-xs font-medium text-fg-secondary underline">
