@@ -2,7 +2,9 @@ import "../setup";
 import { describe, test, expect } from "bun:test";
 import type * as Monaco from "monaco-editor";
 import { SHIPPED_DATABASE_TYPES } from "@/lib/db/compatibility";
+import { SQL_EDITOR_LANGUAGE } from "@/lib/db/editor-language/sql";
 import type { DatabaseType } from "@/lib/types";
+import { resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { ProviderCapabilities } from "@/lib/db/types";
 import { containerSpellingOf, quoteIdentifier } from "@/lib/query-generators";
 import {
@@ -1439,12 +1441,86 @@ describe("dialect completion words", () => {
     expect(items.filter((item) => item.label === "COUNT")).toHaveLength(1);
   });
 
-  test("no other dialect is offered Snowflake's words", () => {
+  test("a dialect that declares no words matches the shared list, and none of them is offered Snowflake's", () => {
     for (const type of [...SHIPPED_DATABASE_TYPES.filter((t) => t !== "snowflake"), undefined]) {
       const offered = labels("SELECT ", type);
       expect(offered, String(type)).not.toContain("QUALIFY");
       expect(offered, String(type)).not.toContain("PARSE_JSON");
-      expect(offered.length, String(type)).toBe(labels("SELECT ").length);
+      if (type === undefined || resolveSqlGrammar(type).completionWords === undefined) {
+        expect(offered.length, String(type)).toBe(labels("SELECT ").length);
+      }
     }
+  });
+});
+
+describe("QuestDB completion", () => {
+  const columns = [
+    { label: "ts", labelLower: "ts", type: "TIMESTAMP", isPrimary: true, tableName: "trades" },
+    { label: "symbol", labelLower: "symbol", type: "SYMBOL", isPrimary: false, tableName: "trades" },
+    { label: "price", labelLower: "price", type: "DOUBLE", isPrimary: false, tableName: "trades" },
+  ];
+  const cache: SchemaCompletionCache = {
+    tableItems: [
+      { label: "trades", labelLower: "trades", columnNames: "ts, symbol, price" },
+      { label: "quotes", labelLower: "quotes", columnNames: "ts, symbol, bid" },
+    ],
+    columnMap: new Map([["trades", columns]]),
+    allColumns: new Map(columns.map((column) => [column.labelLower, column])),
+  };
+
+  function items(line: string, dialect?: DatabaseType) {
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, cache, dialect);
+    return monaco._getProvider()!.provideCompletionItems(createMockModel(line), createPosition(1, line.length + 1))
+      .suggestions;
+  }
+
+  test("offers QuestDB clauses, functions and snippets", () => {
+    const offered = items("SELECT ", "questdb");
+    expect(offered.map((item) => item.label)).toContain("SAMPLE BY");
+    expect(offered.map((item) => item.label)).toContain("LATEST ON");
+    expect(offered.map((item) => item.label)).toContain("ASOF JOIN");
+    const dateadd = offered.filter((item) => item.label === "DATEADD");
+    expect(dateadd).toHaveLength(1);
+    expect(dateadd[0].insertText).toBe("DATEADD($1)");
+    expect(dateadd[0].kind).toBe(1);
+    const sample = offered.filter((item) => item.kind === 27 && item.label === "SAMPLE BY");
+    expect(sample).toHaveLength(1);
+    expect(sample[0].insertText).toContain("SAMPLE BY ${4:1h}");
+    expect(offered.filter((item) => item.label === "COUNT")).toHaveLength(1);
+  });
+
+  test("no other dialect is offered QuestDB's words", () => {
+    for (const type of [...SHIPPED_DATABASE_TYPES.filter((t) => t !== "questdb"), undefined]) {
+      const offered = items("SELECT ", type).map((item) => String(item.label));
+      expect(offered, String(type)).not.toContain("SAMPLE BY");
+      expect(offered, String(type)).not.toContain("LATEST ON");
+      expect(offered, String(type)).not.toContain("TIMESTAMP_FLOOR");
+    }
+  });
+
+  test("LATEST ON and PARTITION BY offer columns, and the clause word is not an alias", () => {
+    const latest = items("SELECT * FROM trades LATEST ON ", "questdb");
+    expect(latest.map((item) => item.label)).toContain("ts");
+    expect(latest.some((item) => String(item.detail).includes("Alias"))).toBe(false);
+    expect(items("SELECT * FROM trades LATEST ON ts PARTITION BY ", "questdb").map((item) => item.label)).toContain(
+      "symbol",
+    );
+  });
+
+  test("a time-series join offers a table and not a column", () => {
+    const offered = items("SELECT * FROM trades ASOF JOIN ", "questdb");
+    expect(offered.map((item) => item.label)).toContain("quotes");
+    expect(offered.map((item) => item.label)).not.toContain("price");
+  });
+
+  test("Format keeps a sample interval in one token", () => {
+    const formatted = SQL_EDITOR_LANGUAGE.format!(
+      'SELECT ts, avg(price) FROM "trades" SAMPLE BY 1h FILL(PREV);',
+      resolveSqlGrammar("questdb"),
+    );
+    expect(formatted).toContain("SAMPLE BY 1h");
+    expect(formatted).toContain('"trades"');
+    expect(formatted).toContain("FILL");
   });
 });

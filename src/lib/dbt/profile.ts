@@ -54,6 +54,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   netconf: unsupported,
   snmp: unsupported,
   sparkplug: unsupported,
+  questdb: unsupported,
 };
 
 const DBT_PROFILE_NAME = "midst";

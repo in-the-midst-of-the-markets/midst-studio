@@ -86,6 +86,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   influxdb3: "sql",
   oxia: "oxiacli",
   databend: null,
+  questdb: null,
   s3: "s3api",
   kubernetes: "kubectl",
   mqtt: "mqttread",

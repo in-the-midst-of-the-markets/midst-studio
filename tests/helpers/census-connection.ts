@@ -67,6 +67,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   mssql: unconnected("mssql"),
   clickhouse: unconnected("clickhouse"),
   druid: unconnected("druid"),
+  questdb: unconnected("questdb"),
   trino: unconnected("trino"),
   cassandra: unconnected("cassandra"),
   elasticsearch: unconnected("elasticsearch"),

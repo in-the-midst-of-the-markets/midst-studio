@@ -51,6 +51,7 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   // docs/providers/db2.md names under "Object edit".
   "db2",
   "druid",
+  "questdb",
   "duckdb",
   "elasticsearch",
   // No kind declares `acceptsRowWrites` or `acceptsSourceEdits`: this version reads only, whatever `readOnly` says,

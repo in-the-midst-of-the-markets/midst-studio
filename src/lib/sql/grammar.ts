@@ -361,14 +361,28 @@ export interface SqlGrammar {
   readonly confirmExemptForms?: readonly (readonly string[])[];
   /**
    * The sql-formatter language the editor's Format uses for this dialect. Absent means `postgresql`, the language
-   * every dialect formatted with before a dialect declared one (SF-041).
+   * every dialect formatted with before a dialect declared one (SF-041). `mysql` is QuestDB's: the PostgreSQL
+   * language rejects a sample interval such as `1h`, and MySQL keeps that interval in one token.
    */
-  readonly formatterLanguage?: "snowflake";
+  readonly formatterLanguage?: "snowflake" | "mysql";
   /**
    * Keywords and functions the editor's completion offers on this dialect beside the shared lists (SF-042). A function
-   * is inserted as a call. Absent means the shared lists alone.
+   * is inserted as a call. A snippet is inserted as a snippet. Absent means the shared lists alone.
    */
-  readonly completionWords?: { readonly keywords: readonly string[]; readonly functions: readonly string[] };
+  readonly completionWords?: {
+    readonly keywords: readonly string[];
+    readonly functions: readonly string[];
+    readonly snippets?: readonly { readonly label: string; readonly insertText: string }[];
+  };
+  /**
+   * Clause keywords this dialect's completion treats as a column position or a table position, beside the shared
+   * set. A multi-word clause is written with single spaces. Its words, and the words of `completionWords`, are not
+   * read as a table alias. Absent means the shared set alone.
+   */
+  readonly completionClauses?: {
+    readonly column?: readonly string[];
+    readonly table?: readonly string[];
+  };
   /**
    * Session configuration keys whose SET or RESET asks for a confirmation, compared without case; an entry ending in
    * `.` matches every key under it. Read where the operative keyword is SET or RESET, past white space and comments,

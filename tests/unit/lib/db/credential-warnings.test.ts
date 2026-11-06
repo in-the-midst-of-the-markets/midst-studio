@@ -26,7 +26,7 @@ const MANAGE_NO_EXP_URL_SAFE = "e30.eyJhY2Nlc3MiOiJtIiwic3ViIjoieHg_Pz8_Pz4-In0.
 type Credential = { user?: string; password?: string };
 
 describe("CREDENTIAL_WARNINGS", () => {
-  test("milvus, qdrant, weaviate, influxdb, influxdb3, oxia, databend, s3 and rabbitmq are the shipped types that declare credential warnings (vector-family spec 3.12, InfluxDB spec E12, SB3-1.5, Databend design 7.2)", () => {
+  test("milvus, qdrant, weaviate, influxdb, influxdb3, oxia, databend, questdb, s3 and rabbitmq are the shipped types that declare credential warnings (vector-family spec 3.12, InfluxDB spec E12, SB3-1.5, Databend design 7.2)", () => {
     expect(Object.keys(CREDENTIAL_WARNINGS)).toEqual([
       "milvus",
       "qdrant",
@@ -35,6 +35,7 @@ describe("CREDENTIAL_WARNINGS", () => {
       "influxdb3",
       "oxia",
       "databend",
+      "questdb",
       "s3",
       "rabbitmq",
     ]);
@@ -131,6 +132,23 @@ describe("the databend row", () => {
     expect(credentialWarningFor("databend", { user: "root", password: "x" })).toBeUndefined();
     expect(credentialWarningFor("databend", { user: "reader" })).toBeUndefined();
     expect(credentialWarningFor("databend", {})).toBeUndefined();
+  });
+});
+
+describe("the questdb row", () => {
+  const DEFAULT_SENTENCE =
+    "Credential warning: This is the documented default QuestDB credential, and it stays valid until an administrator changes it, so anyone who knows QuestDB can sign in with it. Change the password on the server, or connect as a user of your own.";
+
+  test("admin/quest warns, and a read-only seed with that pair is refused", () => {
+    expect(credentialWarningFor("questdb", { user: "admin", password: "quest" })).toBe(DEFAULT_SENTENCE);
+    expect(readOnlySeedRefusal("questdb", { user: "admin", password: "quest" })).toBe(DEFAULT_SENTENCE);
+  });
+
+  test("another user, or the default user with another password, does not warn or refuse", () => {
+    expect(credentialWarningFor("questdb", { user: "admin", password: "other" })).toBeUndefined();
+    expect(credentialWarningFor("questdb", { user: "reader", password: "quest" })).toBeUndefined();
+    expect(readOnlySeedRefusal("questdb", { user: "admin", password: "other" })).toBeUndefined();
+    expect(readOnlySeedRefusal("questdb", {})).toBeUndefined();
   });
 });
 

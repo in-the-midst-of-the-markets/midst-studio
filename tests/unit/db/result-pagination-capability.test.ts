@@ -75,6 +75,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   mssql: true,
   clickhouse: true,
   druid: true,
+  questdb: true,
   trino: true,
   couchbase: true,
   opensearch: true,

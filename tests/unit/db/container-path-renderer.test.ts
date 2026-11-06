@@ -116,6 +116,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/databend/index.ts",
   "src/lib/db/providers/sql/db2/objects.ts",
   "src/lib/db/providers/sql/druid/objects.ts",
+  "src/lib/db/providers/sql/questdb/index.ts",
   "src/lib/db/providers/sql/duckdb/objects.ts",
   "src/lib/db/providers/sql/libsql/objects.ts",
   "src/lib/db/providers/sql/snowflake/index.ts",

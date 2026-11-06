@@ -89,6 +89,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   netconf: true,
   snmp: true,
   sparkplug: true,
+  questdb: true,
 };
 
 /**
@@ -358,6 +359,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "modbus",
       "netconf",
       "weaviate",
+      "questdb",
     ]);
   });
 

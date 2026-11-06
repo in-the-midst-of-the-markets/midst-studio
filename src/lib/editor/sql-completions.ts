@@ -166,12 +166,16 @@ export const FUNCTION_ITEMS: PrecomputedItem[] = SQL_FUNCTIONS.map((f) => ({
 }));
 
 /**
- * The dialect's own keywords and functions (`SqlGrammar.completionWords`, SF-042) as completion items, without the
- * names the shared lists already hold, so no word is offered twice.
+ * The dialect's own keywords, functions and snippets (`SqlGrammar.completionWords`, SF-042) as completion items,
+ * without the names the shared lists already hold, so no word is offered twice.
  */
-function dialectItems(grammar: SqlGrammar): { keywords: PrecomputedItem[]; functions: PrecomputedItem[] } {
+function dialectItems(grammar: SqlGrammar): {
+  keywords: PrecomputedItem[];
+  functions: PrecomputedItem[];
+  snippets: PrecomputedItem[];
+} {
   const words = grammar.completionWords;
-  if (words === undefined) return { keywords: [], functions: [] };
+  if (words === undefined) return { keywords: [], functions: [], snippets: [] };
   return {
     keywords: words.keywords
       .filter((kw) => !SQL_KEYWORDS.includes(kw))
@@ -179,7 +183,48 @@ function dialectItems(grammar: SqlGrammar): { keywords: PrecomputedItem[]; funct
     functions: words.functions
       .filter((f) => !SQL_FUNCTIONS.includes(f))
       .map((f) => ({ ...FUNCTION_ITEMS[0], label: f, labelLower: f.toLowerCase(), insertText: f + "($1)" })),
+    snippets: (words.snippets ?? []).map((snippet) => ({
+      label: snippet.label,
+      labelLower: snippet.label.toLowerCase(),
+      kind: 27, // CompletionItemKind.Snippet
+      insertText: snippet.insertText,
+      insertTextRules: 4, // InsertAsSnippet
+      detail: "SQL Snippet",
+    })),
   };
+}
+
+/** Words of the dialect's completion lists, so a clause word is not read as a table alias. */
+function reservedWords(grammar: SqlGrammar): ReadonlySet<string> | undefined {
+  const phrases = [
+    ...(grammar.completionWords?.keywords ?? []),
+    ...(grammar.completionClauses?.column ?? []),
+    ...(grammar.completionClauses?.table ?? []),
+  ];
+  if (phrases.length === 0) return undefined;
+  return new Set(phrases.flatMap((phrase) => phrase.toUpperCase().split(/\s+/)));
+}
+
+const SHARED_CLAUSE_SOURCE =
+  "SELECT|FROM|JOIN|WHERE|(?<!\\bDISTINCT\\s+)ON|SET|HAVING|ORDER\\s+BY|GROUP\\s+BY|INTO|(?<!\\b(?:ON|FOR|KEY)\\s+)UPDATE|TABLE|LIMIT|USING";
+
+/** A fresh clause regex: the shared clauses, with this dialect's own phrases tried first. */
+function clausePattern(grammar: SqlGrammar): RegExp {
+  const phrases = [...(grammar.completionClauses?.column ?? []), ...(grammar.completionClauses?.table ?? [])];
+  const extra =
+    phrases.length === 0
+      ? ""
+      : `${phrases
+          .map((phrase) =>
+            phrase
+              .trim()
+              .split(/\s+/)
+              .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+              .join("\\s+"),
+          )
+          .sort((left, right) => right.length - left.length)
+          .join("|")}|`;
+  return new RegExp(`(?<![\\w$.])(${extra}${SHARED_CLAUSE_SOURCE})\\b`, "gi");
 }
 
 export const SNIPPET_ITEMS: PrecomputedItem[] = SQL_SNIPPETS.map((s) => ({
@@ -359,11 +404,11 @@ function openGroupStart(text: string, end: number): number {
  * and the text after it. A keyword inside a group that closed before the cursor (a finished
  * subquery) governs nothing there, so the scan keeps going back.
  */
-function lastClause(textBeforeCursor: string): { name: string; rest: string } | undefined {
+function lastClause(textBeforeCursor: string, clauses: RegExp): { name: string; rest: string } | undefined {
   const matches = [
     ...textBeforeCursor.matchAll(
       // Not a qualified name's segment (`t.table`), and `DISTINCT ON` is an expression list.
-      /(?<![\w$.])(SELECT|FROM|JOIN|WHERE|(?<!\bDISTINCT\s+)ON|SET|HAVING|ORDER\s+BY|GROUP\s+BY|INTO|(?<!\b(?:ON|FOR|KEY)\s+)UPDATE|TABLE|LIMIT|USING)\b/gi,
+      clauses,
     ),
   ];
   // A clause keyword that governs the text from it to `end`: not inside a group that closed before.
@@ -427,6 +472,10 @@ export function registerSQLCompletionProvider(
   const dialect = dialectItems(grammar);
   const keywordItems = [...KEYWORD_ITEMS, ...dialect.keywords];
   const functionItems = [...FUNCTION_ITEMS, ...dialect.functions];
+  const snippetItems = [...SNIPPET_ITEMS, ...dialect.snippets];
+  const columnClauses = new Set<string>([...COLUMN_CLAUSES, ...(grammar.completionClauses?.column ?? [])]);
+  const tableClauses = new Set<string>([...TABLE_CLAUSES, ...(grammar.completionClauses?.table ?? [])]);
+  const reserved = reservedWords(grammar);
   const blanked = new WeakMap<Monaco.editor.ITextModel, { version: number; code: string }>();
   const spelling = schemaCompletionCache.containerSpelling;
   const readQualifier =
@@ -550,6 +599,7 @@ export function registerSQLCompletionProvider(
       const scope = statementScope(
         blankSpans(text.slice(start, terminator < 0 ? undefined : terminator), grammar, COMMENT_KINDS),
         offset - start,
+        reserved,
       );
 
       // Dot-triggered: Show columns for specific table or alias
@@ -627,7 +677,7 @@ export function registerSQLCompletionProvider(
       const textBeforeCursor = code.slice(start, offset);
       // The clause the cursor sits in decides: a FROM/JOIN position names tables, a SELECT/WHERE/ON
       // position names columns, and each hides the other.
-      const clause = lastClause(textBeforeCursor);
+      const clause = lastClause(textBeforeCursor, clausePattern(grammar));
       // An unclosed `(` after INTO/TABLE/USING is a column or definition list: columns belong there.
       const inList =
         (clause?.name === "INTO" || clause?.name === "TABLE" || clause?.name === "USING") &&
@@ -635,7 +685,7 @@ export function registerSQLCompletionProvider(
       // Any other unclosed `(` after a table clause holds a table function's arguments or a subquery: no table position.
       const isTableContext =
         clause !== undefined &&
-        TABLE_CLAUSES.has(clause.name) &&
+        tableClauses.has(clause.name) &&
         clause.rest.split("(").length === clause.rest.split(")").length;
       // Right after FROM/JOIN/INTO/UPDATE/TABLE only a name can stand. Read on the raw text, where a
       // quoted table name is still there.
@@ -643,7 +693,7 @@ export function registerSQLCompletionProvider(
       const isColumnContext =
         !isTableContext &&
         (inList ||
-          (clause !== undefined && COLUMN_CLAUSES.has(clause.name)) ||
+          (clause !== undefined && columnClauses.has(clause.name)) ||
           /\b(SELECT|WHERE|AND|OR|ON|SET|HAVING|ORDER\s+BY|GROUP\s+BY|,)\s*\w*$/i.test(textBeforeCursor));
 
       // Keywords, except where only a name can stand
@@ -769,8 +819,8 @@ export function registerSQLCompletionProvider(
         }
       }
 
-      // Snippets, except where only a name can stand
-      SNIPPET_ITEMS.forEach((item) => {
+      // Snippets, except where only a name can stand. The dialect's own follow the shared ones.
+      snippetItems.forEach((item) => {
         if (!atNameSlot && (!shouldFilter || item.labelLower.startsWith(prefix))) {
           suggestions.push({
             label: item.label,

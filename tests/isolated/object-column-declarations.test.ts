@@ -96,6 +96,7 @@ const EXPECTED_COLUMN_KINDS: Readonly<Record<DatabaseType, readonly string[]>> =
   trino: ["table", "view", "materialized_view"],
   cassandra: ["table", "materialized_view", "type"],
   druid: ["datasource", "system_table", "lookup"],
+  questdb: ["table"],
   // One declaration constant serves both ids, so these two rows always move together.
   elasticsearch: ["index", "alias", "stream"],
   opensearch: ["index", "alias", "stream"],
@@ -247,7 +248,7 @@ describe("the fleet census of object column declarations", () => {
     // `EXTERNAL_DATABASE_TYPES.length` plus the embedded store. The names are not repeated here,
     // because a prose list of them is what goes stale while the assertion stays green: the registry
     // is the list, and this numeral only says how long it is.
-    expect(CENSUS_TYPES).toHaveLength(43);
+    expect(CENSUS_TYPES).toHaveLength(44);
     expect(Object.keys(EXPECTED_COLUMN_KINDS).sort()).toEqual([...SHIPPED_DATABASE_TYPES].sort());
     // A row naming nothing would make its type-id's census pass on the empty set, so the design's
     // table has three such rows, and they are named here: every engine but Oxia, S3, Kubernetes, MQTT, OPC UA and Modbus has at least one

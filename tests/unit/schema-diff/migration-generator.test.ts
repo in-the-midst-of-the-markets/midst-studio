@@ -1131,6 +1131,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     netconf: "engine-has-no-foreign-key",
     snmp: "engine-has-no-foreign-key",
     sparkplug: "engine-has-no-foreign-key",
+    questdb: "engine-has-no-foreign-key",
   };
 
   for (const [dialectId, entry] of Object.entries(GRAMMAR)) {
@@ -1220,6 +1221,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   clickhouse: "has-own-branch",
   couchbase: { label: "Couchbase", reason: "schemaless JSON documents" },
   druid: { label: "Apache Druid", reason: "no ALTER TABLE" },
+  questdb: {
+    label: "QuestDB",
+    reason: "QuestDB table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.",
+  },
   // Measured on Trino 476 and NOT an "unsupported" guess: the PostgreSQL branch's own
   // text is a SYNTAX error here (`ALTER TABLE ... ALTER COLUMN id TYPE varchar` ->
   // "line 1:50: mismatched input 'TYPE'. Expecting: '.', 'DROP', 'SET'"), and Trino's
@@ -1657,6 +1662,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "netconf",
           "snmp",
           "sparkplug",
+          "questdb",
         ].includes(dialect)
       ) {
         expect(sql).toContain(`-- ${expected.label}: Cannot generate table DDL.`);
@@ -1740,6 +1746,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   netconf: false, // one JSON read request, not SQL text (`readsSqlText: false`), and no table DDL to wrap (the module's `tableDdl: "refused"`)
   snmp: false, // a Get is not SQL text and there is no table DDL to wrap
   sparkplug: false, // one JSON read request, not SQL text (`readsSqlText: false`), and no table DDL to wrap (the module's `tableDdl: "refused"`)
+  questdb: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
 };
 
 // Both creation and modification paths must use the same wrapper policy.
@@ -1787,6 +1794,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "netconf",
             "snmp",
             "sparkplug",
+            "questdb",
           ].includes(dialect)
         ) {
           expect(sql).toMatch(/^CREATE TABLE /m);

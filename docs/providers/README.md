@@ -20,6 +20,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Google Cloud Firestore | `firestore` | Document | none, REST over the shared `node:https` transport (the Firestore REST API v1); `jose` signs service-account grants | The Admin SDK query chain (a read-only subset, parsed by Studio) | [firestore.md](./firestore.md) |
 | ClickHouse | `clickhouse` | SQL | none (HTTP interface) | SQL | [clickhouse.md](./clickhouse.md) |
 | Apache Druid | `druid` | SQL (analytics) | none (HTTP: SQL endpoint) | SQL (Calcite) | [druid.md](./druid.md) |
+| QuestDB | `questdb` | SQL (time series) | `pg` (PostgreSQL wire, port 8812) | SQL (QuestDB) | [questdb.md](./questdb.md) |
 | Elasticsearch | `elasticsearch` | SQL (search) | none (HTTP: `_sql` + REST) | SQL (Elasticsearch SQL) | [elasticsearch.md](./elasticsearch.md) |
 | OpenSearch | `opensearch` | SQL (search) | none (HTTP: `_plugins/_sql` + REST) | SQL (OpenSearch SQL plugin) | [opensearch.md](./opensearch.md) |
 | Trino | `trino` | SQL (federated query engine) | none (HTTP: the client protocol, `POST /v1/statement`) | SQL (Trino) | [trino.md](./trino.md) |
@@ -149,17 +150,20 @@ could not reach is not the same as an engine we reached and refused.
 **Measured, and refused a row.** The probe ran and the result did not earn an entry, so there is no
 tier and no version column for it - the number is the finding:
 
-- **QuestDB 10.0.1** - **it fails the one surface a query-editor-only row exists to claim**, probed
-  on 2026-08-26 through the `postgres` driver against `questdb/questdb:10.0.1`. QuestDB does speak
-  the PostgreSQL wire protocol on 8812, and through the provider a statement answers: `SELECT
-  country, count() c FROM probe_orders` returned three rows. **In the product it does not.** The
-  editor always attaches a `queryId`, the provider then issues `SELECT pg_backend_pid()` first, and
-  QuestDB has no such function, so pressing Run answers `500 unknown function name:
-  pg_backend_pid()` - measured in Chrome, and measured both ways at the provider boundary to be
-  sure of the cause: the identical call with a `queryId` fails and without one returns the three
-  rows. **This is the Cloud Spanner shape below, and it is the reason a provider-level probe cannot
-  award a tier.** Two statements do not rescue it either: the multi-statement path drops the
-  `queryId`, but the run still failed in the browser.
+- **QuestDB 10.0.1** - **it fails the one surface a query-editor-only row exists to claim** when
+  connected as `postgres`, probed on 2026-08-26 through the `postgres` driver against
+  `questdb/questdb:10.0.1`. QuestDB does speak the PostgreSQL wire protocol on 8812, and through
+  that provider a statement answers: `SELECT country, count() c FROM probe_orders` returned three
+  rows. **In the product, as a PostgreSQL connection, it does not.** The editor always attaches a
+  `queryId`, the postgres provider then issues `SELECT pg_backend_pid()` first, and QuestDB has no
+  such function, so pressing Run answers `500 unknown function name: pg_backend_pid()` - measured
+  in Chrome, and measured both ways at the provider boundary to be sure of the cause: the identical
+  call with a `queryId` fails and without one returns the three rows. **This is the Cloud Spanner
+  shape below, and it is the reason a provider-level probe cannot award a postgres-relative
+  tier.** The connection that does run is the `questdb` type-id: its provider sends the statement
+  it was given and reads the catalog from `tables()` and `table_columns()`, and it is not a row of
+  this table. Two statements do not rescue the postgres connection either: the multi-statement
+  path drops the `queryId`, but the run still failed in the browser.
   The rest, for whoever revisits this: the object browser fails on TWO independent causes of ours -
   the schema query's `AS MATERIALIZED` CTEs are a syntax error there, and with the keyword removed
   the same query dies on `pg_total_relation_size()`, which QuestDB does not have - so it is not the

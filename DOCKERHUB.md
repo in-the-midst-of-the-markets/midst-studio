@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Forty-two external engines share one interface.
-The forty-third row is the embedded LibreDB store: it ships inside the image.
+Forty-three external engines share one interface.
+The forty-fourth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -152,6 +152,7 @@ The forty-third row is the embedded LibreDB store: it ships inside the image.
 | **MQTT** | `mqtt-packet` | Read-only topic tree browser |
 | **RabbitMQ** | none | Read-only stream reader |
 | **OPC UA** | `node-opcua-client` | Read-only address-space browser; node values and raw history |
+| **QuestDB** | `pg` | QuestDB SQL, port 8812 |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -159,7 +160,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak the wire protocol of one of the forty-two drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
+Twenty-seven further engines speak the wire protocol of one of the forty-three drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
@@ -256,7 +257,7 @@ Health check endpoint: `GET /api/db/health` · Container HTTP port: `3000`.
 
 ## Star the project
 
-LibreDB Studio is open source under the MIT license and free to use, with no paid tier gating any feature on this page. If it is useful to you, a star on GitHub is the clearest signal that the work is worth continuing.
+LibreDB Studio is open source under the MIT license and free to use. If it is useful to you, a star on GitHub is the clearest signal that the work is worth continuing.
 
 <a href="https://github.com/libredb/libredb-studio"><img src="https://img.shields.io/github/stars/libredb/libredb-studio?style=social" alt="GitHub stars"></a>
 
