@@ -4,7 +4,6 @@ import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import { crossDbJoinTables } from "@/lib/saved-join/connection";
 import { crossJoinDraft, type CrossJoinKind } from "@/lib/saved-join/draft";
-import { joinSqlPieces } from "@/lib/saved-join/preview";
 import { JOIN_SIZES } from "@/lib/saved-join/size";
 import {
   includedJoinSize,
@@ -74,26 +73,6 @@ function JoinSizeSelect() {
   );
 }
 
-function JoinSql({ sql }: { readonly sql: string }) {
-  return (
-    <pre
-      aria-label="DuckDB statement"
-      className="overflow-x-auto rounded-lg border border-hairline bg-canvas px-3 py-3 font-mono text-sm leading-6 text-fg"
-    >
-      {joinSqlPieces(sql).map((piece) => {
-        const line = `${piece.indent}${piece.keyword}${piece.rest}`;
-        return (
-          <div key={line}>
-            {piece.indent}
-            <span className="text-brand">{piece.keyword}</span>
-            {piece.rest}
-          </div>
-        );
-      })}
-    </pre>
-  );
-}
-
 /**
  * Writes a DuckDB join of two saved queries into the editor.
  *
@@ -157,7 +136,6 @@ export function CrossJoinBar({ queries, onUse }: { queries: readonly SavedQuery[
         <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
         {draft.note}
       </p>
-      {sql !== null && <JoinSql sql={sql} />}
     </div>
   );
 }

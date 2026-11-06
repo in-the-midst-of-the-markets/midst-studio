@@ -72,23 +72,25 @@ describe("CrossJoinBar", () => {
         onUse={onUse}
       />,
     );
-    const statement = view.getByLabelText("DuckDB statement");
-    expect(statement.textContent).toContain('orders."id" = people."id"');
-    expect(statement.className).toContain("rounded-lg");
-    expect(statement.querySelector(".text-brand")?.textContent).toBe("SELECT");
+    expect(view.queryByLabelText("DuckDB statement")).toBeNull();
     expect(view.getByText("Joins on id.")).toBeTruthy();
-    fireEvent.click(view.getByRole("button", { name: "Use this join" }));
+    const useJoin = () => {
+      fireEvent.click(view.getByRole("button", { name: "Use this join" }));
+      return onUse.mock.calls.at(-1)?.[0] ?? "";
+    };
+    expect(useJoin()).toContain('orders."id" = people."id"');
     expect(onUse).toHaveBeenCalledTimes(1);
     expect(onUse.mock.calls[0]?.[0]).toContain("INNER JOIN people");
 
     fireEvent.change(view.getByLabelText("Join"), { target: { value: "LEFT" } });
-    expect(view.getByLabelText("DuckDB statement").textContent).toContain("LEFT JOIN");
+    expect(useJoin()).toContain("LEFT JOIN");
     fireEvent.change(view.getByLabelText("Join"), { target: { value: "RIGHT" } });
-    expect(view.getByLabelText("DuckDB statement").textContent).toContain("RIGHT JOIN");
+    expect(useJoin()).toContain("RIGHT JOIN");
     fireEvent.change(view.getByLabelText("Join"), { target: { value: "FULL" } });
-    expect(view.getByLabelText("DuckDB statement").textContent).toContain("FULL JOIN");
+    expect(useJoin()).toContain("FULL JOIN");
     fireEvent.change(view.getByLabelText("Join"), { target: { value: "INNER" } });
-    expect(view.getByLabelText("DuckDB statement").textContent).toContain("INNER JOIN");
+    expect(useJoin()).toContain("INNER JOIN");
+    expect(view.queryByLabelText("DuckDB statement")).toBeNull();
 
     fireEvent.change(view.getByLabelText("Second query"), { target: { value: "wide" } });
     expect(view.getByText(/wide uses SELECT \*/)).toBeTruthy();
@@ -96,7 +98,6 @@ describe("CrossJoinBar", () => {
     fireEvent.change(view.getByLabelText("Second query"), { target: { value: "people" } });
     expect(view.getByText("Pick two different saved queries.")).toBeTruthy();
     expect(view.queryByRole("button", { name: "Use this join" })).toBeNull();
-    expect(view.queryByLabelText("DuckDB statement")).toBeNull();
   });
 
   test("falls back when a chosen query is no longer saved", () => {
