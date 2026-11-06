@@ -3,6 +3,7 @@
  */
 
 import { buildConnectionPayload } from "@/hooks/use-connection-payload";
+import { embeddingModelFor } from "@/lib/embeddings/settings";
 import type { DatabaseConnection, QueryResult } from "@/lib/types";
 
 interface JsonResponse {
@@ -173,7 +174,11 @@ export async function runAssistQuery(
     response = await post("/api/db/query", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...buildConnectionPayload(connection), sql }),
+      body: JSON.stringify({
+        ...buildConnectionPayload(connection),
+        sql,
+        embeddingModel: embeddingModelFor(connection.id),
+      }),
     });
   } catch {
     return { ok: false, error: "The query could not be sent." };

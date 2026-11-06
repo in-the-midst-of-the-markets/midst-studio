@@ -563,26 +563,48 @@ function VariableInsert({
 }) {
   const variables = dashboardVariables(filters);
   return (
-    <label className="block px-4 pt-3 text-xs text-fg-muted">
-      Variable
-      <select
-        aria-label="Insert variable"
-        value=""
-        disabled={variables.length === 0}
-        onChange={(event) => {
-          if (event.target.value === "") return;
-          onInsert(event.target.value);
-        }}
-        className={`mt-1.5 ${fieldClass}`}
-      >
-        <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an id"}</option>
-        {variables.map((variable) => (
-          <option key={variable.id} value={variable.token}>
-            {variable.label} {variable.token}
-          </option>
-        ))}
-      </select>
-    </label>
+    <>
+      <label className="block px-4 pt-3 text-xs text-fg-muted">
+        Variable
+        <select
+          aria-label="Insert variable"
+          value=""
+          disabled={variables.length === 0}
+          onChange={(event) => {
+            if (event.target.value === "") return;
+            onInsert(event.target.value);
+          }}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an id"}</option>
+          {variables.map((variable) => (
+            <option key={variable.id} value={variable.token}>
+              {variable.label} {variable.token}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block px-4 pt-3 text-xs text-fg-muted">
+        Embed
+        <select
+          aria-label="Embed as vector"
+          value=""
+          disabled={variables.length === 0}
+          onChange={(event) => {
+            if (event.target.value === "") return;
+            onInsert(event.target.value);
+          }}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an embed"}</option>
+          {variables.map((variable) => (
+            <option key={variable.id} value={variable.embedToken}>
+              {variable.label} {variable.embedToken}
+            </option>
+          ))}
+        </select>
+      </label>
+    </>
   );
 }
 
@@ -948,6 +970,7 @@ function DashboardChart({
                   value={sqlDraft}
                   documentId={chart.id}
                   databaseType={databaseType}
+                  connectionId={connectionId}
                   schemaContext={dashQuerySchema(connectionId, schemas, savedQueries)}
                   wordWrap
                   onContentChange={setSqlDraft}
@@ -1751,6 +1774,7 @@ function FilterChoices({
                 value={draft}
                 documentId={filter.id}
                 databaseType={databaseType}
+                connectionId={filter.connectionId}
                 schemaContext={dashQuerySchema(filter.connectionId, schemas, savedQueries)}
                 wordWrap
                 onContentChange={onDraft}

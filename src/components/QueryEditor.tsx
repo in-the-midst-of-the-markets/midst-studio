@@ -6,6 +6,7 @@ import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { Zap, LoaderCircle, TextAlignStart, Trash2, Copy, Play, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmbeddingModelSelect } from "@/components/embeddings/EmbeddingModelSelect";
 import { Button } from "@/components/ui/button";
 import {
   EDITOR_LANGUAGES,
@@ -92,6 +93,11 @@ interface QueryEditorProps {
   defaultContainer?: readonly string[];
   /** Wrap long statements onto the next line. The chart query uses this so a bad clause can be selected. */
   wordWrap?: boolean;
+  /**
+   * The connection whose vectors this statement searches. The embedding model is
+   * remembered for that connection. Omitted, the browser's default model is shown.
+   */
+  connectionId?: string;
 }
 
 /**
@@ -163,6 +169,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
       capabilities,
       defaultContainer,
       wordWrap = false,
+      connectionId,
     },
     ref,
   ) => {
@@ -690,6 +697,8 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
           >
             <Hash strokeWidth={1.5} className="w-3 h-3" /> Lines
           </Button>
+
+          <EmbeddingModelSelect connectionId={connectionId} />
 
           <div className="flex-1" />
 

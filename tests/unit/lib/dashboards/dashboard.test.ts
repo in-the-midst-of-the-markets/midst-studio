@@ -197,6 +197,14 @@ describe("dashboard layout", () => {
     expect(queryWithDashboardFilters(sql, [{ name: "missing", value: "east" }])).toBe(sql);
     expect(queryWithDashboardFilters(sql, [{ name: "region", value: "  " }])).toBe(sql);
     expect(queryWithDashboardFilters(sql, [{ name: "bad name", value: "east" }])).toBe(sql);
+    const embedded = "SELECT {{embed question}} FROM sales WHERE region = {{region}}";
+    expect(
+      queryWithDashboardFilters(embedded, [
+        { name: "question", value: "cats" },
+        { name: "region", value: "east" },
+      ]),
+    ).toBe('SELECT {{embed "cats"}} FROM sales WHERE region = {{region:east}}');
+    expect(queryWithDashboardFilters(embedded, [{ name: "question", value: "  " }])).toBe(embedded);
   });
 
   test("sizes a slider and starts a custom filter from the stock script", () => {
@@ -253,8 +261,8 @@ describe("dashboard layout", () => {
         "c",
       ),
     ).toEqual([
-      { id: "a", label: "Region", token: "{{region}}" },
-      { id: "d", label: "city", token: "{{city}}" },
+      { id: "a", label: "Region", token: "{{region}}", embedToken: "{{embed region}}" },
+      { id: "d", label: "city", token: "{{city}}", embedToken: "{{embed city}}" },
     ]);
     expect(dashboardVariables([])).toEqual([]);
     expect(insertQueryVariable("", "{{region}}")).toBe("{{region}}");
