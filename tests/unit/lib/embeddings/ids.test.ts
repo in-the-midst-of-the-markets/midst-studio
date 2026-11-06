@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { DEFAULT_ASSIST_SETTINGS, writeAssistSettings } from "@/lib/ai/assist-settings";
 import {
   EMBED_ID_CONNECTION,
   EMBED_ID_EMPTY,
@@ -66,11 +67,29 @@ describe("embed ids", () => {
     ]);
     expect(embeddingBindsFor("other", "{{embed e1}}")).toEqual([]);
     expect(embeddingBindsFor("  ", "{{embed e1}}")).toEqual([]);
+    writeAssistSettings(DEFAULT_ASSIST_SETTINGS);
     expect(embeddingRequestFields("orders", "SELECT 1")).toEqual({ embeddingModel: "voyage-4" });
     expect(embeddingRequestFields("orders", "{{embed e2}}")).toEqual({
       embeddingModel: "voyage-4",
       embeddingBinds: [{ name: "e2", value: "cats" }],
     });
+    writeAssistSettings({ ...DEFAULT_ASSIST_SETTINGS, source: "fireworks", fireworksKey: " fw-key " });
+    expect(embeddingRequestFields("orders", "SELECT 1")).toEqual({ embeddingModel: "voyage-4" });
+    expect(embeddingRequestFields("orders", '{{embed "cats"}}')).toEqual({
+      embeddingModel: "voyage-4",
+      embeddingSource: "fireworks",
+      embeddingKey: "fw-key",
+    });
+    writeAssistSettings({ ...DEFAULT_ASSIST_SETTINGS, source: "gateway", gatewayKey: "gw-key" });
+    expect(embeddingRequestFields("orders", '{{embed "cats"}}').embeddingKey).toBe("gw-key");
+    writeAssistSettings({ ...DEFAULT_ASSIST_SETTINGS, openRouterKey: "or-key" });
+    expect(embeddingRequestFields("orders", "{{embed e2}}")).toEqual({
+      embeddingModel: "voyage-4",
+      embeddingBinds: [{ name: "e2", value: "cats" }],
+      embeddingSource: "openrouter",
+      embeddingKey: "or-key",
+    });
+    writeAssistSettings(DEFAULT_ASSIST_SETTINGS);
   });
 
   test("drops the oldest id and the oldest connection, and ignores a stored list it cannot use", () => {

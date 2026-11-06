@@ -2,7 +2,7 @@
  * The embedding model a query's `{{embed}}` placeholder uses.
  *
  * Voyage 4 is the default. A connection can name another model when its vectors
- * were built with something else. The key stays on the server.
+ * were built with something else. The connector key is sent with the query and is not stored.
  */
 
 export const DEFAULT_EMBEDDING_MODEL = "voyage-4";
@@ -35,7 +35,7 @@ export function voyageModelId(model: string): string {
   return model.startsWith(VOYAGE_PREFIX) ? model.slice(VOYAGE_PREFIX.length) : model;
 }
 
-/** Whether this model is one Voyage hosts. Other models need `EMBEDDING_API_URL`. */
+/** Whether this model is one Voyage hosts. */
 export function isVoyageModel(model: string): boolean {
   return voyageModelId(model).startsWith("voyage-");
 }

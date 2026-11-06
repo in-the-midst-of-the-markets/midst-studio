@@ -143,6 +143,13 @@ function settingsFrom(raw: string | null): AssistSettings {
   }
 }
 
+/** The key for the connector this browser has selected. */
+export function assistKeyFor(settings: AssistSettings): string {
+  if (settings.source === "fireworks") return settings.fireworksKey;
+  if (settings.source === "gateway") return settings.gatewayKey;
+  return settings.openRouterKey;
+}
+
 /** The saved choice, or the default when nothing usable is stored. */
 export function readAssistSettings(): AssistSettings {
   if (typeof localStorage === "undefined") return DEFAULT_ASSIST_SETTINGS;

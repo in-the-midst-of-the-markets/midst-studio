@@ -7,6 +7,9 @@ import {
   EMBED_VECTOR_ERROR,
   EMBEDDING_KEY_ERROR,
   EMBEDDING_URL_ERROR,
+  FIREWORKS_EMBEDDINGS_URL,
+  GATEWAY_EMBEDDINGS_URL,
+  OPENROUTER_EMBEDDINGS_URL,
   VOYAGE_EMBEDDINGS_URL,
   VOYAGE_KEY_ERROR,
   embedTexts,
@@ -14,13 +17,16 @@ import {
 } from "@/lib/embeddings/client";
 import {
   EMBED_EMPTY_ERROR,
+  EMBED_KEY_ERROR,
   EMBED_LONG_ERROR,
+  EMBED_SOURCE_ERROR,
   EMBED_TOO_MANY_ERROR,
   auditTextAt,
   EMBED_BINDS_ERROR,
   embedNameError,
   expandQueryEmbeddings,
   expandSubmittedEmbeddings,
+  readEmbeddingAuth,
   readEmbeddingBinds,
 } from "@/lib/embeddings/expand";
 import {
@@ -148,8 +154,12 @@ describe("expandQueryEmbeddings", () => {
   const savedEmbeddingKey = process.env.EMBEDDING_API_KEY;
 
   test("splices one vector for repeated text and keeps a quoted call quoted", async () => {
+    const savedOpenRouter = process.env.OPENROUTER_API_KEY;
+    const savedUrl = process.env.EMBEDDING_API_URL;
     process.env.VOYAGE_API_KEY = "test-key";
     delete process.env.EMBEDDING_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.EMBEDDING_API_URL;
     let sent: { model?: string; input?: string[]; input_type?: string } = {};
     const fetchImpl = async (_url: RequestInfo | URL, init?: RequestInit) => {
       sent = JSON.parse(String(init?.body)) as typeof sent;
@@ -168,6 +178,10 @@ describe("expandQueryEmbeddings", () => {
       else process.env.VOYAGE_API_KEY = savedKey;
       if (savedEmbeddingKey === undefined) delete process.env.EMBEDDING_API_KEY;
       else process.env.EMBEDDING_API_KEY = savedEmbeddingKey;
+      if (savedOpenRouter === undefined) delete process.env.OPENROUTER_API_KEY;
+      else process.env.OPENROUTER_API_KEY = savedOpenRouter;
+      if (savedUrl === undefined) delete process.env.EMBEDDING_API_URL;
+      else process.env.EMBEDDING_API_URL = savedUrl;
     }
   });
 
@@ -218,6 +232,25 @@ describe("expandQueryEmbeddings", () => {
       ok: false,
       error: EMBED_BINDS_ERROR,
     });
+    expect(readEmbeddingAuth({})).toEqual({ ok: true, apiKey: "" });
+    expect(readEmbeddingAuth({ embeddingKey: 1 })).toEqual({ ok: false, error: EMBED_KEY_ERROR });
+    expect(readEmbeddingAuth({ embeddingKey: "k".repeat(501) })).toEqual({ ok: false, error: EMBED_KEY_ERROR });
+    expect(readEmbeddingAuth({ embeddingKey: " key ", embeddingSource: 1 })).toEqual({
+      ok: false,
+      error: EMBED_SOURCE_ERROR,
+    });
+    expect(readEmbeddingAuth({ embeddingKey: "key", embeddingSource: "nope" })).toEqual({
+      ok: false,
+      error: EMBED_SOURCE_ERROR,
+    });
+    expect(readEmbeddingAuth({ embeddingKey: " key ", embeddingSource: "fireworks" })).toEqual({
+      ok: true,
+      apiKey: "key",
+      source: "fireworks",
+    });
+    expect(await expandSubmittedEmbeddings("{{embed e1}}", { embeddingKey: 4, embeddingBinds: [] }, fetchImpl)).toEqual(
+      { ok: false, error: EMBED_KEY_ERROR },
+    );
     expect(
       await expandSubmittedEmbeddings("{{embed e1}}", { embeddingBinds: [{ name: "e1", value: "" }] }, fetchImpl),
     ).toEqual({ ok: false, error: embedNameError("e1") });
@@ -235,6 +268,57 @@ describe("expandQueryEmbeddings", () => {
     } finally {
       if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
       else process.env.VOYAGE_API_KEY = savedKey;
+    }
+  });
+
+  test("embeds Voyage with the connector key sent on the query", async () => {
+    const savedUrl = process.env.EMBEDDING_API_URL;
+    process.env.VOYAGE_API_KEY = "voyage-key";
+    delete process.env.EMBEDDING_API_URL;
+    const calls: { url: string; body: string; authorization: string; referer: string; title: string }[] = [];
+    const fetchImpl = async (url: RequestInfo | URL, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      calls.push({
+        url: String(url),
+        body: String(init?.body ?? ""),
+        authorization: headers.get("Authorization") ?? "",
+        referer: headers.get("HTTP-Referer") ?? "",
+        title: headers.get("X-Title") ?? "",
+      });
+      return new Response(JSON.stringify({ data: [{ embedding: [0.5] }] }), { status: 200 });
+    };
+    try {
+      const openrouter = await expandSubmittedEmbeddings(
+        '{{embed "cats"}}',
+        { embeddingKey: " or-key ", embeddingSource: "openrouter" },
+        fetchImpl,
+      );
+      expect(openrouter).toEqual({ ok: true, sql: "[0.5]" });
+      expect(calls[0]).toEqual({
+        url: OPENROUTER_EMBEDDINGS_URL,
+        body: JSON.stringify({ input: ["cats"], model: "voyageai/voyage-4" }),
+        authorization: "Bearer or-key",
+        referer: "https://midst.market",
+        title: "KnowSQL",
+      });
+      const fireworks = await expandSubmittedEmbeddings(
+        '{{embed "cats"}}',
+        { embeddingKey: "fw-key", embeddingSource: "fireworks" },
+        fetchImpl,
+      );
+      expect(fireworks.ok).toBe(true);
+      expect(calls[1]?.url).toBe(FIREWORKS_EMBEDDINGS_URL);
+      expect(calls[1]?.authorization).toBe("Bearer fw-key");
+      expect(calls[1]?.referer).toBe("");
+      const implied = await expandSubmittedEmbeddings('{{embed "cats"}}', { embeddingKey: "plain" }, fetchImpl);
+      expect(implied.ok).toBe(true);
+      expect(calls[2]?.url).toBe(OPENROUTER_EMBEDDINGS_URL);
+      expect(calls[2]?.authorization).toBe("Bearer plain");
+    } finally {
+      if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedKey;
+      if (savedUrl === undefined) delete process.env.EMBEDDING_API_URL;
+      else process.env.EMBEDDING_API_URL = savedUrl;
     }
   });
 
@@ -257,17 +341,33 @@ describe("embedTexts", () => {
     const savedVoyage = process.env.VOYAGE_API_KEY;
     const savedEmbedding = process.env.EMBEDDING_API_KEY;
     const savedUrl = process.env.EMBEDDING_API_URL;
+    const savedOpenRouter = process.env.OPENROUTER_API_KEY;
     process.env.VOYAGE_API_KEY = "from-process";
     delete process.env.EMBEDDING_API_KEY;
     delete process.env.EMBEDDING_API_URL;
+    delete process.env.OPENROUTER_API_KEY;
     try {
       expect(embeddingEndpoint("voyage-4")).toEqual({
         url: VOYAGE_EMBEDDINGS_URL,
         key: "from-process",
         voyage: true,
+        model: "voyage-4",
       });
       const embedded = await embedTexts(["a"], "voyage-4", async () => jsonResponse({ data: [{ embedding: [1] }] }));
       expect(embedded).toEqual({ ok: true, vectors: [[1]] });
+      process.env.OPENROUTER_API_KEY = " or-process ";
+      expect(embeddingEndpoint("voyageai/voyage-4")).toEqual({
+        url: OPENROUTER_EMBEDDINGS_URL,
+        key: "or-process",
+        voyage: false,
+        model: "voyageai/voyage-4",
+      });
+      expect(embeddingEndpoint("openai/text-embedding-3-small")).toEqual({
+        url: OPENROUTER_EMBEDDINGS_URL,
+        key: "or-process",
+        voyage: false,
+        model: "openai/text-embedding-3-small",
+      });
     } finally {
       if (savedVoyage === undefined) delete process.env.VOYAGE_API_KEY;
       else process.env.VOYAGE_API_KEY = savedVoyage;
@@ -275,6 +375,8 @@ describe("embedTexts", () => {
       else process.env.EMBEDDING_API_KEY = savedEmbedding;
       if (savedUrl === undefined) delete process.env.EMBEDDING_API_URL;
       else process.env.EMBEDDING_API_URL = savedUrl;
+      if (savedOpenRouter === undefined) delete process.env.OPENROUTER_API_KEY;
+      else process.env.OPENROUTER_API_KEY = savedOpenRouter;
     }
   });
 
@@ -308,23 +410,72 @@ describe("embedTexts", () => {
       url: VOYAGE_EMBEDDINGS_URL,
       key: "voyage",
       voyage: true,
+      model: "voyage-4",
     });
     expect(
       embeddingEndpoint("text-embedding-3-small", {
         EMBEDDING_API_URL: "https://embed.test/v1/",
         EMBEDDING_API_KEY: "custom",
       }),
-    ).toEqual({ url: "https://embed.test/v1/embeddings", key: "custom", voyage: false });
+    ).toEqual({
+      url: "https://embed.test/v1/embeddings",
+      key: "custom",
+      voyage: false,
+      model: "text-embedding-3-small",
+    });
     expect(
       embeddingEndpoint("voyage-4", {
         EMBEDDING_API_URL: "https://api.voyageai.com/v1/embeddings/",
         EMBEDDING_API_KEY: "custom",
       }),
-    ).toEqual({ url: "https://api.voyageai.com/v1/embeddings", key: "custom", voyage: true });
+    ).toEqual({ url: "https://api.voyageai.com/v1/embeddings", key: "custom", voyage: true, model: "voyage-4" });
     expect(embeddingEndpoint("voyage-4", { EMBEDDING_API_URL: "not a url", EMBEDDING_API_KEY: "custom" })).toEqual({
       url: "not a url/embeddings",
       key: "custom",
       voyage: false,
+      model: "voyage-4",
+    });
+    expect(
+      embeddingEndpoint("voyage-4", {
+        EMBEDDING_API_URL: "https://embed.test/v1",
+        EMBEDDING_KEY: "user",
+        OPENROUTER_API_KEY: "or",
+      }),
+    ).toEqual({ url: "https://embed.test/v1/embeddings", key: "user", voyage: false, model: "voyage-4" });
+    expect(
+      embeddingEndpoint("text-embedding-3-small", {
+        EMBEDDING_API_URL: "https://embed.test/v1",
+        OPENROUTER_API_KEY: "or",
+      }),
+    ).toEqual({ url: "https://embed.test/v1/embeddings", key: "or", voyage: false, model: "text-embedding-3-small" });
+    expect(
+      embeddingEndpoint("voyage-4", { EMBEDDING_KEY: "  ", EMBEDDING_SOURCE: "fireworks", VOYAGE_API_KEY: "v" }),
+    ).toEqual({ url: VOYAGE_EMBEDDINGS_URL, key: "v", voyage: true, model: "voyage-4" });
+    expect(embeddingEndpoint("voyage-4", { EMBEDDING_KEY: "fw", EMBEDDING_SOURCE: "fireworks" })).toEqual({
+      url: FIREWORKS_EMBEDDINGS_URL,
+      key: "fw",
+      voyage: false,
+      model: "voyageai/voyage-4",
+    });
+    expect(embeddingEndpoint("voyage-4-lite", { EMBEDDING_KEY: "gw", EMBEDDING_SOURCE: "gateway" })).toEqual({
+      url: GATEWAY_EMBEDDINGS_URL,
+      key: "gw",
+      voyage: false,
+      model: "voyageai/voyage-4-lite",
+    });
+    expect(embeddingEndpoint("voyage-4", { EMBEDDING_KEY: "k", EMBEDDING_SOURCE: "other" })).toEqual({
+      url: OPENROUTER_EMBEDDINGS_URL,
+      key: "k",
+      voyage: false,
+      model: "voyageai/voyage-4",
+    });
+    expect(
+      embeddingEndpoint("openai/text-embedding-3-small", { EMBEDDING_KEY: "fw", EMBEDDING_SOURCE: "fireworks" }),
+    ).toEqual({
+      url: FIREWORKS_EMBEDDINGS_URL,
+      key: "fw",
+      voyage: false,
+      model: "openai/text-embedding-3-small",
     });
 
     const embedded = await embedTexts(["b", "a"], "voyage-4", fetchImpl, { VOYAGE_API_KEY: "test-key" });
