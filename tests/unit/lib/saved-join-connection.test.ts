@@ -3,6 +3,7 @@ import {
   CROSS_DB_JOINS_CAPABILITIES,
   CROSS_DB_JOINS_ID,
   CROSS_DB_JOINS_NAME,
+  crossDbJoinTables,
   crossDbJoinsConnection,
   crossDbJoinsObjectAnswer,
   crossDbJoinsSchema,
@@ -11,12 +12,12 @@ import {
 } from "@/lib/saved-join/connection";
 import type { DatabaseConnection, SavedQuery } from "@/lib/types";
 
-function query(tableId: string | undefined, connectionId = "c1"): SavedQuery {
+function query(tableId: string | undefined, connectionId = "c1", sql = "SELECT 1"): SavedQuery {
   return {
     id: tableId ?? "none",
     name: tableId ?? "none",
     tableId,
-    query: "SELECT 1",
+    query: sql,
     connectionType: "postgres",
     connectionId,
     createdAt: new Date(0),
@@ -75,5 +76,32 @@ describe("Cross_DB_Joins", () => {
     expect(crossDbJoinsObjectAnswer(queries, { route: "counts" })).toEqual({});
     expect(crossDbJoinsObjectAnswer(queries, { route: "containers" })).toEqual([]);
     expect(crossDbJoinsObjectAnswer(queries, { route: "describe" })).toEqual({ columns: [], indexes: [] });
+    expect(crossDbJoinsObjectAnswer(queries, { route: "describe", path: ["missing"] })).toEqual({
+      columns: [],
+      indexes: [],
+    });
+  });
+
+  test("a saved query's select list becomes the table's columns", () => {
+    const queries = [
+      query("orders", "c1", "SELECT id, id, region -- , secret\n, 'a, b' AS label FROM t"),
+      query("people", "c1", "SELECT * FROM people"),
+      query("wide", "c1", "SELECT user_id, name FROM people"),
+    ];
+    expect(crossDbJoinTables(queries)).toEqual([
+      { tableId: "orders", columns: ["id", "region", "label"], star: false },
+      { tableId: "people", columns: [], star: true },
+      { tableId: "wide", columns: ["user_id", "name"], star: false },
+    ]);
+    const columns = [
+      { name: "id", type: "", nullable: true, isPrimary: false },
+      { name: "region", type: "", nullable: true, isPrimary: false },
+      { name: "label", type: "", nullable: true, isPrimary: false },
+    ];
+    expect(crossDbJoinsSchema(queries)[0]?.columns).toEqual(columns);
+    expect(crossDbJoinsObjectAnswer(queries, { route: "describe", path: ["orders"] })).toEqual({
+      columns,
+      indexes: [],
+    });
   });
 });
