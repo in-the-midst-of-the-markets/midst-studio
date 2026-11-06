@@ -17,8 +17,8 @@ const TRADES = {
 const QUOTES = {
   id: "north-quotes",
   name: "North Quotes",
-  description: "End of day quotes",
-  priceLabel: "$12/month",
+  description: "End of day search indexes",
+  priceLabel: "Ask",
 };
 
 function saveMarketplaceConnection(id: string, name: string): void {
@@ -360,9 +360,9 @@ describe("Marketplace", () => {
     render(<Marketplace />);
     fireEvent.click(await screen.findByRole("button", { name: "Cancel subscription" }));
 
-    expect(
-      await screen.findByText("Cancels on March 1, 2026. This database stays in your connections until then."),
-    ).not.toBeNull();
+    expect(await screen.findByText("Subscription cancels March 1, 2026.")).not.toBeNull();
+    expect(screen.getByText("Access until Mar 1, 2026")).not.toBeNull();
+    expect(screen.getByText("This database stays in your connections until then.")).not.toBeNull();
     expect(screen.queryByRole("button", { name: "Subscribe with Stripe" })).toBeNull();
     expect(storage.getConnections().map((item) => item.id)).toEqual(["marketplace-acme-trades"]);
     expect(storage.getActiveConnectionId()).toBe("marketplace-acme-trades");

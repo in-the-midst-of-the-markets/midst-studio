@@ -2,12 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { ArrowRight, Calendar, Clock, Database, List, Search } from "lucide-react";
 import { appFetch } from "@/lib/config/base-path";
 import { acceptSubscribedConnection } from "@/lib/marketplace/accept-subscription";
 import type { PublicMarketplaceOffering } from "@/lib/marketplace/catalog";
 import { dropEndedSubscription, releaseEndedSubscriptions } from "@/lib/marketplace/release-subscription";
-import { cancellationNotice, subscriptionFromBody, type SubscriptionView } from "@/lib/marketplace/subscription-status";
+import {
+  accessUntilLabel,
+  CANCELLATION_DETAIL,
+  cancellationNotice,
+  splitPriceLabel,
+  subscriptionFromBody,
+  type SubscriptionView,
+} from "@/lib/marketplace/subscription-status";
 import { storage } from "@/lib/storage";
 
 const NO_OFFERINGS: readonly PublicMarketplaceOffering[] = [];
@@ -31,6 +38,105 @@ function matches(offering: PublicMarketplaceOffering, query: string): boolean {
 /** Checkout saved this database on this browser. Cancel belongs to that database only. */
 function holdsMarketplaceDatabase(offeringId: string): boolean {
   return storage.getConnections().some((connection) => connection.id === `marketplace-${offeringId}`);
+}
+
+function heldSubscription(
+  subscriptions: readonly SubscriptionView[],
+  offeringId: string,
+): SubscriptionView | undefined {
+  const listed = subscriptions.find((row) => row.offeringId === offeringId);
+  return listed !== undefined && holdsMarketplaceDatabase(offeringId) ? listed : undefined;
+}
+
+function OfferingMark({ description }: { description: string }) {
+  const Icon = /index|search/i.test(description) ? List : Database;
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-tint/15 text-brand">
+      <Icon aria-hidden="true" className="size-4" strokeWidth={1.75} />
+    </span>
+  );
+}
+
+function StatusBadge({ held }: { held: SubscriptionView | undefined }) {
+  if (held?.status === "canceling") {
+    return <span className="rounded-full bg-fill px-2 py-0.5 text-xs font-medium text-fg-secondary">Canceling</span>;
+  }
+  if (held?.status === "active") {
+    return <span className="rounded-full bg-brand-tint/20 px-2 py-0.5 text-xs font-medium text-brand">Subscribed</span>;
+  }
+  return <span className="rounded-full bg-brand-tint/20 px-2 py-0.5 text-xs font-medium text-brand">Available</span>;
+}
+
+function OfferingCard({
+  offering,
+  held,
+  pending,
+  onSubscribe,
+  onCancel,
+}: {
+  offering: PublicMarketplaceOffering;
+  held: SubscriptionView | undefined;
+  pending: boolean;
+  onSubscribe: () => void;
+  onCancel: () => void;
+}) {
+  const price = splitPriceLabel(offering.priceLabel);
+  const until = held?.status === "canceling" ? accessUntilLabel(held.accessUntil) : null;
+  const notice = held?.status === "canceling" ? cancellationNotice(held.accessUntil) : null;
+  return (
+    <li className="rounded-2xl border border-hairline bg-raised shadow-sm">
+      <div className="flex flex-wrap items-center gap-4 px-5 py-4">
+        <OfferingMark description={offering.description} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-fg">{offering.name}</p>
+            <StatusBadge held={held} />
+          </div>
+          <p className="mt-0.5 text-sm text-fg-muted">{offering.description}</p>
+        </div>
+        <p className="text-sm text-fg-muted">
+          <span className="text-lg font-semibold text-fg">{price.amount}</span>
+          {price.period !== null && <span> {price.period}</span>}
+        </p>
+        {held?.status === "active" ? (
+          <button
+            type="button"
+            className="h-9 rounded-lg border border-hairline bg-raised px-3 text-sm font-medium text-fg-secondary hover:bg-fill"
+            disabled={pending}
+            onClick={onCancel}
+          >
+            Cancel subscription
+          </button>
+        ) : held?.status === "canceling" ? (
+          until !== null && (
+            <p className="flex items-center gap-1.5 text-sm text-fg-secondary">
+              <Clock aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
+              {until}
+            </p>
+          )
+        ) : (
+          <button
+            type="button"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-solid px-3.5 text-sm font-medium text-white hover:bg-brand-solid-hover disabled:opacity-50"
+            disabled={pending}
+            onClick={onSubscribe}
+          >
+            Subscribe with Stripe
+            <ArrowRight aria-hidden="true" className="size-3.5" />
+          </button>
+        )}
+      </div>
+      {notice !== null && (
+        <div className="flex items-start gap-3 border-t border-hairline px-5 py-3">
+          <Calendar aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-fg-muted" strokeWidth={1.75} />
+          <div>
+            <p className="text-sm font-medium text-fg">{notice}</p>
+            {until !== null && <p className="text-sm text-fg-muted">{CANCELLATION_DETAIL}</p>}
+          </div>
+        </div>
+      )}
+    </li>
+  );
 }
 
 /**
@@ -172,9 +278,9 @@ export function Marketplace() {
   }
 
   return (
-    <main className="pt-6">
-      <h1 className="text-lg font-semibold tracking-tight text-fg">Marketplace</h1>
-      <p className="mt-1 text-sm text-fg-secondary">
+    <main>
+      <h1 className="text-3xl font-semibold tracking-tight text-fg">Marketplace</h1>
+      <p className="mt-2 max-w-xl text-sm text-fg-secondary">
         Subscribe to third-party databases. Each database has its own monthly price. Payment is collected by Stripe.
       </p>
 
@@ -214,17 +320,32 @@ export function Marketplace() {
       )}
       {load.kind === "ready" && (
         <>
-          <label className="mt-6 block text-xs font-medium text-fg-secondary" htmlFor="marketplace-search">
-            Search marketplace
-          </label>
-          <input
-            id="marketplace-search"
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search third-party data"
-            className="mt-1.5 h-9 w-full rounded-md border border-hairline bg-surface px-3 text-sm text-fg"
-          />
+          {offerings.length > 0 && (
+            <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+              <div className="flex items-center gap-2 pb-1">
+                <h2 className="text-sm font-medium text-fg">Databases</h2>
+                <span className="rounded-full bg-fill px-2 py-0.5 text-xs text-fg-secondary">{visible.length}</span>
+              </div>
+              <label className="block text-xs text-fg-muted" htmlFor="marketplace-search">
+                Search marketplace
+                <span className="relative mt-1.5 block">
+                  <Search
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-fg-muted"
+                    strokeWidth={1.75}
+                  />
+                  <input
+                    id="marketplace-search"
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search third-party data"
+                    className="h-10 w-full rounded-lg border border-hairline bg-raised pr-3 pl-9 text-sm text-fg sm:w-72"
+                  />
+                </span>
+              </label>
+            </div>
+          )}
           {offerings.length === 0 ? (
             <p className="mt-6 text-sm text-fg-secondary">
               No databases are listed yet. A connection you add in the editor is not listed here.
@@ -232,49 +353,21 @@ export function Marketplace() {
           ) : visible.length === 0 ? (
             <p className="mt-6 text-sm text-fg-secondary">No data matches that search.</p>
           ) : (
-            <ul className="mt-4 divide-y divide-border rounded-lg border border-border">
-              {visible.map((offering) => {
-                const listed = subscriptions.find((row) => row.offeringId === offering.id);
-                const held = listed !== undefined && holdsMarketplaceDatabase(offering.id) ? listed : undefined;
-                return (
-                  <li key={offering.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-fg">{offering.name}</p>
-                      <p className="mt-0.5 text-xs text-fg-secondary">{offering.description}</p>
-                      <p className="mt-1 text-xs text-fg-tertiary">{offering.priceLabel}</p>
-                      {held?.status === "canceling" && (
-                        <p className="mt-1 text-xs text-fg-secondary">{cancellationNotice(held.accessUntil)}</p>
-                      )}
-                    </div>
-                    {held?.status === "active" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs"
-                        disabled={pendingId === offering.id}
-                        onClick={() => {
-                          void cancel(offering.id);
-                        }}
-                      >
-                        Cancel subscription
-                      </Button>
-                    ) : held?.status === "canceling" ? null : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-8 text-xs"
-                        disabled={pendingId === offering.id}
-                        onClick={() => {
-                          void subscribe(offering.id);
-                        }}
-                      >
-                        Subscribe with Stripe
-                      </Button>
-                    )}
-                  </li>
-                );
-              })}
+            <ul className="mt-4 flex flex-col gap-3">
+              {visible.map((offering) => (
+                <OfferingCard
+                  key={offering.id}
+                  offering={offering}
+                  held={heldSubscription(subscriptions, offering.id)}
+                  pending={pendingId === offering.id}
+                  onSubscribe={() => {
+                    void subscribe(offering.id);
+                  }}
+                  onCancel={() => {
+                    void cancel(offering.id);
+                  }}
+                />
+              ))}
             </ul>
           )}
         </>
