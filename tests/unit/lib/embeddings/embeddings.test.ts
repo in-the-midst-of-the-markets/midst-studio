@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
+  EMBED_ADDRESS_ERROR,
   EMBED_COUNT_ERROR,
   EMBED_LENGTH_ERROR,
+  EMBED_REDIRECT_ERROR,
   EMBED_UNREADABLE_ERROR,
   EMBED_UNREACHABLE_ERROR,
   EMBED_VECTOR_ERROR,
@@ -13,6 +15,7 @@ import {
   VOYAGE_EMBEDDINGS_URL,
   VOYAGE_KEY_ERROR,
   embedTexts,
+  embeddingAddressAllowed,
   embeddingEndpoint,
 } from "@/lib/embeddings/client";
 import {
@@ -454,13 +457,14 @@ describe("embedTexts", () => {
   });
 
   test("calls Voyage, a custom endpoint, or refuses when the key or URL is missing", async () => {
-    const calls: { url: string; body: string; authorization: string }[] = [];
+    const calls: { url: string; body: string; authorization: string; redirect?: RequestRedirect }[] = [];
     const fetchImpl = async (url: RequestInfo | URL, init?: RequestInit) => {
       const body = String(init?.body ?? "");
       calls.push({
         url: String(url),
         body,
         authorization: new Headers(init?.headers).get("Authorization") ?? "",
+        redirect: init?.redirect,
       });
       const input = (JSON.parse(body) as { input: string[] }).input;
       if (input.length === 2) {
@@ -563,6 +567,7 @@ describe("embedTexts", () => {
       url: VOYAGE_EMBEDDINGS_URL,
       body: JSON.stringify({ input: ["b", "a"], model: "voyage-4", input_type: "query" }),
       authorization: "Bearer test-key",
+      redirect: "manual",
     });
 
     const custom = await embedTexts(["a"], "text-embedding-3-small", fetchImpl, {
@@ -629,6 +634,38 @@ describe("embedTexts", () => {
       { EMBEDDING_API_KEY: "fallback" },
     );
     expect(down).toEqual({ ok: false, error: EMBED_UNREACHABLE_ERROR });
+  });
+
+  test("sends the key only to https, or to http on this machine, and does not follow a redirect", async () => {
+    expect(embeddingAddressAllowed(VOYAGE_EMBEDDINGS_URL)).toBe(true);
+    expect(embeddingAddressAllowed("http://127.0.0.1:11434/v1/embeddings")).toBe(true);
+    expect(embeddingAddressAllowed("http://localhost/v1")).toBe(true);
+    expect(embeddingAddressAllowed("http://[::1]/v1")).toBe(true);
+    expect(embeddingAddressAllowed("http://example.com/v1")).toBe(false);
+    expect(embeddingAddressAllowed("https://user:secret@api.voyageai.com/v1/embeddings")).toBe(false);
+    expect(embeddingAddressAllowed("not a url")).toBe(false);
+    expect(embeddingAddressAllowed("file:///tmp/embeddings")).toBe(false);
+
+    let called = 0;
+    const fetchImpl = async () => {
+      called += 1;
+      return new Response(null, { status: 302, headers: { Location: "https://evil.example/steal?k=secret" } });
+    };
+    const redirected = await embedTexts(["a"], "voyage-4", fetchImpl, { VOYAGE_API_KEY: "test-key" });
+    expect(redirected).toEqual({ ok: false, error: EMBED_REDIRECT_ERROR });
+    expect(called).toBe(1);
+
+    const cleartext = await embedTexts(["a"], "voyage-4", fetchImpl, {
+      EMBEDDING_API_URL: "http://example.com/v1",
+      EMBEDDING_API_KEY: "custom",
+    });
+    expect(cleartext).toEqual({ ok: false, error: EMBED_ADDRESS_ERROR });
+    const local = await embedTexts(["a"], "voyage-4", async () => jsonResponse({ data: [{ embedding: [1] }] }), {
+      EMBEDDING_API_URL: "http://127.0.0.1:11434/v1",
+      EMBEDDING_API_KEY: "local",
+    });
+    expect(local).toEqual({ ok: true, vectors: [[1]] });
+    expect(called).toBe(1);
   });
 });
 

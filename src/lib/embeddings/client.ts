@@ -5,6 +5,7 @@
  * Vercel AI Gateway). OpenRouter falls back to the server's OPENROUTER_API_KEY.
  * VOYAGE_API_KEY still calls Voyage directly when neither of those is set.
  * EMBEDDING_API_URL, when set, replaces that choice.
+ * The key is sent only to an https address, or to http on this machine, and a redirect is not followed.
  */
 
 import { isVoyageModel, voyageModelId } from "@/lib/embeddings/models";
@@ -20,6 +21,9 @@ export const EMBEDDING_KEY_ERROR = "Set EMBEDDING_API_KEY to embed text. The que
 export const EMBEDDING_URL_ERROR =
   "Set EMBEDDING_API_URL to embed with a model other than Voyage. The query was not sent.";
 export const EMBED_UNREACHABLE_ERROR = "The embedding service could not be reached. The query was not sent.";
+export const EMBED_ADDRESS_ERROR =
+  "The embedding address must be https, or http on this machine. The query was not sent.";
+export const EMBED_REDIRECT_ERROR = "The embedding service answered with a redirect. The query was not sent.";
 export const EMBED_UNREADABLE_ERROR =
   "The embedding service returned a response this app cannot read. The query was not sent.";
 export const EMBED_VECTOR_ERROR =
@@ -83,6 +87,27 @@ export interface EmbeddingEndpoint {
   readonly voyage: boolean;
   /** The model id the provider expects. */
   readonly model: string;
+}
+
+function loopbackHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  return host === "localhost" || host === "127.0.0.1" || host === "::1";
+}
+
+/**
+ * An address the embedding key may be sent to.
+ * https is allowed. http is allowed only on this machine. A user or password in the address is refused.
+ */
+export function embeddingAddressAllowed(url: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.username !== "" || parsed.password !== "") return false;
+  if (parsed.protocol === "https:") return true;
+  return parsed.protocol === "http:" && loopbackHost(parsed.hostname);
 }
 
 function embeddingsUrl(base: string): string {
@@ -189,6 +214,9 @@ export async function embedTexts(
 ): Promise<{ ok: true; vectors: number[][] } | { ok: false; error: string }> {
   const endpoint = embeddingEndpoint(model, env);
   if (typeof endpoint === "string") return { ok: false, error: endpoint };
+  // The key is a credential. A redirect would carry it to whatever host answered, so the call
+  // stops on the first response, and a cleartext address is refused unless it is this machine.
+  if (!embeddingAddressAllowed(endpoint.url)) return { ok: false, error: EMBED_ADDRESS_ERROR };
   let response: Response;
   try {
     const headers: Record<string, string> = {
@@ -207,11 +235,13 @@ export async function embedTexts(
         model: endpoint.model,
         ...(endpoint.voyage ? { input_type: "query" } : {}),
       }),
+      redirect: "manual",
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
     return { ok: false, error: EMBED_UNREACHABLE_ERROR };
   }
+  if (response.status >= 300 && response.status < 400) return { ok: false, error: EMBED_REDIRECT_ERROR };
   if (!response.ok) return { ok: false, error: refused(response.status) };
   let parsed: unknown;
   try {

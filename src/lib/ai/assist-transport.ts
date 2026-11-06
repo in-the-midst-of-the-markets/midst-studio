@@ -156,7 +156,12 @@ export async function completeChat(input: {
     method: "POST",
     headers,
     body: JSON.stringify(body),
+    // A redirect would send the connector key to the host named in Location.
+    redirect: "manual",
   });
+  if (response.status >= 300 && response.status < 400) {
+    throw new LLMError("The model service answered with a redirect.", undefined, 502);
+  }
   if (!response.ok) {
     if (response.status === 401 || response.status === 403) throw new LLMAuthError("The model rejected the API key.");
     if (response.status === 429) throw new LLMRateLimitError("The model rate limit was reached.");
