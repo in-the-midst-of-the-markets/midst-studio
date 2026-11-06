@@ -6,8 +6,10 @@
  * into a vector. The vector itself is never stored here.
  */
 
-import { embeddingModelFor } from "@/lib/embeddings/settings";
+import { assistKeyFor, readAssistSettings } from "@/lib/ai/assist-settings";
+import type { AssistSource } from "@/lib/ai/assist-plan";
 import { embedTokens, type EmbedNameValue } from "@/lib/embeddings/placeholder";
+import { embeddingModelFor } from "@/lib/embeddings/settings";
 
 const STORAGE_KEY = "libredb_embedding_ids";
 const CONNECTION_CAP = 200;
@@ -194,14 +196,28 @@ export function embeddingBindsFor(connectionId: string | undefined, sql: string)
   return binds;
 }
 
-/** The model and, when the statement names a saved id, the text behind it. */
+/**
+ * The model and, when the statement names a saved id, the text behind it.
+ * A statement that embeds text also carries the connector key from this browser.
+ * A statement that does not leaves the key out.
+ */
 export function embeddingRequestFields(
   connectionId: string | undefined,
   sql: string,
-): { embeddingModel: string; embeddingBinds?: EmbedNameValue[] } {
+): {
+  embeddingModel: string;
+  embeddingBinds?: EmbedNameValue[];
+  embeddingSource?: AssistSource;
+  embeddingKey?: string;
+} {
   const embeddingBinds = embeddingBindsFor(connectionId, sql);
-  return {
+  const fields = {
     embeddingModel: embeddingModelFor(connectionId),
     ...(embeddingBinds.length > 0 ? { embeddingBinds } : {}),
   };
+  if (embedTokens(sql).length === 0) return fields;
+  const settings = readAssistSettings();
+  const key = assistKeyFor(settings).trim();
+  if (key === "") return fields;
+  return { ...fields, embeddingSource: settings.source, embeddingKey: key };
 }

@@ -222,8 +222,12 @@ describe("POST /api/db/multi-query", () => {
   test("refuses a script embed when no embedding key is configured", async () => {
     const savedVoyage = process.env.VOYAGE_API_KEY;
     const savedEmbedding = process.env.EMBEDDING_API_KEY;
+    const savedOpenRouter = process.env.OPENROUTER_API_KEY;
+    const savedUrl = process.env.EMBEDDING_API_URL;
     delete process.env.VOYAGE_API_KEY;
     delete process.env.EMBEDDING_API_KEY;
+    delete process.env.OPENROUTER_API_KEY;
+    delete process.env.EMBEDDING_API_URL;
     (mockProvider.query as ReturnType<typeof mock>).mockClear();
     try {
       const req = createMockRequest("/api/db/multi-query", {
@@ -233,13 +237,17 @@ describe("POST /api/db/multi-query", () => {
       const res = await POST(req as never);
       const data = await parseResponseJSON<{ error: string }>(res);
       expect(res.status).toBe(400);
-      expect(data.error).toContain("VOYAGE_API_KEY");
+      expect(data.error).toContain("Connectors");
       expect((mockProvider.query as ReturnType<typeof mock>).mock.calls).toHaveLength(0);
     } finally {
       if (savedVoyage === undefined) delete process.env.VOYAGE_API_KEY;
       else process.env.VOYAGE_API_KEY = savedVoyage;
       if (savedEmbedding === undefined) delete process.env.EMBEDDING_API_KEY;
       else process.env.EMBEDDING_API_KEY = savedEmbedding;
+      if (savedOpenRouter === undefined) delete process.env.OPENROUTER_API_KEY;
+      else process.env.OPENROUTER_API_KEY = savedOpenRouter;
+      if (savedUrl === undefined) delete process.env.EMBEDDING_API_URL;
+      else process.env.EMBEDDING_API_URL = savedUrl;
     }
   });
 

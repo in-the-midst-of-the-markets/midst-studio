@@ -3,7 +3,7 @@
  * a statement is sent. The text the user wrote stays in the query event.
  */
 
-import { embedTexts, type EmbeddingFetch } from "@/lib/embeddings/client";
+import { embedTexts, serverEmbeddingEnv, type EmbeddingEnv, type EmbeddingFetch } from "@/lib/embeddings/client";
 import { embeddingModelOf, normalizeEmbeddingModel } from "@/lib/embeddings/models";
 import {
   bindEmbedPlaceholders,
@@ -24,6 +24,11 @@ export function embedNameError(name: string): string {
 }
 
 export const EMBED_BINDS_ERROR = 'embeddingBinds must be a list of { "name", "value" } text pairs.';
+export const EMBED_KEY_ERROR = "embeddingKey must be text of at most 500 characters. The query was not sent.";
+export const EMBED_SOURCE_ERROR = "embeddingSource must be openrouter, fireworks, or gateway. The query was not sent.";
+
+const EMBEDDING_KEY_MAX = 500;
+const EMBEDDING_SOURCES = ["openrouter", "fireworks", "gateway"] as const;
 
 /** The id-to-text pairs a query body sent. Absent means the statement carries its own text. */
 export function readEmbeddingBinds(
@@ -45,6 +50,22 @@ export function readEmbeddingBinds(
   return { ok: true, binds };
 }
 
+/** The connector key a query body sent. Absent means the server's own key. */
+export function readEmbeddingAuth(
+  body: Record<string, unknown>,
+): { ok: true; apiKey: string; source?: string } | { ok: false; error: string } {
+  const rawKey = body.embeddingKey;
+  if (rawKey !== undefined && typeof rawKey !== "string") return { ok: false, error: EMBED_KEY_ERROR };
+  const apiKey = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (apiKey.length > EMBEDDING_KEY_MAX) return { ok: false, error: EMBED_KEY_ERROR };
+  const rawSource = body.embeddingSource;
+  if (rawSource === undefined) return { ok: true, apiKey };
+  if (typeof rawSource !== "string" || !EMBEDDING_SOURCES.some((item) => item === rawSource)) {
+    return { ok: false, error: EMBED_SOURCE_ERROR };
+  }
+  return { ok: true, apiKey, source: rawSource };
+}
+
 /**
  * Fills `{{embed id}}` from the body, then replaces each quoted text with its vector.
  * The statement recorded for the query is still the one the caller passed in.
@@ -56,7 +77,14 @@ export async function expandSubmittedEmbeddings(
 ): Promise<{ ok: true; sql: string } | { ok: false; error: string }> {
   const binds = readEmbeddingBinds(body.embeddingBinds);
   if (!binds.ok) return binds;
-  return expandQueryEmbeddings(bindEmbedPlaceholders(sql, binds.binds), embeddingModelOf(body), fetchImpl);
+  const auth = readEmbeddingAuth(body);
+  if (!auth.ok) return auth;
+  return expandQueryEmbeddings(
+    bindEmbedPlaceholders(sql, binds.binds),
+    embeddingModelOf(body),
+    fetchImpl,
+    serverEmbeddingEnv({ apiKey: auth.apiKey, source: auth.source }),
+  );
 }
 
 /**
@@ -71,6 +99,7 @@ export async function expandQueryEmbeddings(
   sql: string,
   model: string,
   fetchImpl: EmbeddingFetch = fetch,
+  env?: EmbeddingEnv,
 ): Promise<{ ok: true; sql: string } | { ok: false; error: string }> {
   const tokens = embedTokens(sql);
   if (tokens.length === 0) return { ok: true, sql };
@@ -89,7 +118,7 @@ export async function expandQueryEmbeddings(
     seen.add(text);
     unique.push(text);
   }
-  const embedded = await embedTexts(unique, normalizeEmbeddingModel(model), fetchImpl);
+  const embedded = await embedTexts(unique, normalizeEmbeddingModel(model), fetchImpl, env);
   if (!embedded.ok) return embedded;
   const byText = new Map(unique.map((text, index) => [text, embedded.vectors[index] ?? []]));
   return {

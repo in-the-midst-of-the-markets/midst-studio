@@ -1,14 +1,21 @@
 /**
- * Turns text into vectors. Voyage 4 is the hosted default. Any other model is
- * sent to `EMBEDDING_API_URL`, an OpenAI-compatible embeddings endpoint.
- * The browser never sees the key.
+ * Turns text into vectors. Voyage 4 is the hosted default.
+ *
+ * The call uses the connector key sent with the query (OpenRouter, Fireworks, or
+ * Vercel AI Gateway). OpenRouter falls back to the server's OPENROUTER_API_KEY.
+ * VOYAGE_API_KEY still calls Voyage directly when neither of those is set.
+ * EMBEDDING_API_URL, when set, replaces that choice.
  */
 
 import { isVoyageModel, voyageModelId } from "@/lib/embeddings/models";
 
 export const VOYAGE_EMBEDDINGS_URL = "https://api.voyageai.com/v1/embeddings";
+export const OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings";
+export const FIREWORKS_EMBEDDINGS_URL = "https://api.fireworks.ai/inference/v1/embeddings";
+export const GATEWAY_EMBEDDINGS_URL = "https://ai-gateway.vercel.sh/v1/embeddings";
 
-export const VOYAGE_KEY_ERROR = "Set VOYAGE_API_KEY to embed text. The query was not sent.";
+export const VOYAGE_KEY_ERROR =
+  "No API key is available to embed text. Add a key under Connectors, or set OPENROUTER_API_KEY. The query was not sent.";
 export const EMBEDDING_KEY_ERROR = "Set EMBEDDING_API_KEY to embed text. The query was not sent.";
 export const EMBEDDING_URL_ERROR =
   "Set EMBEDDING_API_URL to embed with a model other than Voyage. The query was not sent.";
@@ -23,23 +30,47 @@ export const EMBED_LENGTH_ERROR =
   "The embedding service returned vectors of different lengths. The query was not sent.";
 
 const VOYAGE_HOST = "api.voyageai.com";
-const VOYAGE_API_KEY = "VOYAGE_API_KEY";
-const EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
-const EMBEDDING_API_URL = "EMBEDDING_API_URL";
+const EMBEDDING_SOURCES = ["openrouter", "fireworks", "gateway"] as const;
 
-function embeddingEnv(env?: EmbeddingEnv): EmbeddingEnv {
-  if (env !== undefined) return env;
-  return {
-    VOYAGE_API_KEY: process.env[VOYAGE_API_KEY],
-    EMBEDDING_API_KEY: process.env[EMBEDDING_API_KEY],
-    EMBEDDING_API_URL: process.env[EMBEDDING_API_URL],
-  };
-}
+type EmbeddingSource = (typeof EMBEDDING_SOURCES)[number];
+
+const PROVIDER_URL: Record<EmbeddingSource, string> = {
+  openrouter: OPENROUTER_EMBEDDINGS_URL,
+  fireworks: FIREWORKS_EMBEDDINGS_URL,
+  gateway: GATEWAY_EMBEDDINGS_URL,
+};
 
 export interface EmbeddingEnv {
   readonly VOYAGE_API_KEY?: string;
   readonly EMBEDDING_API_KEY?: string;
   readonly EMBEDDING_API_URL?: string;
+  readonly OPENROUTER_API_KEY?: string;
+  /** The connector key sent with this query. Empty means the server key. */
+  readonly EMBEDDING_KEY?: string;
+  readonly EMBEDDING_SOURCE?: string;
+}
+
+/**
+ * Keys from this process, plus the key a query body sent.
+ *
+ * OPENROUTER_API_KEY is read through a computed name so a bundler cannot bake in
+ * the value from image build time.
+ */
+export function serverEmbeddingEnv(request?: { readonly apiKey?: string; readonly source?: string }): EmbeddingEnv {
+  const openRouter = "OPENROUTER_API_KEY";
+  return {
+    VOYAGE_API_KEY: process.env.VOYAGE_API_KEY,
+    EMBEDDING_API_KEY: process.env.EMBEDDING_API_KEY,
+    EMBEDDING_API_URL: process.env.EMBEDDING_API_URL,
+    OPENROUTER_API_KEY: process.env[openRouter],
+    EMBEDDING_KEY: request?.apiKey,
+    EMBEDDING_SOURCE: request?.source,
+  };
+}
+
+function embeddingEnv(env?: EmbeddingEnv): EmbeddingEnv {
+  if (env !== undefined) return env;
+  return serverEmbeddingEnv();
 }
 
 /** The part of `fetch` this call uses. A test can pass a function of this shape. */
@@ -48,7 +79,10 @@ export type EmbeddingFetch = (input: RequestInfo | URL, init?: RequestInit) => P
 export interface EmbeddingEndpoint {
   readonly url: string;
   readonly key: string;
+  /** Voyage's own API, which takes `input_type`. OpenRouter does not. */
   readonly voyage: boolean;
+  /** The model id the provider expects. */
+  readonly model: string;
 }
 
 function embeddingsUrl(base: string): string {
@@ -72,21 +106,42 @@ function voyageHost(url: string): boolean {
   }
 }
 
+function sourceOf(value: string | undefined): EmbeddingSource | undefined {
+  if (value === undefined) return undefined;
+  return EMBEDDING_SOURCES.find((item) => item === value);
+}
+
+/** Voyage on OpenRouter is `voyageai/voyage-4`. Voyage's own API wants the short id. */
+function requestModel(model: string, provider: boolean): string {
+  if (!provider) return voyageModelId(model);
+  if (isVoyageModel(model)) return `voyageai/${voyageModelId(model)}`;
+  return model;
+}
+
+function providerEndpoint(source: EmbeddingSource, key: string, model: string): EmbeddingEndpoint {
+  return { url: PROVIDER_URL[source], key, voyage: false, model: requestModel(model, true) };
+}
+
 /** Where this model is embedded, and the key that call uses. */
 export function embeddingEndpoint(model: string, env?: EmbeddingEnv): EmbeddingEndpoint | string {
   const source = embeddingEnv(env);
   const override = source.EMBEDDING_API_URL;
   const base = typeof override === "string" ? override.trim() : "";
   if (base !== "") {
-    const key = keyOf(source, ["EMBEDDING_API_KEY", "VOYAGE_API_KEY"]);
+    const key = keyOf(source, ["EMBEDDING_API_KEY", "EMBEDDING_KEY", "VOYAGE_API_KEY", "OPENROUTER_API_KEY"]);
     if (key === "") return EMBEDDING_KEY_ERROR;
     const url = embeddingsUrl(base);
-    return { url, key, voyage: isVoyageModel(model) && voyageHost(url) };
+    const voyage = isVoyageModel(model) && voyageHost(url);
+    return { url, key, voyage, model: requestModel(model, false) };
   }
+  const userKey = keyOf(source, ["EMBEDDING_KEY"]);
+  if (userKey !== "") return providerEndpoint(sourceOf(source.EMBEDDING_SOURCE) ?? "openrouter", userKey, model);
+  const openRouter = keyOf(source, ["OPENROUTER_API_KEY"]);
+  if (openRouter !== "") return providerEndpoint("openrouter", openRouter, model);
   if (isVoyageModel(model)) {
     const key = keyOf(source, ["VOYAGE_API_KEY", "EMBEDDING_API_KEY"]);
     if (key === "") return VOYAGE_KEY_ERROR;
-    return { url: VOYAGE_EMBEDDINGS_URL, key, voyage: true };
+    return { url: VOYAGE_EMBEDDINGS_URL, key, voyage: true, model: requestModel(model, false) };
   }
   return EMBEDDING_URL_ERROR;
 }
@@ -136,15 +191,20 @@ export async function embedTexts(
   if (typeof endpoint === "string") return { ok: false, error: endpoint };
   let response: Response;
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${endpoint.key}`,
+      "Content-Type": "application/json",
+    };
+    if (endpoint.url.startsWith("https://openrouter.ai/")) {
+      headers["HTTP-Referer"] = "https://midst.market";
+      headers["X-Title"] = "KnowSQL";
+    }
     response = await fetchImpl(endpoint.url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${endpoint.key}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
         input: [...texts],
-        model: voyageModelId(model),
+        model: endpoint.model,
         ...(endpoint.voyage ? { input_type: "query" } : {}),
       }),
       signal: AbortSignal.timeout(20_000),
