@@ -1077,9 +1077,10 @@ export interface ProviderCapabilities {
    * Whether a statement on this engine can search by a vector.
    *
    * True on the vector databases and on the search engines whose queries take a
-   * vector. The IDE then offers an embed id beside Lines. Absent means the
-   * control stays hidden, including on an engine that only sometimes has a
-   * vector extension installed.
+   * vector. The IDE then offers the embedding model beside Lines, and `{{text}}`
+   * in the vector value becomes a vector when the query runs. Absent means that
+   * stays hidden, including on an engine that only sometimes has a vector
+   * extension installed.
    */
   supportsVectorQuery?: boolean;
   /**

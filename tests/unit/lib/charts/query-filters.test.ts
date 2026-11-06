@@ -49,6 +49,15 @@ describe("query filters", () => {
     expect(readQueryFilters("SELECT {{region")).toEqual([]);
     expect(readQueryFilters("-- {{region:east}}")).toEqual([]);
     expect(readQueryFilters("SELECT 1")).toEqual([]);
+    const vector = '{"vector": {{cats}}, "query": {"title": {{title:east}}}} AND region = {{region:west}}';
+    expect(readQueryFilters(vector)).toEqual([
+      { name: "title", value: "east", options: [], compare: "=" },
+      { name: "region", value: "west", options: [], compare: "=" },
+    ]);
+    expect(applyQueryFilters(vector)).toBe('{"vector": {{cats}}, "query": {"title": \'east\'}} AND region = \'west\'');
+    expect(readQueryFilters("SELECT * FROM t WHERE knn(vec, {{cats}}, 10) AND color = {{color:red}}")).toEqual([
+      { name: "color", value: "red", options: [], compare: "=" },
+    ]);
   });
 
   test("substitutes a literal and leaves a statement with no filter untouched", () => {

@@ -6,7 +6,7 @@ import Editor from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
 import { Zap, LoaderCircle, TextAlignStart, Trash2, Copy, Play, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EmbedTextButton } from "@/components/embeddings/EmbedTextButton";
+import { EmbeddingModelSelect } from "@/components/embeddings/EmbeddingModelSelect";
 import { Button } from "@/components/ui/button";
 import {
   EDITOR_LANGUAGES,
@@ -698,7 +698,7 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
             <Hash strokeWidth={1.5} className="w-3 h-3" /> Lines
           </Button>
 
-          {capabilities?.supportsVectorQuery === true && <EmbedTextButton connectionId={connectionId} />}
+          {capabilities?.supportsVectorQuery === true && <EmbeddingModelSelect connectionId={connectionId} />}
 
           <div className="flex-1" />
 

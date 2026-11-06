@@ -1596,7 +1596,7 @@ refusal are the same value and cannot drift apart
 | `supportsExternalQueryLimiting` | `true` | **Both** limiter forms are correct here, `LIMIT n` and `LIMIT n OFFSET m` |
 | `createTable` | **absent** | Not in the grammar ([§5.6](#56-this-grammar-has-delete-and-it-is-off)) |
 | `supportsInlineRowEdit` | **`false`** | `UPDATE` is not in the grammar, so the editor's statement could only ever produce an error (#269) |
-| `supportsVectorQuery` | **`true`** | A query can search by a vector (`knn`). The IDE offers an embed id beside Lines; the id becomes a vector when the query runs. Elasticsearch declares the same flag |
+| `supportsVectorQuery` | **`true`** | A query can search by a vector (`knn`). `{{text}}` in that vector value becomes a vector when the query runs; a number list is sent as typed. `{{name}}` anywhere else stays a filter. Elasticsearch declares the same flag |
 | `supportsTestDataGeneration` | **`false`** | An index takes a bulk document write, but the Generate Test Data dialog writes a SQL `INSERT`, which is not in the grammar either, so the row menus do not offer it (#1468) |
 | `supportsResultPagination` | **`true`** | OpenSearch SQL accepts an `OFFSET` clause, which is the one capability where this product diverges from Elasticsearch. Declared as `this.product.acceptsOffsetClause`, so it cannot drift from the refusal the shared `prepareQuery` enforces (#816) |
 | `supportsTransactions` | **`false`** | `BEGIN` is not in the grammar and the surface is stateless HTTP. Measured 2026-08-19 on OpenSearch 3.8.0: `POST /api/db/transaction` answered HTTP 400, *"Transaction control is not supported for this database type"*, for both `begin` and `rollback` — the measurement #U13 came from |

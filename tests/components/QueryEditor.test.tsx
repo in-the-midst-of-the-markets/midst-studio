@@ -416,9 +416,9 @@ describe("QueryEditor", () => {
     expect(queryByText("Lines")).not.toBeNull();
   });
 
-  test("Embed sits beside Lines only when the connection searches by a vector", () => {
+  test("the embedding model sits beside Lines only when the connection searches by a vector", () => {
     const plain = render(React.createElement(QueryEditor, createDefaultProps()));
-    expect(plain.queryByRole("button", { name: "Embed" })).toBeNull();
+    expect(plain.queryByLabelText("Embedding model")).toBeNull();
     plain.unmount();
     const vector = render(
       React.createElement(
@@ -429,7 +429,7 @@ describe("QueryEditor", () => {
         }),
       ),
     );
-    expect(vector.getByRole("button", { name: "Embed" })).toBeTruthy();
+    expect(vector.getByLabelText("Embedding model")).toBeTruthy();
   });
 
   // EXPLAIN button

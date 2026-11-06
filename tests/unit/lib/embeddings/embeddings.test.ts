@@ -147,6 +147,53 @@ describe("embed placeholders", () => {
     const bound = bindEmbedPlaceholders('{"vector": "{{embed e1}}"}', [{ name: "e1", value: "cats" }]);
     expect(spliceEmbeddingVectors(bound, [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
   });
+
+  test("embeds {{text}} only in the vector value and leaves other filters", () => {
+    const sql = [
+      '{"vector": {{a red mug}}, "data": [{{cats}}, "{{dogs}}"], "nearest": {{cats}}, "data": []}',
+      '{"query": [{{"quoted"}}], "query": {"title": {{title}}}, "query": "hello", "query": "{{kept}}"}',
+      "knn(foo(a, 'b, c'), {{cats}}, 10)",
+      "KNN_SCORE(vec, '{{cats}}', 4)",
+      'knn(vec, "{{cats}}", 4)',
+      "knn('a\\\\b', {{cats}}, 4)",
+      "knn(vec, 'plain', 4)",
+      "knn(vec, [1, 2], 4)",
+      "knn('no-comma')",
+      "knn('unterminated)",
+      'knn(vec, {{embed "x"}}, 1)',
+      '{"vector": {{embed "cats"}}, "vector": {{"hi"}}, "vector": {{"abc}}, "vector": 1, "vector": true, "vector": nope}',
+      '{"data": [-2.5, true, false, null, {"a": 1}, [1], "a\\"b", {{cats}}, foo]}',
+      '{"data": [{{cats}]}',
+      '{"vector": [1}',
+      '{"vector": "nope}',
+      '{"vector": {{open}',
+      "SELECT {{title}} FROM t WHERE region = {{region}}",
+      '{"vector": {{tail',
+    ].join("\n");
+    expect(embedTokens(sql).map((token) => token.value)).toEqual([
+      "a red mug",
+      "cats",
+      "dogs",
+      "cats",
+      "quoted",
+      "kept",
+      "cats",
+      "cats",
+      "cats",
+      "cats",
+      "x",
+      "cats",
+      "hi",
+      '"abc',
+      "cats",
+    ]);
+    expect(embedProbeText('{"vector": "{{a red mug}}", "data": [{{cats}}]}')).toBe('{"vector": [0], "data": [[0]]}');
+    expect(spliceEmbeddingVectors('{"vector": {{a red mug}}}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
+    expect(spliceEmbeddingVectors('{"vector": "{{a red mug}}"}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
+    expect(
+      bindEmbedPlaceholders('{"vector": {{cats}}} AND {{embed question}}', [{ name: "question", value: "dogs" }]),
+    ).toBe('{"vector": {{cats}}} AND {{embed "dogs"}}');
+  });
 });
 
 describe("expandQueryEmbeddings", () => {
@@ -173,6 +220,12 @@ describe("expandQueryEmbeddings", () => {
       );
       expect(expanded).toEqual({ ok: true, sql: "knn('[0.25,0.5]', 10) AND [0.25,0.5]" });
       expect(sent).toEqual({ model: "voyage-4", input: ["cats"], input_type: "query" });
+      const plain = await expandQueryEmbeddings(
+        '{"vector": {{cats}}} AND knn(vec, {{cats}}, 10)',
+        "voyage-4",
+        fetchImpl,
+      );
+      expect(plain).toEqual({ ok: true, sql: '{"vector": [0.25,0.5]} AND knn(vec, [0.25,0.5], 10)' });
     } finally {
       if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
       else process.env.VOYAGE_API_KEY = savedKey;
@@ -197,6 +250,14 @@ describe("expandQueryEmbeddings", () => {
     expect(await expandQueryEmbeddings('{{embed "   "}}', "voyage-4", fetchImpl)).toEqual({
       ok: false,
       error: EMBED_EMPTY_ERROR,
+    });
+    expect(await expandQueryEmbeddings('{"vector": {{   }}}', "voyage-4", fetchImpl)).toEqual({
+      ok: false,
+      error: EMBED_EMPTY_ERROR,
+    });
+    expect(await expandQueryEmbeddings(`{"vector": {{${"a".repeat(4001)}}}`, "voyage-4", fetchImpl)).toEqual({
+      ok: false,
+      error: EMBED_LONG_ERROR,
     });
     expect(await expandQueryEmbeddings(`{{embed ${JSON.stringify("a".repeat(4001))}}}`, "voyage-4", fetchImpl)).toEqual(
       {

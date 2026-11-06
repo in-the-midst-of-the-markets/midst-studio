@@ -50,6 +50,16 @@ describe("weaviateRefusal", () => {
       'POST /v1/search/CompanyProfile/near-vector {"vector": "{{embed e1}}", "targetVector": "name", "limit": 5}';
     expect(weaviateRefusal(bare)).toBeUndefined();
     expect(weaviateRefusal(quoted)).toBeUndefined();
+    expect(
+      weaviateRefusal(
+        'POST /v1/search/CompanyProfile/near-vector {"vector": {{a red ceramic mug}}, "targetVector": "name", "limit": 5}',
+      ),
+    ).toBeUndefined();
+    expect(
+      weaviateRefusal(
+        'POST /v1/search/CompanyProfile/near-vector {"vector": "{{a red ceramic mug}}", "targetVector": "name", "limit": 5}',
+      ),
+    ).toBeUndefined();
     expect(readWeaviateOperations(bare)).toEqual(["read"]);
     expect(readWeaviateOperations(quoted)).toEqual(["read"]);
   });

@@ -1,9 +1,12 @@
+import { embedTokens } from "@/lib/embeddings/placeholder";
+
 /**
  * Filters a chart query carries, and the literals a run substitutes for them.
  *
  * A placeholder sits where a literal would: `{{region:east|east,west}}`. The chart
  * section edits the default. The statement that runs has a SQL literal in its place,
  * so a value cannot change the statement around it. The same name shares one control.
+ * `{{text}}` in a vector value is not one of these: that text becomes a vector.
  */
 
 /** The comparisons a metric filter offers. Anything else in the statement stays until the user picks one of these. */
@@ -47,9 +50,10 @@ function parseBody(body: string): Omit<FilterToken, "start" | "end"> | null {
   return { name, value, options };
 }
 
-/** Placeholders in code. Ones inside a quote or a comment are text, not filters. */
+/** Placeholders in code. Ones inside a quote, a comment, or the vector value are text, not filters. */
 function tokensIn(sql: string): FilterToken[] {
   const tokens: FilterToken[] = [];
+  const vectorEnd = new Map(embedTokens(sql).map((token) => [token.start, token.end]));
   let quote: "'" | '"' | "`" | null = null;
   for (let index = 0; index < sql.length; index += 1) {
     const current = sql[index];
@@ -79,6 +83,11 @@ function tokensIn(sql: string): FilterToken[] {
       continue;
     }
     if (current !== "{" || sql[index + 1] !== "{") continue;
+    const embedded = vectorEnd.get(index);
+    if (embedded !== undefined) {
+      index = embedded - 1;
+      continue;
+    }
     const end = sql.indexOf("}}", index + 2);
     if (end < 0) break;
     const parsed = parseBody(sql.slice(index + 2, end));

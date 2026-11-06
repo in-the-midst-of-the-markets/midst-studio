@@ -190,7 +190,7 @@ export class MilvusProvider extends BaseDatabaseProvider {
       queryLanguage: "json",
       queryDialect: "milvus",
       supportsExplain: false,
-      // A search takes the vector itself. The IDE's embed id becomes that vector
+      // A search takes the vector itself. `{{text}}` in that value becomes the vector
       // before the request is sent, so Milvus is never asked to call an embedding service.
       supportsVectorQuery: true,
       supportsTransactions: false,
