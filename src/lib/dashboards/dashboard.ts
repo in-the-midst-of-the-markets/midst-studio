@@ -478,8 +478,8 @@ interface AssistConnection {
 /**
  * The board as a cell inventory and a knowledge store.
  *
- * Components come first, then text, then charts, so a {{token}} is declared
- * before the cells that depend on it. A chart or text query is a trusted
+ * Components come first, then charts, so a {{token}} is declared
+ * before the cells that depend on it. A chart query is a trusted
  * example, and its question line is how a person asks for that result.
  * Instructions are the author's rule for a case an example cannot say.
  * A long query is cut, and the line says how many characters were omitted.
@@ -503,10 +503,6 @@ export function dashboardAssistContext(
   let index = 1;
   for (const filter of dashboard.filters ?? []) {
     cells.push(filterCell(index, filter, connections));
-    index += 1;
-  }
-  for (const note of dashboard.notes ?? []) {
-    cells.push(textCell(index, note, connections));
     index += 1;
   }
   for (const frame of dashboard.charts) {
@@ -595,23 +591,6 @@ function chartCell(index: number, chart: AssistChart, connections: readonly Assi
   const question = titled !== "" && titled !== named ? titled : named;
   const lines = [parts.join(" | "), `question: ${quoteName(question)}`];
   if (query !== "") lines.push(`trusted sql: ${oneLine(query, CELL_SQL_CAP)}`);
-  return lines.join("\n");
-}
-
-function textCell(index: number, note: DashboardNote, connections: readonly AssistConnection[]): string {
-  const text = note.text.trim();
-  const query = note.query?.trim() ?? "";
-  const script = note.script?.trim() ?? "";
-  const parts = [`${index}. text`];
-  if (text !== "") parts.push(`text: ${oneLine(text, 240)}`);
-  const connection = connectionName(note.connectionId, connections);
-  if (connection !== "") parts.push(`connection "${quoteName(connection)}"`);
-  const tokens = tokensIn(query);
-  if (tokens.length > 0) parts.push(`depends on ${tokens.map((token) => `{{${token}}}`).join(", ")}`);
-  parts.push(text === "" && query === "" && script === "" ? "empty" : "ready");
-  const lines = [parts.join(" | ")];
-  if (query !== "") lines.push(`trusted sql: ${oneLine(query, CELL_SQL_CAP)}`);
-  if (script !== "") lines.push(`script preview: ${oneLine(script, 120)}`);
   return lines.join("\n");
 }
 

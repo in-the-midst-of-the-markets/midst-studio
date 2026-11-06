@@ -6,20 +6,14 @@ import {
   useRef,
   useState,
   type RefObject,
-  type CSSProperties,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   BarChart3,
-  Bold,
   Bookmark,
   Braces,
   ChartColumn,
-  Italic,
   LayoutDashboard,
   LayoutGrid,
   LineChart,
@@ -29,7 +23,6 @@ import {
   SlidersHorizontal,
   Terminal,
   Trash2,
-  Type,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -49,7 +42,6 @@ import {
   dashboardVariables,
   DEFAULT_DASHBOARD_BLOCK_WIDTH,
   DEFAULT_DASHBOARD_FILTER_HEIGHT,
-  DEFAULT_DASHBOARD_NOTE_HEIGHT,
   dragBlockResize,
   dragResize,
   CUSTOM_FILTER_SCRIPT,
@@ -66,12 +58,6 @@ import {
   freshDashboardChart,
   insertQueryVariable,
   MIN_DASHBOARD_CHART_WIDTH,
-  NOTE_FONT_SIZES,
-  NOTE_FONTS,
-  NOTE_SCRIPT,
-  noteFrameDocument,
-  noteLook,
-  noteTextFromRows,
   placeSavedComponent,
   queryWithDashboardFilters,
   savedComponentFromFilter,
@@ -81,13 +67,8 @@ import {
   withFrame,
   withInstructions,
   withName,
-  withNote,
-  withNoteFields,
-  withNoteFrame,
-  withNoteText,
   withoutChart,
   withoutFilter,
-  withoutNote,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
@@ -122,8 +103,6 @@ import { storage } from "@/lib/storage";
 import type {
   DashboardFilter,
   DashboardFilterControl,
-  DashboardNote,
-  DashboardNoteStyle,
   DatabaseConnection,
   DatabaseType,
   SavedChartConfig,
@@ -138,17 +117,6 @@ const CHART_GLYPH: Record<string, LucideIcon> = {
 };
 
 const fieldClass = "h-9 w-full rounded-lg border border-hairline-strong bg-canvas px-2 text-sm text-fg";
-const miniClass = "h-8 rounded-lg border border-hairline-strong bg-canvas px-2 text-xs text-fg";
-
-const NOTE_ALIGNS: readonly {
-  readonly id: "left" | "center" | "right";
-  readonly label: string;
-  readonly icon: LucideIcon;
-}[] = [
-  { id: "left", label: "Align left", icon: AlignLeft },
-  { id: "center", label: "Align center", icon: AlignCenter },
-  { id: "right", label: "Align right", icon: AlignRight },
-];
 
 function boardWidth(board: HTMLElement | null): number {
   const measured = board?.clientWidth ?? 0;
@@ -162,9 +130,9 @@ function ChartGlyph({ typeId }: { readonly typeId: string | undefined }) {
 
 /**
  * Compiles dashboards from saved charts.
- * Each chart, text box, and component keeps the size the user dragged it to, and a
+ * Each chart and component keeps the size the user dragged it to, and a
  * chart with a query can rerun that query on its own schedule. Ask AI reads the
- * board as a cell inventory and places a chart or a text box from the reply.
+ * board as a cell inventory and places a chart from the reply.
  * The IDE is the page that waits for a click.
  */
 export function DashboardStudio() {
@@ -240,21 +208,13 @@ export function DashboardStudio() {
 
   const placeAssistantReply = (reply: { sql: string | null; text: string }) => {
     const sql = reply.sql?.trim() ?? "";
-    const text = reply.text.trim();
-    if (sql === "" && text === "") return;
+    if (sql === "") return;
     let current = ensureDashboard();
-    if (sql !== "") {
-      const chart = freshDashboardChart(charts, connections[0]?.id);
-      const saved = { ...chart, query: sql };
-      storage.saveChart(saved);
-      setCharts(storage.getSavedCharts());
-      current = withChart(current, saved.id, boardWidth(boardRef.current));
-    }
-    if (text !== "") {
-      const noted = withNote(current);
-      const created = (noted.notes ?? [])[(noted.notes ?? []).length - 1];
-      current = withNoteText(noted, created?.id ?? "", text);
-    }
+    const chart = freshDashboardChart(charts, connections[0]?.id);
+    const saved = { ...chart, query: sql };
+    storage.saveChart(saved);
+    setCharts(storage.getSavedCharts());
+    current = withChart(current, saved.id, boardWidth(boardRef.current));
     remember(current);
     if (active === null) choose(current.id);
   };
@@ -447,10 +407,6 @@ export function DashboardStudio() {
                         remember(withChart(active, chart.id, boardWidth(boardRef.current)));
                         setMenu(null);
                       }}
-                      onText={() => {
-                        remember(withNote(active));
-                        setMenu(null);
-                      }}
                       onFilter={() => {
                         remember(withFilter(active, connections[0]?.id));
                         setMenu(null);
@@ -497,27 +453,6 @@ export function DashboardStudio() {
                         setComponents(storage.getSavedComponents());
                         setDashboards(storage.getSavedDashboards());
                       }}
-                    />
-                  );
-                })}
-                {(active.notes ?? []).map((note) => {
-                  const size = blockFrameSize(
-                    note.width ?? DEFAULT_DASHBOARD_BLOCK_WIDTH,
-                    note.height ?? DEFAULT_DASHBOARD_NOTE_HEIGHT,
-                    window.innerWidth,
-                  );
-                  return (
-                    <DashboardNoteCard
-                      key={note.id}
-                      note={note}
-                      width={size.width}
-                      height={size.height}
-                      viewing={!editing}
-                      connections={connections}
-                      filters={active.filters ?? []}
-                      onChange={(patch) => remember(withNoteFields(active, note.id, patch))}
-                      onRemove={() => remember(withoutNote(active, note.id))}
-                      onResize={(next) => remember(withNoteFrame(active, note.id, next))}
                     />
                   );
                 })}
@@ -1038,14 +973,13 @@ function DashboardChart({
 }
 
 const ADD_ITEMS: readonly {
-  id: "chart" | "make" | "text" | "filter" | "saved";
+  id: "chart" | "make" | "filter" | "saved";
   label: string;
   detail: string;
   icon: LucideIcon;
 }[] = [
   { id: "chart", label: "Add chart", detail: "Choose from your saved charts", icon: BarChart3 },
   { id: "make", label: "Make a chart", detail: "Create a new chart from your data", icon: ChartColumn },
-  { id: "text", label: "Text box", detail: "Add a note or context", icon: Type },
   { id: "filter", label: "Component", detail: "Dropdown, slider, search, or custom", icon: ListFilter },
   { id: "saved", label: "Saved component", detail: "Place a component you saved", icon: Bookmark },
 ];
@@ -1060,7 +994,6 @@ function AddContentMenu({
   onAddChart,
   onAddComponent,
   onMakeChart,
-  onText,
   onFilter,
 }: {
   readonly menu: "root" | "charts" | "components";
@@ -1072,13 +1005,11 @@ function AddContentMenu({
   readonly onAddChart: (chartId: string) => void;
   readonly onAddComponent: (component: SavedDashboardComponent) => void;
   readonly onMakeChart: () => void;
-  readonly onText: () => void;
   readonly onFilter: () => void;
 }) {
   const choose = (id: (typeof ADD_ITEMS)[number]["id"]) => {
     if (id === "chart") onCharts();
     else if (id === "make") onMakeChart();
-    else if (id === "text") onText();
     else if (id === "saved") onComponents();
     else onFilter();
   };
@@ -1316,425 +1247,6 @@ function ChartTypePicker({
           onShape={onShape}
         />
       )}
-    </div>
-  );
-}
-
-function noteTextStyle(look: ReturnType<typeof noteLook>): CSSProperties {
-  return {
-    fontFamily: look.fontFamily,
-    fontSize: look.fontSize,
-    textAlign: look.align,
-    fontWeight: look.bold ? 700 : 400,
-    fontStyle: look.italic ? "italic" : "normal",
-    ...(look.color !== undefined ? { color: look.color } : {}),
-    ...(look.background !== undefined ? { backgroundColor: look.background } : {}),
-  };
-}
-
-function NoteStyleBar({
-  note,
-  onChange,
-}: {
-  readonly note: DashboardNote;
-  readonly onChange: (patch: Partial<DashboardNote>) => void;
-}) {
-  const look = noteLook(note.style);
-  const sizes = NOTE_FONT_SIZES.includes(look.fontSize)
-    ? NOTE_FONT_SIZES
-    : [...NOTE_FONT_SIZES, look.fontSize].sort((left, right) => left - right);
-  const setStyle = (patch: Partial<DashboardNoteStyle>) => onChange({ style: { ...note.style, ...patch } });
-  return (
-    <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-      <select
-        aria-label="Text font"
-        value={look.fontFamily}
-        onChange={(event) => setStyle({ fontFamily: event.target.value })}
-        className={miniClass}
-      >
-        {NOTE_FONTS.map((font) => (
-          <option key={font.id} value={font.id}>
-            {font.label}
-          </option>
-        ))}
-      </select>
-      <select
-        aria-label="Text size"
-        value={String(look.fontSize)}
-        onChange={(event) => setStyle({ fontSize: Number(event.target.value) })}
-        className={`${miniClass} w-16`}
-      >
-        {sizes.map((size) => (
-          <option key={size} value={size}>
-            {size}
-          </option>
-        ))}
-      </select>
-      <label className="flex items-center gap-1 text-xs text-fg-muted">
-        Color
-        <input
-          type="color"
-          value={look.color ?? "#111827"}
-          onChange={(event) => setStyle({ color: event.target.value })}
-          className="h-8 w-8 cursor-pointer rounded border border-hairline bg-canvas"
-        />
-      </label>
-      {look.color !== undefined && (
-        <button
-          type="button"
-          aria-label="Default text color"
-          onClick={() => setStyle({ color: undefined })}
-          className="text-xs text-fg-muted"
-        >
-          Default
-        </button>
-      )}
-      <label className="flex items-center gap-1 text-xs text-fg-muted">
-        Background
-        <input
-          type="color"
-          value={look.background ?? "#ffffff"}
-          onChange={(event) => setStyle({ background: event.target.value })}
-          className="h-8 w-8 cursor-pointer rounded border border-hairline bg-canvas"
-        />
-      </label>
-      {look.background !== undefined && (
-        <button
-          type="button"
-          aria-label="Default background"
-          onClick={() => setStyle({ background: undefined })}
-          className="text-xs text-fg-muted"
-        >
-          Default
-        </button>
-      )}
-      <button
-        type="button"
-        aria-label="Bold"
-        aria-pressed={look.bold}
-        onClick={() => setStyle({ bold: !look.bold })}
-        className={cn(
-          "inline-flex size-7 items-center justify-center rounded-md",
-          look.bold ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-        )}
-      >
-        <Bold className="size-3.5" aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        aria-label="Italic"
-        aria-pressed={look.italic}
-        onClick={() => setStyle({ italic: !look.italic })}
-        className={cn(
-          "inline-flex size-7 items-center justify-center rounded-md",
-          look.italic ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-        )}
-      >
-        <Italic className="size-3.5" aria-hidden="true" />
-      </button>
-      {NOTE_ALIGNS.map((item) => {
-        const Icon = item.icon;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            aria-label={item.label}
-            aria-pressed={look.align === item.id}
-            onClick={() => setStyle({ align: item.id })}
-            className={cn(
-              "inline-flex size-7 items-center justify-center rounded-md",
-              look.align === item.id ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-            )}
-          >
-            <Icon className="size-3.5" aria-hidden="true" />
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function NoteDraft({
-  note,
-  textStyle,
-  onChange,
-  fill,
-}: {
-  readonly note: DashboardNote;
-  readonly textStyle: CSSProperties;
-  readonly onChange: (patch: Partial<Pick<DashboardNote, "text">>) => void;
-  readonly fill: boolean;
-}) {
-  return (
-    <textarea
-      aria-label="Text box"
-      value={note.text}
-      placeholder="Add a note or context"
-      onChange={(event) => onChange({ text: event.target.value })}
-      style={textStyle}
-      className={
-        fill
-          ? "h-full w-full resize-none rounded-lg border border-hairline-strong bg-canvas px-3 py-2 text-fg"
-          : "min-h-16 w-full flex-1 resize-none rounded-lg border border-hairline-strong bg-canvas px-3 py-2 text-fg"
-      }
-    />
-  );
-}
-
-function NoteBody({
-  note,
-  face,
-  view,
-  query,
-  connectionId,
-  databaseType,
-  filters,
-  connections,
-  draft,
-  textStyle,
-  look,
-  viewing,
-  onChange,
-  onDraft,
-}: {
-  readonly note: DashboardNote;
-  readonly face: "text" | "query" | "code";
-  readonly view: SavedChartView | { kind: "loading" } | null;
-  readonly query: string;
-  readonly connectionId: string | undefined;
-  readonly databaseType: DatabaseType | undefined;
-  readonly filters: readonly DashboardFilter[];
-  readonly connections: readonly DatabaseConnection[];
-  readonly draft: string;
-  readonly textStyle: CSSProperties;
-  readonly look: ReturnType<typeof noteLook>;
-  readonly viewing: boolean;
-  readonly onChange: (
-    patch: Partial<Pick<DashboardNote, "text" | "query" | "connectionId" | "style" | "script">>,
-  ) => void;
-  readonly onDraft: (value: string) => void;
-}) {
-  if (face === "query") {
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        <p className="text-xs text-fg-muted">The result of this query is the text. Include the words in the SQL.</p>
-        <label className="mt-3 block text-xs text-fg-muted">
-          Connection
-          <select
-            aria-label="Text connection"
-            value={connectionId ?? ""}
-            onChange={(event) => onChange({ connectionId: event.target.value === "" ? undefined : event.target.value })}
-            className={`mt-1.5 ${fieldClass}`}
-          >
-            <option value="">Choose a connection</option>
-            {connections.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <VariableInsert filters={filters} onInsert={(token) => onDraft(insertQueryVariable(draft, token))} />
-        <div className="mt-3 min-h-24 flex-1 overflow-hidden rounded-lg border border-hairline-strong">
-          <QueryEditor
-            value={draft}
-            documentId={note.id}
-            databaseType={databaseType}
-            wordWrap
-            onContentChange={onDraft}
-          />
-        </div>
-      </div>
-    );
-  }
-  if (face === "code") {
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        <p className="mb-2 text-xs text-fg-muted">JavaScript can read text, rows, and fields, and draw into #root.</p>
-        <JsCodeEditor value={note.script ?? NOTE_SCRIPT} onChange={(script) => onChange({ script })} />
-      </div>
-    );
-  }
-  if (query !== "" && (connectionId === undefined || connectionId === "")) {
-    return <p className="text-xs text-fg-muted">Choose a connection for this text.</p>;
-  }
-  if (query !== "" && (view === null || view.kind === "loading")) {
-    return <p className="text-xs text-fg-muted">Running the query…</p>;
-  }
-  if (query !== "" && view !== null && view.kind !== "loading" && view.kind !== "result") {
-    return (
-      <p role="alert" className="text-xs text-danger">
-        {view.message}
-      </p>
-    );
-  }
-  const result = query !== "" && view?.kind === "result" ? view.result : null;
-  const words = result !== null ? noteTextFromRows(result.rows, result.fields) : note.text;
-  const script = note.script?.trim() ?? "";
-  if (script !== "") {
-    return (
-      <div className="flex h-full min-h-0 flex-col gap-3">
-        {result === null && !viewing ? (
-          <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill={false} />
-        ) : null}
-        <iframe
-          title="Text script"
-          sandbox="allow-scripts"
-          csp={DASHBOARD_FRAME_CSP}
-          srcDoc={noteFrameDocument(script, words, result?.rows ?? [], result?.fields ?? [], look)}
-          className="min-h-16 w-full flex-1 rounded-lg border border-hairline bg-canvas"
-        />
-      </div>
-    );
-  }
-  if (result === null) {
-    if (viewing) {
-      if (note.text === "") return null;
-      return <NoteResult text={note.text} style={textStyle} />;
-    }
-    return <NoteDraft note={note} textStyle={textStyle} onChange={onChange} fill />;
-  }
-  return <NoteResult text={words} style={textStyle} />;
-}
-
-function DashboardNoteCard({
-  note,
-  width,
-  height,
-  viewing,
-  connections,
-  filters,
-  onChange,
-  onRemove,
-  onResize,
-}: {
-  readonly note: DashboardNote;
-  readonly width: number;
-  readonly height: number;
-  readonly viewing: boolean;
-  readonly connections: readonly DatabaseConnection[];
-  readonly filters: readonly DashboardFilter[];
-  readonly onChange: (
-    patch: Partial<Pick<DashboardNote, "text" | "query" | "connectionId" | "style" | "script">>,
-  ) => void;
-  readonly onRemove: () => void;
-  readonly onResize: (size: { width: number; height: number }) => void;
-}) {
-  const sql = note.query ?? "";
-  const [face, setFace] = useState<"text" | "query" | "code">("text");
-  const [draft, setDraft] = useState(sql);
-  const [seen, setSeen] = useState(sql);
-  const [settled, setSettled] = useState<{ readonly key: string; readonly view: SavedChartView } | null>(null);
-  if (seen !== sql) {
-    setSeen(sql);
-    setDraft(sql);
-  }
-  const liveQuery = queryWithDashboardFilters(sql, filters);
-  const connectionId = note.connectionId;
-  const look = noteLook(note.style);
-  const databaseType = connections.find((item) => item.id === connectionId)?.type;
-  const viewKey = `${connectionId ?? ""}\0${liveQuery}`;
-  const view =
-    sql.trim() === "" || connectionId === undefined || connectionId === ""
-      ? null
-      : settled !== null && settled.key === viewKey
-        ? settled.view
-        : { kind: "loading" as const };
-
-  useEffect(() => {
-    if (liveQuery.trim() === "" || connectionId === undefined || connectionId === "") return;
-    let stopped = false;
-    const key = `${connectionId}\0${liveQuery}`;
-    void loadSavedChart({ query: liveQuery, connectionId }, connections, appFetch).then((next) => {
-      if (stopped) return;
-      setSettled({ key, view: next });
-    });
-    return () => {
-      stopped = true;
-    };
-  }, [connections, connectionId, liveQuery]);
-
-  const query = sql.trim();
-  const textStyle = noteTextStyle(look);
-  const runDraft = () => {
-    onChange({ query: draft });
-    setFace("text");
-  };
-
-  return (
-    <article
-      style={{ width, height }}
-      className="relative flex max-w-full flex-col overflow-hidden rounded-xl border border-hairline bg-raised shadow-sm"
-    >
-      {!viewing && (
-        <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-          <div className="flex items-center rounded-lg border border-hairline bg-control p-0.5">
-            <FaceButton pressed={face === "text"} label="Text" icon={Type} onClick={() => setFace("text")} />
-            <FaceButton
-              pressed={face === "query"}
-              label="Text query"
-              icon={Terminal}
-              onClick={() => setFace("query")}
-            />
-            <FaceButton pressed={face === "code"} label="Text code" icon={Braces} onClick={() => setFace("code")} />
-          </div>
-          {face === "query" && (
-            <button
-              type="button"
-              aria-label="Run text query"
-              onClick={runDraft}
-              className="rounded-md bg-brand-solid px-2 py-1 text-xs font-medium text-white"
-            >
-              Run
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label="Remove text"
-            onClick={onRemove}
-            className="ml-auto inline-flex size-7 items-center justify-center rounded-md text-fg-muted hover:text-fg"
-          >
-            <X className="size-3.5" aria-hidden="true" />
-          </button>
-        </div>
-      )}
-      {!viewing && face === "text" && <NoteStyleBar note={note} onChange={onChange} />}
-      <div className="min-h-0 flex-1 overflow-auto px-4 pt-3 pb-4">
-        <NoteBody
-          note={note}
-          face={viewing ? "text" : face}
-          viewing={viewing}
-          view={view}
-          query={query}
-          connectionId={connectionId}
-          databaseType={databaseType}
-          filters={filters}
-          connections={connections}
-          draft={draft}
-          textStyle={textStyle}
-          look={look}
-          onChange={onChange}
-          onDraft={setDraft}
-        />
-      </div>
-      {!viewing && (
-        <ResizeHandle
-          label="Resize text box"
-          width={width}
-          height={height}
-          onResize={onResize}
-          resize={dragBlockResize}
-        />
-      )}
-    </article>
-  );
-}
-
-function NoteResult({ text, style }: { readonly text: string; readonly style: CSSProperties }) {
-  if (text === "") return <p className="text-xs text-fg-muted">That query did not return any text.</p>;
-  return (
-    <div aria-label="Text box" style={style} className="whitespace-pre-wrap break-words text-fg">
-      {text}
     </div>
   );
 }

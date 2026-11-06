@@ -36,11 +36,7 @@ mock.module("@/components/QueryEditor", () => {
 });
 
 import { DashboardStudio } from "@/components/dashboards/DashboardStudio";
-import {
-  DEFAULT_DASHBOARD_BLOCK_WIDTH,
-  DEFAULT_DASHBOARD_FILTER_HEIGHT,
-  MIN_DASHBOARD_BLOCK_HEIGHT,
-} from "@/lib/dashboards/dashboard";
+import { DEFAULT_DASHBOARD_BLOCK_WIDTH, DEFAULT_DASHBOARD_FILTER_HEIGHT } from "@/lib/dashboards/dashboard";
 import { storage } from "@/lib/storage";
 
 const connection: DatabaseConnection = {
@@ -413,225 +409,6 @@ describe("DashboardStudio", () => {
     expect(storage.getSavedCharts()[0]?.name).toBe("Revenue");
   });
 
-  test("adds a text box", () => {
-    window.innerWidth = 1024;
-    storage.saveDashboard(board("sales", []));
-    storage.setActiveDashboardId("sales");
-    const view = render(<DashboardStudio />);
-    fireEvent.click(view.getByRole("button", { name: "Add content" }));
-    expect(view.getByRole("menuitem", { name: "Text box" }).textContent).toContain("Add a note or context");
-    fireEvent.click(view.getByRole("menuitem", { name: "Text box" }));
-    expect(view.queryByRole("heading", { name: "Text" })).toBeNull();
-    const box = view.getByLabelText("Text box") as HTMLTextAreaElement;
-    expect(box.placeholder).toBe("Add a note or context");
-    fireEvent.change(box, { target: { value: "Hello" } });
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("Hello");
-    expect(box.closest("article")?.style.width).toBe(`${DEFAULT_DASHBOARD_BLOCK_WIDTH}px`);
-    const handle = view.getByRole("button", { name: "Resize text box" });
-    fireEvent.pointerDown(handle, { clientX: 0, clientY: 0 });
-    fireEvent.pointerMove(window, { clientX: 40, clientY: -200 });
-    fireEvent.pointerUp(window, { clientX: 40, clientY: -200 });
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]).toMatchObject({
-      text: "Hello",
-      width: DEFAULT_DASHBOARD_BLOCK_WIDTH + 40,
-      height: MIN_DASHBOARD_BLOCK_HEIGHT,
-    });
-    fireEvent.click(view.getByRole("button", { name: "Remove text" }));
-    expect(storage.getSavedDashboards()[0]?.notes).toEqual([]);
-  });
-
-  test("fills a text box from a query and keeps its type", async () => {
-    storage.saveConnection(connection);
-    storage.saveDashboard({
-      ...board("sales", []),
-      filters: [{ id: "f1", name: "region", query: "", value: "east", connectionId: "c1" }],
-    });
-    storage.setActiveDashboardId("sales");
-    const posted: string[] = [];
-    mockGlobalFetch({
-      "/api/db/query": async (req) => {
-        const body = (await req.json()) as { sql?: string };
-        posted.push(body.sql ?? "");
-        if (body.sql === "FAIL") return { status: 400, json: { error: "refused" } };
-        if (body.sql === "SELECT blank") return { json: { ...rows, rows: [{ value: null }], fields: ["value"] } };
-        return {
-          json: {
-            rows: [{ line: "Area east" }, { line: "And more" }],
-            fields: ["line"],
-            rowCount: 2,
-            executionTime: 1,
-          },
-        };
-      },
-    });
-    const view = render(<DashboardStudio />);
-    fireEvent.click(view.getByRole("button", { name: "Add content" }));
-    fireEvent.click(view.getByRole("menuitem", { name: "Text box" }));
-    fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello" } });
-    fireEvent.change(view.getByLabelText("Text font"), { target: { value: "Georgia, serif" } });
-    fireEvent.change(view.getByLabelText("Text size"), { target: { value: "32" } });
-    fireEvent.change(view.getByLabelText("Color"), { target: { value: "#112233" } });
-    fireEvent.change(view.getByLabelText("Background"), { target: { value: "#ffeeee" } });
-    fireEvent.click(view.getByRole("button", { name: "Bold" }));
-    fireEvent.click(view.getByRole("button", { name: "Italic" }));
-    fireEvent.click(view.getByRole("button", { name: "Align center" }));
-    fireEvent.click(view.getByRole("button", { name: "Align right" }));
-    const styled = view.getByLabelText("Text box") as HTMLTextAreaElement;
-    expect(styled.style.fontFamily).toContain("Georgia");
-    expect(styled.style.fontSize).toBe("32px");
-    expect(styled.style.fontWeight).toBe("700");
-    expect(styled.style.fontStyle).toBe("italic");
-    expect(styled.style.textAlign).toBe("right");
-    expect(styled.style.color).not.toBe("");
-    expect(styled.style.backgroundColor).not.toBe("");
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.style).toMatchObject({
-      color: "#112233",
-      background: "#ffeeee",
-    });
-    fireEvent.click(view.getByRole("button", { name: "Align left" }));
-    fireEvent.click(view.getByRole("button", { name: "Default text color" }));
-    fireEvent.click(view.getByRole("button", { name: "Default background" }));
-    expect(view.getByLabelText("Text box").style.color).toBe("");
-    expect(view.getByLabelText("Text box").style.backgroundColor).toBe("");
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.style).toMatchObject({
-      fontFamily: "Georgia, serif",
-      fontSize: 32,
-      align: "left",
-      bold: true,
-      italic: true,
-    });
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.style?.color).toBeUndefined();
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.style?.background).toBeUndefined();
-
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    expect(view.getByText("The result of this query is the text. Include the words in the SQL.")).toBeTruthy();
-    fireEvent.change(view.getByLabelText("Insert variable"), { target: { value: "{{region}}" } });
-    expect((view.getByLabelText("Query SQL") as HTMLTextAreaElement).value).toBe("{{region}}");
-    fireEvent.change(view.getByLabelText("Text connection"), { target: { value: "" } });
-    fireEvent.change(view.getByLabelText("Text connection"), { target: { value: "c1" } });
-    fireEvent.change(view.getByLabelText("Query SQL"), { target: { value: "SELECT 'Area ' || {{region}}" } });
-    fireEvent.click(view.getByRole("button", { name: "Run text query" }));
-    expect((await view.findByLabelText("Text box")).textContent).toBe("Area east\nAnd more");
-    expect(posted.some((sql) => sql.includes("'east'"))).toBe(true);
-    const filled = view.getByLabelText("Text box");
-    expect(filled.style.fontSize).toBe("32px");
-    expect(filled.style.fontWeight).toBe("700");
-    expect(filled.style.textAlign).toBe("left");
-
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    fireEvent.change(view.getByLabelText("Query SQL"), { target: { value: "FAIL" } });
-    fireEvent.click(view.getByRole("button", { name: "Run text query" }));
-    expect((await view.findByRole("alert")).textContent).toBe("refused");
-
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    fireEvent.change(view.getByLabelText("Query SQL"), { target: { value: "SELECT blank" } });
-    fireEvent.click(view.getByRole("button", { name: "Run text query" }));
-    expect(await view.findByText("That query did not return any text.")).toBeTruthy();
-
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    fireEvent.change(view.getByLabelText("Text connection"), { target: { value: "" } });
-    fireEvent.click(view.getByRole("button", { name: "Text" }));
-    expect(view.getByText("Choose a connection for this text.")).toBeTruthy();
-
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    fireEvent.change(view.getByLabelText("Query SQL"), { target: { value: "" } });
-    fireEvent.click(view.getByRole("button", { name: "Run text query" }));
-    expect((view.getByLabelText("Text box") as HTMLTextAreaElement).value).toBe("Hello");
-  });
-
-  test("ignores a text query that finishes after the box is gone", async () => {
-    storage.saveConnection(connection);
-    storage.saveDashboard({
-      ...board("sales", []),
-      notes: [{ id: "n1", text: "", query: "SELECT 1", connectionId: "c1" }],
-    });
-    storage.setActiveDashboardId("sales");
-    const pending: { release: (() => void) | null } = { release: null };
-    mockGlobalFetch({
-      "/api/db/query": () =>
-        new Promise((resolve) => {
-          pending.release = () => resolve({ json: rows });
-        }),
-    });
-    const view = render(<DashboardStudio />);
-    expect(view.getByText("Running the query…")).toBeTruthy();
-    await waitFor(() => expect(pending.release).not.toBeNull());
-    view.unmount();
-    pending.release?.();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-
-  test("says when a text query's connection is gone and offers an odd size", async () => {
-    storage.saveDashboard({
-      ...board("sales", []),
-      notes: [
-        {
-          id: "n1",
-          text: "Keep",
-          query: "SELECT 1",
-          connectionId: "gone",
-          style: { fontSize: 15 },
-        },
-      ],
-    });
-    storage.setActiveDashboardId("sales");
-    mockGlobalFetch({ "/api/db/query": { json: rows } });
-    const view = render(<DashboardStudio />);
-    expect((await view.findByRole("alert")).textContent).toBe("That connection is no longer available.");
-    const size = view.getByLabelText("Text size") as HTMLSelectElement;
-    expect(Array.from(size.options).some((option) => option.value === "15")).toBe(true);
-  });
-
-  test("lets a text box draw itself with JavaScript", async () => {
-    storage.saveConnection(connection);
-    storage.saveDashboard(board("sales", []));
-    storage.setActiveDashboardId("sales");
-    mockGlobalFetch({
-      "/api/db/query": {
-        json: { rows: [{ line: "Area east" }], fields: ["line"], rowCount: 1, executionTime: 1 },
-      },
-    });
-    const view = render(<DashboardStudio />);
-    fireEvent.click(view.getByRole("button", { name: "Add content" }));
-    fireEvent.click(view.getByRole("menuitem", { name: "Text box" }));
-    fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello" } });
-    fireEvent.click(view.getByRole("button", { name: "Text code" }));
-    expect(view.getByText("JavaScript can read text, rows, and fields, and draw into #root.")).toBeTruthy();
-    const editor = view.getByRole("textbox", { name: "JavaScript" }) as HTMLTextAreaElement;
-    expect(editor.value).toContain("root.textContent = text");
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.script).toBeUndefined();
-    fireEvent.change(editor, {
-      target: { value: 'const root = document.getElementById("root"); root.textContent = text;' },
-    });
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.script).toContain("root.textContent = text");
-    fireEvent.click(view.getByRole("button", { name: "Text" }));
-    const frame = view.getByTitle("Text script") as HTMLIFrameElement;
-    expect(frame.getAttribute("sandbox")).toBe("allow-scripts");
-    expect(frame.getAttribute("csp")).toContain("default-src 'none'");
-    expect(frame.getAttribute("srcdoc")).toContain("Hello");
-    expect(frame.getAttribute("srcdoc")).toContain("root.textContent = text");
-    fireEvent.change(view.getByLabelText("Text box"), { target: { value: "Hello there" } });
-    expect(view.getByTitle("Text script").getAttribute("srcdoc")).toContain("Hello there");
-    fireEvent.click(view.getByRole("button", { name: "Text code" }));
-    fireEvent.change(view.getByRole("textbox", { name: "JavaScript" }), { target: { value: "   " } });
-    fireEvent.click(view.getByRole("button", { name: "Text" }));
-    expect(view.queryByTitle("Text script")).toBeNull();
-    expect((view.getByLabelText("Text box") as HTMLTextAreaElement).value).toBe("Hello there");
-
-    fireEvent.click(view.getByRole("button", { name: "Text code" }));
-    fireEvent.change(view.getByRole("textbox", { name: "JavaScript" }), {
-      target: { value: "root.textContent = rows.length;" },
-    });
-    fireEvent.click(view.getByRole("button", { name: "Text query" }));
-    fireEvent.change(view.getByLabelText("Text connection"), { target: { value: "c1" } });
-    fireEvent.change(view.getByLabelText("Query SQL"), { target: { value: "SELECT 'Area east'" } });
-    fireEvent.click(view.getByRole("button", { name: "Run text query" }));
-    const drawn = (await view.findByTitle("Text script")) as HTMLIFrameElement;
-    expect(drawn.getAttribute("srcdoc")).toContain("Area east");
-    expect(drawn.getAttribute("srcdoc")).toContain("rows.length");
-    expect(view.queryByLabelText("Text box")).toBeNull();
-  });
-
   test("designs a filter as a dropdown, slider, search box, or custom JavaScript", async () => {
     storage.saveConnection(connection);
     const query = "SELECT region, total FROM sales WHERE region = {{region}}";
@@ -927,7 +704,7 @@ describe("DashboardStudio", () => {
     expect(storage.getSavedComponents()[0]?.filter.label).toBe("Area");
   });
 
-  test("asks the assistant to add a chart and a text box", async () => {
+  test("asks the assistant to add a chart", async () => {
     storage.saveConnection(connection);
     storage.saveChart(chart());
     storage.saveDashboard(board("sales", ["revenue"]));
@@ -962,7 +739,7 @@ describe("DashboardStudio", () => {
       "Ask a question about this dashboard",
     );
     fireEvent.click(view.getByRole("button", { name: "Send" }));
-    expect(await view.findAllByText("East is ahead.")).toHaveLength(2);
+    expect(await view.findAllByText("East is ahead.")).toHaveLength(1);
     expect(posted[0]?.editorSql).toBeUndefined();
     expect(posted[0]?.databaseType).toBe("postgres");
     expect(posted[0]?.schemaContext ?? "").not.toContain("Dashboard:");
@@ -978,7 +755,8 @@ describe("DashboardStudio", () => {
         .some((item) => item.id !== "revenue" && item.query === "SELECT region, total FROM sales"),
     ).toBe(true);
     expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(2);
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("East is ahead.");
+    expect(storage.getSavedDashboards()[0]?.notes).toBeUndefined();
+    expect(view.queryByRole("menuitem", { name: "Text box" })).toBeNull();
   });
 
   test("the assistant starts a dashboard when none is open", async () => {
@@ -1002,11 +780,11 @@ describe("DashboardStudio", () => {
     fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
     fireEvent.change(view.getByLabelText("Ask about this dashboard"), { target: { value: "Start" } });
     fireEvent.click(view.getByRole("button", { name: "Send" }));
-    expect(await view.findAllByText("A note.")).toHaveLength(2);
+    expect(await view.findAllByText("A note.")).toHaveLength(1);
     expect(view.queryByRole("button", { name: "Use this query" })).toBeNull();
     expect(storage.getSavedDashboards()).toHaveLength(1);
     expect(storage.getSavedCharts()[0]?.query).toBe("SELECT 1");
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("A note.");
+    expect(storage.getSavedDashboards()[0]?.notes).toBeUndefined();
     expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(1);
     expect(storage.getActiveDashboardId()).toBe(storage.getSavedDashboards()[0]?.id ?? null);
     view.unmount();
@@ -1015,18 +793,17 @@ describe("DashboardStudio", () => {
     fireEvent.click(again.getByRole("button", { name: "Ask AI" }));
     fireEvent.change(again.getByLabelText("Ask about this dashboard"), { target: { value: "Write" } });
     fireEvent.click(again.getByRole("button", { name: "Send" }));
-    expect(await again.findAllByText("A note.")).toHaveLength(2);
-    expect(storage.getSavedDashboards()).toHaveLength(1);
-    expect(storage.getSavedDashboards()[0]?.notes?.[0]?.text).toBe("A note.");
+    expect(await again.findAllByText("A note.")).toHaveLength(1);
+    expect(storage.getSavedDashboards()).toHaveLength(0);
     expect(storage.getSavedCharts()).toHaveLength(0);
     fireEvent.change(again.getByLabelText("Ask about this dashboard"), { target: { value: "Numbers" } });
     fireEvent.click(again.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(storage.getSavedCharts()[0]?.query).toBe("SELECT 2"));
-    expect(storage.getSavedDashboards()[0]?.notes).toHaveLength(1);
+    expect(storage.getSavedDashboards()[0]?.notes).toBeUndefined();
     expect(storage.getSavedDashboards()[0]?.charts).toHaveLength(1);
   });
 
-  test("viewer mode shows charts, filters, and text without the editing controls", async () => {
+  test("viewer mode shows charts and filters without the editing controls", async () => {
     storage.saveConnection(connection);
     storage.saveChart(chart());
     storage.saveChart(
@@ -1062,7 +839,8 @@ describe("DashboardStudio", () => {
     expect(view.getByLabelText("Dashboard name")).toBeTruthy();
     expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
     expect(view.getAllByLabelText("Component title")).toHaveLength(2);
-    expect(view.getAllByRole("textbox", { name: "Text box" }).length).toBeGreaterThan(0);
+    expect(view.queryByRole("menuitem", { name: "Text box" })).toBeNull();
+    expect(view.queryByRole("textbox", { name: "Text box" })).toBeNull();
 
     fireEvent.click(view.getByRole("button", { name: "Viewer" }));
     expect(view.getByRole("button", { name: "Viewer" }).getAttribute("aria-pressed")).toBe("true");
@@ -1102,8 +880,9 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     expect(view.getByRole("heading", { name: "Region" })).toBeTruthy();
     expect(view.getByText("This filter is not ready to view.")).toBeTruthy();
-    expect(view.getByLabelText("Text box").textContent).toBe("Hello from the board");
-    expect(view.getByTitle("Text script")).toBeTruthy();
+    expect(view.queryByLabelText("Text box")).toBeNull();
+    expect(view.queryByTitle("Text script")).toBeNull();
+    expect(view.queryByText("Hello from the board")).toBeNull();
     expect(await view.findByTestId("assist-chart")).toBeTruthy();
     expect(view.queryByRole("group", { name: "Dimension" })).toBeNull();
     expect(view.queryByRole("group", { name: "Metrics" })).toBeNull();

@@ -411,22 +411,17 @@ describe("dashboard layout", () => {
     expect(described).toContain("script preview:");
     expect(described).toContain('3. component "not valid" | custom | value ');
     expect(described).toContain("choices listed | script preview:");
-    expect(described).toContain("4. text | text: Hello | depends on {{region}} | ready");
-    expect(described).toContain("trusted sql: SELECT 'Hello' WHERE region = {{region}}");
-    expect(described).toContain('5. text | connection "Orders" | ready');
-    expect(described).toContain("trusted sql: SELECT 2");
-    expect(described).toContain("script preview: use text; return rows;");
-    expect(described).toContain("6. text | empty");
-    expect(described).toContain('7. chart "Untitled" | empty');
+    expect(described).not.toContain(". text |");
+    expect(described).toContain('4. chart "Untitled" | empty');
     expect(described).toContain("question: Untitled");
     expect(described).toContain(
-      '8. chart "Revenue \'east\'" | Bar / Stacked | connection "Orders" | metric "revenue" | shelves region, total | depends on {{region}}, {{year}} | ready',
+      '5. chart "Revenue \'east\'" | Bar / Stacked | connection "Orders" | metric "revenue" | shelves region, total | depends on {{region}}, {{year}} | ready',
     );
     expect(described).toContain("question: Revenue by region");
     expect(described).toContain("trusted sql: SELECT 1 WHERE region");
     expect(described).toContain("… truncated,");
     expect(described).not.toContain("ignored");
-    expect(described).toContain('9. chart "Axes" | shelves month, amount | empty');
+    expect(described).toContain('6. chart "Axes" | shelves month, amount | empty');
     expect(described).toContain("question: Axes");
     expect(described).not.toContain("nope");
     const shapeOnly = dashboardAssistContext(board([{ chartId: "bare", width: 1, height: 1 }]), [
@@ -439,11 +434,13 @@ describe("dashboard layout", () => {
       [],
     );
     expect(verbose).toContain("… truncated, 20 characters omitted");
-    const longNotes = Array.from({ length: 40 }, (_, index) => ({
-      id: `n${index}`,
-      text: "word ".repeat(80),
+    const frames = Array.from({ length: 30 }, (_, index) => ({ chartId: `c${index}`, width: 1, height: 1 }));
+    const many = frames.map((frame) => ({
+      id: frame.chartId,
+      name: `Chart ${frame.chartId}`,
+      query: "select region, total from sales ".repeat(8),
     }));
-    const truncated = dashboardAssistContext({ ...board(), notes: longNotes }, []);
+    const truncated = dashboardAssistContext(board(frames), many);
     expect(truncated.endsWith("characters omitted")).toBe(true);
     expect(truncated).toContain("… truncated,");
   });
