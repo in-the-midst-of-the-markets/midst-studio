@@ -28,6 +28,7 @@ import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { embeddingRequestFields } from "@/lib/embeddings/ids";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
+import { readJoinSizeChoice } from "@/lib/saved-join/size-choice";
 import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { buildConnectionPayload } from "./use-connection-payload";
 import { transactionGone } from "./use-transaction-control";
@@ -752,6 +753,7 @@ export function useQueryExecution({
               ? {
                   sql: queryToExecute,
                   saved: savedJoinCatalog(storage.getSavedQueries(), connections ?? storage.getConnections()),
+                  size: readJoinSizeChoice(),
                   options: { limit, offset, unlimited },
                 }
               : {

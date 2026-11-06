@@ -3,6 +3,7 @@ import "../../setup-dom";
 import { afterEach, describe, expect, mock, test } from "bun:test";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { CrossJoinBar } from "@/components/studio/CrossJoinBar";
+import { readJoinSizeChoice, setJoinSizeStorage } from "@/lib/saved-join/size-choice";
 import type { SavedQuery } from "@/lib/types";
 
 function query(tableId: string, sql: string): SavedQuery {
@@ -18,13 +19,44 @@ function query(tableId: string, sql: string): SavedQuery {
   };
 }
 
-afterEach(cleanup);
+class MemoryStorage implements Storage {
+  private readonly items = new Map<string, string>();
+  get length(): number {
+    return this.items.size;
+  }
+  clear(): void {
+    this.items.clear();
+  }
+  getItem(key: string): string | null {
+    return this.items.get(key) ?? null;
+  }
+  key(index: number): string | null {
+    return [...this.items.keys()][index] ?? null;
+  }
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
+  setItem(key: string, value: string): void {
+    this.items.set(key, value);
+  }
+}
+
+afterEach(() => {
+  cleanup();
+  setJoinSizeStorage(undefined);
+});
 
 describe("CrossJoinBar", () => {
   test("asks for two saved queries before it can write a join", () => {
+    setJoinSizeStorage(new MemoryStorage());
     const view = render(<CrossJoinBar queries={[query("orders", "SELECT id FROM orders")]} onUse={() => {}} />);
     expect(view.getByText(/including one from the marketplace/)).toBeTruthy();
     expect(view.queryByRole("button", { name: "Use this join" })).toBeNull();
+    const size = view.getByLabelText("DuckDB size") as HTMLSelectElement;
+    expect(size.value).toBe("small");
+    fireEvent.change(size, { target: { value: "large" } });
+    expect(size.value).toBe("large");
+    expect(readJoinSizeChoice()).toBe("large");
   });
 
   test("writes the join into the editor and follows the chosen queries", () => {

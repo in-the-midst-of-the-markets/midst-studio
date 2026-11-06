@@ -11,12 +11,8 @@ import { queryEventRequest, recordExecutedUnit, recordRefusedRequest } from "@/l
 import type { UserPayload } from "@/lib/auth";
 import type { DatabaseConnection } from "@/lib/types";
 import { readSavedJoinBody } from "@/lib/saved-join/body";
-import {
-  SAVED_JOIN_LIMITS,
-  SAVED_JOIN_TIMEOUT_MS,
-  SavedJoinError,
-  sourceRowLimitMessage,
-} from "@/lib/saved-join/limits";
+import { SavedJoinError, sourceRowLimitMessage, type SavedJoinLimits } from "@/lib/saved-join/limits";
+import { limitsForJoinSize } from "@/lib/saved-join/size";
 import { runSavedJoin, type SavedJoinSource } from "@/lib/saved-join/run";
 import { sourceReadRefusal } from "@/lib/saved-join/source-guard";
 import type { QueryEventRequest } from "@/lib/query-events/route-events";
@@ -28,7 +24,8 @@ import type { QueryEventRequest } from "@/lib/query-events/route-events";
  * `saved.orders` for a statement written that way), run first on the connection it was saved
  * from, under that connection's own limits. Only the finished rows are loaded into a private
  * in-memory DuckDB, which then runs the statement. The editor reaches this route when
- * Cross_DB_Joins is the selected connection.
+ * Cross_DB_Joins is the selected connection. `size` names a budget from the server's
+ * catalog. An omitted size is the included one.
  */
 export async function POST(req: NextRequest) {
   const guard = await guardRoute({ route: "POST /api/db/saved-join", bucket: "query", request: req });
@@ -46,15 +43,17 @@ export async function POST(req: NextRequest) {
     }
     const parsed = readSavedJoinBody(body);
     if (typeof parsed === "string") return NextResponse.json({ error: parsed }, { status: 400 });
+    const limits = limitsForJoinSize(body.size);
+    if (typeof limits === "string") return NextResponse.json({ error: limits }, { status: 400 });
 
-    const signal = AbortSignal.any([req.signal, AbortSignal.timeout(SAVED_JOIN_TIMEOUT_MS)]);
+    const signal = AbortSignal.any([req.signal, AbortSignal.timeout(limits.timeoutMs)]);
     const result = await runSavedJoin({
       sql: parsed.sql,
       saved: parsed.saved,
       page: parsed.page,
       signal,
-      limits: SAVED_JOIN_LIMITS,
-      runSource: (source, sourceSignal) => runSavedSource(source, sourceSignal, guard.session, events),
+      limits,
+      runSource: (source, sourceSignal) => runSavedSource(source, sourceSignal, limits, guard.session, events),
     });
     return NextResponse.json(result);
   } catch (error) {
@@ -66,6 +65,7 @@ export async function POST(req: NextRequest) {
 async function runSavedSource(
   source: SavedJoinSource,
   signal: AbortSignal,
+  limits: SavedJoinLimits,
   session: UserPayload,
   events: QueryEventRequest,
 ): Promise<{ fields: string[]; rows: Record<string, unknown>[] }> {
@@ -85,7 +85,7 @@ async function runSavedSource(
     const provider = await editorProvider(session, connection, undefined);
     const answered = await runEditorQuery(provider, {
       statement: source.query,
-      options: { limit: SAVED_JOIN_LIMITS.maxSourceRows },
+      options: { limit: limits.maxSourceRows },
       signal,
       route: "api/db/saved-join",
     });
@@ -95,8 +95,8 @@ async function runSavedSource(
       started,
       ended: { rowCount: answered.body.rowCount },
     });
-    if (answered.body.pagination.hasMore || answered.body.rows.length > SAVED_JOIN_LIMITS.maxSourceRows) {
-      throw new SavedJoinError(sourceRowLimitMessage(source.name, SAVED_JOIN_LIMITS.maxSourceRows));
+    if (answered.body.pagination.hasMore || answered.body.rows.length > limits.maxSourceRows) {
+      throw new SavedJoinError(sourceRowLimitMessage(source.name, limits.maxSourceRows));
     }
     return { fields: answered.body.fields, rows: answered.body.rows };
   } catch (error) {

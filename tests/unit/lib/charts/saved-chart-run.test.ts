@@ -82,7 +82,7 @@ describe("saved chart run", () => {
       updatedAt: new Date("2026-01-01"),
     };
     let path = "";
-    let body: { sql?: string; saved?: { name?: string; connection?: { id?: string } }[] } = {};
+    let body: { sql?: string; size?: string; saved?: { name?: string; connection?: { id?: string } }[] } = {};
     const view = await loadSavedChart(
       { query: "SELECT id FROM orders", connectionId: join.id },
       [join, connection],
@@ -95,6 +95,7 @@ describe("saved chart run", () => {
     );
     expect(path).toBe("/api/db/saved-join");
     expect(body.sql).toBe("SELECT id FROM orders");
+    expect(body.size).toBe("small");
     expect(body.saved?.[0]?.name).toBe("orders");
     expect(body.saved?.[0]?.connection?.id).toBe("c1");
     expect(view).toEqual({ kind: "result", result });
