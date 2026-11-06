@@ -1211,6 +1211,12 @@ export type DateGrouping = "hour" | "day" | "week" | "month" | "year";
 
 export interface SavedChartConfig {
   id: string;
+  /**
+   * The id shown on the chart in the editor. A data point on this chart can later
+   * set a filter, and that filter can drive other charts. The words on the card
+   * stay in `name`. Absent on a chart saved before this id existed.
+   */
+  token?: string;
   name: string;
   chartType: string;
   xAxis: string;
@@ -1283,13 +1289,15 @@ export type DashboardFilterControl = "select" | "slider" | "search" | "vector" |
 
 /**
  * A dashboard filter. `query` fills the choices, unless `choiceSource` is `values`
- * and the list is typed in. A chart query references the selection with `{{name}}`.
- * A vector filter's name is a generated id. `{{that id}}` in the vector value embeds
- * the text typed in the box. Any other words in that value are embedded as written.
+ * and the list is typed in. `name` is the filter's id. A chart query references
+ * the selection with `{{name}}`. A new filter is given an id, and the editor does
+ * not change it. In the vector value, `{{that id}}` embeds the text typed in the
+ * box. Any other words in that value are embedded as written.
  * A custom filter's `script` is JavaScript edited in Monaco.
  */
 export interface DashboardFilter {
   id: string;
+  /** The id a query uses as `{{name}}`. A new filter is given one. */
   name: string;
   /** Words on the component. Absent uses the name. */
   label?: string;

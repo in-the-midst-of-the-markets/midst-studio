@@ -1,4 +1,5 @@
 import { readRefreshText } from "@/lib/charts/chart-refresh";
+import { chartPublicId } from "@/lib/dashboards/public-id";
 import type { SavedChartConfig } from "@/lib/types";
 
 /** What the save control knows about the chart on screen. `refreshText` is the field, not the seconds. */
@@ -112,6 +113,7 @@ export function buildSavedChart(draft: SaveChartDraft, id = crypto.randomUUID())
   return {
     id,
     name,
+    token: chartPublicId(),
     chartType: draft.chartType,
     xAxis: draft.xAxis,
     yAxis: [...draft.yAxis],
