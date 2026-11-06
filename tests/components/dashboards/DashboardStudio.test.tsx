@@ -1,7 +1,7 @@
 import "../../setup-dom";
 
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { mockGlobalFetch, restoreGlobalFetch } from "../../helpers/mock-fetch";
 import type { DatabaseConnection, SavedChartConfig, SavedDashboard } from "@/lib/types";
@@ -383,7 +383,24 @@ describe("DashboardStudio", () => {
     await view.findByTestId("assist-chart");
     expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "bar", variationId: "stacked", connectionId: "c1" });
     expect(view.getByRole("button", { name: "Use Bar Stacked chart" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Use Bar Stacked chart" }));
+    expect(storage.getSavedCharts()[0]?.selection?.category).toEqual(["region"]);
+    const dimension = view.getByRole("group", { name: "Dimension" });
+    const metrics = view.getByRole("group", { name: "Metrics" });
+    expect(within(dimension).getByRole("button", { name: "region" }).getAttribute("aria-pressed")).toBe("true");
+    expect(within(metrics).getByRole("button", { name: "total" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(within(dimension).getByRole("button", { name: "total" }));
+    expect(storage.getSavedCharts()[0]?.selection).toMatchObject({ category: ["total"] });
+    expect(storage.getSavedCharts()[0]?.xAxis).toBe("total");
+    fireEvent.click(within(dimension).getByRole("button", { name: "region" }));
+    fireEvent.click(within(dimension).getByRole("button", { name: "region" }));
+    expect(storage.getSavedCharts()[0]?.selection?.category).toEqual([]);
+    fireEvent.click(within(metrics).getByRole("button", { name: "total" }));
+    expect(storage.getSavedCharts()[0]?.selection?.values).toEqual([]);
+    fireEvent.click(within(metrics).getByRole("button", { name: "total" }));
+    expect(storage.getSavedCharts()[0]?.selection?.values).toEqual(["total"]);
     fireEvent.click(view.getByRole("button", { name: "Use Line chart" }));
+    expect(view.queryByRole("group", { name: "Dimension" })).toBeNull();
     fireEvent.click(view.getByRole("button", { name: "Use Line Area chart" }));
     expect(storage.getSavedCharts()[0]).toMatchObject({ typeId: "line", variationId: "area" });
     expect(view.getByRole("button", { name: "Use Line Area chart" }).getAttribute("aria-pressed")).toBe("true");
@@ -1088,12 +1105,15 @@ describe("DashboardStudio", () => {
     expect(view.getByLabelText("Text box").textContent).toBe("Hello from the board");
     expect(view.getByTitle("Text script")).toBeTruthy();
     expect(await view.findByTestId("assist-chart")).toBeTruthy();
+    expect(view.queryByRole("group", { name: "Dimension" })).toBeNull();
+    expect(view.queryByRole("group", { name: "Metrics" })).toBeNull();
     expect(await view.findByText("This chart is not ready to view.")).toBeTruthy();
 
     fireEvent.change(view.getByLabelText("Filter search"), { target: { value: "west" } });
     expect(storage.getSavedDashboards()[0]?.filters?.find((item) => item.id === "region")?.value).toBe("west");
 
     fireEvent.click(view.getByRole("button", { name: "Editor" }));
+    expect(view.getByRole("group", { name: "Dimension" })).toBeTruthy();
     expect(view.getByRole("heading", { name: "Create" })).toBeTruthy();
     expect(view.getByRole("button", { name: "Add content" })).toBeTruthy();
     expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
