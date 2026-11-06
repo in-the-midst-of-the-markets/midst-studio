@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { chartTheme } from "@/lib/charts/palette";
 import { loadSavedChart, optionForSavedChart } from "@/lib/charts/saved-chart-run";
-import type { DatabaseConnection, QueryResult } from "@/lib/types";
+import { crossDbJoinsConnection } from "@/lib/saved-join/connection";
+import type { DatabaseConnection, QueryResult, SavedQuery } from "@/lib/types";
 
 const connection: DatabaseConnection = {
   id: "c1",
@@ -66,6 +67,37 @@ describe("saved chart run", () => {
       },
     );
     expect(sent).toBe("SELECT region FROM sales WHERE region = 'east'");
+  });
+
+  test("Cross_DB_Joins runs the saved queries", async () => {
+    const join = crossDbJoinsConnection();
+    const saved: SavedQuery = {
+      id: "q1",
+      name: "Orders",
+      tableId: "orders",
+      query: "SELECT id FROM sales",
+      connectionType: "postgres",
+      connectionId: "c1",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    };
+    let path = "";
+    let body: { sql?: string; saved?: { name?: string; connection?: { id?: string } }[] } = {};
+    const view = await loadSavedChart(
+      { query: "SELECT id FROM orders", connectionId: join.id },
+      [join, connection],
+      async (sent, init) => {
+        path = sent;
+        body = JSON.parse(String(init?.body)) as typeof body;
+        return ok();
+      },
+      [saved],
+    );
+    expect(path).toBe("/api/db/saved-join");
+    expect(body.sql).toBe("SELECT id FROM orders");
+    expect(body.saved?.[0]?.name).toBe("orders");
+    expect(body.saved?.[0]?.connection?.id).toBe("c1");
+    expect(view).toEqual({ kind: "result", result });
   });
 
   test("builds an option from the shelves, or nothing when they cannot draw", () => {

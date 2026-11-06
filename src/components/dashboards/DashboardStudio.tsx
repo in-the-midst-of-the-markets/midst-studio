@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type RefObject,
@@ -100,6 +101,8 @@ import { loadSavedChart, optionForSavedChart, type SavedChartView } from "@/lib/
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import { chartTheme } from "@/lib/charts/palette";
 import { restampThemeChrome } from "@/lib/charts/theme-chrome";
+import { schemaContextOf } from "@/lib/db/detailed-object";
+import { CROSS_DB_JOINS_ID, crossDbJoinsSchema, withCrossDbJoins } from "@/lib/saved-join/connection";
 import { storage } from "@/lib/storage";
 import type {
   DashboardFilter,
@@ -109,6 +112,7 @@ import type {
   SavedChartConfig,
   SavedDashboard,
   SavedDashboardComponent,
+  SavedQuery,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +122,17 @@ const CHART_GLYPH: Record<string, LucideIcon> = {
 };
 
 const fieldClass = "h-9 w-full rounded-lg border border-hairline-strong bg-canvas px-2 text-sm text-fg";
+
+/** The table list the Dash SQL editor completes from. Cross_DB_Joins names saved queries. */
+function dashQuerySchema(
+  connectionId: string | undefined,
+  schemas: Readonly<Record<string, string>>,
+  queries: readonly SavedQuery[],
+): string {
+  if (connectionId === CROSS_DB_JOINS_ID) return schemaContextOf(crossDbJoinsSchema(queries));
+  if (connectionId === undefined || connectionId === "") return "[]";
+  return schemas[connectionId] ?? "[]";
+}
 
 function boardWidth(board: HTMLElement | null): number {
   const measured = board?.clientWidth ?? 0;
@@ -143,6 +158,9 @@ export function DashboardStudio() {
   const [activeId, setActiveId] = useState<string | null>(() => storage.getActiveDashboardId());
   const [charts, setCharts] = useState<SavedChartConfig[]>(() => storage.getSavedCharts());
   const [connections] = useState<DatabaseConnection[]>(() => storage.getConnections());
+  const editorConnections = useMemo(() => withCrossDbJoins(connections), [connections]);
+  const savedQueries = useMemo(() => storage.getSavedQueries(), []);
+  const [schemas, setSchemas] = useState<Record<string, string>>({});
   const [menu, setMenu] = useState<null | "root" | "charts" | "components">(null);
   const [components, setComponents] = useState<SavedDashboardComponent[]>(() => storage.getSavedComponents());
   const [schemaContext, setSchemaContext] = useState("[]");
@@ -161,6 +179,7 @@ export function DashboardStudio() {
       ),
     ).then((loaded) => {
       setSchemaContext(loaded.schemaContext);
+      setSchemas(loaded.byConnection);
     });
   }, [connections]);
 
@@ -436,7 +455,9 @@ export function DashboardStudio() {
                       width={size.width}
                       height={size.height}
                       viewing={!editing}
-                      connections={connections}
+                      connections={editorConnections}
+                      schemas={schemas}
+                      savedQueries={savedQueries}
                       onChange={(patch) => remember(withFilterFields(active, filter.id, patch))}
                       onResize={(next) => remember(withFilterFields(active, filter.id, next))}
                       onRemove={() => remember(withoutFilter(active, filter.id))}
@@ -467,7 +488,9 @@ export function DashboardStudio() {
                       width={frame.width}
                       height={frame.height}
                       viewing={!editing}
-                      connections={connections}
+                      connections={editorConnections}
+                      schemas={schemas}
+                      savedQueries={savedQueries}
                       filters={active.filters ?? []}
                       onRemove={() => remember(withoutChart(active, chart.id))}
                       onResize={(size) => remember(withFrame(active, chart.id, size))}
@@ -658,6 +681,8 @@ function DashboardChart({
   height,
   viewing,
   connections,
+  schemas,
+  savedQueries,
   filters,
   onRemove,
   onResize,
@@ -673,6 +698,8 @@ function DashboardChart({
   readonly height: number;
   readonly viewing: boolean;
   readonly connections: readonly DatabaseConnection[];
+  readonly schemas: Readonly<Record<string, string>>;
+  readonly savedQueries: readonly SavedQuery[];
   readonly filters: readonly DashboardFilter[];
   readonly onRemove: () => void;
   readonly onResize: (size: { width: number; height: number }) => void;
@@ -696,8 +723,8 @@ function DashboardChart({
   const connectionId = chart.connectionId;
   const refreshSeconds = chart.refreshSeconds;
   const run = useCallback(
-    () => loadSavedChart({ query, connectionId }, connections, appFetch),
-    [query, connectionId, connections],
+    () => loadSavedChart({ query, connectionId }, connections, appFetch, savedQueries),
+    [query, connectionId, connections, savedQueries],
   );
 
   useEffect(() => {
@@ -921,6 +948,7 @@ function DashboardChart({
                   value={sqlDraft}
                   documentId={chart.id}
                   databaseType={databaseType}
+                  schemaContext={dashQuerySchema(connectionId, schemas, savedQueries)}
                   wordWrap
                   onContentChange={setSqlDraft}
                 />
@@ -1321,6 +1349,8 @@ function DashboardFilterCard({
   height,
   viewing,
   connections,
+  schemas,
+  savedQueries,
   onChange,
   onResize,
   onRemove,
@@ -1332,6 +1362,8 @@ function DashboardFilterCard({
   readonly height: number;
   readonly viewing: boolean;
   readonly connections: readonly DatabaseConnection[];
+  readonly schemas: Readonly<Record<string, string>>;
+  readonly savedQueries: readonly SavedQuery[];
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
   readonly onResize: (size: { width: number; height: number }) => void;
   readonly onRemove: () => void;
@@ -1360,7 +1392,7 @@ function DashboardFilterCard({
     const connectionId = filter.connectionId;
     if (query === "" || connectionId === undefined || connectionId === "") return;
     let stopped = false;
-    void loadSavedChart({ query, connectionId }, connections, appFetch).then((view) => {
+    void loadSavedChart({ query, connectionId }, connections, appFetch, savedQueries).then((view) => {
       if (stopped) return;
       if (view.kind !== "result") {
         setChoices([]);
@@ -1374,7 +1406,7 @@ function DashboardFilterCard({
     return () => {
       stopped = true;
     };
-  }, [connections, filter.choiceSource, filter.connectionId, filter.query]);
+  }, [connections, filter.choiceSource, filter.connectionId, filter.query, savedQueries]);
 
   const frameRef = useRef<HTMLIFrameElement>(null);
   useEffect(() => {
@@ -1486,6 +1518,8 @@ function DashboardFilterCard({
             filter={filter}
             draft={draft}
             connections={connections}
+            schemas={schemas}
+            savedQueries={savedQueries}
             status={status}
             onDraft={setDraft}
             onChange={onChange}
@@ -1635,6 +1669,8 @@ function FilterChoices({
   filter,
   draft,
   connections,
+  schemas,
+  savedQueries,
   status,
   onDraft,
   onChange,
@@ -1643,6 +1679,8 @@ function FilterChoices({
   readonly filter: DashboardFilter;
   readonly draft: string;
   readonly connections: readonly DatabaseConnection[];
+  readonly schemas: Readonly<Record<string, string>>;
+  readonly savedQueries: readonly SavedQuery[];
   readonly status: string | null;
   readonly onDraft: (value: string) => void;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
@@ -1713,6 +1751,7 @@ function FilterChoices({
                 value={draft}
                 documentId={filter.id}
                 databaseType={databaseType}
+                schemaContext={dashQuerySchema(filter.connectionId, schemas, savedQueries)}
                 wordWrap
                 onContentChange={onDraft}
               />

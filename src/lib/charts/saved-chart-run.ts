@@ -8,7 +8,9 @@ import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 import { restampThemeChrome } from "@/lib/charts/theme-chrome";
 import { storedChartLook } from "@/lib/charts/save-chart";
-import type { DatabaseConnection, QueryResult, SavedChartConfig } from "@/lib/types";
+import { savedJoinCatalog } from "@/lib/saved-join/catalog";
+import { isCrossDbJoins } from "@/lib/saved-join/connection";
+import type { DatabaseConnection, QueryResult, SavedChartConfig, SavedQuery } from "@/lib/types";
 
 type Post = (path: string, init?: RequestInit) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
 
@@ -20,11 +22,14 @@ export type SavedChartView =
 /**
  * Reruns the chart's query on its connection.
  * An empty query or a missing connection is a message, not a request.
+ * Cross_DB_Joins is not a database file. Its statement runs through the saved-join route,
+ * and each table is a saved query.
  */
 export async function loadSavedChart(
   chart: Pick<SavedChartConfig, "query" | "connectionId">,
   connections: readonly DatabaseConnection[],
   post: Post,
+  saved: readonly SavedQuery[] = [],
 ): Promise<SavedChartView> {
   const query = chart.query?.trim() ?? "";
   if (query === "") return { kind: "empty", message: "Save this chart with a query to fill it." };
@@ -33,7 +38,19 @@ export async function loadSavedChart(
   }
   const connection = connections.find((item) => item.id === chart.connectionId);
   if (connection === undefined) return { kind: "error", message: "That connection is no longer available." };
-  const outcome = await runAssistQuery(connection, applyQueryFilters(query), post);
+  const sql = applyQueryFilters(query);
+  const outcome = await runAssistQuery(
+    connection,
+    sql,
+    isCrossDbJoins(connection)
+      ? () =>
+          post("/api/db/saved-join", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sql, saved: savedJoinCatalog(saved, connections) }),
+          })
+      : post,
+  );
   if (!outcome.ok) return { kind: "error", message: outcome.error };
   return { kind: "result", result: outcome.result };
 }

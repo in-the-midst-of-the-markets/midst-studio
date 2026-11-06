@@ -26,9 +26,18 @@ mock.module("@/components/QueryEditor", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
   return {
-    QueryEditor: ({ value, onContentChange }: { value: string; onContentChange?: (value: string) => void }) =>
+    QueryEditor: ({
+      value,
+      onContentChange,
+      schemaContext,
+    }: {
+      value: string;
+      onContentChange?: (value: string) => void;
+      schemaContext?: string;
+    }) =>
       React.createElement("textarea", {
         "aria-label": "Query SQL",
+        "data-schema": schemaContext ?? "",
         value,
         onChange: (event: { target: { value: string } }) => onContentChange?.(event.target.value),
       }),
@@ -428,6 +437,51 @@ describe("DashboardStudio", () => {
     expect(storage.getSavedCharts()[0]?.connectionId).toBe("c1");
     fireEvent.change(view.getByLabelText("Chart title"), { target: { value: "Revenue" } });
     expect(storage.getSavedCharts()[0]?.name).toBe("Revenue");
+  });
+
+  test("suggests tables in the chart query and lists Cross_DB_Joins", async () => {
+    storage.saveConnection(connection);
+    storage.saveQuery({
+      id: "q1",
+      name: "Orders",
+      tableId: "orders",
+      query: "SELECT id, region FROM sales",
+      connectionType: "postgres",
+      connectionId: "c1",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    });
+    storage.saveChart(chart());
+    storage.saveDashboard(board("sales", ["revenue"]));
+    storage.setActiveDashboardId("sales");
+    mockGlobalFetch({
+      "/api/db/query": { json: rows },
+      "/api/db/saved-join": { json: rows },
+      "/api/db/provider-meta": {
+        json: {
+          capabilities: {
+            queryLanguage: "sql",
+            objectKinds: [{ id: "table", role: "relation", label: "Table", labelPlural: "Tables" }],
+          },
+        },
+      },
+      "/api/db/objects/inventory": {
+        json: {
+          objects: [{ name: "sales", kind: "table", path: ["sales"] }],
+          details: [{ path: ["sales"], columns: [{ name: "region", type: "text" }], indexes: [] }],
+        },
+      },
+    });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    const sql = view.getByRole("textbox", { name: "Query SQL" });
+    await waitFor(() => expect(sql.getAttribute("data-schema")).toContain("sales"));
+    const select = view.getByLabelText("Connection for Revenue");
+    expect(within(select).getByRole("option", { name: "Cross_DB_Joins" })).toBeTruthy();
+    fireEvent.change(select, { target: { value: "cross-db-joins" } });
+    await waitFor(() =>
+      expect(view.getByRole("textbox", { name: "Query SQL" }).getAttribute("data-schema")).toContain("orders"),
+    );
   });
 
   test("designs a filter as a dropdown, slider, search box, or custom JavaScript", async () => {
