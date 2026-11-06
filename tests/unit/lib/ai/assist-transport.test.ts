@@ -51,15 +51,21 @@ describe("resolveAssistKey", () => {
 
 describe("completeChat", () => {
   test("posts to OpenRouter and reads a string answer", async () => {
-    let seen: { url: string; headers: Headers; body: unknown } | undefined;
+    let seen: { url: string; headers: Headers; body: unknown; redirect?: RequestRedirect } | undefined;
     globalThis.fetch = (async (url: string, init?: RequestInit) => {
-      seen = { url, headers: new Headers(init?.headers), body: JSON.parse(String(init?.body)) };
+      seen = {
+        url,
+        headers: new Headers(init?.headers),
+        body: JSON.parse(String(init?.body)),
+        redirect: init?.redirect,
+      };
       return jsonResponse({ choices: [{ message: { content: "  hello  " } }] });
     }) as unknown as typeof fetch;
     const text = await completeChat({ source: "openrouter", apiKey: "secret", model: "openai/gpt-4o", messages });
     expect(text).toBe("  hello  ");
     expect(seen?.url).toBe(OPENROUTER_CHAT_URL);
     expect(seen?.headers.get("Authorization")).toBe("Bearer secret");
+    expect(seen?.redirect).toBe("manual");
     expect(seen?.headers.get("X-Title")).toBe("KnowSQL");
     expect(seen?.body).toMatchObject({
       model: "openai/gpt-4o",
@@ -136,6 +142,20 @@ describe("completeChat", () => {
     expect(seen?.headers.get("X-Title")).toBeNull();
     expect(seen?.body).toMatchObject({ model: "alibaba/qwen-3-14b", stream: false });
     expect(seen?.body).not.toHaveProperty("reasoning");
+  });
+
+  test("a redirect is refused and its target is not repeated", async () => {
+    globalThis.fetch = (async () =>
+      new Response(null, {
+        status: 302,
+        headers: { Location: "https://evil.example/steal?token=secret" },
+      })) as unknown as typeof fetch;
+    await expect(completeChat({ source: "openrouter", apiKey: "k", model: "m", messages })).rejects.toThrow(
+      "answered with a redirect",
+    );
+    await expect(completeChat({ source: "openrouter", apiKey: "k", model: "m", messages })).rejects.not.toThrow(
+      "evil.example",
+    );
   });
 
   test.each([
