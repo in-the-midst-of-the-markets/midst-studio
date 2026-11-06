@@ -10,6 +10,7 @@ import { restampThemeChrome } from "@/lib/charts/theme-chrome";
 import { storedChartLook } from "@/lib/charts/save-chart";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
 import { isCrossDbJoins } from "@/lib/saved-join/connection";
+import { readJoinSizeChoice } from "@/lib/saved-join/size-choice";
 import type { DatabaseConnection, QueryResult, SavedChartConfig, SavedQuery } from "@/lib/types";
 
 type Post = (path: string, init?: RequestInit) => Promise<{ ok: boolean; json: () => Promise<unknown> }>;
@@ -47,7 +48,11 @@ export async function loadSavedChart(
           post("/api/db/saved-join", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sql, saved: savedJoinCatalog(saved, connections) }),
+            body: JSON.stringify({
+              sql,
+              saved: savedJoinCatalog(saved, connections),
+              size: readJoinSizeChoice(),
+            }),
           })
       : post,
   );

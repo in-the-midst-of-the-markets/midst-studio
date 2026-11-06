@@ -189,6 +189,25 @@ describe("POST /api/db/saved-join", () => {
     expect(mockGetOrCreateProvider).not.toHaveBeenCalled();
   });
 
+  test("a named size runs, and an unknown one is refused before any database is opened", async () => {
+    const raised = await POST(
+      request({
+        sql: "SELECT orders.name FROM saved.orders",
+        saved: [{ name: "orders", query: "SELECT id, name, email FROM orders", connection }],
+        size: "medium",
+      }) as never,
+    );
+    expect(raised.status).toBe(200);
+
+    mockGetOrCreateProvider.mockClear();
+    const unknown = await POST(request({ sql: "SELECT 1", saved: [], size: "huge" }) as never);
+    expect(unknown.status).toBe(400);
+    expect((await parseResponseJSON<{ error: string }>(unknown)).error).toContain("small, medium, or large");
+    const numbered = await POST(request({ sql: "SELECT 1", saved: [], size: 4 }) as never);
+    expect(numbered.status).toBe(400);
+    expect(mockGetOrCreateProvider).not.toHaveBeenCalled();
+  });
+
   test("keeps a connection failure's own status", async () => {
     const response = await POST(
       request({

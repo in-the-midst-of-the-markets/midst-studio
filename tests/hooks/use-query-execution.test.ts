@@ -6501,6 +6501,7 @@ describe("the background plan opt-out and the non-SQL explain gate", () => {
     expect(joinCall).toBeDefined();
     const body = JSON.parse(joinCall![1]!.body as string);
     expect(body.sql).toBe("SELECT * FROM monthly_active_users");
+    expect(body.size).toBe("small");
     expect(body.saved).toEqual([
       expect.objectContaining({
         name: "monthly_active_users",

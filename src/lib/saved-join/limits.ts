@@ -2,10 +2,11 @@
  * The compute budget of one saved join.
  *
  * The join runs in a private in-memory DuckDB after each saved query has run on its own
- * database. These bounds are what keep that from becoming a second, unbounded database:
- * a saved query that returns more than the row cap is refused, the DuckDB statement that
- * returns more than the result cap is refused, and the engine itself is opened with a
- * memory limit, one thread, and a deadline.
+ * database. These bounds are the included size. A request may name a larger one; the
+ * catalog in `size.ts` is the only place those budgets are defined. A saved query that
+ * returns more than the row cap is refused, the DuckDB statement that returns more than
+ * the result cap is refused, and the engine itself is opened with a memory limit, a
+ * thread count, and a deadline.
  */
 
 export const SAVED_JOIN_MAX_SOURCE_ROWS = 10_000;

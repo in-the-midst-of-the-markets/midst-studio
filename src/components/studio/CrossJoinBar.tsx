@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { crossDbJoinTables } from "@/lib/saved-join/connection";
 import { crossJoinDraft, type CrossJoinKind } from "@/lib/saved-join/draft";
+import { JOIN_SIZES } from "@/lib/saved-join/size";
+import {
+  includedJoinSize,
+  readJoinSizeChoice,
+  subscribeJoinSize,
+  writeJoinSizeChoice,
+} from "@/lib/saved-join/size-choice";
 import type { SavedQuery } from "@/lib/types";
 
 const KINDS: readonly { id: CrossJoinKind; label: string }[] = [
@@ -19,6 +26,28 @@ function kindOf(value: string): CrossJoinKind {
 
 const FIELD_CLASS = "mt-1 block h-8 rounded-lg border border-hairline bg-raised px-2 text-xs text-fg";
 
+function JoinSizeSelect() {
+  const size = useSyncExternalStore(subscribeJoinSize, readJoinSizeChoice, includedJoinSize);
+  return (
+    <label className="text-xs text-fg-muted">
+      DuckDB size
+      <select
+        aria-label="DuckDB size"
+        className={FIELD_CLASS}
+        title="Memory and threads for this cross join"
+        value={size}
+        onChange={(event) => writeJoinSizeChoice(event.target.value)}
+      >
+        {JOIN_SIZES.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.name} · {option.detail}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /**
  * Writes a DuckDB join of two saved queries into the editor.
  *
@@ -32,10 +61,13 @@ export function CrossJoinBar({ queries, onUse }: { queries: readonly SavedQuery[
   const [kind, setKind] = useState<CrossJoinKind>("INNER");
   if (tables.length < 2) {
     return (
-      <p className="border-b border-hairline px-4 py-2 text-xs text-fg-secondary">
-        Save a query on each database you want to combine, including one from the marketplace, and give it an ID. This
-        DuckDB editor joins those IDs.
-      </p>
+      <div className="flex flex-wrap items-end gap-2 border-b border-hairline px-4 py-2">
+        <JoinSizeSelect />
+        <p className="pb-1 text-xs text-fg-secondary">
+          Save a query on each database you want to combine, including one from the marketplace, and give it an ID. This
+          DuckDB editor joins those IDs.
+        </p>
+      </div>
     );
   }
   const left = tables.find((table) => table.tableId === leftId) ?? tables[0];
@@ -45,6 +77,7 @@ export function CrossJoinBar({ queries, onUse }: { queries: readonly SavedQuery[
   return (
     <div className="flex flex-col gap-2 border-b border-hairline px-4 py-2">
       <div className="flex flex-wrap items-end gap-2">
+        <JoinSizeSelect />
         <label className="text-xs text-fg-muted">
           First query
           <select className={FIELD_CLASS} value={left.tableId} onChange={(event) => setLeftId(event.target.value)}>
