@@ -963,6 +963,7 @@ describe("Studio", () => {
     const connections = capturedSidebarProps.connections as { id: string; name: string; type: string }[];
     expect(connections.map((connection) => connection.id)).toEqual(["cross-db-joins", "c1"]);
     expect(connections[0]).toMatchObject({ name: "Cross_DB_Joins", type: "duckdb" });
+    expect(document.body.textContent).toContain("including one from the marketplace");
 
     const source = capturedSidebarProps.objectSource as (
       connection: unknown,

@@ -247,6 +247,17 @@ function readCtes(sql: string, start: number, end: number, outer: ReadonlyMap<st
   return { ctes, names, bodies };
 }
 
+/**
+ * The names the statement's first select list yields, and whether a `*` passes more through.
+ *
+ * Comments and strings must already be blanked, the same way {@link statementScope} reads a statement.
+ * A star beside named items still returns those names. An expression with no alias yields nothing.
+ */
+export function selectListColumns(sql: string): { readonly columns: readonly string[]; readonly star: boolean } {
+  const listed = derive(sql, 0, sql.length, new Map(), 0);
+  return { columns: listed.columns, star: listed.star };
+}
+
 /** The scope at `cursor` in one statement whose comments and strings are blanked. */
 export function statementScope(sql: string, cursor: number): StatementScope {
   const opens: number[] = [];

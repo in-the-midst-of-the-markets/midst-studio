@@ -1,7 +1,8 @@
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import type { DatabaseObject, ProviderCapabilities } from "@/lib/db/types";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
-import type { DatabaseConnection, SavedQuery } from "@/lib/types";
+import type { ColumnSchema, DatabaseConnection, SavedQuery } from "@/lib/types";
+import { savedQueryShape } from "./columns";
 
 /**
  * The connection the editor keeps for a saved-query join.
@@ -63,9 +64,21 @@ export function withCrossDbJoins(connections: readonly DatabaseConnection[]): Da
   return [crossDbJoinsConnection(), ...connections.filter((connection) => !isCrossDbJoins(connection))];
 }
 
-/** Saved-query IDs that can be tables, in display order. A query saved on this connection is not one. */
-function savedQueryTableIds(queries: readonly SavedQuery[]): string[] {
-  const names: string[] = [];
+/** One saved query the DuckDB editor can join, with the columns its select list names. */
+export interface CrossDbJoinTable {
+  readonly tableId: string;
+  readonly columns: readonly string[];
+  readonly star: boolean;
+}
+
+/**
+ * Saved queries that can be tables, in display order.
+ *
+ * A query saved on this connection is not one. Columns come from the select list, so the
+ * editor can offer them before any join has run. A `*` leaves the column list empty.
+ */
+export function crossDbJoinTables(queries: readonly SavedQuery[]): CrossDbJoinTable[] {
+  const tables: CrossDbJoinTable[] = [];
   const seen = new Set<string>();
   for (const query of queries) {
     if (query.connectionId === CROSS_DB_JOINS_ID) continue;
@@ -74,29 +87,36 @@ function savedQueryTableIds(queries: readonly SavedQuery[]): string[] {
     const key = tableId.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    names.push(tableId);
+    const shape = savedQueryShape(query.query);
+    tables.push({ tableId, columns: shape.columns, star: shape.star });
   }
-  names.sort((left, right) => left.localeCompare(right));
-  return names;
+  tables.sort((left, right) => left.tableId.localeCompare(right.tableId));
+  return tables;
 }
 
-/** The schema the mobile explorer and the assistant read. Columns stay empty until a statement has run. */
+function columnsOf(table: CrossDbJoinTable | undefined): ColumnSchema[] {
+  if (table === undefined) return [];
+  // A select list names a result column, not a key, and the value can be null.
+  return table.columns.map((name) => ({ name, type: "", nullable: true, isPrimary: false }));
+}
+
+/** The schema the mobile explorer and the assistant read. */
 export function crossDbJoinsSchema(queries: readonly SavedQuery[]): DetailedObject[] {
-  return savedQueryTableIds(queries).map((tableId) => ({
-    name: tableId,
+  return crossDbJoinTables(queries).map((table) => ({
+    name: table.tableId,
     kind: "table",
-    path: [tableId],
-    columns: [],
+    path: [table.tableId],
+    columns: columnsOf(table),
     indexes: [],
   }));
 }
 
 /** The object-tree listing. The path is the table name alone, so a click writes `orders` and not `main.orders`. */
 function crossDbJoinsObjects(queries: readonly SavedQuery[]): DatabaseObject[] {
-  return savedQueryTableIds(queries).map((tableId) => ({
-    name: tableId,
+  return crossDbJoinTables(queries).map((table) => ({
+    name: table.tableId,
     kind: "table",
-    path: [tableId],
+    path: [table.tableId],
   }));
 }
 
@@ -108,9 +128,16 @@ function crossDbJoinsObjects(queries: readonly SavedQuery[]): DatabaseObject[] {
  */
 export function crossDbJoinsObjectAnswer(
   queries: readonly SavedQuery[],
-  request: { route: string; kind?: string },
+  request: { route: string; kind?: string; path?: readonly string[] },
 ): unknown {
-  if (request.route === "describe") return { columns: [], indexes: [] };
+  if (request.route === "describe") {
+    const tableId = request.path?.at(-1);
+    const table =
+      tableId === undefined
+        ? undefined
+        : crossDbJoinTables(queries).find((item) => item.tableId.toLowerCase() === tableId.toLowerCase());
+    return { columns: columnsOf(table), indexes: [] };
+  }
   if (request.route === "counts") return {};
   if (request.route === "list" && request.kind === "table") return crossDbJoinsObjects(queries);
   return [];

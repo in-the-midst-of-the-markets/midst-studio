@@ -15,6 +15,7 @@ import {
   BottomPanel,
 } from "@/components/studio/index";
 import { cancelControlMode } from "@/components/studio/QueryToolbar";
+import { CrossJoinBar } from "@/components/studio/CrossJoinBar";
 import { StudioModals } from "@/components/studio/StudioModals";
 import { StudioOverlays } from "@/components/studio/StudioOverlays";
 import { AgentRail } from "@/components/agent/AgentRail";
@@ -610,6 +611,7 @@ export default function Studio() {
   const [isSaveQueryModalOpen, setIsSaveQueryModalOpen] = useState(false);
   const openSaveQuery = useCallback(() => setIsSaveQueryModalOpen(true), []);
   const [savedKey, setSavedKey] = useState(0);
+  const joinQueries = useMemo(() => storage.getSavedQueries(), [savedKey]);
   const [activeMobileTab, setActiveMobileTab] = useState<"database" | "schema" | "editor">("editor");
   const [mobileNotesOpen, setMobileNotesOpen] = useState(false);
   // The Schema tab is the phone layout's object tree, so opening it uses the connection as loading the tree does.
@@ -1567,6 +1569,9 @@ export default function Studio() {
                               onImport={openImport}
                             />
 
+                            {isCrossDbJoins(conn.activeConnection) && (
+                              <CrossJoinBar queries={joinQueries} onUse={handleLoadQuery} />
+                            )}
                             <div className="flex-1 relative min-h-0">
                               <QueryEditor
                                 ref={queryEditorRef}
