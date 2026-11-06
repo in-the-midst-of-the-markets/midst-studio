@@ -11,7 +11,7 @@ import {
 import { embeddingModelFor, subscribeEmbeddingSettings, writeEmbeddingModel } from "@/lib/embeddings/settings";
 
 /**
- * The model this connection's `{{embed}}` placeholders use.
+ * The model this connection uses when a vector value is written as `{{text}}`.
  * Voyage 4 is the default. Custom is any other model id the database was embedded with.
  */
 export function EmbeddingModelSelect({ connectionId }: { readonly connectionId?: string }) {
@@ -35,7 +35,7 @@ export function EmbeddingModelSelect({ connectionId }: { readonly connectionId?:
 
   return (
     <label className="flex items-center gap-1.5 text-xs text-fg-muted">
-      Embed
+      Model
       <select
         aria-label="Embedding model"
         value={listed && !choosingCustom ? model : CUSTOM_EMBEDDING_CHOICE}

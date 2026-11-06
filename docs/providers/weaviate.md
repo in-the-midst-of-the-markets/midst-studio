@@ -219,11 +219,11 @@ Every search also takes `where`, `limit`, `offset`, `autoLimit`, `returnProperti
 GET /v1/objects?class=Article&limit=50
 POST /v1/search/Article/bm25 {"query": "vector search", "where": {"path": ["category"], "operator": "Equal", "valueText": "alpha"}, "limit": 5, "returnMetadata": ["score"]}
 POST /v1/search/Product/near-vector {"vector": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "targetVector": "image", "limit": 3, "returnMetadata": ["distance"]}
-POST /v1/search/CompanyProfile/near-vector {"vector": {{embed e1}}, "targetVector": "name", "limit": 5, "returnMetadata": ["distance"]}
+POST /v1/search/CompanyProfile/near-vector {"vector": {{a red ceramic mug}}, "targetVector": "name", "limit": 5, "returnMetadata": ["distance"]}
 POST /v1/aggregate/TenantNotes {"tenant": "acme"}
 ```
 
-An embed id stands in for the number list. `"vector": {{embed e1}}` and `"vector": "{{embed e1}}"` are the same request once the server replaces the id; the editor accepts both.
+`{{text}}` in the vector value stands in for the number list. `"vector": {{a red ceramic mug}}` and `"vector": "{{a red ceramic mug}}"` are the same request once the server embeds the text. A pasted number list is sent as typed. `{{name}}` anywhere else stays a filter.
 
 ### 5.5 Where the console differs from a REST call
 
@@ -296,7 +296,7 @@ None: Weaviate has no maintenance operation in v1, so no Admin > Operations card
 
 ## 9. Capabilities & labels
 
-`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, `supportsVectorQuery` true so the IDE can hand back an embed id that becomes a vector before the request is sent, every other `supports*` false, `defaultPort` 8080.
+`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, `supportsVectorQuery` true so `{{text}}` in the vector value becomes a vector before the request is sent, every other `supports*` false, `defaultPort` 8080.
 `agentCredential` is `"token"` and `metadataOnly` states the agent's nine projections (section 15.5); `queryReadOnly` answers on a handle opened for the agent read-only profile only (section 15).
 The labels name a Collection and an Object, "Read Objects" and "Generate Request", and the statement language plan mode states is generated from the route table.
 

@@ -1,5 +1,5 @@
 /**
- * The embedding model a query's `{{embed}}` placeholder uses.
+ * The embedding model a query's vector `{{text}}` uses.
  *
  * Voyage 4 is the default. A connection can name another model when its vectors
  * were built with something else. The connector key is sent with the query and is not stored.

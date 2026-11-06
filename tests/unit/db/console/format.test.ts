@@ -109,6 +109,24 @@ describe("formatConsole", () => {
     );
   });
 
+  test("keeps {{text}} in the vector value while formatting the body", () => {
+    expect(
+      formatConsole(
+        MILVUS_STAND_IN,
+        'POST /v2/vectordb/entities/search\n{"data":[{{a red mug}}],"filter":"region = {{region}}","limit":5}',
+      ),
+    ).toBe(
+      [
+        "POST /v2/vectordb/entities/search",
+        "{",
+        '  "data": [{{a red mug}}],',
+        '  "filter": "region = {{region}}",',
+        '  "limit": 5',
+        "}",
+      ].join("\n"),
+    );
+  });
+
   test("a request with no body is its lines before the body", () => {
     expect(formatConsole(QDRANT_STAND_IN, "# list\nGET collections")).toBe("# list\nGET collections");
   });

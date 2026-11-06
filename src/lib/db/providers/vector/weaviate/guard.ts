@@ -17,8 +17,8 @@ export const WEAVIATE_DESTRUCTIVE_OPERATIONS: ReadonlySet<string> = new Set<stri
 /** The sentence a statement is refused with, or undefined to send it. */
 export function weaviateRefusal(text: string): string | undefined {
   try {
-    // An embed id is not JSON until the server replaces it. The probe lets the grammar
-    // read the request the run will send, and the text that is sent is still the original.
+    // `{{text}}` in the vector value is not JSON until the server embeds it. The probe
+    // lets the grammar read the request the run will send, and the text that is sent is still the original.
     weaviatePhase0(parseWeaviateRequest(embedProbeText(text)));
     return undefined;
   } catch (error) {

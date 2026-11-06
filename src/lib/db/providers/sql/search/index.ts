@@ -889,8 +889,9 @@ abstract class SearchProvider extends SQLBaseProvider {
       // the affordance instead of offering it (#269).
       supportsInlineRowEdit: false,
       // Both products search by a vector: OpenSearch SQL has `knn`, and Elasticsearch
-      // stores `dense_vector`. The IDE offers an embed id on either. A relational
-      // engine that merely might have an extension installed does not declare this.
+      // stores `dense_vector`. `{{text}}` in that vector value becomes the vector
+      // when the query runs. A relational engine that merely might have an extension
+      // installed does not declare this.
       supportsVectorQuery: true,
       supportsTestDataGeneration: false,
       // DERIVED, not restated: this is the same fact `prepareQuery` below enforces, and

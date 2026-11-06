@@ -1,3 +1,4 @@
+import { maskEmbeddingTokens, restoreEmbeddingTokens } from "@/lib/embeddings/placeholder";
 import type { ConsoleDialectSpec } from "./dialect";
 import type { ConsoleToken } from "./lexer";
 import { consoleTokens, readConsoleBody } from "./parser";
@@ -12,6 +13,7 @@ import { consoleTokens, readConsoleBody } from "./parser";
  *
  * A text the grammar cannot read is refused with the parser's own `ConsoleRefusal`, so Format never rewrites
  * a text the console would refuse to run; the route is not checked, because Format reads no route table.
+ * `{{text}}` in a vector value is stood in for while the body is read, then put back, so Format keeps it.
  */
 
 interface Piece {
@@ -38,6 +40,11 @@ function inlineArray(pieces: readonly Piece[], open: number): number | undefined
 const withoutLineEndCr = (text: string): string => (text.endsWith("\r") ? text.slice(0, -1) : text);
 
 export function formatConsole(spec: ConsoleDialectSpec, text: string): string {
+  const masked = maskEmbeddingTokens(text);
+  return restoreEmbeddingTokens(formatConsoleText(spec, masked.text), masked.spans);
+}
+
+function formatConsoleText(spec: ConsoleDialectSpec, text: string): string {
   const read = consoleTokens(spec, text, true);
   readConsoleBody(spec, read);
   const { lines, tokens, request } = read;
