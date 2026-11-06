@@ -74,7 +74,7 @@ import {
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
-import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
+import { presentChartOption } from "@/lib/charts/chart-present";
 import {
   classifyColumns,
   defaultSelection,
@@ -810,7 +810,7 @@ function DashboardChart({
   // background they set — including transparent — is what gets drawn.
   const painted =
     code.option !== null && shelf !== null
-      ? restampThemeChrome(omitDrawnChartTitle(code.option, shelf.option), theme)
+      ? restampThemeChrome(presentChartOption(code.option, shelf.option), theme)
       : (built?.option ?? null);
   const runDraft = () => {
     onQuery(sqlDraft);

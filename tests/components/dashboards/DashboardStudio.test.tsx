@@ -353,6 +353,25 @@ describe("DashboardStudio", () => {
       target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "transparent" }) },
     });
     await waitFor(() => expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent"));
+    fireEvent.change(code, {
+      target: {
+        value: JSON.stringify({
+          title: { text: "By region" },
+          yAxis: { axisLabel: { prefix: "$" } },
+          tooltip: { formatter: "{b}: {c} usd" },
+        }),
+      },
+    });
+    await waitFor(() => expect((drawnOptions.at(-1)?.title as { text?: string } | undefined)?.text).toBe("By region"));
+    const drawn = drawnOptions.at(-1);
+    const axisLabel = (drawn?.yAxis as { axisLabel?: { formatter?: (value: unknown) => string } } | undefined)
+      ?.axisLabel;
+    expect(axisLabel?.formatter?.(2)).toBe("$2");
+    expect(drawnOptions.at(-1)?.tooltip).toMatchObject({ formatter: "{b}: {c} usd" });
+    fireEvent.change(code, {
+      target: { value: JSON.stringify({ color: ["#112233"], backgroundColor: "transparent" }) },
+    });
+    await waitFor(() => expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent"));
     fireEvent.click(view.getByRole("button", { name: "Chart" }));
     expect(drawnOptions.at(-1)?.backgroundColor).toBe("transparent");
     fireEvent.click(view.getByRole("button", { name: "Code" }));

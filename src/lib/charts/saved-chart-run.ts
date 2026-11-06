@@ -1,6 +1,6 @@
 import { runAssistQuery } from "@/lib/ai/assist-query";
 import { applyChartValues } from "@/lib/charts/chart-code";
-import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
+import { presentChartOption } from "@/lib/charts/chart-present";
 import type { ChartSettings } from "@/lib/charts/chart-settings";
 import { buildChartOption, type BuiltChart } from "@/lib/charts/echarts-option";
 import { withoutFilterLooks } from "@/lib/charts/filter-look";
@@ -62,9 +62,9 @@ export async function loadSavedChart(
 
 /**
  * The option for a saved chart and a fresh result, or null when the shelves cannot draw it.
- * The dashboard card already shows the chart name, so the plot never draws a second title.
- * A title saved in the look stays in the chart code and is left off the plot, and the
- * legend and grid take back the room that title would have used.
+ * The dashboard card shows the chart name. A title in the chart code is drawn on the
+ * plot as well. An empty title stays off the plot, and the legend and grid keep the
+ * room the untitled chart uses.
  * Legend type and grid lines follow the theme that is open. Series colors stay saved.
  */
 export function optionForSavedChart(
@@ -86,5 +86,5 @@ export function optionForSavedChart(
   if (built === null) return null;
   const look = storedChartLook(chart.look);
   const drawn = look === undefined ? built.option : withoutFilterLooks(applyChartValues(look, built.option));
-  return { option: restampThemeChrome(omitDrawnChartTitle(drawn, built.option), theme), notes: built.notes };
+  return { option: restampThemeChrome(presentChartOption(drawn, built.option), theme), notes: built.notes };
 }
