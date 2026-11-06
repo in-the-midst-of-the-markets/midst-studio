@@ -19,12 +19,17 @@ import {
 } from "@/lib/ai/assist-history";
 import {
   acceptAssistPlan,
+  assistChartPatch,
+  explanationWithCharts,
   explanationWithEdits,
   questionOnlyRecolors,
   recolorsFromQuestion,
   recentAssistHistory,
+  reviseAssistCharts,
   splitAssistFollowUp,
   type AssistChart,
+  type AssistChartRevision,
+  type AssistEditableChart,
   type AssistHistoryTurn,
   type AssistPlan,
   type AssistQueryPlan,
@@ -247,13 +252,91 @@ function historyOf(turns: readonly Turn[], limit: number): AssistHistoryTurn[] {
       const edited = next.cards.filter((card) => card.locked).map((card) => card.sql);
       const results = readAssistResults(next.cards.slice(0, ASSIST_RESULT_CAP).map(resultPayload));
       const explanation = explanationWithResults(
-        explanationWithEdits(next.text, edited),
+        explanationWithCharts(
+          explanationWithEdits(next.text, edited),
+          next.cards.map((card) => ({ title: card.title, sql: card.sql, chart: card.chart })),
+        ),
         results.ok ? results.value : [],
       );
       pairs.push({ question: turn.text, explanation });
     }
   }
   return recentAssistHistory(pairs, limit);
+}
+
+/** Charts a new question may change: the ones on the assistant turns inside the message window. */
+function editableCharts(turns: readonly Turn[], limit: number): AssistEditableChart[] {
+  const groups: AssistEditableChart[][] = [];
+  for (let index = 0; index < turns.length; index += 1) {
+    const turn = turns[index];
+    const next = turns[index + 1];
+    if (turn?.role === "user" && next?.role === "assistant") {
+      groups.push(next.cards.map((card) => ({ id: card.id, title: card.title, locked: card.locked })));
+    }
+  }
+  return recentAssistHistory(groups, limit).flat();
+}
+
+function reviseCard(
+  card: AssistCard,
+  query: AssistQueryPlan,
+  connections: readonly DatabaseConnection[],
+  schemas: Readonly<Record<string, string>>,
+): AssistCard {
+  const patch = assistChartPatch(card, query);
+  if (!patch.sqlChanged) {
+    return {
+      ...card,
+      chart: patch.chart,
+      color: patch.color,
+      view: patch.planChanged ? null : card.view,
+      code: patch.planChanged ? null : card.code,
+    };
+  }
+  const resolved = connectionForAssistQuery(connections, query.connection || card.connectionName, {
+    sql: patch.sql,
+    schemas,
+  });
+  return {
+    ...card,
+    titledSql: patch.sql,
+    modelSql: patch.sql,
+    locked: false,
+    sql: patch.sql,
+    connectionId: resolved.ok ? resolved.connection.id : null,
+    connectionName: resolved.ok ? resolved.connection.name : query.connection,
+    chart: patch.chart,
+    color: patch.color,
+    result: null,
+    error: resolved.ok ? null : resolved.error,
+    view: null,
+    code: null,
+    running: resolved.ok,
+  };
+}
+
+function applyChartRevisions(
+  turns: readonly Turn[],
+  revisions: readonly AssistChartRevision[],
+  connections: readonly DatabaseConnection[],
+  schemas: Readonly<Record<string, string>>,
+): { turns: readonly Turn[]; rerun: AssistCard[] } {
+  if (revisions.length === 0) return { turns, rerun: [] };
+  const byId = new Map(revisions.map((item) => [item.id, item.query]));
+  const rerun: AssistCard[] = [];
+  const next = turns.map((turn) => {
+    let changed = false;
+    const cards = turn.cards.map((card) => {
+      const query = byId.get(card.id);
+      if (query === undefined) return card;
+      changed = true;
+      const updated = reviseCard(card, query, connections, schemas);
+      if (updated.running) rerun.push(updated);
+      return updated;
+    });
+    return changed ? { ...turn, cards } : turn;
+  });
+  return { turns: next, rerun };
 }
 
 function plannedCards(
@@ -756,14 +839,18 @@ export function AiAssist() {
       const prior = turnsRef.current.flatMap((turn) =>
         turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
       );
-      const follow = splitAssistFollowUp(plan.queries, prior);
+      const revised = questionOnlyRecolors(question)
+        ? { revisions: [], queries: plan.queries }
+        : reviseAssistCharts(plan.queries, editableCharts(turnsRef.current, settings.historyMessages));
+      const follow = splitAssistFollowUp(revised.queries, prior);
       const recolors = [...follow.recolors, ...recolorsFromQuestion(question, prior)];
       const queries = questionOnlyRecolors(question) ? [] : follow.queries;
       const cards = plannedCards(queries, connections, schemas);
+      const applied = applyChartRevisions(paint(turnsRef.current, recolors), revised.revisions, connections, schemas);
       const assistantId = nextId();
       commit(
         [
-          ...paint(turnsRef.current, recolors),
+          ...applied.turns,
           {
             id: assistantId,
             role: "assistant",
@@ -774,7 +861,7 @@ export function AiAssist() {
         ],
         true,
       );
-      await executeCards(cards);
+      await executeCards([...applied.rerun, ...cards]);
       if (cards.length > 0) {
         await expandResearch(assistantId, new Set(cards.map((card) => card.id)), plan.explanation);
       }
