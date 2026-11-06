@@ -1194,6 +1194,8 @@ describe("AiAssist page", () => {
     const view = render(<AiAssist />);
     fireEvent.click(view.getByRole("button", { name: "Earlier messages, 5" }));
     const count = view.getByLabelText("Number of earlier messages") as HTMLSelectElement;
+    expect(count.parentElement?.className).toContain("top-full");
+    expect(count.parentElement?.className).toContain("z-30");
     expect([...count.options].map((option) => option.value)).toEqual([
       "0",
       "1",

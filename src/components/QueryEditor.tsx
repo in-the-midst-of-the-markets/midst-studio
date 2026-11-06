@@ -138,6 +138,7 @@ const getEditorOptions = (showLineNumbers: boolean, wordWrap: boolean) => ({
   },
   fontLigatures: true,
   suggestOnTriggerCharacters: true,
+  fixedOverflowWidgets: true,
   quickSuggestions: {
     other: true,
     comments: false,
