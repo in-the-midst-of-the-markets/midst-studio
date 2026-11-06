@@ -1238,7 +1238,10 @@ export interface SavedChartConfig {
   variationId?: string;
   /** Column shelves keyed by slot id. */
   selection?: Record<string, string[]>;
-  /** The title in the chart code (`title.text`). Absent leaves the chart untitled. */
+  /**
+   * The explanation shown above the chart id. The user can change it.
+   * Absent leaves that line empty. The plot title stays in the chart code.
+   */
   title?: string;
   /**
    * How the chart looked when it was saved: colours, title, and series style, without

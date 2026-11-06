@@ -467,6 +467,7 @@ describe("ChartWithEditor", () => {
     const slider = view.getByRole("slider", { name: "revenue" }) as HTMLInputElement;
     expect(slider.max).toBe("20");
     expect(slider.step).toBe("1");
+    expect(view.getByLabelText("revenue value").textContent).toBe("10");
     fireEvent.change(slider, { target: { value: "4" } });
     expect(onRun).toHaveBeenCalledWith("SELECT month, revenue FROM orders WHERE revenue > {{revenue:4}}");
   });
