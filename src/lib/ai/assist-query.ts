@@ -3,7 +3,7 @@
  */
 
 import { buildConnectionPayload } from "@/hooks/use-connection-payload";
-import { embeddingModelFor } from "@/lib/embeddings/settings";
+import { embeddingRequestFields } from "@/lib/embeddings/ids";
 import type { DatabaseConnection, QueryResult } from "@/lib/types";
 
 interface JsonResponse {
@@ -177,7 +177,7 @@ export async function runAssistQuery(
       body: JSON.stringify({
         ...buildConnectionPayload(connection),
         sql,
-        embeddingModel: embeddingModelFor(connection.id),
+        ...embeddingRequestFields(connection.id, sql),
       }),
     });
   } catch {

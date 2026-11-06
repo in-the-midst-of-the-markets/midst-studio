@@ -1151,6 +1151,7 @@ describe("OpenSearchProvider shares the Elasticsearch implementation", () => {
     expect(esPaging).toBe(false);
     expect(opensearch.queryLanguage).toBe("sql");
     expect(opensearch.supportsExplain).toBe(false);
+    expect(opensearch.supportsVectorQuery).toBe(true);
     // Neither grammar has BEGIN and both are reached over stateless HTTP (#464).
     expect(opensearch.supportsTransactions).toBe(false);
     expect(opensearch.defaultPort).toBe(9200);

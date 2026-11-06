@@ -410,7 +410,7 @@ None: Qdrant has no maintenance operation in v1, so no Admin > Operations card a
 
 ## 9. Capabilities & labels
 
-`queryLanguage: "json"` with `queryDialect: "qdrant"`, `containerLevels: []`, `defaultPort: 6333`, `enforcesReadOnly: true`, `statementTerminator: "none"`, and `false` for explain, table creation, transactions, inline row edits, result pagination, external query limiting, maintenance and the connection string.
+`queryLanguage: "json"` with `queryDialect: "qdrant"`, `containerLevels: []`, `defaultPort: 6333`, `enforcesReadOnly: true`, `statementTerminator: "none"`, `supportsVectorQuery: true` so the IDE can hand back an embed id that becomes a vector before the request is sent, and `false` for explain, table creation, transactions, inline row edits, result pagination, external query limiting, maintenance and the connection string.
 A collection is labelled "Collection"; the password field "API key or JWT"; the export menu offers no SQL INSERT or DDL for a Qdrant result.
 
 ### SQL writing

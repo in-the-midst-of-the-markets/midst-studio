@@ -196,6 +196,9 @@ export class WeaviateProvider extends BaseDatabaseProvider {
       queryLanguage: "json",
       queryDialect: "weaviate",
       supportsExplain: false,
+      // A near-vector search takes the vector itself. The IDE's embed id becomes that
+      // vector before the request is sent, so Weaviate is never asked to embed the text.
+      supportsVectorQuery: true,
       supportsTransactions: false,
       supportsInlineRowEdit: false,
       supportsTestDataGeneration: false,

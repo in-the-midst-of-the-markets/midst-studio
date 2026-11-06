@@ -19,8 +19,7 @@ import { endsOpenQueryTransactions, newQueryCallScope } from "@/lib/db/types";
 import type { DatabaseProvider, OpenQueryTransactionOutcome } from "@/lib/db/types";
 import { rowsWithNonFiniteWords } from "@/lib/non-finite";
 import type { DatabaseConnection } from "@/lib/types";
-import { auditTextAt, expandQueryEmbeddings } from "@/lib/embeddings/expand";
-import { embeddingModelOf } from "@/lib/embeddings/models";
+import { auditTextAt, expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -281,7 +280,7 @@ export async function POST(req: NextRequest) {
     // UNITS rather than statements: what one request carries is the dialect's to say, and
     // for T-SQL it is the whole batch between `GO` lines, so a `DECLARE @x` reaches the
     // server in the same request as the `SELECT @x` after it (#1312).
-    const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+    const embedded = await expandSubmittedEmbeddings(sql, body);
     if (!embedded.ok) {
       return NextResponse.json({ error: embedded.error }, { status: 400 });
     }

@@ -16,8 +16,7 @@ import { hasLoneCarriageReturnInLineComment, hasUnterminatedSpan } from "@/lib/s
 import { readsSqlText, resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { ExplainFormat, QueryPrepareOptions } from "@/lib/db/types";
 import type { DatabaseConnection } from "@/lib/types";
-import { embeddingModelOf } from "@/lib/embeddings/models";
-import { expandQueryEmbeddings } from "@/lib/embeddings/expand";
+import { expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -227,7 +226,7 @@ export async function POST(req: NextRequest) {
 
     // Text becomes a vector here, after the statement is accepted and before a provider
     // opens. The query event keeps `submitted`, which is still the placeholder.
-    const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+    const embedded = await expandSubmittedEmbeddings(sql, body);
     if (!embedded.ok) {
       return NextResponse.json({ error: embedded.error }, { status: 400 });
     }

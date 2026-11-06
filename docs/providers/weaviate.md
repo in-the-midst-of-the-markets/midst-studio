@@ -293,7 +293,7 @@ None: Weaviate has no maintenance operation in v1, so no Admin > Operations card
 
 ## 9. Capabilities & labels
 
-`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, every `supports*` false, `defaultPort` 8080.
+`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, `supportsVectorQuery` true so the IDE can hand back an embed id that becomes a vector before the request is sent, every other `supports*` false, `defaultPort` 8080.
 `agentCredential` is `"token"` and `metadataOnly` states the agent's nine projections (section 15.5); `queryReadOnly` answers on a handle opened for the agent read-only profile only (section 15).
 The labels name a Collection and an Object, "Read Objects" and "Generate Request", and the statement language plan mode states is generated from the route table.
 

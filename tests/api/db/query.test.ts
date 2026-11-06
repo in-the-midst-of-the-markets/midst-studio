@@ -227,6 +227,48 @@ describe("POST /api/db/query", () => {
     }
   });
 
+  test("turns an embed id into a vector from the text sent beside the query", async () => {
+    const savedKey = process.env.VOYAGE_API_KEY;
+    process.env.VOYAGE_API_KEY = "test-key";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ data: [{ index: 0, embedding: [0.5, 0.25] }] }), {
+        status: 200,
+      })) as unknown as typeof fetch;
+    try {
+      const req = createMockRequest("/api/db/query", {
+        method: "POST",
+        body: {
+          connection: validConnection,
+          sql: "SELECT * FROM profiles WHERE knn(embedding, '{{embed e1}}')",
+          embeddingModel: "voyage-4",
+          embeddingBinds: [{ name: "e1", value: "cats" }],
+        },
+      });
+      const res = await POST(req as never);
+      expect(res.status).toBe(200);
+      const sent = (mockProvider.query as ReturnType<typeof mock>).mock.calls.map((call) => String(call[0]));
+      expect(sent.some((sql) => sql.includes("[0.5,0.25]") && !sql.includes("e1"))).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedKey;
+    }
+  });
+
+  test("refuses a query whose embed ids are not a list of text pairs", async () => {
+    (mockProvider.query as ReturnType<typeof mock>).mockClear();
+    const req = createMockRequest("/api/db/query", {
+      method: "POST",
+      body: { connection: validConnection, sql: "{{embed e1}}", embeddingBinds: {} },
+    });
+    const res = await POST(req as never);
+    const data = await parseResponseJSON<{ error: string }>(res);
+    expect(res.status).toBe(400);
+    expect(data.error).toContain("embeddingBinds");
+    expect((mockProvider.query as ReturnType<typeof mock>).mock.calls).toHaveLength(0);
+  });
+
   test("refuses an embed when no embedding key is configured", async () => {
     const savedVoyage = process.env.VOYAGE_API_KEY;
     const savedEmbedding = process.env.EMBEDDING_API_KEY;

@@ -463,7 +463,7 @@ Both also need the Milvus user's own Load or Release privilege, which the server
 
 ## 9. Capabilities & labels
 
-`queryLanguage: "json"` with `queryDialect: "milvus"`, one container level labelled Database, the kind Collection, `defaultPort: 19530`, `enforcesReadOnly: true`, `supportsMaintenance: true` with `load` and `release`, and `false` or absent for explain, table creation, transactions, inline row edits, result pagination, external query limiting and connection strings.
+`queryLanguage: "json"` with `queryDialect: "milvus"`, one container level labelled Database, the kind Collection, `defaultPort: 19530`, `enforcesReadOnly: true`, `supportsMaintenance: true` with `load` and `release`, `supportsVectorQuery: true` so the IDE can hand back an embed id that becomes a vector before the request is sent, and `false` or absent for explain, table creation, transactions, inline row edits, result pagination, external query limiting and connection strings.
 The password field is labelled "Password or token".
 
 ### SQL writing

@@ -204,6 +204,9 @@ export class QdrantProvider extends BaseDatabaseProvider {
       queryLanguage: "json",
       queryDialect: "qdrant",
       supportsExplain: false,
+      // A search takes the vector itself. The IDE's embed id becomes that vector
+      // before the request is sent, so Qdrant is never asked to embed the text.
+      supportsVectorQuery: true,
       supportsTransactions: false,
       supportsInlineRowEdit: false,
       supportsTestDataGeneration: false,

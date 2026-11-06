@@ -17,8 +17,11 @@ import {
   EMBED_LONG_ERROR,
   EMBED_TOO_MANY_ERROR,
   auditTextAt,
+  EMBED_BINDS_ERROR,
   embedNameError,
   expandQueryEmbeddings,
+  expandSubmittedEmbeddings,
+  readEmbeddingBinds,
 } from "@/lib/embeddings/expand";
 import {
   CUSTOM_EMBEDDING_CHOICE,
@@ -185,6 +188,41 @@ describe("expandQueryEmbeddings", () => {
     });
     expect(auditTextAt(["SELECT 1"], 0, "fallback")).toBe("SELECT 1");
     expect(auditTextAt([], 0, "fallback")).toBe("fallback");
+    expect(readEmbeddingBinds(undefined)).toEqual({ ok: true, binds: [] });
+    expect(readEmbeddingBinds({})).toEqual({ ok: false, error: EMBED_BINDS_ERROR });
+    expect(readEmbeddingBinds([null, "x"])).toEqual({ ok: false, error: EMBED_BINDS_ERROR });
+    expect(readEmbeddingBinds([[]])).toEqual({ ok: false, error: EMBED_BINDS_ERROR });
+    expect(readEmbeddingBinds([{ name: 1, value: "cats" }])).toEqual({ ok: false, error: EMBED_BINDS_ERROR });
+    expect(readEmbeddingBinds(Array.from({ length: 33 }, () => ({ name: "e1", value: "cats" })))).toEqual({
+      ok: false,
+      error: EMBED_TOO_MANY_ERROR,
+    });
+    expect(readEmbeddingBinds([{ name: "e1", value: "cats" }])).toEqual({
+      ok: true,
+      binds: [{ name: "e1", value: "cats" }],
+    });
+    expect(await expandSubmittedEmbeddings("{{embed e1}}", { embeddingBinds: { name: "e1" } }, fetchImpl)).toEqual({
+      ok: false,
+      error: EMBED_BINDS_ERROR,
+    });
+    expect(
+      await expandSubmittedEmbeddings("{{embed e1}}", { embeddingBinds: [{ name: "e1", value: "" }] }, fetchImpl),
+    ).toEqual({ ok: false, error: embedNameError("e1") });
+  });
+
+  test("embeds an id from the text sent beside the statement", async () => {
+    process.env.VOYAGE_API_KEY = "test-key";
+    try {
+      const expanded = await expandSubmittedEmbeddings(
+        "WHERE '{{embed e1}}'",
+        { embeddingModel: "voyage-4", embeddingBinds: [{ name: "e1", value: "cats" }] },
+        async () => new Response(JSON.stringify({ data: [{ index: 0, embedding: [1, 2] }] }), { status: 200 }),
+      );
+      expect(expanded).toEqual({ ok: true, sql: "WHERE '[1,2]'" });
+    } finally {
+      if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedKey;
+    }
   });
 
   test("returns the service error unchanged", async () => {

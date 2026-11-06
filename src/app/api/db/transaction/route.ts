@@ -30,8 +30,7 @@ import { logger } from "@/lib/logger";
 import type { UserPayload } from "@/lib/auth";
 import { clientAddress } from "@/lib/api/client-address";
 import type { GovernedConnection } from "@/lib/governance/visible";
-import { expandQueryEmbeddings } from "@/lib/embeddings/expand";
-import { embeddingModelOf } from "@/lib/embeddings/models";
+import { expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import type { QueryEventStart } from "@/lib/query-events/types";
@@ -451,7 +450,7 @@ export async function POST(req: NextRequest) {
         }
 
         // The event below records `sql` as the user wrote it. The engine receives the vector.
-        const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+        const embedded = await expandSubmittedEmbeddings(sql, body);
         if (!embedded.ok) {
           return NextResponse.json({ error: embedded.error }, { status: 400 });
         }

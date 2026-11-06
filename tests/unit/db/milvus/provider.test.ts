@@ -109,6 +109,7 @@ describe("the declarations, with no client", () => {
     expect(declared).toEqual({
       queryLanguage: "json",
       supportsExplain: false,
+      supportsVectorQuery: true,
       supportsTransactions: false,
       supportsInlineRowEdit: false,
       supportsTestDataGeneration: false,

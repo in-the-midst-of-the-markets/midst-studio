@@ -120,6 +120,7 @@ describe("declarations", () => {
       queryLanguage: "json",
       queryDialect: "weaviate",
       supportsExplain: false,
+      supportsVectorQuery: true,
       supportsTransactions: false,
       supportsInlineRowEdit: false,
       supportsTestDataGeneration: false,
