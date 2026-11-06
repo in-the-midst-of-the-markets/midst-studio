@@ -99,6 +99,9 @@ function FilterControl({
           onChange={(event) => onChange(filter.name, event.target.value)}
           className="w-28 disabled:opacity-50"
         />
+        <span className="tabular-nums text-fg" aria-label={`${filter.name} value`}>
+          {filter.value}
+        </span>
       </span>
     );
   }

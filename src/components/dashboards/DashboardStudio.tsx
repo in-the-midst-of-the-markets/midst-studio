@@ -520,6 +520,13 @@ export function DashboardStudio() {
                         storage.saveChart({ ...chart, name });
                         setCharts(storage.getSavedCharts());
                       }}
+                      onExplanation={(title) => {
+                        const next = { ...chart };
+                        if (title === "") delete next.title;
+                        else next.title = title;
+                        storage.saveChart(next);
+                        setCharts(storage.getSavedCharts());
+                      }}
                       onUnsave={() => {
                         storage.deleteChart(chart.id);
                         setCharts(storage.getSavedCharts());
@@ -671,6 +678,7 @@ function DashboardChart({
   onConnection,
   onUnsave,
   onTitle,
+  onExplanation,
 }: {
   readonly chart: SavedChartConfig;
   readonly width: number;
@@ -690,6 +698,7 @@ function DashboardChart({
   readonly onConnection: (connectionId: string | undefined) => void;
   readonly onUnsave: () => void;
   readonly onTitle: (name: string) => void;
+  readonly onExplanation: (title: string) => void;
 }) {
   const theme = chartTheme(useEffectiveTheme());
   const settings = useChartSettings();
@@ -867,6 +876,19 @@ function DashboardChart({
           </div>
         )}
       </div>
+      {!viewing && (
+        <label className="block px-4 pt-2 text-xs text-fg-muted">
+          Title
+          <input
+            aria-label="Chart explanation"
+            value={chart.title ?? ""}
+            onChange={(event) => onExplanation(event.target.value)}
+            placeholder="Explain this chart"
+            className={`mt-1.5 ${fieldClass}`}
+          />
+        </label>
+      )}
+      {viewing && (chart.title?.trim() ?? "") !== "" && <p className="px-4 pt-1 text-sm text-fg">{chart.title}</p>}
       {!viewing && (
         <label className="block px-4 pt-2 text-xs text-fg-muted">
           ID
@@ -1783,16 +1805,23 @@ function FilterSurface({
     return (
       <div className="flex flex-col gap-2">
         {idLine}
-        <input
-          type="range"
-          aria-label="Filter slider"
-          min={slider.min}
-          max={slider.max}
-          step={slider.step}
-          value={slider.value}
-          onChange={(event) => onChange({ value: event.target.value })}
-          className="w-full"
-        />
+        <p aria-label="Filter value" className="text-center text-sm font-medium tabular-nums text-fg">
+          {slider.value}
+        </p>
+        <div className="flex items-center gap-2 text-xs tabular-nums text-fg-muted">
+          <span aria-label="Slider minimum">{slider.min}</span>
+          <input
+            type="range"
+            aria-label="Filter slider"
+            min={slider.min}
+            max={slider.max}
+            step={slider.step}
+            value={slider.value}
+            onChange={(event) => onChange({ value: event.target.value })}
+            className="min-w-0 flex-1"
+          />
+          <span aria-label="Slider maximum">{slider.max}</span>
+        </div>
       </div>
     );
   }

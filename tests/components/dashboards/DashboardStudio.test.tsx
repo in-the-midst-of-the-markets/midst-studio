@@ -588,7 +588,11 @@ describe("DashboardStudio", () => {
     fireEvent.change(view.getByLabelText("Filter step"), { target: { value: "2" } });
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
     expect(view.getByLabelText("Filter slider").closest("label")).toBeNull();
+    expect(view.getByLabelText("Filter value").textContent).toBe("0");
+    expect(view.getByLabelText("Slider minimum").textContent).toBe("1");
+    expect(view.getByLabelText("Slider maximum").textContent).toBe("9");
     fireEvent.change(view.getByLabelText("Filter slider"), { target: { value: "5" } });
+    expect(view.getByLabelText("Filter value").textContent).toBe("5");
     expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("5");
     fireEvent.click(view.getByRole("button", { name: "Design" }));
     fireEvent.click(view.getByRole("button", { name: "Search" }));
@@ -1003,6 +1007,17 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("button", { name: "Add content" })).toBeTruthy();
     expect(view.getByLabelText("Dashboard name")).toBeTruthy();
     expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
+    const explanations = view.getAllByLabelText("Chart explanation") as HTMLInputElement[];
+    expect(explanations).toHaveLength(2);
+    expect(explanations[0]?.value).toBe("Revenue");
+    expect(explanations[0]?.compareDocumentPosition(view.getAllByLabelText("Chart id")[0] as HTMLElement)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    fireEvent.change(explanations[0] as HTMLInputElement, { target: { value: "Daily revenue by region" } });
+    expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.title).toBe("Daily revenue by region");
+    fireEvent.change(explanations[0] as HTMLInputElement, { target: { value: "" } });
+    expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.title).toBeUndefined();
+    fireEvent.change(explanations[0] as HTMLInputElement, { target: { value: "Daily revenue by region" } });
     expect(view.getAllByLabelText("Component title")).toHaveLength(2);
     await waitFor(() => expect(view.getAllByLabelText("Chart id")).toHaveLength(2));
     await waitFor(() =>
@@ -1031,6 +1046,8 @@ describe("DashboardStudio", () => {
     expect(view.queryByRole("button", { name: "Ask AI" })).toBeNull();
     expect(view.queryByLabelText("Dashboard conversation")).toBeNull();
     expect(view.queryByLabelText("Chart title")).toBeNull();
+    expect(view.queryByLabelText("Chart explanation")).toBeNull();
+    expect(view.getByText("Daily revenue by region")).toBeTruthy();
     expect(view.queryByLabelText("Chart id")).toBeNull();
     expect(view.queryByText("{{region}}")).toBeNull();
     expect(view.queryByRole("button", { name: "Query" })).toBeNull();
