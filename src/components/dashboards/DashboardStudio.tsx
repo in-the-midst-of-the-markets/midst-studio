@@ -14,6 +14,7 @@ import {
   Bookmark,
   Braces,
   ChartColumn,
+  ChevronDown,
   LayoutDashboard,
   LayoutGrid,
   LineChart,
@@ -1149,6 +1150,29 @@ function ChartShelves({
   );
 }
 
+/** One line for the collapsed control: the chosen type, or a prompt to pick one. */
+function choiceLine(
+  type: { id: string; label: string; variations: readonly { id: string; label: string }[] } | null,
+  typeId: string | null,
+  variationId: string | null,
+): string {
+  const variation = type?.variations.find((item) => item.id === variationId);
+  if (type === null || type.id !== typeId || variation === undefined) return "Choose a type";
+  return `${type.label} · ${variation.label}`;
+}
+
+/** The chosen dimension and metric names, short enough to sit on one line beside the chart. */
+function shelfLine(slots: readonly ChartSlot[] | null, selection: SlotSelection): string {
+  if (slots === null) return "";
+  return slots
+    .map((slot) => {
+      const names = selection[slot.id] ?? [];
+      return names.length === 0 ? "" : `${slot.label} ${names.join(", ")}`;
+    })
+    .filter((part) => part !== "")
+    .join(" · ");
+}
+
 function ChartTypePicker({
   result,
   typeId,
@@ -1165,6 +1189,7 @@ function ChartTypePicker({
   ) => void;
 }) {
   const [browsing, setBrowsing] = useState<string | null>(null);
+  const [choicesOpen, setChoicesOpen] = useState(true);
   const shownTypeId = browsing ?? typeId;
   const type = shownTypeId === null ? null : echartType(shownTypeId);
   const chooseVariation = (nextVariationId: string) => {
@@ -1193,59 +1218,78 @@ function ChartTypePicker({
     type !== null && type.id === typeId && variationId !== null
       ? { typeId: type.id, variationId, slots: slotsFor(type.id, variationId) }
       : null;
+  const savedType = typeId === null ? null : echartType(typeId);
+  const summary = choiceLine(savedType, typeId, variationId);
+  const shelves = shelfLine(saved?.slots ?? null, selection);
   return (
     <div className="flex flex-col gap-2 p-3">
-      <fieldset aria-label="Chart types" className="m-0 flex flex-wrap gap-2 border-0 p-0">
-        {ECHART_TYPES.map((item) => {
-          const pressed = shownTypeId === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={pressed}
-              aria-label={`Use ${item.label} chart`}
-              onClick={() => setBrowsing(item.id)}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-medium",
-                pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
-              )}
-            >
-              {item.label}
-            </button>
-          );
-        })}
-      </fieldset>
-      {type !== null && (
-        <fieldset aria-label="Chart variations" className="m-0 flex flex-wrap gap-2 border-0 p-0">
-          {type.variations.map((item) => {
-            const pressed = type.id === typeId && item.id === variationId;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={pressed}
-                aria-label={`Use ${type.label} ${item.label} chart`}
-                onClick={() => chooseVariation(item.id)}
-                className={cn(
-                  "rounded-lg px-2.5 py-1 text-xs font-medium",
-                  pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
-                )}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </fieldset>
-      )}
-      {saved !== null && saved.slots !== null && (
-        <ChartShelves
-          typeId={saved.typeId}
-          variationId={saved.variationId}
-          slots={saved.slots}
-          columns={columns}
-          selection={selection}
-          onShape={onShape}
-        />
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          aria-expanded={choicesOpen}
+          onClick={() => setChoicesOpen((open) => !open)}
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-hairline bg-raised px-2 py-1 text-xs font-medium text-fg-secondary"
+        >
+          <ChevronDown aria-hidden="true" className={cn("size-3.5", choicesOpen && "rotate-180")} />
+          {choicesOpen ? "Hide chart choices" : summary}
+        </button>
+        {!choicesOpen && shelves !== "" && <p className="min-w-0 flex-1 truncate text-xs text-fg-muted">{shelves}</p>}
+      </div>
+      {choicesOpen && (
+        <>
+          <fieldset aria-label="Chart types" className="m-0 flex flex-wrap gap-2 border-0 p-0">
+            {ECHART_TYPES.map((item) => {
+              const pressed = shownTypeId === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={pressed}
+                  aria-label={`Use ${item.label} chart`}
+                  onClick={() => setBrowsing(item.id)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-xs font-medium",
+                    pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </fieldset>
+          {type !== null && (
+            <fieldset aria-label="Chart variations" className="m-0 flex flex-wrap gap-2 border-0 p-0">
+              {type.variations.map((item) => {
+                const pressed = type.id === typeId && item.id === variationId;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={pressed}
+                    aria-label={`Use ${type.label} ${item.label} chart`}
+                    onClick={() => chooseVariation(item.id)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-xs font-medium",
+                      pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </fieldset>
+          )}
+          {saved !== null && saved.slots !== null && (
+            <ChartShelves
+              typeId={saved.typeId}
+              variationId={saved.variationId}
+              slots={saved.slots}
+              columns={columns}
+              selection={selection}
+              onShape={onShape}
+            />
+          )}
+        </>
       )}
     </div>
   );

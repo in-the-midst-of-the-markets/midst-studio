@@ -369,7 +369,12 @@ describe("DashboardStudio", () => {
     const sql = view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement;
     fireEvent.change(sql, { target: { value: "SELECT region, total FROM sales" } });
     fireEvent.click(view.getByRole("button", { name: "Run Chart" }));
-    fireEvent.click(await view.findByRole("button", { name: "Use Bar chart" }));
+    fireEvent.click(await view.findByRole("button", { name: "Hide chart choices" }));
+    expect(view.queryByRole("button", { name: "Use Bar chart" })).toBeNull();
+    expect(view.queryByRole("group", { name: "Chart types" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Choose a type" }));
+    expect(view.getByRole("button", { name: "Hide chart choices" }).getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Use Bar chart" }));
     expect(view.queryByRole("group", { name: "Chart variations" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Use Line chart" }));
     expect(view.queryByRole("button", { name: "Use Bar Stacked chart" })).toBeNull();
@@ -381,10 +386,26 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("button", { name: "Use Bar Stacked chart" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(view.getByRole("button", { name: "Use Bar Stacked chart" }));
     expect(storage.getSavedCharts()[0]?.selection?.category).toEqual(["region"]);
+    expect(
+      within(view.getByRole("group", { name: "Dimension" }))
+        .getByRole("button", { name: "region" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    expect(
+      within(view.getByRole("group", { name: "Metrics" }))
+        .getByRole("button", { name: "total" })
+        .getAttribute("aria-pressed"),
+    ).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Hide chart choices" }));
+    expect(view.queryByRole("group", { name: "Dimension" })).toBeNull();
+    expect(view.queryByRole("group", { name: "Chart types" })).toBeNull();
+    expect(view.queryByRole("group", { name: "Chart variations" })).toBeNull();
+    expect(view.getByText("Dimension region · Metrics total")).toBeTruthy();
+    expect(view.getByTestId("assist-chart")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Bar · Stacked" }));
+    expect(view.getByRole("button", { name: "Hide chart choices" }).getAttribute("aria-expanded")).toBe("true");
     const dimension = view.getByRole("group", { name: "Dimension" });
     const metrics = view.getByRole("group", { name: "Metrics" });
-    expect(within(dimension).getByRole("button", { name: "region" }).getAttribute("aria-pressed")).toBe("true");
-    expect(within(metrics).getByRole("button", { name: "total" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(within(dimension).getByRole("button", { name: "total" }));
     expect(storage.getSavedCharts()[0]?.selection).toMatchObject({ category: ["total"] });
     expect(storage.getSavedCharts()[0]?.xAxis).toBe("total");
