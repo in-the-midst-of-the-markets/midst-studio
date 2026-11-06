@@ -805,8 +805,8 @@ export function AiAssist() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-sunken text-fg">
-      <header className="grid h-14 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline bg-surface px-4">
-        <MidstLockup className="min-w-0" markClassName="h-6 w-6" wordClassName="text-sm" />
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-hairline bg-surface px-3 sm:gap-3 sm:px-4">
+        <MidstLockup className="shrink-0" markClassName="h-6 w-6" wordClassName="text-sm" />
         <p className="flex min-w-0 items-center justify-center gap-1.5 text-sm text-fg-muted">
           <span>Analytics</span>
           {activeQuery !== null && (
@@ -816,14 +816,14 @@ export function AiAssist() {
             </>
           )}
         </p>
-        <div className="flex items-center justify-end gap-2">
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
           <span className="hidden items-center gap-2 rounded-full border border-hairline bg-canvas py-1 pr-3 pl-1 text-xs font-medium text-fg sm:inline-flex">
             <span className="flex size-6 items-center justify-center rounded-full bg-brand-tint/20 text-[11px] font-semibold text-brand">
               K
             </span>
             KnowSQL
           </span>
-          <ModeLinks page="assist" variant="outline" />
+          <ModeLinks page="assist" />
         </div>
       </header>
 

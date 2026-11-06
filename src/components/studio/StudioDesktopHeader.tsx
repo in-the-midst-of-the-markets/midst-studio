@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
+import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { AssistConnectors } from "@/components/ai-assist/AssistConnectors";
 import { ChartSettingsDialog } from "@/components/charts/ChartSettingsDialog";
 import { ReadOnlyMarker } from "@/components/read-only-marker";
@@ -79,7 +79,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex min-w-0 items-center justify-end gap-2">
         {connectionPulse && (
           <div
             className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-fill mr-2"
@@ -144,7 +144,7 @@ export const StudioDesktopHeader = React.memo(function StudioDesktopHeader({
         )}
         {/* Renders nothing when a host (platform) owns the theme — see ThemeToggle. */}
         <ThemeToggle className="mr-1" />
-        <ModeLinks page="ide" className={IDE_MODE_LINK_CLASS} />
+        <ModeLinks page="ide" />
       </div>
       {connectorsOpen && <AssistConnectors onClose={() => setConnectorsOpen(false)} />}
       {chartSettingsOpen && <ChartSettingsDialog onClose={() => setChartSettingsOpen(false)} />}

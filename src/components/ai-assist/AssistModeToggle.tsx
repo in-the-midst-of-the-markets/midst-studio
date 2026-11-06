@@ -1,51 +1,51 @@
 "use client";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Code2, Layers, LayoutDashboard, Sparkles, type LucideIcon } from "lucide-react";
 import { withBasePath } from "@/lib/config/base-path";
 import { cn } from "@/lib/utils";
 
-/** The top-level surfaces. Each page links to the others. */
+/** The top-level surfaces. Each page shows all four, and marks the one that is open. */
 type StudioSurface = "ide" | "assist" | "dash" | "models";
 
-const SURFACES: readonly { id: StudioSurface; href: string; label: string }[] = [
-  { id: "assist", href: "/assist", label: "AI" },
-  { id: "ide", href: "/", label: "IDE" },
-  { id: "dash", href: "/create", label: "Dash" },
-  { id: "models", href: "/models", label: "Models" },
+const SURFACES: readonly { id: StudioSurface; href: string; label: string; icon: LucideIcon }[] = [
+  { id: "assist", href: "/assist", label: "AI", icon: Sparkles },
+  { id: "ide", href: "/", label: "IDE", icon: Code2 },
+  { id: "dash", href: "/create", label: "Dash", icon: LayoutDashboard },
+  { id: "models", href: "/models", label: "Models", icon: Layers },
 ];
 
-/**
- * The IDE pair. A light brand wash and brand type, rather than a solid purple fill,
- * so the buttons sit with the rest of the header.
- */
-export const IDE_MODE_LINK_CLASS =
-  "border border-brand bg-brand/15 text-brand shadow-none hover:bg-brand/25 hover:text-brand";
+/** White on every page. The open page is the light brand wash. */
+const MODE_LINK_CLASS = "inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium shadow-none";
 
 /**
- * The other surfaces, as buttons beside each other.
- * The IDE offers AI, Dash and Models. Each other page offers the surfaces it is not.
- * `outline` is the quieter pair on the Analytics and dashboard headers.
+ * The same four pages on every surface.
+ * The open page is marked. The others are white, on the IDE as well as on AI, Dash, and Models.
  */
-export function ModeLinks({
-  page,
-  variant = "default",
-  className,
-}: {
-  page: StudioSurface;
-  variant?: "default" | "outline";
-  className?: string;
-}) {
+export function ModeLinks({ page }: { page: StudioSurface }) {
   return (
-    <div className="flex items-center gap-1.5">
-      {SURFACES.filter((surface) => surface.id !== page).map((surface) => (
-        <a
-          key={surface.id}
-          href={withBasePath(surface.href)}
-          className={cn(buttonVariants({ variant, size: "sm" }), "h-7 px-3 text-xs", className)}
-        >
-          {surface.label}
-        </a>
-      ))}
+    <div className="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="Studio pages" className="flex w-max items-center gap-1.5">
+        {SURFACES.map((surface) => {
+          const current = surface.id === page;
+          const Icon = surface.icon;
+          return (
+            <a
+              key={surface.id}
+              href={withBasePath(surface.href)}
+              aria-current={current ? "page" : undefined}
+              className={cn(
+                MODE_LINK_CLASS,
+                current
+                  ? "border-transparent bg-brand-tint/20 text-brand"
+                  : "border-hairline bg-raised text-fg-secondary hover:bg-fill hover:text-fg",
+              )}
+            >
+              <Icon aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
+              <span className="max-sm:sr-only">{surface.label}</span>
+            </a>
+          );
+        })}
+      </nav>
     </div>
   );
 }

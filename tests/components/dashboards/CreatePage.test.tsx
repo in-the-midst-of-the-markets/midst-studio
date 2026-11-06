@@ -26,8 +26,11 @@ describe("/create", () => {
     expect(links).toEqual([
       { name: "AI", href: "/assist" },
       { name: "IDE", href: "/" },
+      { name: "Dash", href: "/create" },
       { name: "Models", href: "/models" },
     ]);
+    expect(screen.getByRole("link", { name: "Dash" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "AI" }).className.includes("bg-raised")).toBe(true);
     expect(await screen.findByRole("heading", { name: "Create" })).toBeTruthy();
     expect(screen.getByText("You have no dashboards yet.")).toBeTruthy();
   });

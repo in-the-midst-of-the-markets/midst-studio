@@ -1165,7 +1165,7 @@ describe("AiAssist page", () => {
     expect(view.queryByRole("navigation", { name: "Editor mode" })).toBeNull();
     const ide = view.getByRole("link", { name: "IDE" });
     expect(ide.getAttribute("href")).toBe("/");
-    expect(ide.className.includes("border")).toBe(true);
+    expect(ide.className.includes("bg-raised")).toBe(true);
     fireEvent.click(view.getByRole("button", { name: "New query" }));
     const askBox = view.getByLabelText("How can I help?");
     expect(document.activeElement).toBe(askBox);
@@ -1174,7 +1174,9 @@ describe("AiAssist page", () => {
     expect(view.getByText("AI can make mistakes. Review generated queries.")).toBeTruthy();
     expect(view.getByRole("button", { name: "Model configuration" }).getAttribute("aria-expanded")).toBe("false");
     expect(view.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
-    expect(view.queryByRole("link", { name: "AI" })).toBeNull();
+    const ai = view.getByRole("link", { name: "AI" });
+    expect(ai.getAttribute("aria-current")).toBe("page");
+    expect(ai.className.includes("bg-brand-tint/20")).toBe(true);
     expect(view.getByText(/Add a database in Traditional mode/)).toBeTruthy();
     expect(await view.findByText(/This server has no OpenRouter key/)).toBeTruthy();
   });

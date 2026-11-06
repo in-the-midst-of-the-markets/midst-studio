@@ -395,8 +395,9 @@ describe("StudioDesktopHeader", () => {
     const ai = getAllByRole("link", { name: "AI" });
     expect(ai).toHaveLength(1);
     expect(ai[0]?.getAttribute("href")).toBe("/assist");
-    expect(ai[0]?.className.includes("bg-brand/15")).toBe(true);
-    expect(ai[0]?.className.includes("text-brand")).toBe(true);
+    expect(ai[0]?.className.includes("bg-raised")).toBe(true);
+    expect(ai[0]?.className.includes("bg-brand/15")).toBe(false);
+    expect(ai[0]?.className.includes("text-brand")).toBe(false);
     expect(ai[0]?.className.includes("bg-primary")).toBe(false);
     const dash = getAllByRole("link", { name: "Dash" });
     expect(dash).toHaveLength(1);
