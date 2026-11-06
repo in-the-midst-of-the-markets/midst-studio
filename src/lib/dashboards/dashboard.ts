@@ -411,16 +411,55 @@ function noteFrameHost(
 }
 
 /**
- * What a dashboard script may load. The frame is a unique origin, and this keeps the
- * script from fetching, embedding a response, or posting a form.
+ * What a dashboard script may load. The author's script runs in an inner frame.
+ * This policy sits on the outer frame, so the inner one cannot move to another
+ * address, open a worker, or connect out. The inner srcdoc is still allowed.
  */
-export const DASHBOARD_FRAME_CSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'";
+export const DASHBOARD_FRAME_CSP =
+  "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-src 'none'; worker-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'";
 
 /** The longest value a custom filter may publish. A longer one is cut, not stored whole. */
 const FILTER_FRAME_VALUE_CAP = 2_000;
 
 function frameHead(): string {
   return `<head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${DASHBOARD_FRAME_CSP}">`;
+}
+
+/** A JavaScript string literal that cannot close the outer script element. */
+function frameScriptLiteral(source: string): string {
+  return JSON.stringify(source).replace(/</g, "\\u003c");
+}
+
+/**
+ * The outer document. Its policy blocks the inner frame from navigating or connecting.
+ * The author's script is only in the inner srcdoc.
+ */
+function guardedFrameDocument(inner: string, title = "Filter script"): string {
+  return [
+    "<!DOCTYPE html><html>",
+    frameHead(),
+    "<style>html,body,iframe{margin:0;width:100%;height:100%;border:0;}</style></head><body>",
+    `<iframe id="inner" sandbox="allow-scripts" title="${title}"></iframe>`,
+    "<script>",
+    'const frame=document.getElementById("inner");',
+    'window.addEventListener("message",(event)=>{if(event.source!==frame.contentWindow)return;parent.postMessage(event.data,"*");});',
+    `frame.srcdoc=${frameScriptLiteral(inner)};`,
+    "</script></body></html>",
+  ].join("");
+}
+
+/** The inner document. One script shares `host` with the author's source. */
+function innerFrameDocument(prelude: string, script: string, style = ""): string {
+  const source = script.replace(/<\/script/gi, "<\\/script");
+  return [
+    "<!DOCTYPE html><html>",
+    frameHead(),
+    style,
+    "</head><body>",
+    '<div id="root"></div>',
+    `<script>${prelude}${source}</script>`,
+    "</body></html>",
+  ].join("");
 }
 
 /** The document a text box script runs in a sandboxed frame. It draws into `#root`. */
@@ -432,24 +471,23 @@ export function noteFrameDocument(
   look: NoteLook,
 ): string {
   const host = noteFrameHost(text, rows, fields, look);
-  const source = script.replace(/<\/script/gi, "<\\/script");
   const family = noteCssValue(look.fontFamily);
   const color = noteCssValue(look.color ?? "inherit");
   const background = noteCssValue(look.background ?? "transparent");
   const weight = look.bold ? "700" : "400";
   const fontStyle = look.italic ? "italic" : "normal";
-  return [
-    "<!DOCTYPE html><html>",
-    frameHead(),
+  const style = [
     "<style>",
     `body{margin:0;font-family:${family};font-size:${look.fontSize}px;color:${color};background:${background};text-align:${look.align};font-weight:${weight};font-style:${fontStyle};}`,
     "#root{white-space:pre-wrap;overflow-wrap:anywhere;}",
-    "</style></head><body>",
-    '<div id="root"></div>',
-    `<script>const host = ${host};const text = host.text;const rows = host.rows;const fields = host.fields;</script>`,
-    `<script>${source}</script>`,
-    "</body></html>",
+    "</style>",
   ].join("");
+  const inner = innerFrameDocument(
+    `const host = ${host};const text = host.text;const rows = host.rows;const fields = host.fields;`,
+    script,
+    style,
+  );
+  return guardedFrameDocument(inner, "Text script");
 }
 
 /** How long one query stays in the inventory before the rest is named as omitted. */
@@ -664,6 +702,7 @@ export function savedComponentFromFilter(filter: DashboardFilter, id: string): S
   if (filter.step !== undefined) design.step = filter.step;
   if (filter.choiceSource !== undefined) design.choiceSource = filter.choiceSource;
   if (filter.valuesText !== undefined) design.valuesText = filter.valuesText;
+  if (filter.choiceField !== undefined) design.choiceField = filter.choiceField;
   if (filter.script !== undefined) design.script = filter.script;
   return {
     id,
@@ -695,12 +734,19 @@ export function placeSavedComponent(
   return { ...dashboard, updatedAt: new Date(), filters: [...filters, filter] };
 }
 
+/** How many characters of a query choice are kept before the rest becomes "...". */
+const CHOICE_TEXT_CAP = 25;
+
+function clipChoice(text: string): string | null {
+  const trimmed = text.trim();
+  if (trimmed === "") return null;
+  if (trimmed.length <= CHOICE_TEXT_CAP) return trimmed;
+  return `${trimmed.slice(0, CHOICE_TEXT_CAP)}...`;
+}
+
 function choiceText(value: unknown): string | null {
-  if (typeof value === "string") {
-    const text = value.trim();
-    return text === "" ? null : text.slice(0, 80);
-  }
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string") return clipChoice(value);
+  if (typeof value === "number" && Number.isFinite(value)) return clipChoice(String(value));
   if (typeof value === "boolean") return value ? "true" : "false";
   return null;
 }
@@ -719,10 +765,26 @@ export function filterValueList(text: string): string[] {
   return choices;
 }
 
-/** Distinct values of the first column, in the order they appear. */
-export function filterChoices(rows: readonly Record<string, unknown>[], fields: readonly string[]): string[] {
-  const field = fields[0];
-  if (field === undefined || field === "") return [];
+/**
+ * The one column a dropdown query may use.
+ * One column is that column. Several columns use `chosen` when it is one of them.
+ */
+export function filterChoiceColumn(fields: readonly string[], chosen?: string): string | null {
+  const columns = fields.filter((field) => field !== "");
+  const [only, second] = columns;
+  if (second === undefined) return only ?? null;
+  if (chosen !== undefined && columns.includes(chosen)) return chosen;
+  return null;
+}
+
+/** Distinct values of one column, in the order they appear. A value past 25 characters ends with "...". */
+export function filterChoices(
+  rows: readonly Record<string, unknown>[],
+  fields: readonly string[],
+  column?: string,
+): string[] {
+  const field = filterChoiceColumn(fields, column);
+  if (field === null) return [];
   const seen = new Set<string>();
   const choices: string[] = [];
   for (const row of rows) {
@@ -733,6 +795,25 @@ export function filterChoices(rows: readonly Record<string, unknown>[], fields: 
     if (choices.length === CHOICE_CAP) break;
   }
   return choices;
+}
+
+/** Columns, choices, and the status line for a dropdown filled by a query. */
+export function filterChoiceState(
+  rows: readonly Record<string, unknown>[],
+  fields: readonly string[],
+  chosen?: string,
+): { columns: string[]; choices: string[]; status: string | null } {
+  const columns = fields.filter((field) => field !== "");
+  const column = filterChoiceColumn(fields, chosen);
+  if (column === null) {
+    return {
+      columns,
+      choices: [],
+      status: columns.length > 1 ? "Choose one column." : "That query did not return any choices.",
+    };
+  }
+  const choices = filterChoices(rows, fields, column);
+  return { columns, choices, status: choices.length === 0 ? "That query did not return any choices." : null };
 }
 
 /** The numbers a slider can use. A missing bound falls back, and the max stays above the min. */
@@ -753,16 +834,11 @@ export function filterSlider(filter: Pick<DashboardFilter, "min" | "max" | "step
 /** The document a custom filter runs in a sandboxed frame. The script can call `setValue` and draw into `#root`. */
 export function filterFrameDocument(id: string, script: string, value: string, choices: readonly string[]): string {
   const host = JSON.stringify({ id, value, choices }).replace(/</g, "\\u003c");
-  const source = script.replace(/<\/script/gi, "<\\/script");
-  return [
-    `<!DOCTYPE html><html>${frameHead()}</head><body>`,
-    '<div id="root"></div>',
-    `<script>const host = ${host};const value = host.value;const choices = host.choices;`,
-    'function setValue(next){parent.postMessage({source:"libredb-filter",id:host.id,value:next==null?"":String(next)},"*");}',
-    "</script>",
-    `<script>${source}</script>`,
-    "</body></html>",
-  ].join("");
+  const inner = innerFrameDocument(
+    `const host = ${host};const value = host.value;const choices = host.choices;function setValue(next){parent.postMessage({source:"libredb-filter",id:host.id,value:next==null?"":String(next)},"*");}`,
+    script,
+  );
+  return guardedFrameDocument(inner);
 }
 
 /** The selection a custom filter published, or null when the message is not one of ours. */
