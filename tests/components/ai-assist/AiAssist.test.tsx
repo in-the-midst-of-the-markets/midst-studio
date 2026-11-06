@@ -146,6 +146,62 @@ function saveConnection(active: string | null = "c1") {
   if (active !== null) localStorage.setItem("libredb_active_connection_id", active);
 }
 
+const revenueSql = "SELECT month, revenue FROM orders LIMIT 200";
+
+function seedRevenueChat(): void {
+  localStorage.setItem(
+    ASSIST_TRANSCRIPT_KEY,
+    JSON.stringify([
+      { id: "u1", role: "user", text: "Yesterday", at: new Date().toISOString(), cards: [] },
+      {
+        id: "a1",
+        role: "assistant",
+        text: "Saved.",
+        at: new Date().toISOString(),
+        cards: [
+          {
+            id: "c-rev",
+            title: "Revenue",
+            titledSql: revenueSql,
+            modelSql: revenueSql,
+            locked: false,
+            sql: revenueSql,
+            connectionId: "c1",
+            connectionName: "Orders",
+            chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month", color: null },
+            color: null,
+            result: {
+              rows: [{ month: "Jan", revenue: 10 }],
+              fields: ["month", "revenue"],
+              rowCount: 1,
+              executionTime: 4,
+            },
+            error: null,
+            view: { typeId: "line", variationId: "area", selection: { category: ["month"], values: ["revenue"] } },
+            code: '{"title":{"text":"Edited"}}',
+          },
+          {
+            id: "c-count",
+            title: "Count",
+            titledSql: "SELECT 1",
+            modelSql: "SELECT 1",
+            locked: false,
+            sql: "SELECT 1",
+            connectionId: "c1",
+            connectionName: "Orders",
+            chart: null,
+            color: null,
+            result: { rows: [{ n: 1 }], fields: ["n"], rowCount: 1, executionTime: 1 },
+            error: null,
+            view: null,
+            code: null,
+          },
+        ],
+      },
+    ]),
+  );
+}
+
 const barResult: QueryResult = {
   rows: [{ month: "Jan", revenue: 10 }],
   fields: ["month", "revenue"],
@@ -2217,6 +2273,167 @@ describe("AiAssist page", () => {
       );
       expect(colours).toContain("#9546de");
     });
+  });
+
+  test("replaces the query, type, and columns of a chart inside the message window", async () => {
+    saveConnection();
+    seedRevenueChat();
+    const regional = "SELECT region, cost FROM sales";
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        const body = JSON.parse(String(init?.body)) as { question?: string; results?: unknown };
+        if ("results" in body) return jsonResponse({ explanation: "Done.", queries: [] });
+        if (body.question === "Break revenue down by region") {
+          return jsonResponse({
+            explanation: "Cost by region.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: regional,
+                chart: { type: "bar", x: "region", y: ["cost"], caption: "Cost by region" },
+              },
+            ],
+          });
+        }
+        if (body.question === "Show the revenue chart in teal") {
+          return jsonResponse({
+            explanation: "Tinted.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: revenueSql,
+                chart: { type: "line", x: "month", y: ["revenue"], caption: "Revenue by month", color: "teal" },
+              },
+            ],
+          });
+        }
+        return jsonResponse({
+          explanation: "Now a line.",
+          queries: [
+            {
+              title: "Revenue",
+              sql: revenueSql,
+              chart: { type: "line", x: "month", y: ["revenue"], caption: "Revenue by month" },
+            },
+          ],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        return jsonResponse({
+          rows: [{ region: "east", cost: 4 }],
+          fields: ["region", "cost"],
+          rowCount: 1,
+          executionTime: 3,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Count" })).toBeTruthy();
+
+    await typeAndSend(view, "Show revenue as a line");
+    expect(await view.findByText("Now a line.")).toBeTruthy();
+    expect(await view.findByRole("button", { name: "Change type, Line, Basic" })).toBeTruthy();
+    expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
+    expect(view.getByRole("heading", { name: "Count" })).toBeTruthy();
+    expect(calls.some((call) => call.url.includes("/api/db/query"))).toBe(false);
+    const history = (planPosts()[0]?.body as { history?: { explanation: string }[] } | undefined)?.history;
+    expect(history?.[0]?.explanation).toContain(
+      'Chart "Revenue": bar, x month, y revenue. SQL: SELECT month, revenue FROM orders LIMIT 200',
+    );
+    expect(history?.[0]?.explanation).toContain('Chart "Count": no chart. SQL: SELECT 1');
+    const lined = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { title?: string; view?: { typeId?: string; variationId?: string } | null; code?: string | null }[];
+    }[];
+    const lineCard = lined.flatMap((turn) => turn.cards ?? []).find((card) => card.title === "Revenue");
+    expect(lineCard?.view).toMatchObject({ typeId: "line", variationId: "basic" });
+    expect(lineCard?.code).toBeNull();
+
+    await typeAndSend(view, "Show the revenue chart in teal");
+    expect(await view.findByText("Now a line.")).toBeTruthy();
+    await waitFor(() => {
+      const colours = charts.flatMap((chart) =>
+        chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
+      );
+      expect(colours).toContain("#199e70");
+    });
+    expect(view.getByRole("button", { name: "Change type, Line, Basic" })).toBeTruthy();
+
+    await typeAndSend(view, "Break revenue down by region");
+    expect(await view.findByText("Cost by region.")).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.url.includes("/api/db/query") && (call.body as { sql?: string }).sql === regional),
+      ).toBe(true),
+    );
+    expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
+    const saved = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { title?: string; sql?: string; connectionName?: string }[];
+    }[];
+    expect(saved.flatMap((turn) => turn.cards ?? []).find((card) => card.title === "Revenue")?.sql).toBe(regional);
+  });
+
+  test("leaves a chart outside the message window and reports a missing connection", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        { id: "c1", name: "Orders", type: "postgres", host: "localhost", createdAt: "2026-01-01T00:00:00.000Z" },
+        { id: "c2", name: "Warehouse", type: "postgres", host: "localhost", createdAt: "2026-01-01T00:00:00.000Z" },
+      ]),
+    );
+    seedRevenueChat();
+    writeAssistSettings({ ...readAssistSettings(), historyMessages: 0 });
+    handler = (url, init) => {
+      if (url.includes("/api/ai/assist") && (init?.method ?? "GET") === "POST") {
+        calls.push({ url, method: "POST", body: JSON.parse(String(init?.body)) });
+        const body = JSON.parse(String(init?.body)) as { question?: string; results?: unknown };
+        if ("results" in body) return jsonResponse({ explanation: "", queries: [] });
+        if (body.question === "Use a database that is not connected") {
+          return jsonResponse({
+            explanation: "That database is gone.",
+            queries: [{ title: "Revenue", connection: "Missing", sql: "SELECT region FROM sales", chart: null }],
+          });
+        }
+        return jsonResponse({
+          explanation: "Another revenue chart.",
+          queries: [
+            {
+              title: "Revenue",
+              connection: "Orders",
+              sql: "SELECT region, cost FROM sales",
+              chart: { type: "bar", x: "region", y: ["cost"], caption: "Cost" },
+            },
+          ],
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    expect(await view.findByRole("heading", { name: "Edited" })).toBeTruthy();
+    await typeAndSend(view, "Add another revenue chart");
+    expect(await view.findByText("Another revenue chart.")).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
+    expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
+    const history = (planPosts()[0]?.body as { history?: unknown[] } | undefined)?.history;
+    expect(history).toEqual([]);
+    const kept = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { id?: string; sql?: string }[];
+    }[];
+    expect(kept.flatMap((turn) => turn.cards ?? []).find((card) => card.id === "c-rev")?.sql).toBe(revenueSql);
+
+    writeAssistSettings({ ...readAssistSettings(), historyMessages: 5 });
+    await typeAndSend(view, "Use a database that is not connected");
+    expect(await view.findByText(/No connected database is named Missing/)).toBeTruthy();
+    expect(
+      calls.some(
+        (call) =>
+          call.url.includes("/api/db/query") &&
+          (call.body as { sql?: string } | null)?.sql === "SELECT region FROM sales",
+      ),
+    ).toBe(false);
   });
 
   test("drops an answer that arrives after the page is gone", async () => {

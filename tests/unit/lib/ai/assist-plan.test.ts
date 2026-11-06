@@ -3,8 +3,11 @@ import { queryIdentity } from "@/lib/charts/query-filters";
 import {
   ASSIST_TEXT_CAP,
   acceptAssistPlan,
+  assistChartPatch,
   buildAssistMessages,
+  explanationWithCharts,
   explanationWithEdits,
+  reviseAssistCharts,
   parseAssistPlan,
   assistChartColor,
   questionOnlyRecolors,
@@ -276,6 +279,8 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("The connected engine is SQL.");
     expect(messages[0]?.content).toContain("every connected database");
     expect(messages[0]?.content).toContain("User-edited query (leave it unchanged):");
+    expect(messages[0]?.content).toContain('starts with Chart "');
+    expect(messages[0]?.content).toContain("same title");
     expect(messages[0]?.content).toContain("chart.color");
     expect(messages[0]?.content).toContain("{{region:east|east,west,north}}");
     expect(messages[0]?.content).toContain("rather than defaulting to bar");
@@ -462,5 +467,101 @@ describe("queries the user edited", () => {
     const long = explanationWithEdits("Revenue rose.", ["x".repeat(ASSIST_TEXT_CAP)]);
     expect(long.startsWith("Revenue rose.\nUser-edited query (leave it unchanged):")).toBe(true);
     expect(long).toHaveLength(ASSIST_TEXT_CAP);
+  });
+
+  test("names the charts in the window and revises the latest one with that title", () => {
+    const bar = { type: "bar" as const, x: "month", y: ["revenue"], caption: "", color: null };
+    expect(explanationWithCharts("Revenue rose.", [])).toBe("Revenue rose.");
+    expect(explanationWithCharts("Revenue rose.", [{ title: "A", sql: "SELECT 1", chart: null }])).toBe(
+      "Revenue rose.",
+    );
+    expect(explanationWithCharts("Revenue rose.", [{ title: "Query", sql: "SELECT 1", chart: null }])).toBe(
+      "Revenue rose.",
+    );
+    expect(explanationWithCharts("", [{ title: 'Say "hi"', sql: "  SELECT 1  ", chart: null }])).toBe(
+      "Chart \"Say 'hi'\": no chart. SQL: SELECT 1",
+    );
+    expect(
+      explanationWithCharts("Revenue rose.", [
+        { title: "Revenue", sql: "", chart: bar },
+        { title: "Revenue", sql: "SELECT month, revenue FROM orders", chart: { ...bar, color: "#9546de" } },
+      ]),
+    ).toBe(
+      'Chart "Revenue": bar, x month, y revenue, color #9546de. SQL: SELECT month, revenue FROM orders\nRevenue rose.',
+    );
+    const capped = explanationWithCharts("Revenue rose.", [
+      { title: "Revenue", sql: "x".repeat(ASSIST_TEXT_CAP), chart: bar },
+    ]);
+    expect(capped.startsWith('Chart "Revenue": bar, x month, y revenue. SQL:')).toBe(true);
+    expect(capped).toHaveLength(ASSIST_TEXT_CAP);
+
+    const line: AssistQueryPlan = {
+      title: " revenue ",
+      sql: "SELECT region, cost FROM sales",
+      connection: "Orders",
+      chart: { type: "line", x: "region", y: ["cost"], caption: "Cost", color: null },
+    };
+    const older = { id: "old", title: "Revenue", locked: false };
+    const latest = { id: "new", title: "Revenue", locked: false };
+    expect(reviseAssistCharts([line, { ...line, sql: "SELECT 2" }], [older, latest])).toEqual({
+      revisions: [{ id: "new", query: { ...line, sql: "SELECT 2" } }],
+      queries: [],
+    });
+    expect(reviseAssistCharts([line], [older, { ...latest, locked: true }])).toEqual({
+      revisions: [],
+      queries: [line],
+    });
+    expect(reviseAssistCharts([line], [])).toEqual({ revisions: [], queries: [line] });
+    expect(reviseAssistCharts([{ ...line, title: "Query" }], [latest])).toEqual({
+      revisions: [],
+      queries: [{ ...line, title: "Query" }],
+    });
+    expect(reviseAssistCharts([{ ...line, title: "Go" }], [latest])).toEqual({
+      revisions: [],
+      queries: [{ ...line, title: "Go" }],
+    });
+    const same: AssistQueryPlan = {
+      ...line,
+      title: "Revenue",
+      sql: "SELECT month, revenue FROM orders",
+      chart: bar,
+    };
+    expect(
+      assistChartPatch({ sql: "SELECT month, revenue FROM orders LIMIT 200", chart: bar, color: "#9546de" }, same),
+    ).toMatchObject({ sqlChanged: false, planChanged: false, color: "#9546de" });
+    expect(assistChartPatch({ sql: "SELECT 1", chart: null, color: null }, { ...same, chart: bar }).planChanged).toBe(
+      true,
+    );
+    expect(
+      assistChartPatch({ sql: "SELECT 1", chart: bar, color: null }, { ...same, chart: { ...bar, type: "line" } })
+        .planChanged,
+    ).toBe(true);
+    expect(
+      assistChartPatch({ sql: "SELECT 1", chart: bar, color: null }, { ...same, chart: { ...bar, x: "day" } })
+        .planChanged,
+    ).toBe(true);
+    expect(
+      assistChartPatch(
+        { sql: "SELECT 1", chart: bar, color: null },
+        { ...same, chart: { ...bar, y: ["revenue", "cost"] } },
+      ).planChanged,
+    ).toBe(true);
+    expect(
+      assistChartPatch({ sql: "SELECT 1", chart: bar, color: null }, { ...same, chart: { ...bar, y: ["cost"] } })
+        .planChanged,
+    ).toBe(true);
+    expect(assistChartPatch({ sql: "SELECT 1", chart: null, color: "#9546de" }, { ...same, chart: null })).toEqual({
+      sqlChanged: true,
+      planChanged: false,
+      sql: same.sql,
+      chart: null,
+      color: "#9546de",
+    });
+    expect(assistChartPatch({ sql: "SELECT 1", chart: bar, color: "#9546de" }, { ...same, chart: null }).chart).toEqual(
+      {
+        ...bar,
+        color: "#9546de",
+      },
+    );
   });
 });

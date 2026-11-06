@@ -337,6 +337,110 @@ export function explanationWithEdits(explanation: string, editedSql: readonly st
   return combined.length > QUESTION_CAP ? combined.slice(0, QUESTION_CAP) : combined;
 }
 
+/** A title the model can repeat to change that chart. A generic or tiny title is not one. */
+function chartTitleKey(title: string): string | null {
+  const key = title.trim().toLowerCase();
+  if (key.length <= 2 || key === "query") return null;
+  return key;
+}
+
+function chartSpec(chart: AssistChart | null): string {
+  if (chart === null) return "no chart";
+  const color = chart.color === null ? "" : `, color ${chart.color}`;
+  return `${chart.type}, x ${chart.x}, y ${chart.y.join(", ")}${color}`;
+}
+
+/**
+ * The charts already on screen, written ahead of the explanation so a long result
+ * does not push them out of the turn. The model repeats a title to change that chart.
+ */
+export function explanationWithCharts(
+  explanation: string,
+  charts: readonly { readonly title: string; readonly sql: string; readonly chart: AssistChart | null }[],
+): string {
+  const lines = charts.flatMap((chart) => {
+    if (chartTitleKey(chart.title) === null) return [];
+    const sql = chart.sql.trim();
+    if (sql === "") return [];
+    return [`Chart "${chart.title.trim().replaceAll('"', "'")}": ${chartSpec(chart.chart)}. SQL: ${sql}`];
+  });
+  if (lines.length === 0) return explanation;
+  const combined = explanation === "" ? lines.join("\n") : `${lines.join("\n")}\n${explanation}`;
+  return combined.length > QUESTION_CAP ? combined.slice(0, QUESTION_CAP) : combined;
+}
+
+export interface AssistEditableChart {
+  readonly id: string;
+  readonly title: string;
+  readonly locked: boolean;
+}
+
+export interface AssistChartRevision {
+  readonly id: string;
+  readonly query: AssistQueryPlan;
+}
+
+/**
+ * Queries that change a chart already in the message window.
+ * The latest chart with that title is the one that changes. A chart the user
+ * edited stays out of this list, and a query that names no window chart stays a new chart.
+ */
+export function reviseAssistCharts(
+  queries: readonly AssistQueryPlan[],
+  charts: readonly AssistEditableChart[],
+): { revisions: AssistChartRevision[]; queries: AssistQueryPlan[] } {
+  const byTitle = new Map<string, AssistEditableChart>();
+  for (const chart of charts) {
+    const key = chartTitleKey(chart.title);
+    if (key === null) continue;
+    byTitle.set(key, chart);
+  }
+  const revisions = new Map<string, AssistChartRevision>();
+  const fresh: AssistQueryPlan[] = [];
+  for (const query of queries) {
+    const key = chartTitleKey(query.title);
+    const chart = key === null ? undefined : byTitle.get(key);
+    if (chart === undefined || chart.locked) {
+      fresh.push(query);
+      continue;
+    }
+    revisions.set(chart.id, { id: chart.id, query });
+  }
+  return { revisions: [...revisions.values()], queries: fresh };
+}
+
+export interface AssistChartSubject {
+  readonly sql: string;
+  readonly chart: AssistChart | null;
+  readonly color: string | null;
+}
+
+export interface AssistChartPatch {
+  readonly sqlChanged: boolean;
+  readonly planChanged: boolean;
+  readonly sql: string;
+  readonly chart: AssistChart | null;
+  readonly color: string | null;
+}
+
+/** The statement and chart to put on a card a later answer is changing. */
+export function assistChartPatch(card: AssistChartSubject, query: AssistQueryPlan): AssistChartPatch {
+  const sqlChanged = queryIdentity(query.sql) !== queryIdentity(card.sql);
+  const nextChart = query.chart;
+  const planChanged =
+    nextChart !== null &&
+    (card.chart === null ||
+      card.chart.type !== nextChart.type ||
+      card.chart.x !== nextChart.x ||
+      card.chart.y.length !== nextChart.y.length ||
+      card.chart.y.some((metric, index) => metric !== nextChart.y[index]));
+  const color = nextChart?.color ?? card.color;
+  let chart = card.chart;
+  if (nextChart !== null) chart = { ...nextChart, color };
+  else if (card.chart !== null) chart = { ...card.chart, color };
+  return { sqlChanged, planChanged, sql: query.sql, chart, color };
+}
+
 function historyOf(value: unknown): AssistHistoryTurn[] | null {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > HISTORY_CAP) return null;
@@ -440,7 +544,7 @@ ${
     : "Every comparison in WHERE or HAVING is a placeholder the chart can edit, even when the question did not ask for a filter. Write it where the literal would go, with no quotes around it: region = {{region:east|east,west,north}}. The default follows the colon. Category choices follow a pipe and are separated by commas. A comparison on a numeric column uses >=, <=, or =, a numeric default, and no choices. The placeholder name is the original column, as in total >= {{total:10}}. A renamed column is not that name: region AS area is filtered as region = {{region:east}}, not area. The studio substitutes a SQL literal before running and shows a Filters control for each placeholder. A connection whose engine is neo4j takes one read-only Cypher statement with its values in place. Do not write SQL or a placeholder on that connection. A question about an amount returns one category column and one number. A question about how records connect returns the relationship or the path."
 }
 
-A line in an earlier turn that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour. A later question may add a different query and chart.`;
+A line in an earlier turn that starts with Chart " names a chart from those turns. Return a query with that same title to replace its sql, chart.type, chart.x, and chart.y. A title that is not already there adds a chart. A line that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement or its chart type. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour.`;
   const user = `Question:\n${prompt.questionBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },
