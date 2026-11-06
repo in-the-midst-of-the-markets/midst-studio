@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import type { Dirent } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { constants, type Dirent } from "node:fs";
+import { mkdir, mkdtemp, open, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { GITHUB_FILE_CAP, GITHUB_FILE_CHARS, type GitFile } from "@/lib/git/github";
@@ -15,6 +15,10 @@ function nodeEnv(value: string | undefined): "development" | "production" | "tes
   return "production";
 }
 const UNSAFE_COMPILE = /\b(env_var|run_query|modules)\b|\bstatement\s*\(|__/;
+const JINJA_BLOCK = /\{\{[\s\S]*?\}\}|\{%[\s\S]*?%\}/g;
+const JINJA_UNSAFE = /\bcontext\b|\|\s*attr\b|\battr\s*\(|\{%[+-]?\s*(?:include|import|from|do)\b/;
+const COMPILE_REFUSAL = "This project uses a dbt feature compile will not run.";
+const COMPILED_LINK = "dbt produced a file compile will not read.";
 
 export interface SpawnCapture {
   readonly code: number | null;
@@ -85,10 +89,14 @@ export async function compileProject(
 /**
  * Jinja that can read the server, query the warehouse, or reach Python during compile.
  * A dunder name is refused as well as the call form: attribute access is enough.
+ * Inside a Jinja block, a context lookup, an attr call, or a tag that loads another
+ * file is refused too. A column named context in ordinary SQL is left alone.
  */
 export function projectCompileRefusal(files: readonly GitFile[]): string | null {
   for (const file of files) {
-    if (UNSAFE_COMPILE.test(file.text)) return "This project uses a dbt feature compile will not run.";
+    if (UNSAFE_COMPILE.test(file.text)) return COMPILE_REFUSAL;
+    const blocks = file.text.match(JINJA_BLOCK);
+    if (blocks !== null && JINJA_UNSAFE.test(blocks.join("\n"))) return COMPILE_REFUSAL;
   }
   return null;
 }
@@ -199,20 +207,36 @@ async function readCompiled(projectDir: string): Promise<Record<string, string> 
       continue;
     }
     for (const entry of entries) {
-      if (entry.isSymbolicLink() || entry.name === "." || entry.name === "..") continue;
+      if (entry.name === "." || entry.name === "..") continue;
       const full = join(dir, entry.name);
       const rel = relative(root, full);
       if (rel.startsWith("..")) continue;
       if (entry.isDirectory()) pending.push(full);
       else if (entry.name.endsWith(".sql")) {
         // oxlint-disable-next-line no-await-in-loop -- each compiled model is read after the one before it.
-        const sql = await readFile(full, "utf8");
+        const sql = await readCompiledSql(full);
+        if (sql === "link") return COMPILED_LINK;
         if (sql.length > COMPILED_FILE_CAP) return "dbt produced SQL that is too large.";
         files[relative(root, full)] = sql;
-      }
+      } else if (entry.isSymbolicLink()) return COMPILED_LINK;
     }
   }
   return files;
+}
+
+/** Reads compiled SQL without following a link. A link is not returned as a model. */
+async function readCompiledSql(full: string): Promise<string | "link"> {
+  let handle: Awaited<ReturnType<typeof open>>;
+  try {
+    handle = await open(full, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch {
+    return "link";
+  }
+  try {
+    return await handle.readFile({ encoding: "utf8" });
+  } finally {
+    await handle.close();
+  }
 }
 
 function safeRelative(path: string): string | null {

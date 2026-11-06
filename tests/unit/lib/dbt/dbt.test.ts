@@ -7,7 +7,14 @@ import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { openDbtProject, readDbtRequest } from "@/lib/dbt/open";
 import { DBT_TARGETS, connectionSecrets, dbtCompileProfile, dbtProfile, dbtSchema } from "@/lib/dbt/profile";
 import { previewModel, readDbtProject, refsIn, sourceSchemas, sourcesIn } from "@/lib/dbt/project";
-import { compileEnvironment, compileProject, prepareProject, redactSecrets, spawnCaptured } from "@/lib/dbt/runner";
+import {
+  compileEnvironment,
+  compileProject,
+  prepareProject,
+  projectCompileRefusal,
+  redactSecrets,
+  spawnCaptured,
+} from "@/lib/dbt/runner";
 import { readMetrics } from "@/lib/metricflow/metrics";
 import {
   GITHUB_FILE_CAP,
@@ -866,7 +873,39 @@ describe("dbt compile", () => {
       },
       spawn: async () => ({ code: 0, stdout: "", stderr: "" }),
     });
-    expect(linked).toEqual({ files: { "ok.sql": "select 1" } });
+    expect(linked).toEqual({ error: "dbt produced a file compile will not read." });
+    const linkedDir = await compileProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x", {
+      prepare: async () => {
+        const prepared = await prepareProject([{ path: "dbt_project.yml", text: "name: demo\n" }], "x");
+        if (typeof prepared === "string") throw new Error(prepared);
+        const compiled = join(prepared.projectDir, "target", "compiled");
+        await mkdir(compiled, { recursive: true });
+        await mkdir(join(prepared.profilesDir, "outside-dir"), { recursive: true });
+        await symlink(join(prepared.profilesDir, "outside-dir"), join(compiled, "nested"));
+        await writeFile(join(compiled, "ok.sql"), "select 1");
+        return prepared;
+      },
+      spawn: async () => ({ code: 0, stdout: "", stderr: "" }),
+    });
+    expect(linkedDir).toEqual({ error: "dbt produced a file compile will not read." });
+    expect(projectCompileRefusal([{ path: "models/orders.sql", text: "select context from t" }])).toBeNull();
+    expect(
+      projectCompileRefusal([{ path: "models/orders.sql", text: "{{ config(materialized='view') }}" }]),
+    ).toBeNull();
+    for (const text of [
+      "{{ context['name'] }}",
+      "{{ name | attr('id') }}",
+      "{{ attr('id') }}",
+      "{% include 'models/orders.sql' %}",
+      "{%- include 'models/orders.sql' %}",
+      "{% import 'macros.sql' as macros %}",
+      "{% from 'macros.sql' import name %}",
+      "{% do 1 %}",
+    ]) {
+      expect(projectCompileRefusal([{ path: "models/orders.sql", text }])).toBe(
+        "This project uses a dbt feature compile will not run.",
+      );
+    }
   });
 
   test("runs a process without a shell", async () => {
