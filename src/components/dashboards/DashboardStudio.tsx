@@ -92,7 +92,17 @@ import {
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { omitDrawnChartTitle } from "@/lib/charts/chart-title";
-import { classifyColumns, defaultSelection, echartType, ECHART_TYPES } from "@/lib/charts/echarts-catalog";
+import {
+  classifyColumns,
+  defaultSelection,
+  echartType,
+  ECHART_TYPES,
+  slotsFor,
+  toggleSlot,
+  type ChartSlot,
+  type ClassifiedColumns,
+  type SlotSelection,
+} from "@/lib/charts/echarts-catalog";
 import { useChartSettings } from "@/components/charts/use-chart-settings";
 import { buildChartOption } from "@/lib/charts/echarts-option";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks } from "@/lib/charts/filter-look";
@@ -940,6 +950,7 @@ function DashboardChart({
             result={view.result}
             typeId={chart.typeId ?? null}
             variationId={chart.variationId ?? null}
+            selection={chart.selection ?? {}}
             onShape={onShape}
           />
         )}
@@ -1141,15 +1152,83 @@ function AddContentMenu({
   );
 }
 
+function ChartShelves({
+  typeId,
+  variationId,
+  slots,
+  columns,
+  selection,
+  onShape,
+}: {
+  readonly typeId: string;
+  readonly variationId: string;
+  readonly slots: readonly ChartSlot[];
+  readonly columns: ClassifiedColumns;
+  readonly selection: SlotSelection;
+  readonly onShape: (
+    patch: Pick<SavedChartConfig, "chartType" | "typeId" | "variationId" | "selection" | "xAxis" | "yAxis">,
+  ) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {slots.map((slot) => {
+        const pool = slot.kind === "metric" ? columns.metrics : columns.dimensions;
+        const selected = new Set(selection[slot.id] ?? []);
+        return (
+          <fieldset
+            key={slot.id}
+            aria-label={slot.label}
+            className="m-0 flex flex-wrap items-center gap-2 border-0 p-0"
+          >
+            <span className="text-xs text-fg-muted">{slot.label}</span>
+            {pool.map((name) => {
+              const pressed = selected.has(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => {
+                    const next = toggleSlot(typeId, variationId, columns, selection, slot.id, name);
+                    const stored: Record<string, string[]> = {};
+                    for (const [key, names] of Object.entries(next)) stored[key] = [...names];
+                    const axes = axesFromSelection(stored);
+                    onShape({
+                      chartType: typeId,
+                      typeId,
+                      variationId,
+                      selection: stored,
+                      xAxis: axes.xAxis,
+                      yAxis: axes.yAxis,
+                    });
+                  }}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-xs font-medium",
+                    pressed ? "bg-brand-solid text-white" : "bg-brand-tint/15 text-brand",
+                  )}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </fieldset>
+        );
+      })}
+    </div>
+  );
+}
+
 function ChartTypePicker({
   result,
   typeId,
   variationId,
+  selection,
   onShape,
 }: {
   readonly result: { fields: string[]; rows: Record<string, unknown>[] };
   readonly typeId: string | null;
   readonly variationId: string | null;
+  readonly selection: SlotSelection;
   readonly onShape: (
     patch: Pick<SavedChartConfig, "chartType" | "typeId" | "variationId" | "selection" | "xAxis" | "yAxis">,
   ) => void;
@@ -1178,6 +1257,11 @@ function ChartTypePicker({
     });
     setBrowsing(null);
   };
+  const columns = classifyColumns(result.fields, result.rows);
+  const saved =
+    type !== null && type.id === typeId && variationId !== null
+      ? { typeId: type.id, variationId, slots: slotsFor(type.id, variationId) }
+      : null;
   return (
     <div className="flex flex-col gap-2 p-3">
       <fieldset aria-label="Chart types" className="m-0 flex flex-wrap gap-2 border-0 p-0">
@@ -1221,6 +1305,16 @@ function ChartTypePicker({
             );
           })}
         </fieldset>
+      )}
+      {saved !== null && saved.slots !== null && (
+        <ChartShelves
+          typeId={saved.typeId}
+          variationId={saved.variationId}
+          slots={saved.slots}
+          columns={columns}
+          selection={selection}
+          onShape={onShape}
+        />
       )}
     </div>
   );
