@@ -1,4 +1,5 @@
 import { RequestRefusal } from "@/lib/db/console/dialect";
+import { embedProbeText } from "@/lib/embeddings/placeholder";
 import { parseWeaviateRequest, weaviatePhase0 } from "./request";
 
 /**
@@ -16,7 +17,9 @@ export const WEAVIATE_DESTRUCTIVE_OPERATIONS: ReadonlySet<string> = new Set<stri
 /** The sentence a statement is refused with, or undefined to send it. */
 export function weaviateRefusal(text: string): string | undefined {
   try {
-    weaviatePhase0(parseWeaviateRequest(text));
+    // An embed id is not JSON until the server replaces it. The probe lets the grammar
+    // read the request the run will send, and the text that is sent is still the original.
+    weaviatePhase0(parseWeaviateRequest(embedProbeText(text)));
     return undefined;
   } catch (error) {
     if (error instanceof RequestRefusal) return error.message;
@@ -27,7 +30,7 @@ export function weaviateRefusal(text: string): string | undefined {
 /** What a text would run, for the confirmation gate: the class of its route, or undefined for a text the console refuses. */
 export function readWeaviateOperations(text: string): readonly string[] | undefined {
   try {
-    return [weaviatePhase0(parseWeaviateRequest(text)).route.class];
+    return [weaviatePhase0(parseWeaviateRequest(embedProbeText(text))).route.class];
   } catch (error) {
     if (error instanceof RequestRefusal) return undefined;
     throw error;

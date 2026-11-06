@@ -219,8 +219,11 @@ Every search also takes `where`, `limit`, `offset`, `autoLimit`, `returnProperti
 GET /v1/objects?class=Article&limit=50
 POST /v1/search/Article/bm25 {"query": "vector search", "where": {"path": ["category"], "operator": "Equal", "valueText": "alpha"}, "limit": 5, "returnMetadata": ["score"]}
 POST /v1/search/Product/near-vector {"vector": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "targetVector": "image", "limit": 3, "returnMetadata": ["distance"]}
+POST /v1/search/CompanyProfile/near-vector {"vector": {{embed e1}}, "targetVector": "name", "limit": 5, "returnMetadata": ["distance"]}
 POST /v1/aggregate/TenantNotes {"tenant": "acme"}
 ```
+
+An embed id stands in for the number list. `"vector": {{embed e1}}` and `"vector": "{{embed e1}}"` are the same request once the server replaces the id; the editor accepts both.
 
 ### 5.5 Where the console differs from a REST call
 
