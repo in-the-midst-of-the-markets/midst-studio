@@ -230,6 +230,59 @@ describe("POST /api/db/transaction", () => {
     });
   }
 
+  test("embeds text inside a transaction query", async () => {
+    const savedKey = process.env.VOYAGE_API_KEY;
+    process.env.VOYAGE_API_KEY = "test-key";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ data: [{ index: 0, embedding: [0.25, 0.5] }] }), {
+        status: 200,
+      })) as unknown as typeof fetch;
+    try {
+      const req = createMockRequest("/api/db/transaction", {
+        method: "POST",
+        body: {
+          connection: validConnection,
+          action: "query",
+          sql: "SELECT * FROM profiles WHERE knn(embedding, '{{embed \"cats\"}}')",
+          embeddingModel: "voyage-4",
+        },
+      });
+      const res = await POST(req as never);
+      expect(res.status).toBe(200);
+      const sent = mockTxProvider.queryInTransaction.mock.calls.map((call) => String((call as unknown[])[0]));
+      expect(sent.some((sql) => sql.includes("[0.25,0.5]") && !sql.includes("cats"))).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedKey;
+    }
+  });
+
+  test("refuses a transaction embed when no embedding key is configured", async () => {
+    const savedVoyage = process.env.VOYAGE_API_KEY;
+    const savedEmbedding = process.env.EMBEDDING_API_KEY;
+    delete process.env.VOYAGE_API_KEY;
+    delete process.env.EMBEDDING_API_KEY;
+    mockTxProvider.queryInTransaction.mockClear();
+    try {
+      const req = createMockRequest("/api/db/transaction", {
+        method: "POST",
+        body: { connection: validConnection, action: "query", sql: '{{embed "cats"}}' },
+      });
+      const res = await POST(req as never);
+      const data = await parseResponseJSON<{ error: string }>(res);
+      expect(res.status).toBe(400);
+      expect(data.error).toContain("VOYAGE_API_KEY");
+      expect(mockTxProvider.queryInTransaction).toHaveBeenCalledTimes(0);
+    } finally {
+      if (savedVoyage === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedVoyage;
+      if (savedEmbedding === undefined) delete process.env.EMBEDDING_API_KEY;
+      else process.env.EMBEDDING_API_KEY = savedEmbedding;
+    }
+  });
+
   // `JSON.stringify` writes NaN and both infinities as `null`; inside a transaction they
   // travel as words just as on `/api/db/query`.
   test("answers NaN and the infinities as words, not as null", async () => {

@@ -480,6 +480,8 @@ Execute SQL query on connected database.
 }
 ```
 
+`sql` may contain `{{embed "text"}}` or `{{embed name}}`. The server replaces each quoted text with a JSON array of numbers before the database sees the statement, using `embeddingModel` from the body (Voyage `voyage-4` when it is omitted). `{{embed name}}` is refused until a dashboard filter has filled it. The query event records the text the user wrote, not the vector. `VOYAGE_API_KEY` embeds Voyage models. Any other model needs `EMBEDDING_API_URL` and `EMBEDDING_API_KEY`.
+
 **Response (200 OK):**
 ```json
 {

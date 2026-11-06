@@ -1,5 +1,6 @@
 import { echartType } from "@/lib/charts/echarts-catalog";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
+import { bindEmbedPlaceholders } from "@/lib/embeddings/placeholder";
 import type {
   DashboardFilter,
   DashboardFilterControl,
@@ -653,6 +654,8 @@ export interface DashboardVariable {
   id: string;
   label: string;
   token: string;
+  /** `{{embed name}}`, filled with this filter's text when the chart runs. */
+  embedToken: string;
 }
 
 /** Variables on this dashboard whose names are query ids. `exceptId` is the filter being edited. */
@@ -662,7 +665,13 @@ export function dashboardVariables(filters: readonly DashboardFilter[], exceptId
     if (filter.id === exceptId) continue;
     const token = filterReference(filter.name);
     if (token === null) continue;
-    variables.push({ id: filter.id, label: filter.label?.trim() || filter.name, token });
+    const trimmed = filter.name.trim();
+    variables.push({
+      id: filter.id,
+      label: filter.label?.trim() || filter.name,
+      token,
+      embedToken: `{{embed ${trimmed}}}`,
+    });
   }
   return variables;
 }
@@ -813,8 +822,9 @@ export function queryWithDashboardFilters(
   sql: string,
   filters: readonly Pick<DashboardFilter, "name" | "value">[],
 ): string {
-  return filters.reduce((current, filter) => {
+  const written = filters.reduce((current, filter) => {
     if (filterReference(filter.name) === null || filter.value.trim() === "") return current;
     return writeQueryFilter(current, filter.name.trim(), filter.value);
   }, sql);
+  return bindEmbedPlaceholders(written, filters);
 }

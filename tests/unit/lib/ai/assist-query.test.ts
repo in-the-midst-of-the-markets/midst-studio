@@ -132,7 +132,11 @@ describe("runAssistQuery", () => {
         json: async () => ({ rows: [{ n: 1 }], fields: ["n"] }),
       };
     });
-    expect(body).toEqual({ sql: "SELECT 1", connection: JSON.parse(JSON.stringify(connection)) });
+    expect(body).toEqual({
+      sql: "SELECT 1",
+      connection: JSON.parse(JSON.stringify(connection)),
+      embeddingModel: "voyage-4",
+    });
     expect(outcome.ok).toBe(true);
     if (!outcome.ok) return;
     expect(outcome.result.rowCount).toBe(1);

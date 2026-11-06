@@ -347,6 +347,7 @@ export function ChartWithEditor({
               value={sql}
               documentId={title}
               databaseType={databaseType}
+              connectionId={connectionId}
               schemaContext={schemaContext}
               wordWrap
               onContentChange={onSqlChange}

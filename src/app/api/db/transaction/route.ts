@@ -30,6 +30,8 @@ import { logger } from "@/lib/logger";
 import type { UserPayload } from "@/lib/auth";
 import { clientAddress } from "@/lib/api/client-address";
 import type { GovernedConnection } from "@/lib/governance/visible";
+import { expandQueryEmbeddings } from "@/lib/embeddings/expand";
+import { embeddingModelOf } from "@/lib/embeddings/models";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import type { QueryEventStart } from "@/lib/query-events/types";
@@ -448,6 +450,13 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: optionError }, { status: 400 });
         }
 
+        // The event below records `sql` as the user wrote it. The engine receives the vector.
+        const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+        if (!embedded.ok) {
+          return NextResponse.json({ error: embedded.error }, { status: 400 });
+        }
+        const runnable = embedded.sql;
+
         // Under governance one `open` event per query action, carrying the text the user submitted
         // (docs/GOVERNANCE.md#query-events).
         const started = queryEventStart();
@@ -468,10 +477,12 @@ export async function POST(req: NextRequest) {
         // bound values: they belong to one statement's placeholders. One statement is sent as the
         // splitter read it, as `/api/db/multi-query` sends it: without the comment-only fragment
         // after it and without a script separator line (Oracle's `/`), which the engine refuses.
-        let statementSql: string = sql;
+        let statementSql: string = runnable;
         if (bound.params === undefined) {
           const grammar = resolveSqlGrammar(connection.type);
-          const units = splitExecutionUnits(sql, grammar).filter((unit) => countCodeStatements(unit.sql, grammar) > 0);
+          const units = splitExecutionUnits(runnable, grammar).filter(
+            (unit) => countCodeStatements(unit.sql, grammar) > 0,
+          );
           if (units.length > 1) {
             const script = await runScriptInTransaction(provider, units, options);
             recordStatement(script.hasError ? "error" : "success", {});

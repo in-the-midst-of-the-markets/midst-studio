@@ -688,14 +688,25 @@ describe("DashboardStudio", () => {
     expect(variable.options[0]?.textContent).toBe("Insert an id");
     fireEvent.change(variable, { target: { value: "" } });
     fireEvent.change(variable, { target: { value: "{{region}}" } });
+    const embed = view.getByLabelText("Embed as vector") as HTMLSelectElement;
+    expect(Array.from(embed.options).map((option) => option.value)).toEqual(["", "{{embed region}}"]);
+    expect(embed.options[0]?.textContent).toBe("Insert an embed");
+    fireEvent.change(embed, { target: { value: "" } });
+    fireEvent.change(embed, { target: { value: "{{embed region}}" } });
     expect((view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement).value).toBe(
-      "SELECT region, total FROM sales {{region}}",
+      "SELECT region, total FROM sales {{region}} {{embed region}}",
     );
     fireEvent.click(view.getByRole("button", { name: "Run Revenue" }));
+    await waitFor(() => {
+      const query = storage.getSavedCharts().find((item) => item.id === "revenue")?.query ?? "";
+      expect(query).toContain("{{region}}");
+      expect(query).toContain("{{embed region}}");
+    });
     await waitFor(() =>
-      expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.query).toContain("{{region}}"),
+      expect(
+        posted.some((sql) => sql.includes("'west'") && sql.includes('{{embed "west"}}') && !sql.includes("{{region")),
+      ).toBe(true),
     );
-    await waitFor(() => expect(posted.some((sql) => sql.includes("'west'") && !sql.includes("{"))).toBe(true));
   });
 
   test("saves a component and places it on another dashboard", () => {

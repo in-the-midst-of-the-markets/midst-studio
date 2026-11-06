@@ -16,6 +16,8 @@ import { hasLoneCarriageReturnInLineComment, hasUnterminatedSpan } from "@/lib/s
 import { readsSqlText, resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { ExplainFormat, QueryPrepareOptions } from "@/lib/db/types";
 import type { DatabaseConnection } from "@/lib/types";
+import { embeddingModelOf } from "@/lib/embeddings/models";
+import { expandQueryEmbeddings } from "@/lib/embeddings/expand";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -223,6 +225,14 @@ export async function POST(req: NextRequest) {
       connection = { ...connection, database: String(database) };
     }
 
+    // Text becomes a vector here, after the statement is accepted and before a provider
+    // opens. The query event keeps `submitted`, which is still the placeholder.
+    const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+    if (!embedded.ok) {
+      return NextResponse.json({ error: embedded.error }, { status: 400 });
+    }
+    const runnable = embedded.sql;
+
     // Before the provider: a request the gate refuses opens nothing and runs nothing.
     stage = "admission";
     admitQueryExecution();
@@ -242,7 +252,7 @@ export async function POST(req: NextRequest) {
     // in the same order, which is what the background plan request of PR #304
     // relies on. Refusing them would take the plan away from every generated
     // statement that sends its values separately (#290).
-    let statement = sql;
+    let statement = runnable;
     let explainFormat: ExplainFormat | undefined;
     if (explain.explain) {
       const capabilities = provider.getCapabilities();
@@ -254,7 +264,7 @@ export async function POST(req: NextRequest) {
       if (!strategy) {
         return NextResponse.json({ error: "This server does not support EXPLAIN" }, { status: 400 });
       }
-      const built = strategy.buildSql(sql, explain.explain.mode);
+      const built = strategy.buildSql(runnable, explain.explain.mode);
       if (built === null) {
         return NextResponse.json({ error: "Only SELECT statements can be explained" }, { status: 400 });
       }

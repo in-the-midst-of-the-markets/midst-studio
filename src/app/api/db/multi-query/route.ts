@@ -19,6 +19,8 @@ import { endsOpenQueryTransactions, newQueryCallScope } from "@/lib/db/types";
 import type { DatabaseProvider, OpenQueryTransactionOutcome } from "@/lib/db/types";
 import { rowsWithNonFiniteWords } from "@/lib/non-finite";
 import type { DatabaseConnection } from "@/lib/types";
+import { auditTextAt, expandQueryEmbeddings } from "@/lib/embeddings/expand";
+import { embeddingModelOf } from "@/lib/embeddings/models";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -140,18 +142,19 @@ async function runStatement(
   scope: string,
   queryId: string | undefined,
   events: UnitEvents,
+  written: string,
 ): Promise<StatementResult> {
   const startTime = performance.now();
   const started = queryEventStart();
   // The unit as the user wrote it, never with the bound added to the last one.
   const unit = {
     connection: events.connection,
-    statement: stmt.sql,
+    statement: written,
     started,
     unitIndex: index,
     correlationId: events.correlationId,
   };
-  const identity = { index, sql: stmt.sql, startLine: stmt.startLine };
+  const identity = { index, sql: written, startLine: stmt.startLine };
   let sent = stmt.sql;
 
   try {
@@ -278,7 +281,13 @@ export async function POST(req: NextRequest) {
     // UNITS rather than statements: what one request carries is the dialect's to say, and
     // for T-SQL it is the whole batch between `GO` lines, so a `DECLARE @x` reaches the
     // server in the same request as the `SELECT @x` after it (#1312).
-    const statements = splitExecutionUnits(sql, resolveSqlGrammar(connection.type));
+    const embedded = await expandQueryEmbeddings(sql, embeddingModelOf(body));
+    if (!embedded.ok) {
+      return NextResponse.json({ error: embedded.error }, { status: 400 });
+    }
+    const grammar = resolveSqlGrammar(connection.type);
+    const writtenSql = splitExecutionUnits(sql, grammar).map((unit) => unit.sql);
+    const statements = splitExecutionUnits(embedded.sql, grammar);
 
     if (statements.length === 0) {
       return NextResponse.json({ error: "No valid SQL statements found" }, { status: 400 });
@@ -344,6 +353,7 @@ export async function POST(req: NextRequest) {
           scope,
           bound,
           unitEvents,
+          auditTextAt(writtenSql, i, statements[i].sql),
         );
         totalExecutionTime += outcome.executionTime;
         results.push(outcome);

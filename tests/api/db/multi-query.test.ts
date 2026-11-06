@@ -192,6 +192,57 @@ describe("POST /api/db/multi-query", () => {
     expect(data.fields).toBeDefined();
   });
 
+  test("embeds text inside a script and reports the statement the user wrote", async () => {
+    const savedKey = process.env.VOYAGE_API_KEY;
+    process.env.VOYAGE_API_KEY = "test-key";
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ data: [{ index: 0, embedding: [0.25, 0.5] }] }), {
+        status: 200,
+      })) as unknown as typeof fetch;
+    try {
+      const sql = "SELECT * FROM profiles WHERE knn(embedding, '{{embed \"cats\"}}')";
+      const req = createMockRequest("/api/db/multi-query", {
+        method: "POST",
+        body: { connection: validConnection, sql, embeddingModel: "voyage-4" },
+      });
+      const res = await POST(req as never);
+      const data = await parseResponseJSON<{ statements: { sql: string }[] }>(res);
+      expect(res.status).toBe(200);
+      expect(data.statements[0]?.sql).toBe(sql);
+      const sent = (mockProvider.query as ReturnType<typeof mock>).mock.calls.map((call) => String(call[0]));
+      expect(sent.some((statement) => statement.includes("[0.25,0.5]") && !statement.includes("cats"))).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedKey;
+    }
+  });
+
+  test("refuses a script embed when no embedding key is configured", async () => {
+    const savedVoyage = process.env.VOYAGE_API_KEY;
+    const savedEmbedding = process.env.EMBEDDING_API_KEY;
+    delete process.env.VOYAGE_API_KEY;
+    delete process.env.EMBEDDING_API_KEY;
+    (mockProvider.query as ReturnType<typeof mock>).mockClear();
+    try {
+      const req = createMockRequest("/api/db/multi-query", {
+        method: "POST",
+        body: { connection: validConnection, sql: '{{embed "cats"}}' },
+      });
+      const res = await POST(req as never);
+      const data = await parseResponseJSON<{ error: string }>(res);
+      expect(res.status).toBe(400);
+      expect(data.error).toContain("VOYAGE_API_KEY");
+      expect((mockProvider.query as ReturnType<typeof mock>).mock.calls).toHaveLength(0);
+    } finally {
+      if (savedVoyage === undefined) delete process.env.VOYAGE_API_KEY;
+      else process.env.VOYAGE_API_KEY = savedVoyage;
+      if (savedEmbedding === undefined) delete process.env.EMBEDDING_API_KEY;
+      else process.env.EMBEDDING_API_KEY = savedEmbedding;
+    }
+  });
+
   // `JSON.stringify` writes NaN and both infinities as `null`; the main result and the
   // statement it came from both carry them as words.
   test("answers NaN and the infinities as words on the main result and its statement", async () => {

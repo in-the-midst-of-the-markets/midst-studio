@@ -1585,6 +1585,7 @@ export default function Studio() {
                                 }
                                 language={editorLanguageForTabType(tabMgr.currentTab.type)}
                                 databaseType={conn.activeConnection?.type}
+                                connectionId={conn.activeConnection?.id}
                                 schemaContext={conn.schemaContext}
                                 defaultContainer={conn.defaultContainer}
                                 capabilities={metadata?.capabilities}

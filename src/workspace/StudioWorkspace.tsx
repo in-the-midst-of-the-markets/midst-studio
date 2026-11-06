@@ -953,6 +953,7 @@ export function StudioWorkspace({
                                 onContentChange={(val) => tabMgr.updateTabById(tabMgr.currentTab.id, { query: val })}
                                 language={editorLanguageForTabType(tabMgr.currentTab.type)}
                                 databaseType={conn.activeConnection?.type}
+                                connectionId={conn.activeConnection?.id}
                                 schemaContext={conn.schemaContext}
                                 capabilities={conn.metadata?.capabilities}
                               />
