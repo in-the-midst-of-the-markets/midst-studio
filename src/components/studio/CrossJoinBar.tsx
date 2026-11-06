@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { ChevronDown, Info } from "lucide-react";
 import { crossDbJoinTables } from "@/lib/saved-join/connection";
 import { crossJoinDraft, type CrossJoinKind } from "@/lib/saved-join/draft";
+import { joinSqlPieces } from "@/lib/saved-join/preview";
 import { JOIN_SIZES } from "@/lib/saved-join/size";
 import {
   includedJoinSize,
@@ -10,6 +12,7 @@ import {
   subscribeJoinSize,
   writeJoinSizeChoice,
 } from "@/lib/saved-join/size-choice";
+import { cn } from "@/lib/utils";
 import type { SavedQuery } from "@/lib/types";
 
 const KINDS: readonly { id: CrossJoinKind; label: string }[] = [
@@ -24,27 +27,70 @@ function kindOf(value: string): CrossJoinKind {
   return "INNER";
 }
 
-const FIELD_CLASS = "mt-1 block h-8 rounded-lg border border-hairline bg-raised px-2 text-xs text-fg";
+const SELECT_CLASS =
+  "h-9 w-full appearance-none rounded-lg border border-hairline bg-control pl-3 pr-8 text-sm text-fg";
+
+function SelectField({
+  label,
+  className,
+  children,
+}: {
+  readonly label: string;
+  readonly className?: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <label className={cn("flex min-w-0 flex-col gap-1.5 text-xs text-fg-muted", className)}>
+      {label}
+      <span className="relative block">
+        {children}
+        <ChevronDown
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-fg-muted"
+        />
+      </span>
+    </label>
+  );
+}
 
 function JoinSizeSelect() {
   const size = useSyncExternalStore(subscribeJoinSize, readJoinSizeChoice, includedJoinSize);
   return (
-    <label className="text-xs text-fg-muted">
-      DuckDB size
+    <SelectField label="DuckDB size" className="min-w-52 flex-1">
       <select
         aria-label="DuckDB size"
-        className={FIELD_CLASS}
+        className={SELECT_CLASS}
         title="Memory and threads for this cross join"
         value={size}
         onChange={(event) => writeJoinSizeChoice(event.target.value)}
       >
         {JOIN_SIZES.map((option) => (
           <option key={option.id} value={option.id}>
-            {option.name} · {option.detail}
+            {option.name} - {option.detail}
           </option>
         ))}
       </select>
-    </label>
+    </SelectField>
+  );
+}
+
+function JoinSql({ sql }: { readonly sql: string }) {
+  return (
+    <pre
+      aria-label="DuckDB statement"
+      className="overflow-x-auto rounded-lg border border-hairline bg-canvas px-3 py-3 font-mono text-sm leading-6 text-fg"
+    >
+      {joinSqlPieces(sql).map((piece) => {
+        const line = `${piece.indent}${piece.keyword}${piece.rest}`;
+        return (
+          <div key={line}>
+            {piece.indent}
+            <span className="text-brand">{piece.keyword}</span>
+            {piece.rest}
+          </div>
+        );
+      })}
+    </pre>
   );
 }
 
@@ -61,9 +107,9 @@ export function CrossJoinBar({ queries, onUse }: { queries: readonly SavedQuery[
   const [kind, setKind] = useState<CrossJoinKind>("INNER");
   if (tables.length < 2) {
     return (
-      <div className="flex flex-wrap items-end gap-2 border-b border-hairline px-4 py-2">
+      <div className="flex flex-wrap items-end gap-3 border-b border-hairline px-4 py-3">
         <JoinSizeSelect />
-        <p className="pb-1 text-xs text-fg-secondary">
+        <p className="pb-1.5 text-xs text-fg-secondary">
           Save a query on each database you want to combine, including one from the marketplace, and give it an ID. This
           DuckDB editor joins those IDs.
         </p>
@@ -75,47 +121,43 @@ export function CrossJoinBar({ queries, onUse }: { queries: readonly SavedQuery[
   const draft = crossJoinDraft(left, right, kind);
   const sql = draft.sql;
   return (
-    <div className="flex flex-col gap-2 border-b border-hairline px-4 py-2">
-      <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-col gap-3 border-b border-hairline px-4 py-3">
+      <div className="flex flex-wrap items-end gap-3">
         <JoinSizeSelect />
-        <label className="text-xs text-fg-muted">
-          First query
-          <select className={FIELD_CLASS} value={left.tableId} onChange={(event) => setLeftId(event.target.value)}>
+        <SelectField label="First query" className="min-w-40 flex-1">
+          <select className={SELECT_CLASS} value={left.tableId} onChange={(event) => setLeftId(event.target.value)}>
             {tables.map((table) => (
               <option key={table.tableId} value={table.tableId}>
                 {table.tableId}
               </option>
             ))}
           </select>
-        </label>
-        <label className="text-xs text-fg-muted">
-          Join
-          <select className={FIELD_CLASS} value={kind} onChange={(event) => setKind(kindOf(event.target.value))}>
+        </SelectField>
+        <SelectField label="Join" className="w-28">
+          <select className={SELECT_CLASS} value={kind} onChange={(event) => setKind(kindOf(event.target.value))}>
             {KINDS.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.label}
               </option>
             ))}
           </select>
-        </label>
-        <label className="text-xs text-fg-muted">
-          Second query
-          <select className={FIELD_CLASS} value={right.tableId} onChange={(event) => setRightId(event.target.value)}>
+        </SelectField>
+        <SelectField label="Second query" className="min-w-40 flex-1">
+          <select className={SELECT_CLASS} value={right.tableId} onChange={(event) => setRightId(event.target.value)}>
             {tables.map((table) => (
               <option key={table.tableId} value={table.tableId}>
                 {table.tableId}
               </option>
             ))}
           </select>
-        </label>
+        </SelectField>
         {sql !== null && <UseJoinButton sql={sql} onUse={onUse} />}
       </div>
-      <p className="text-xs text-fg-secondary">{draft.note}</p>
-      {sql !== null && (
-        <pre aria-label="DuckDB statement" className="overflow-x-auto font-mono text-xs text-fg">
-          {sql}
-        </pre>
-      )}
+      <p className="flex items-start gap-1.5 text-xs text-fg-muted">
+        <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+        {draft.note}
+      </p>
+      {sql !== null && <JoinSql sql={sql} />}
     </div>
   );
 }
@@ -124,7 +166,7 @@ function UseJoinButton({ sql, onUse }: { sql: string; onUse: (sql: string) => vo
   return (
     <button
       type="button"
-      className="h-8 rounded-lg bg-brand-solid px-3 text-xs font-medium text-white hover:bg-brand-solid-hover"
+      className="h-9 shrink-0 rounded-lg bg-brand-solid px-4 text-sm font-medium text-white hover:bg-brand-solid-hover"
       onClick={() => onUse(sql)}
     >
       Use this join

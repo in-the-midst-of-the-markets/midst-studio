@@ -54,6 +54,7 @@ describe("CrossJoinBar", () => {
     expect(view.queryByRole("button", { name: "Use this join" })).toBeNull();
     const size = view.getByLabelText("DuckDB size") as HTMLSelectElement;
     expect(size.value).toBe("small");
+    expect(size.options[0]?.text).toBe("Small - 256 MB, 1 thread");
     fireEvent.change(size, { target: { value: "large" } });
     expect(size.value).toBe("large");
     expect(readJoinSizeChoice()).toBe("large");
@@ -71,7 +72,10 @@ describe("CrossJoinBar", () => {
         onUse={onUse}
       />,
     );
-    expect(view.getByLabelText("DuckDB statement").textContent).toContain('orders."id" = people."id"');
+    const statement = view.getByLabelText("DuckDB statement");
+    expect(statement.textContent).toContain('orders."id" = people."id"');
+    expect(statement.className).toContain("rounded-lg");
+    expect(statement.querySelector(".text-brand")?.textContent).toBe("SELECT");
     expect(view.getByText("Joins on id.")).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Use this join" }));
     expect(onUse).toHaveBeenCalledTimes(1);
