@@ -26,7 +26,7 @@ import { maybeInviteToStar } from "@/lib/community/star-prompt-toast";
 import { sandboxRefusal } from "@/lib/editor/sandbox-refusal";
 import { historyMaskOf, maskStatementForHistory } from "@/lib/history-mask";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
-import { embeddingModelFor } from "@/lib/embeddings/settings";
+import { embeddingRequestFields } from "@/lib/embeddings/ids";
 import { savedJoinCatalog } from "@/lib/saved-join/catalog";
 import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { buildConnectionPayload } from "./use-connection-payload";
@@ -760,7 +760,7 @@ export function useQueryExecution({
                   // statement takes, and only when the caller supplied one: a request
                   // without values must stay a request without a `params` key (#290).
                   ...(params && { params }),
-                  embeddingModel: embeddingModelFor(activeConnection.id),
+                  ...embeddingRequestFields(activeConnection.id, queryToExecute),
                   ...(useTransaction
                     ? { action: "query", sql: queryToExecute, options: { limit, offset, unlimited } }
                     : {
@@ -793,7 +793,7 @@ export function useQueryExecution({
             body: JSON.stringify({
               ...runPayload,
               sql: queryToExecute,
-              embeddingModel: embeddingModelFor(activeConnection.id),
+              ...embeddingRequestFields(activeConnection.id, queryToExecute),
               options: {},
               explain: { mode: "estimate" },
               queryId: planQueryId,

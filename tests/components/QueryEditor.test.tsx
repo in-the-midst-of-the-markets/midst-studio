@@ -416,6 +416,22 @@ describe("QueryEditor", () => {
     expect(queryByText("Lines")).not.toBeNull();
   });
 
+  test("Embed sits beside Lines only when the connection searches by a vector", () => {
+    const plain = render(React.createElement(QueryEditor, createDefaultProps()));
+    expect(plain.queryByRole("button", { name: "Embed" })).toBeNull();
+    plain.unmount();
+    const vector = render(
+      React.createElement(
+        QueryEditor,
+        createDefaultProps({
+          connectionId: "profiles",
+          capabilities: { ...defaultCapabilities, supportsVectorQuery: true },
+        }),
+      ),
+    );
+    expect(vector.getByRole("button", { name: "Embed" })).toBeTruthy();
+  });
+
   // EXPLAIN button
   // -----------------------------------------------------------------------
 

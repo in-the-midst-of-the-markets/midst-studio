@@ -1311,6 +1311,10 @@ describe("ElasticsearchProvider metadata", () => {
       supportsExplain: false,
       supportsExternalQueryLimiting: true,
       supportsInlineRowEdit: false,
+      // Both search products take a vector in a query. OpenSearch declares the same
+      // flag, and the shared-answer test holds the two objects equal once quoting
+      // and OFFSET are set aside.
+      supportsVectorQuery: true,
       supportsTestDataGeneration: false,
       // Elasticsearch SQL has no `OFFSET` clause: `prepareQuery` THROWS rather than
       // answer page two with page one, and this hides the control that would

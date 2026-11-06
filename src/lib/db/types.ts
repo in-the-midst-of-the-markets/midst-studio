@@ -1074,6 +1074,15 @@ export interface ProviderCapabilities {
    */
   supportsInlineRowEdit?: boolean;
   /**
+   * Whether a statement on this engine can search by a vector.
+   *
+   * True on the vector databases and on the search engines whose queries take a
+   * vector. The IDE then offers an embed id beside Lines. Absent means the
+   * control stays hidden, including on an engine that only sometimes has a
+   * vector extension installed.
+   */
+  supportsVectorQuery?: boolean;
+  /**
    * The result columns the inline editor must not write, where the engine accepts the editor's
    * `UPDATE` for other columns but not for these.
    *
