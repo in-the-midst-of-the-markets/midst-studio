@@ -1425,6 +1425,12 @@ describe("QuerySafetyDialog", () => {
 });
 
 describe("isDangerousQuery", () => {
+  test("a Dev Tools insert or update asks, and a search does not", () => {
+    expect(isDangerousQuery('PUT orders/_doc/1\n{"title":"mug"}', "opensearch")).toBe(true);
+    expect(isDangerousQuery('POST orders/_update/1\n{"doc":{"title":"mug"}}', "elasticsearch")).toBe(true);
+    expect(isDangerousQuery('GET orders/_search\n{"size":1}', "opensearch")).toBe(false);
+  });
+
   // A procedural body is one statement to the runner since #1312, and its own keyword is
   // BEGIN or CREATE. The writes inside it still ask, as they did when the splitter cut them.
   test("a write inside a procedural body still asks", () => {

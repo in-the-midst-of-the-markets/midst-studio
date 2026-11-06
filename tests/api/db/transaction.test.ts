@@ -327,6 +327,25 @@ describe("POST /api/db/transaction", () => {
     expect(data.error).toContain("Authentication required");
   });
 
+  test("a document insert inside a transaction query is refused for a user", async () => {
+    mockGetSession.mockImplementation(async () => ({ role: "user", username: "ada" }));
+    const req = createMockRequest("/api/db/transaction", {
+      method: "POST",
+      body: {
+        connection: validConnection,
+        action: "query",
+        sql: 'PUT orders/_doc/1\n{"title":"mug"}',
+      },
+    });
+
+    const res = await POST(req as never);
+    const data = await parseResponseJSON<{ error: string }>(res);
+
+    expect(res.status).toBe(403);
+    expect(data.error).toContain("admin");
+    expect(mockTxProvider.queryInTransaction).not.toHaveBeenCalled();
+  });
+
   test("without governance a transaction records no query event and arms no timer", async () => {
     recordedEvents.length = 0;
     const timers = spyOn(globalThis, "setTimeout");

@@ -17,6 +17,7 @@ import { readsSqlText, resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { ExplainFormat, QueryPrepareOptions } from "@/lib/db/types";
 import type { DatabaseConnection } from "@/lib/types";
 import { expandSubmittedEmbeddings } from "@/lib/embeddings/expand";
+import { documentWriteRefusal } from "@/lib/db/search-dev-tools";
 import { admitQueryExecution } from "@/lib/query-events/admission";
 import { queryEventStart } from "@/lib/query-events/build";
 import {
@@ -231,6 +232,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: embedded.error }, { status: 400 });
     }
     const runnable = embedded.sql;
+
+    // A document insert or update is an admin's. Checked on the text that would run,
+    // before a provider opens, so a user role never reaches the cluster with one.
+    const writeRefusal = documentWriteRefusal([runnable], guard.session.role);
+    if (writeRefusal !== undefined) {
+      return NextResponse.json({ error: writeRefusal }, { status: 403 });
+    }
 
     // Before the provider: a request the gate refuses opens nothing and runs nothing.
     stage = "admission";

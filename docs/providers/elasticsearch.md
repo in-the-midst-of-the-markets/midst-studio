@@ -20,7 +20,7 @@
 | **Connection pooling** | None — each statement is one stateless HTTP request |
 | **Connection string** | **Not supported** — addressed by host and port like Druid, and `http(s)://` is already ClickHouse's in the shared parser ([§4.2](#42-there-is-no-connection-string-and-that-is-deliberate)) |
 | **EXPLAIN** | **None.** `supportsExplain: false` and no `explainFormat`, so the button and the tab are hidden — even though this product *does* answer `EXPLAIN <select>` ([§3.10](#310-no-explain-even-though-elasticsearch-answers-one)) |
-| **Writes** | **None are possible.** No `INSERT`, `UPDATE`, `DELETE`, `CREATE` or `ALTER` is in this grammar; documents change through the document APIs ([§5.6](#56-this-grammar-does-not-write)) |
+| **Writes** | No `INSERT`, `UPDATE`, `DELETE`, `CREATE` or `ALTER` is in the SQL grammar ([§5.6](#56-this-grammar-does-not-write)). An admin can insert or update one document with a Dev Tools request. A delete is not sent |
 | **Transactions** | Not exposed (Elasticsearch has none) |
 | **Maintenance** | None — nothing in `MaintenanceType` has a SQL-reachable analogue ([§8](#8-maintenance)) |
 | **Query cancellation** | No `cancelQuery`. An abort closes **this client's** socket; the cluster keeps working ([§3.8](#38-the-deadline-is-the-clients-and-only-the-clients)) |
@@ -35,7 +35,10 @@
 
 Elasticsearch is a distributed search and analytics engine. Its **SQL surface is a first-party HTTP
 endpoint** — `POST /_sql?format=json` — available on the basic tier with no plugin to install, and
-that endpoint is the whole query surface this provider speaks. Schema and monitoring come from the
+that endpoint is the SQL query surface. The editor also runs one Dev Tools request: a `GET` or
+`POST` and a path such as `orders/_search`, with one JSON object, and an admin can insert or update
+one document (`PUT orders/_doc/1`, `POST orders/_update/1`). A request that deletes documents is not
+sent. Schema and monitoring come from the
 REST APIs instead (`_cat/indices`, `<index>/_mapping`, `_cluster/health`, `_cluster/stats`), because
 the mapping is the index's own declaration while a `SELECT` only ever describes a statement
 ([§6](#6-schema-introspection)).
@@ -1684,7 +1687,9 @@ is what Redis and LibreDB declare.
 declared on these two engines alone. Measured in the browser on 2026-08-19: a plan run on a search
 connection, told only "produce ONE runnable statement", answered with a native aggregation body —
 `{"size":0,"aggs":{…},"query":{"term":{…}}}` — which is correct for the product and unrunnable through
-the SQL endpoint this provider speaks to. The statement guard then declined to classify it
+the SQL endpoint the agent speaks to. The editor runs that body when the statement is a Dev Tools
+request (`GET` or `POST` plus the path). The agent still speaks SQL, which is what this label is for.
+The statement guard then declined to classify it
 (`NO_STATEMENT`), so nothing ran; the user was still handed a plan they could not execute.
 `queryLanguage: "sql"` was already true and settled nothing, because the engine's NAME carries the
 stronger prior — so the label names what the language is **not**, and

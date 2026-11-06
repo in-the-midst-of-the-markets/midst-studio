@@ -67,7 +67,8 @@ export type SearchRow = Record<string, unknown>;
  * in the grammar itself ("Query must start with SELECT..." / a parsing_exception).
  * A count here could only ever be zero for the statements we can run, and a field
  * that is always zero reads as "nothing changed" rather than "this cannot happen".
- * Writes go through the document APIs, which this seam does not expose.
+ * A Dev Tools search is a read. A request that changes or deletes documents is refused
+ * before it is sent.
  */
 export interface SearchQueryResult {
   rows: SearchRow[];
@@ -418,6 +419,13 @@ export interface SearchTransport {
    *   work - the distinction matters for the message a cancelled query shows.
    */
   query(sql: string, signal?: AbortSignal): Promise<SearchQueryResult>;
+
+  /**
+   * One Dev Tools search: a method, a path, and an optional JSON body.
+   *
+   * A request that changes or deletes documents throws before the cluster is asked.
+   */
+  nativeQuery(method: string, path: string, body?: string, signal?: AbortSignal): Promise<SearchQueryResult>;
 
   /**
    * Run one SQL statement whose answer must stay within `bounds`, or be refused whole.

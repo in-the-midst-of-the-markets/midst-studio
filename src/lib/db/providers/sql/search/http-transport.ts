@@ -72,6 +72,7 @@
  */
 
 import { DatabaseConfigError } from "@/lib/db/errors";
+import { devToolsAction } from "@/lib/db/search-dev-tools";
 import {
   endpointUrl,
   type HttpOrigin,
@@ -1784,6 +1785,191 @@ function listedObjects(
 // Transport
 // ============================================================================
 
+const NATIVE_PATH_ERROR = "The search path is not a path this client can send. The query was not sent.";
+const NATIVE_WRITE_ERROR = "This query box runs a search, or one document insert or update. The query was not sent.";
+const NATIVE_BODY_ERROR = "A request body is sent with POST, and only on a search. The query was not sent.";
+const DOCUMENT_BODY_ERROR = "An insert or update needs one JSON body. The query was not sent.";
+
+/** The same suffixes {@link SEARCH_POST_SUFFIXES} names. Both lists are held equal by a test. */
+const POST_SEARCH_SUFFIXES = [
+  "/_search",
+  "/_count",
+  "/_validate/query",
+  "/_field_caps",
+  "/_rank_eval",
+  "/_eql/search",
+  "/_async_search",
+  "/_explain",
+];
+
+function postSearch(pathname: string): boolean {
+  if (POST_SEARCH_SUFFIXES.some((suffix) => pathname.endsWith(suffix))) return true;
+  return /\/_explain\/[^/]+$/.test(pathname);
+}
+
+function nativePath(raw: string): { pathname: string; query: string } {
+  const trimmed = raw.trim();
+  if (trimmed === "" || trimmed.includes("\\") || /\s/.test(trimmed) || trimmed.includes("://")) {
+    throw new SearchTransportError("syntax", NATIVE_PATH_ERROR);
+  }
+  const hash = trimmed.indexOf("#");
+  const withoutHash = hash === -1 ? trimmed : trimmed.slice(0, hash);
+  const question = withoutHash.indexOf("?");
+  const pathPart = (question === -1 ? withoutHash : withoutHash.slice(0, question)) || "/";
+  const query = question === -1 ? "" : withoutHash.slice(question + 1);
+  const withSlash = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+  const slashed = withSlash.length > 1 && withSlash.endsWith("/") ? withSlash.slice(0, -1) : withSlash;
+  if (slashed.startsWith("//") || slashed.length > 4000) {
+    throw new SearchTransportError("syntax", NATIVE_PATH_ERROR);
+  }
+  const segments = slashed.split("/");
+  if (
+    slashed !== "/" &&
+    segments.some((segment, index) => index > 0 && (segment === "" || segment === "." || segment === ".."))
+  ) {
+    throw new SearchTransportError("syntax", NATIVE_PATH_ERROR);
+  }
+  const probe = new URL("http://localhost");
+  probe.pathname = slashed;
+  return { pathname: probe.pathname, query };
+}
+
+function nativeVerb(method: string, pathname: string, hasBody: boolean): "GET" | "POST" | "PUT" | "HEAD" {
+  const action = devToolsAction({ method, path: pathname });
+  if (action === "insert" || action === "update") {
+    if (!hasBody) throw new SearchTransportError("unsupported", DOCUMENT_BODY_ERROR);
+    return method.toUpperCase() === "PUT" ? "PUT" : "POST";
+  }
+  if (action === "refused") throw new SearchTransportError("unsupported", NATIVE_WRITE_ERROR);
+  const upper = method.toUpperCase();
+  if (upper === "HEAD") {
+    if (hasBody) throw new SearchTransportError("unsupported", NATIVE_BODY_ERROR);
+    return "HEAD";
+  }
+  if (upper === "GET") {
+    if (!hasBody) return "GET";
+    if (postSearch(pathname)) return "POST";
+    throw new SearchTransportError("unsupported", NATIVE_BODY_ERROR);
+  }
+  return "POST";
+}
+
+function jsonCell(value: unknown): unknown {
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+function totalOf(hits: Record<string, unknown>): number | null {
+  const total = hits.total;
+  if (typeof total === "number") return total;
+  const value = asRecord(total)?.value;
+  return typeof value === "number" ? value : null;
+}
+
+function hitRows(record: Record<string, unknown>): SearchQueryResult | null {
+  const wrap = asRecord(record.hits);
+  const hits = wrap?.hits;
+  if (wrap === null || !Array.isArray(hits)) return null;
+  const names = ["_index", "_id", "_score"];
+  const rows: SearchRow[] = [];
+  for (const hit of hits) {
+    const entry = asRecord(hit);
+    if (entry === null) continue;
+    const row: SearchRow = {
+      _index: jsonCell(entry._index ?? null),
+      _id: jsonCell(entry._id ?? null),
+      _score: jsonCell(entry._score ?? null),
+    };
+    const source = asRecord(entry._source);
+    if (source !== null) {
+      for (const [key, value] of Object.entries(source)) {
+        if (!names.includes(key)) names.push(key);
+        row[key] = jsonCell(value);
+      }
+    }
+    rows.push(row);
+  }
+  for (const row of rows) {
+    for (const name of names) {
+      if (!Object.hasOwn(row, name)) row[name] = null;
+    }
+  }
+  return { rows, fieldNames: names, columnTypes: null, totalHits: totalOf(wrap) };
+}
+
+function aggregationRows(record: Record<string, unknown>): SearchQueryResult | null {
+  const aggs = asRecord(record.aggregations);
+  if (aggs === null) return null;
+  const rows: SearchRow[] = [];
+  let valued = false;
+  for (const [name, raw] of Object.entries(aggs)) {
+    const item = asRecord(raw);
+    if (item === null) continue;
+    if (Array.isArray(item.buckets)) {
+      for (const bucket of item.buckets) {
+        const entry = asRecord(bucket);
+        if (entry === null) continue;
+        rows.push({
+          aggregation: name,
+          key: jsonCell(entry.key_as_string ?? entry.key ?? null),
+          doc_count: jsonCell(entry.doc_count ?? null),
+        });
+      }
+      continue;
+    }
+    if ("value" in item) {
+      valued = true;
+      rows.push({ aggregation: name, key: null, doc_count: null, value: jsonCell(item.value) });
+    }
+  }
+  if (rows.length === 0) return null;
+  const names = valued ? ["aggregation", "key", "doc_count", "value"] : ["aggregation", "key", "doc_count"];
+  for (const row of rows) {
+    for (const name of names) {
+      if (!Object.hasOwn(row, name)) row[name] = null;
+    }
+  }
+  return { rows, fieldNames: names, columnTypes: null, totalHits: rows.length };
+}
+
+function nativeRows(payload: unknown): SearchQueryResult {
+  const record = asRecord(payload);
+  if (record === null) {
+    return { rows: [{ response: jsonCell(payload) }], fieldNames: ["response"], columnTypes: null, totalHits: null };
+  }
+  const hits = hitRows(record);
+  if (hits !== null && hits.rows.length > 0) return hits;
+  const aggs = aggregationRows(record);
+  if (aggs !== null) return aggs;
+  if (hits !== null) return hits;
+  if (typeof record.count === "number") {
+    return { rows: [{ count: record.count }], fieldNames: ["count"], columnTypes: null, totalHits: record.count };
+  }
+  const written = documentRows(record);
+  if (written !== null) return written;
+  return { rows: [{ response: JSON.stringify(record) }], fieldNames: ["response"], columnTypes: null, totalHits: null };
+}
+
+function documentRows(record: Record<string, unknown>): SearchQueryResult | null {
+  if (typeof record.result !== "string") return null;
+  if (record._id === undefined && record._index === undefined) return null;
+  return {
+    rows: [
+      {
+        _index: jsonCell(record._index ?? null),
+        _id: jsonCell(record._id ?? null),
+        result: record.result,
+        _version: jsonCell(record._version ?? null),
+      },
+    ],
+    fieldNames: ["_index", "_id", "result", "_version"],
+    columnTypes: null,
+    totalHits: 1,
+  };
+}
+
 export class SearchHttpTransport implements SearchTransport {
   public readonly dialect: SearchDialectId;
 
@@ -1918,6 +2104,31 @@ export class SearchHttpTransport implements SearchTransport {
     }
 
     return result;
+  }
+
+  /**
+   * One Dev Tools request. A search runs. An insert or update of one document runs.
+   * A request that deletes documents is refused before the cluster is asked. A GET
+   * that carries a JSON body is sent as POST, which is the same search.
+   */
+  public async nativeQuery(
+    method: string,
+    path: string,
+    body?: string,
+    signal?: AbortSignal,
+  ): Promise<SearchQueryResult> {
+    const target = nativePath(path);
+    const verb = nativeVerb(method, target.pathname, body !== undefined);
+    const payload = await this.request(
+      this.url(target.pathname, target.query),
+      signal,
+      body,
+      undefined,
+      parseJson,
+      undefined,
+      verb,
+    );
+    return nativeRows(payload);
   }
 
   /**
@@ -2549,12 +2760,14 @@ export class SearchHttpTransport implements SearchTransport {
     parse: (text: string) => unknown = parseJson,
     /** Read the body no further than this; a bounded statement's pages alone pass one. */
     bodyCap?: BodyCap,
+    /** The method a Dev Tools request asked for. Absent keeps GET with no body and POST with one. */
+    verb?: "GET" | "POST" | "PUT" | "HEAD",
   ): Promise<unknown> {
     let response: Response;
     let text: string;
     try {
       response = await httpTransportFetch(url, {
-        method: body === undefined ? "GET" : "POST",
+        method: verb ?? (body === undefined ? "GET" : "POST"),
         headers: {
           // Sent on GETs too: harmless, and it keeps one header block for one
           // request helper. A POST without it is refused with HTTP 406 on both
