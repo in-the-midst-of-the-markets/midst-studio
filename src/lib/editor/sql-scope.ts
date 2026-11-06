@@ -98,8 +98,20 @@ function itemName(item: string): string | undefined {
   return segments(name).at(-1);
 }
 
-function derive(sql: string, start: number, end: number, outer: Map<string, DerivedSource>, depth: number) {
-  const ctes = readCtes(sql, start, end, outer, depth).ctes;
+/** A word the shared keyword list holds, or one this dialect reserves so it is not read as a name or an alias. */
+function isReserved(word: string, reserved?: ReadonlySet<string>): boolean {
+  return KEYWORD.test(word) || (reserved?.has(word.toUpperCase()) ?? false);
+}
+
+function derive(
+  sql: string,
+  start: number,
+  end: number,
+  outer: Map<string, DerivedSource>,
+  depth: number,
+  reserved?: ReadonlySet<string>,
+) {
+  const ctes = readCtes(sql, start, end, outer, depth, reserved).ctes;
   const text = flat(sql, start, end);
   // A set operation's columns are named by its first branch.
   const branch = text.search(/\b(?:UNION|INTERSECT|EXCEPT)\b/i);
@@ -120,7 +132,7 @@ function derive(sql: string, start: number, end: number, outer: Map<string, Deri
       }
     }
   }
-  return { columns, star, sources: sourcesIn(sql, start, start + stop, ctes, depth) };
+  return { columns, star, sources: sourcesIn(sql, start, start + stop, ctes, depth, reserved) };
 }
 
 function readItem(
@@ -131,6 +143,7 @@ function readItem(
   keyword: string,
   ctes: Map<string, DerivedSource>,
   depth: number,
+  reserved?: ReadonlySet<string>,
 ): { source: ScopeSource; end: number } | undefined {
   const prefix = /(?:LATERAL|ONLY|TABLE)\s+/iy;
   prefix.lastIndex = pos;
@@ -142,7 +155,7 @@ function readItem(
     const close = closeOf(sql, at);
     // Past MAX_DEPTH a subquery is opaque, which bounds the work on pathological nesting.
     if (depth < MAX_DEPTH && /^\s*(?:SELECT|WITH)\b/i.test(sql.slice(at + 1, close))) {
-      source = { at, depth, derived: derive(sql, at + 1, close, ctes, depth + 1) };
+      source = { at, depth, derived: derive(sql, at + 1, close, ctes, depth + 1, reserved) };
     } else if (keyword === "USING") {
       return undefined; // `JOIN b USING (col)`: a column list, no source
     } else source = { at, depth, opaque: true };
@@ -151,7 +164,7 @@ function readItem(
     const name = new RegExp(NAME, "y");
     name.lastIndex = pos;
     const match = name.exec(text);
-    if (!match || KEYWORD.test(match[0])) return undefined;
+    if (!match || isReserved(match[0], reserved)) return undefined;
     end = name.lastIndex;
     const call = /\s*\(/y;
     call.lastIndex = end;
@@ -168,7 +181,7 @@ function readItem(
   const alias = new RegExp(`\\s+(?:AS\\s+)?(${SEG})`, "iy");
   alias.lastIndex = end;
   const named = alias.exec(text);
-  if (named && !KEYWORD.test(named[1])) {
+  if (named && !isReserved(named[1], reserved)) {
     source.alias = segments(named[1])[0];
     end = alias.lastIndex;
     // `AS s(a, b)` renames the source's columns, and gives a table function its shape.
@@ -186,7 +199,14 @@ function readItem(
 }
 
 /** The sources one query level names, in text order; nested groups belong to their own level. */
-function sourcesIn(sql: string, start: number, end: number, ctes: Map<string, DerivedSource>, depth: number) {
+function sourcesIn(
+  sql: string,
+  start: number,
+  end: number,
+  ctes: Map<string, DerivedSource>,
+  depth: number,
+  reserved?: ReadonlySet<string>,
+) {
   const text = flat(sql, start, end);
   const sources: ScopeSource[] = [];
   let previous: string | undefined;
@@ -200,7 +220,7 @@ function sourcesIn(sql: string, start: number, end: number, ctes: Map<string, De
     if (keyword === "ON" && (depth > 0 || (before !== undefined && before !== "UPDATE"))) continue;
     let pos = match.index + match[0].length;
     for (;;) {
-      const item = readItem(sql, text, start, pos, keyword, ctes, depth);
+      const item = readItem(sql, text, start, pos, keyword, ctes, depth, reserved);
       if (!item) break;
       sources.push(item.source);
       const comma = /\s*,\s*/y;
@@ -217,7 +237,14 @@ function sourcesIn(sql: string, start: number, end: number, ctes: Map<string, De
  * statement (`CREATE VIEW v AS WITH`, `INSERT INTO t WITH`, a subquery's own); one that defines nothing
  * (`WITH (NOLOCK)`, `WITH ROLLUP`) is no CTE list.
  */
-function readCtes(sql: string, start: number, end: number, outer: ReadonlyMap<string, DerivedSource>, depth: number) {
+function readCtes(
+  sql: string,
+  start: number,
+  end: number,
+  outer: ReadonlyMap<string, DerivedSource>,
+  depth: number,
+  reserved?: ReadonlySet<string>,
+) {
   const ctes = new Map(outer);
   const names: string[] = [];
   const bodies: number[] = [];
@@ -228,7 +255,7 @@ function readCtes(sql: string, start: number, end: number, outer: ReadonlyMap<st
     for (let match = definition.exec(text); match; match = definition.exec(text)) {
       const open = start + definition.lastIndex - 1;
       const close = closeOf(sql, open);
-      let derived: DerivedSource = derive(sql, open + 1, close, ctes, depth + 1);
+      let derived: DerivedSource = derive(sql, open + 1, close, ctes, depth + 1, reserved);
       if (match[2]) {
         const list = start + text.indexOf("(", match.index + match[1].length);
         derived = { ...derived, columns: columnList(sql, list), star: false };
@@ -258,8 +285,11 @@ export function selectListColumns(sql: string): { readonly columns: readonly str
   return { columns: listed.columns, star: listed.star };
 }
 
-/** The scope at `cursor` in one statement whose comments and strings are blanked. */
-export function statementScope(sql: string, cursor: number): StatementScope {
+/**
+ * The scope at `cursor` in one statement whose comments and strings are blanked.
+ * `reserved` words, compared without case, are not read as a table name or an alias.
+ */
+export function statementScope(sql: string, cursor: number, reserved?: ReadonlySet<string>): StatementScope {
   const opens: number[] = [];
   for (let i = 0; i < Math.min(cursor, sql.length); i++) {
     if (sql[i] === "(") opens.push(i);
@@ -273,7 +303,7 @@ export function statementScope(sql: string, cursor: number): StatementScope {
   for (let depth = 0; depth <= opens.length; depth++) {
     const open = depth === 0 ? -1 : opens[depth - 1];
     const end = depth === 0 ? sql.length : closeOf(sql, open);
-    const read = readCtes(sql, open + 1, end, ctes, depth);
+    const read = readCtes(sql, open + 1, end, ctes, depth, reserved);
     ctes = read.ctes;
     cteNames.push(...read.names);
     for (const body of read.bodies) cteBodies.add(body);
@@ -283,7 +313,7 @@ export function statementScope(sql: string, cursor: number): StatementScope {
   const sources: ScopeSource[] = [];
   for (let depth = opens.length; depth >= 0; depth--) {
     const { open, end, ctes: visible } = levels[depth];
-    sources.push(...sourcesIn(sql, open + 1, end, new Map(visible), depth));
+    sources.push(...sourcesIn(sql, open + 1, end, new Map(visible), depth, reserved));
     // A CTE body is a query of its own: the statement around it is no enclosing query.
     if (cteBodies.has(open)) break;
   }

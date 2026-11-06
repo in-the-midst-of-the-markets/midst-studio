@@ -27,6 +27,14 @@ describe("statementScope", () => {
     expect(names(scopeAt("SELECT | FROM t \nJOIN my-proj.ds.events e").sources)).toEqual(["t", "my-proj.ds.events"]);
   });
 
+  test("a dialect word is not read as an alias, and the same word is an alias where it is not reserved", () => {
+    const sql = "SELECT * FROM trades LATEST ON ts";
+    expect(statementScope(sql, sql.length).sources[0].alias).toBe("LATEST");
+    const reserved = statementScope(sql, sql.length, new Set(["LATEST"])).sources[0];
+    expect(reserved.name).toEqual(["trades"]);
+    expect(reserved.alias).toBeUndefined();
+  });
+
   test("reads every item of a comma-separated FROM list", () => {
     const { sources } = scopeAt("SELECT | FROM users u, orders AS o, products WHERE 1=1");
     expect(names(sources)).toEqual(["users", "orders", "products"]);

@@ -12,6 +12,10 @@ Default port **8812**, default user `admin`, default database `qdb`. The HTTP co
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted.
 
+The editor completes QuestDB's own clauses and functions beside the shared SQL lists (the grammar's `completionWords`): `SAMPLE BY`, `LATEST ON`, `ASOF JOIN`, `DATEADD`, `TIMESTAMP_FLOOR` and `TODAY` among them. A function is inserted as a call, and `SAMPLE BY`, `LATEST ON` and `ASOF JOIN` are also snippets. `LATEST ON`, `PARTITION BY` and `SAMPLE BY` are column positions. `ASOF JOIN`, `LT JOIN`, `SPLICE JOIN`, `HORIZON JOIN` and `WINDOW JOIN` are table positions. Those words are not read as a table alias.
+
+Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`). The PostgreSQL language rejects a sample interval such as `1h`, and MySQL keeps it. A statement that language cannot read is left as written.
+
 ## SQL writing
 
 [`questdb/sql-writing.ts`](../../src/lib/db/providers/sql/questdb/sql-writing.ts) declares how a generated statement spells a literal, a name and a bind, and it is this engine's row of `SQL_WRITING`.
