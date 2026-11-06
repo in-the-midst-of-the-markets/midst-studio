@@ -32,7 +32,12 @@ import {
   normalizeEmbeddingModel,
   voyageModelId,
 } from "@/lib/embeddings/models";
-import { bindEmbedPlaceholders, embedTokens, spliceEmbeddingVectors } from "@/lib/embeddings/placeholder";
+import {
+  bindEmbedPlaceholders,
+  embedProbeText,
+  embedTokens,
+  spliceEmbeddingVectors,
+} from "@/lib/embeddings/placeholder";
 import {
   DEFAULT_EMBEDDING_SETTINGS,
   embeddingModelFor,
@@ -127,6 +132,14 @@ describe("embed placeholders", () => {
     expect(embedTokens('{{embed "\\q"}} {{embed "abc')).toEqual([]);
     expect(embedTokens('{{embed "\\')).toEqual([]);
     expect(spliceEmbeddingVectors('{{embed "a"}} {{embed "b"}}', [[1]])).toBe('[1] {{embed "b"}}');
+    expect(spliceEmbeddingVectors('{"vector": "{{embed "cats"}}"}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
+    expect(spliceEmbeddingVectors('{"vector": {{embed "cats"}}}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
+    expect(spliceEmbeddingVectors('"note {{embed "cats"}}"', [[1]])).toBe('"note [1]"');
+    expect(embedProbeText('{"vector": "{{embed e1}}"}')).toBe('{"vector": [0]}');
+    expect(embedProbeText('{"vector": {{embed e1}}}')).toBe('{"vector": [0]}');
+    expect(embedProbeText("SELECT 1")).toBe("SELECT 1");
+    const bound = bindEmbedPlaceholders('{"vector": "{{embed e1}}"}', [{ name: "e1", value: "cats" }]);
+    expect(spliceEmbeddingVectors(bound, [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
   });
 });
 

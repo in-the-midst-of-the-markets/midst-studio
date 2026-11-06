@@ -43,6 +43,17 @@ describe("weaviateRefusal", () => {
     );
   });
 
+  test("accepts an embed id where the vector list goes, quoted or bare", () => {
+    const bare =
+      'POST /v1/search/CompanyProfile/near-vector {"vector": {{embed e1}}, "targetVector": "name", "limit": 5}';
+    const quoted =
+      'POST /v1/search/CompanyProfile/near-vector {"vector": "{{embed e1}}", "targetVector": "name", "limit": 5}';
+    expect(weaviateRefusal(bare)).toBeUndefined();
+    expect(weaviateRefusal(quoted)).toBeUndefined();
+    expect(readWeaviateOperations(bare)).toEqual(["read"]);
+    expect(readWeaviateOperations(quoted)).toEqual(["read"]);
+  });
+
   test("leaves the rules that read the collection to the server", () => {
     expect(weaviateRefusal("GET /v1/objects?class=TenantNotes")).toBeUndefined();
     expect(

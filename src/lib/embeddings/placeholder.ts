@@ -123,6 +123,37 @@ function embeddingVectorLiteral(values: readonly number[]): string {
   return `[${values.join(",")}]`;
 }
 
+/**
+ * Where a token is replaced.
+ *
+ * A JSON string that holds nothing but the token is part of the replacement, so
+ * `"{{embed e1}}"` becomes a list. A SQL string uses single quotes and keeps them.
+ */
+function embeddingSpan(sql: string, token: EmbedToken): { start: number; end: number } {
+  if (sql[token.start - 1] === '"' && sql[token.end] === '"') {
+    return { start: token.start - 1, end: token.end + 1 };
+  }
+  return { start: token.start, end: token.end };
+}
+
+/**
+ * The same text with each embed token standing in for one number.
+ *
+ * A console grammar reads this before the server has embedded anything, so an id in
+ * the vector field is a list rather than a broken object or a string.
+ */
+export function embedProbeText(sql: string): string {
+  const tokens = embedTokens(sql);
+  let next = sql;
+  for (let index = tokens.length - 1; index >= 0; index -= 1) {
+    const token = tokens[index];
+    if (token === undefined) continue;
+    const span = embeddingSpan(next, token);
+    next = `${next.slice(0, span.start)}[0]${next.slice(span.end)}`;
+  }
+  return next;
+}
+
 /** Splices one vector in place of each quoted embed token, from the end so earlier indexes stay put. */
 export function spliceEmbeddingVectors(sql: string, vectors: readonly (readonly number[])[]): string {
   const tokens = embedTokens(sql).filter((token) => token.kind === "text");
@@ -131,7 +162,8 @@ export function spliceEmbeddingVectors(sql: string, vectors: readonly (readonly 
     const token = tokens[index];
     const vector = vectors[index];
     if (token === undefined || vector === undefined) continue;
-    next = `${next.slice(0, token.start)}${embeddingVectorLiteral(vector)}${next.slice(token.end)}`;
+    const span = embeddingSpan(next, token);
+    next = `${next.slice(0, span.start)}${embeddingVectorLiteral(vector)}${next.slice(span.end)}`;
   }
   return next;
 }
