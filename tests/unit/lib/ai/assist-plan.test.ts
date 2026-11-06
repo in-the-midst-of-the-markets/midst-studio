@@ -60,6 +60,7 @@ describe("parseAssistPlan", () => {
       sql: select,
       connection: "",
       chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month", color: null },
+      code: null,
     });
     expect(plan.queries[1]?.title).toBe("Query");
     expect(plan.queries[1]?.chart).toBeNull();
@@ -163,7 +164,13 @@ describe("acceptAssistPlan", () => {
     const match = "MATCH (n) WHERE n.name = 'Ada' RETURN n LIMIT 5";
     const body = { explanation: "People named Ada.", queries: [{ title: "Ada", sql: match, connection: "Graph" }] };
     expect(acceptAssistPlan(body, "neo4j").queries).toEqual([
-      { title: "Ada", sql: match, connection: "Graph", chart: null },
+      {
+        title: "Ada",
+        sql: match,
+        connection: "Graph",
+        chart: null,
+        code: null,
+      },
     ]);
     expect(acceptAssistPlan(JSON.stringify(body), "postgres").queries).toEqual([]);
     expect(acceptAssistPlan({ queries: [{ sql: "SELECT 1" }] }, "neo4j").queries).toEqual([]);
@@ -282,6 +289,7 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain('starts with Chart "');
     expect(messages[0]?.content).toContain("same title");
     expect(messages[0]?.content).toContain("chart.color");
+    expect(messages[0]?.content).toContain("chart.code");
     expect(messages[0]?.content).toContain("{{region:east|east,west,north}}");
     expect(messages[0]?.content).toContain("rather than defaulting to bar");
     expect(messages[0]?.content).toContain("A measure over time, including months or dates, is line.");
@@ -320,7 +328,13 @@ describe("buildAssistMessages", () => {
       { connection: "Ghost", engine: "" },
       { note: "missing" },
     ]);
-    const people = { title: "People", connection: "Graph", sql: "MATCH (n:Person) RETURN n", chart: null };
+    const people = {
+      title: "People",
+      connection: "Graph",
+      sql: "MATCH (n:Person) RETURN n",
+      chart: null,
+      code: null,
+    };
     const plan = acceptAssistPlan(
       {
         queries: [
@@ -374,12 +388,14 @@ describe("queries the user edited", () => {
     sql: "SELECT month, revenue FROM orders",
     connection: "Orders",
     chart: null,
+    code: null,
   };
   const spend: AssistQueryPlan = {
     title: "Spend",
     sql: "SELECT region, sum(cost) AS spend FROM sales",
     connection: "Orders",
     chart: null,
+    code: null,
   };
 
   test("leaves an edited statement out, recolors a matching one, and keeps a different one", () => {
@@ -500,6 +516,7 @@ describe("queries the user edited", () => {
       sql: "SELECT region, cost FROM sales",
       connection: "Orders",
       chart: { type: "line", x: "region", y: ["cost"], caption: "Cost", color: null },
+      code: null,
     };
     const older = { id: "old", title: "Revenue", locked: false };
     const latest = { id: "new", title: "Revenue", locked: false };
@@ -556,7 +573,53 @@ describe("queries the user edited", () => {
       sql: same.sql,
       chart: null,
       color: "#9546de",
+      code: null,
     });
+    const look = '{\n  "title": {\n    "text": "Revenue"\n  }\n}';
+    const hi = '{\n  "title": {\n    "text": "Hi"\n  }\n}';
+    expect(
+      parseAssistPlan(
+        JSON.stringify({
+          queries: [
+            {
+              title: "Revenue",
+              sql: select,
+              chart: { type: "bar", x: "month", y: ["revenue"] },
+              code: { title: { text: "Revenue" }, series: [{ data: [1, 2] }] },
+            },
+            { title: "Hello", sql: "SELECT 2", code: '{"title":{"text":"Hi"}}' },
+            { title: "Broken", sql: "SELECT 3", code: "not json" },
+          ],
+        }),
+      ).queries.map((query) => query.code),
+    ).toEqual(['{\n  "title": {\n    "text": "Revenue"\n  },\n  "series": [\n    {}\n  ]\n}', hi, null]);
+    expect(
+      parseAssistPlan(
+        JSON.stringify({
+          queries: [
+            { title: "Huge", sql: select, code: "x".repeat(100_001) },
+            { title: "Count", sql: "SELECT 4", code: 4 },
+            { title: "List", sql: "SELECT 5", code: [] },
+          ],
+        }),
+      ).queries.map((query) => query.code),
+    ).toEqual([null, null, null]);
+    expect(
+      explanationWithCharts("Revenue rose.", [
+        { title: "Revenue", sql: "SELECT 1", chart: bar, code: '{ "title": { "text": "Revenue" } }' },
+      ]),
+    ).toBe(
+      'Chart "Revenue": bar, x month, y revenue. SQL: SELECT 1 Code: { "title": { "text": "Revenue" } }\nRevenue rose.',
+    );
+    expect(
+      explanationWithCharts("Revenue rose.", [{ title: "Revenue", sql: "SELECT 1", chart: bar, code: "   " }]),
+    ).toBe('Chart "Revenue": bar, x month, y revenue. SQL: SELECT 1\nRevenue rose.');
+    const longCode = explanationWithCharts("", [
+      { title: "Revenue", sql: "SELECT 1", chart: bar, code: "y".repeat(2_050) },
+    ]);
+    expect(longCode).toContain("Code: ");
+    expect(longCode.endsWith("…")).toBe(true);
+    expect(assistChartPatch({ sql: "SELECT 1", chart: bar, color: null }, { ...same, code: look }).code).toBe(look);
     expect(assistChartPatch({ sql: "SELECT 1", chart: bar, color: "#9546de" }, { ...same, chart: null }).chart).toEqual(
       {
         ...bar,

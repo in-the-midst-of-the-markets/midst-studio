@@ -2296,6 +2296,19 @@ describe("AiAssist page", () => {
             ],
           });
         }
+        if (body.question === "Call the revenue chart Quarterly") {
+          return jsonResponse({
+            explanation: "Renamed.",
+            queries: [
+              {
+                title: "Revenue",
+                sql: revenueSql,
+                chart: { type: "bar", x: "month", y: ["revenue"], caption: "Revenue by month" },
+                code: { title: { text: "Quarterly" } },
+              },
+            ],
+          });
+        }
         if (body.question === "Show the revenue chart in teal") {
           return jsonResponse({
             explanation: "Tinted.",
@@ -2332,7 +2345,22 @@ describe("AiAssist page", () => {
     };
     const view = render(<AiAssist />);
     expect(await view.findByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
     expect(view.getByRole("heading", { name: "Count" })).toBeTruthy();
+
+    await typeAndSend(view, "Call the revenue chart Quarterly");
+    expect(await view.findByRole("heading", { name: "Quarterly" })).toBeTruthy();
+    expect(view.queryAllByRole("heading", { name: "Revenue" })).toHaveLength(0);
+    expect(view.getByRole("heading", { name: "Count" })).toBeTruthy();
+    expect(calls.some((call) => call.url.includes("/api/db/query"))).toBe(false);
+    const named = JSON.parse(localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "[]") as {
+      cards?: { title?: string; code?: string | null }[];
+    }[];
+    expect(named.flatMap((turn) => turn.cards ?? []).find((card) => card.title === "Revenue")?.code).toContain(
+      "Quarterly",
+    );
+    const codeHistory = (planPosts()[0]?.body as { history?: { explanation: string }[] } | undefined)?.history;
+    expect(codeHistory?.[0]?.explanation).toContain('Code: {"title":{"text":"Edited"}}');
 
     await typeAndSend(view, "Show revenue as a line");
     expect(await view.findByText("Now a line.")).toBeTruthy();
@@ -2340,7 +2368,7 @@ describe("AiAssist page", () => {
     expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
     expect(view.getByRole("heading", { name: "Count" })).toBeTruthy();
     expect(calls.some((call) => call.url.includes("/api/db/query"))).toBe(false);
-    const history = (planPosts()[0]?.body as { history?: { explanation: string }[] } | undefined)?.history;
+    const history = (planPosts()[1]?.body as { history?: { explanation: string }[] } | undefined)?.history;
     expect(history?.[0]?.explanation).toContain(
       'Chart "Revenue": bar, x month, y revenue. SQL: SELECT month, revenue FROM orders LIMIT 200',
     );

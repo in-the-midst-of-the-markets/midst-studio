@@ -254,7 +254,12 @@ function historyOf(turns: readonly Turn[], limit: number): AssistHistoryTurn[] {
       const explanation = explanationWithResults(
         explanationWithCharts(
           explanationWithEdits(next.text, edited),
-          next.cards.map((card) => ({ title: card.title, sql: card.sql, chart: card.chart })),
+          next.cards.map((card) => ({
+            title: card.title,
+            sql: card.sql,
+            chart: card.chart,
+            code: card.code,
+          })),
         ),
         results.ok ? results.value : [],
       );
@@ -284,13 +289,14 @@ function reviseCard(
   schemas: Readonly<Record<string, string>>,
 ): AssistCard {
   const patch = assistChartPatch(card, query);
+  const code = patch.code ?? (patch.sqlChanged || patch.planChanged ? null : card.code);
   if (!patch.sqlChanged) {
     return {
       ...card,
       chart: patch.chart,
       color: patch.color,
       view: patch.planChanged ? null : card.view,
-      code: patch.planChanged ? null : card.code,
+      code,
     };
   }
   const resolved = connectionForAssistQuery(connections, query.connection || card.connectionName, {
@@ -310,7 +316,7 @@ function reviseCard(
     result: null,
     error: resolved.ok ? null : resolved.error,
     view: null,
-    code: null,
+    code,
     running: resolved.ok,
   };
 }
@@ -363,7 +369,7 @@ function plannedCards(
       result: null,
       error: resolved.ok ? null : resolved.error,
       view: null,
-      code: null,
+      code: query.code,
       running: resolved.ok,
     };
   });
