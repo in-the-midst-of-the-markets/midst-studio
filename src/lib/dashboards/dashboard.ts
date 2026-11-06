@@ -1,6 +1,6 @@
 import { echartType } from "@/lib/charts/echarts-catalog";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
-import { bindEmbedPlaceholders } from "@/lib/embeddings/placeholder";
+import { bindEmbedPlaceholders, bindVectorFilterIds } from "@/lib/embeddings/placeholder";
 import type {
   DashboardFilter,
   DashboardFilterControl,
@@ -799,11 +799,24 @@ export function filterFrameMessage(data: unknown): { id: string; value: string }
   return { id, value: value.slice(0, FILTER_FRAME_VALUE_CAP) };
 }
 
-/** Fields stored when the user picks a control. A slider starts at 0 to 100. */
+/** An id for a vector filter: `vq_` plus random hex, so it is not a word a query would use. */
+export function vectorFilterName(): string {
+  return `vq_${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
+}
+
+const VECTOR_FILTER_NAME = /^vq_[a-f0-9]{8,32}$/;
+
+/** Fields stored when the user picks a control. A slider starts at 0 to 100. A vector filter takes a generated id. */
 export function filterControlPatch(
   control: DashboardFilterControl,
-  filter: Pick<DashboardFilter, "script" | "value">,
+  filter: Pick<DashboardFilter, "script" | "value"> & { name?: string; placeholder?: string },
 ): Partial<DashboardFilter> {
+  if (control === "vector") {
+    const current = filter.name?.trim() ?? "";
+    const name = VECTOR_FILTER_NAME.test(current) ? current : vectorFilterName();
+    const placeholder = filter.placeholder?.trim() ? {} : { placeholder: "Text to embed" };
+    return { control, name, ...placeholder };
+  }
   if (control === "slider") {
     const slider = filterSlider(filter);
     return { control, min: slider.min, max: slider.max, step: slider.step, value: slider.value };
@@ -817,6 +830,7 @@ export function filterControlPatch(
 /**
  * The statement a chart runs, with each dashboard filter written into the placeholder
  * of the same name. A filter with no selection leaves the query's own default.
+ * In the vector value, `{{id}}` embeds that filter's text. Any other words there are embedded as written.
  */
 export function queryWithDashboardFilters(
   sql: string,
@@ -826,5 +840,5 @@ export function queryWithDashboardFilters(
     if (filterReference(filter.name) === null || filter.value.trim() === "") return current;
     return writeQueryFilter(current, filter.name.trim(), filter.value);
   }, sql);
-  return bindEmbedPlaceholders(written, filters);
+  return bindEmbedPlaceholders(bindVectorFilterIds(written, filters), filters);
 }

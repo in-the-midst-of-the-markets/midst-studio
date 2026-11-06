@@ -123,6 +123,7 @@ describe("StudioMobileHeader", () => {
         getSelectedText: mock(() => ""),
         getEffectiveQuery: mock(() => "SELECT 1"),
         setValue: mock(() => {}),
+        insertText: mock(() => {}),
         focus: mock(() => {}),
       },
     },

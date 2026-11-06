@@ -24,6 +24,7 @@ import {
   Search,
   SlidersHorizontal,
   Terminal,
+  TextCursorInput,
   Trash2,
   X,
   type LucideIcon,
@@ -35,7 +36,7 @@ import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import { JsCodeEditor } from "@/components/editor/JsCodeEditor";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
-import { QueryEditor } from "@/components/QueryEditor";
+import { QueryEditor, type QueryEditorRef } from "@/components/QueryEditor";
 import { appFetch } from "@/lib/config/base-path";
 import {
   blockFrameSize,
@@ -58,7 +59,6 @@ import {
   filterValueList,
   freshDashboard,
   freshDashboardChart,
-  insertQueryVariable,
   MIN_DASHBOARD_CHART_WIDTH,
   placeSavedComponent,
   queryWithDashboardFilters,
@@ -773,6 +773,7 @@ function DashboardChart({
   const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme, settings) : null;
   const missingShelves = chart.typeId === undefined || chart.variationId === undefined;
   const sql = chart.query ?? "";
+  const editorRef = useRef<QueryEditorRef>(null);
   const [sqlDraft, setSqlDraft] = useState(sql);
   const [seenSql, setSeenSql] = useState(sql);
   if (seenSql !== sql) {
@@ -963,10 +964,13 @@ function DashboardChart({
               </label>
               <VariableInsert
                 filters={filters}
-                onInsert={(token) => setSqlDraft((current) => insertQueryVariable(current, token))}
+                onInsert={(token) => {
+                  editorRef.current?.insertText(token);
+                }}
               />
               <div className="min-h-0 flex-1">
                 <QueryEditor
+                  ref={editorRef}
                   value={sqlDraft}
                   documentId={chart.id}
                   databaseType={databaseType}
@@ -1363,6 +1367,7 @@ const FILTER_CONTROLS: readonly {
   { id: "select", label: "Dropdown", detail: "Choose from a list", icon: ListFilter },
   { id: "slider", label: "Slider", detail: "Pick a number in a range", icon: SlidersHorizontal },
   { id: "search", label: "Search", detail: "Text box for search", icon: Search },
+  { id: "vector", label: "Vector text", detail: "Words that become a vector", icon: TextCursorInput },
   { id: "custom", label: "Custom", detail: "Start from scratch in JavaScript", icon: Braces },
 ];
 
@@ -1628,11 +1633,13 @@ function FilterDesign({
             />
           </label>
           <p className="text-xs text-fg-muted">
-            {reference === null
-              ? "Use a name like region so a query can reference it."
-              : `Reference this selection in a query as ${reference}.`}
+            {filter.control === "vector" && reference !== null
+              ? `Type ${reference} in the vector value. The words in this box become that vector. Any other words in double brackets are embedded as written.`
+              : reference === null
+                ? "Use a name like region so a query can reference it."
+                : `Reference this selection in a query as ${reference}.`}
           </p>
-          {(filter.control === "search" || filter.control === "custom") && (
+          {(filter.control === "search" || filter.control === "vector" || filter.control === "custom") && (
             <label className="block text-xs text-fg-muted">
               Placeholder
               <input
@@ -1825,16 +1832,20 @@ function FilterSurface({
       />
     );
   }
-  if (filter.control === "search") {
+  if (filter.control === "search" || filter.control === "vector") {
+    const token = filter.control === "vector" ? filterReference(filter.name) : null;
     return (
-      <input
-        type="search"
-        aria-label="Filter search"
-        value={filter.value}
-        placeholder={filter.placeholder?.trim() || "Search"}
-        onChange={(event) => onChange({ value: event.target.value })}
-        className={fieldClass}
-      />
+      <div className="flex flex-col gap-2">
+        {token !== null && <p className="font-mono text-xs text-fg-muted">{token}</p>}
+        <input
+          type="search"
+          aria-label={filter.control === "vector" ? "Vector text" : "Filter search"}
+          value={filter.value}
+          placeholder={filter.placeholder?.trim() || (filter.control === "vector" ? "Text to embed" : "Search")}
+          onChange={(event) => onChange({ value: event.target.value })}
+          className={fieldClass}
+        />
+      </div>
     );
   }
   if (filter.control === "custom") {

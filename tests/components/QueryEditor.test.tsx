@@ -124,6 +124,13 @@ mock.module("@monaco-editor/react", () => ({
           onChange?.(next);
         },
         getSelection: () => mockSelectionReturn,
+        executeEdits: (_source: string, edits: readonly { text: string }[]) => {
+          const text = edits[0]?.text ?? "";
+          const next = `${valueRef.current}${text}`;
+          valueRef.current = next;
+          setTextValue(next);
+          onChange?.(next);
+        },
         getModel: () =>
           mockGetModelReturn !== null
             ? mockGetModelReturn()
@@ -1277,6 +1284,23 @@ describe("QueryEditor", () => {
     const editorRef = React.createRef<import("@/components/QueryEditor").QueryEditorRef>();
     render(React.createElement(QueryEditor, { ...createDefaultProps({ value: "SELECT 1" }), ref: editorRef }));
     expect(editorRef.current?.getEffectiveQuery()).toBe("SELECT 1");
+  });
+
+  test("ref insertText writes at the caret, or at the end when there is no caret", () => {
+    const editorRef = React.createRef<import("@/components/QueryEditor").QueryEditorRef>();
+    const { queryByTestId } = render(
+      React.createElement(QueryEditor, { ...createDefaultProps({ value: "SELECT" }), ref: editorRef }),
+    );
+    act(() => {
+      editorRef.current?.insertText("{{vq_abc}}");
+    });
+    expect((queryByTestId("mock-monaco-editor") as HTMLTextAreaElement).value).toBe("SELECT {{vq_abc}}");
+    mockSelectionReturn = { isEmpty: () => false };
+    act(() => {
+      editorRef.current?.insertText(" tail");
+    });
+    expect((queryByTestId("mock-monaco-editor") as HTMLTextAreaElement).value).toBe("SELECT {{vq_abc}} tail");
+    mockSelectionReturn = null;
   });
 
   test("ref format triggers formatting", () => {
