@@ -127,6 +127,7 @@ const ALL_TYPES: DatabaseType[] = [
   "netconf",
   "snmp",
   "sparkplug",
+  "questdb",
 ];
 
 describe("db-ui-config", () => {
@@ -1656,6 +1657,8 @@ describe("db-showcase", () => {
         // product's, so a reader scanning the login page is least likely to arrive already knowing
         // it, and no existing engine moves for it (#1720).
         "sparkplug",
+        // Last, behind Sparkplug B: a time-series engine reached on the PostgreSQL wire, and the newest name.
+        "questdb",
       ]);
     });
   });

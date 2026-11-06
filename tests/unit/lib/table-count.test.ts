@@ -120,6 +120,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   // No count statement: a broker publishes no count, and a metric is not a table. What the tree shows is what
   // the certificates in hand define, which the provider already holds (#1720).
   sparkplug: null,
+  questdb: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
 });
 
 async function censusCapabilities(type: DatabaseType): Promise<ProviderCapabilities> {

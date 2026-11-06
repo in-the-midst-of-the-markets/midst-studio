@@ -65,6 +65,9 @@ export type CredentialWarning =
  * is the row: it warns for `root` and no password, and for nothing else. A read-only seed is refused for Databend
  * on `READ_ONLY_ENFORCED` already, so the shared refusal adds no new refusal there.
  *
+ * QuestDB: the open-source server starts with `admin` / `quest`, so the pair warns in the dialog. A read-only seed
+ * with that pair is refused: the mode would promise a boundary the server does not keep.
+ *
  * S3: MinIO and RustFS start with a documented default credential when none is configured, so the pair warns in
  * the dialog. A read-only seed with it is refused, as Milvus's is: the seed promises a boundary that rests only on
  * Studio's own refusal while the server would grant the key every write. No no-secret row: an unsigned connection is
@@ -137,6 +140,15 @@ export const CREDENTIAL_WARNINGS: Readonly<Partial<Record<DatabaseType, readonly
       password: "",
       message:
         "Signing in as root with no password works only when the server's root user has no password, and such a user accepts any password or none, so anyone who can reach the server signs in as its administrator. Set a password for root on the server, or connect as a user of your own.",
+    },
+  ],
+  questdb: [
+    {
+      kind: "pair",
+      user: "admin",
+      password: "quest",
+      message:
+        "This is the documented default QuestDB credential, and it stays valid until an administrator changes it, so anyone who knows QuestDB can sign in with it. Change the password on the server, or connect as a user of your own.",
     },
   ],
   s3: [

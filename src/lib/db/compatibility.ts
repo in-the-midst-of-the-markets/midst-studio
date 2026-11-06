@@ -107,6 +107,9 @@ const SHIPPED: Readonly<Record<DatabaseType, true>> = Object.freeze({
   oxia: true,
   // Databend: its own provider, doc and integration test, read and written over its HTTP query API.
   databend: true,
+  // QuestDB: its own provider, doc and integration test, on the PostgreSQL wire at port 8812.
+  // Not a postgres relative: that provider's query-id probe calls pg_backend_pid(), which QuestDB has not.
+  questdb: true,
   // S3-compatible object storage: its own provider, doc and integration test, read over the S3 REST API.
   s3: true,
   // Kubernetes: its own provider, doc and integration test, the first member of the `platform/` family: a cluster read
@@ -212,6 +215,8 @@ const EXTERNAL: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   oxia: true,
   // A self-hosted server or a Databend Cloud warehouse, reached over its HTTP query API.
   databend: true,
+  // A server the user already runs, reached over QuestDB's PostgreSQL wire protocol on port 8812.
+  questdb: true,
   // A server or service the user already runs, reached over the S3 REST API.
   s3: true,
   // A cluster the user already runs, reached over the Kubernetes API server's REST API.
@@ -320,6 +325,8 @@ export const READ_ONLY_ENFORCED: Record<DatabaseType, boolean> = Object.freeze({
   oxia: true,
   // No read-only mode: the provider sends the statement the editor holds, as Db2's does.
   databend: false,
+  // No read-only mode: the provider sends the statement the editor holds.
+  questdb: false,
   // Read-only whatever the flag says: the console's closed command table reaches no write, and the provider sends only
   // GET and HEAD.
   s3: true,
@@ -409,6 +416,7 @@ export const READS_FILE_ACCESS_POSTURE: Readonly<Record<DatabaseType, boolean>> 
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -470,6 +478,7 @@ export const SINGLE_WRITER_FILE: Readonly<Record<DatabaseType, boolean>> = Objec
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -545,6 +554,8 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   // it yet (BACKLOG B100).
   oxia: false,
   databend: true,
+  // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
+  questdb: true,
   // Closed, as etcd's and Oxia's: agent mode reads S3's metadata, and no MCP surface that lists buckets but never an
   // object key is designed yet (BACKLOG B104).
   s3: false,
@@ -684,6 +695,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   // it.
   oxia: false,
   databend: false,
+  // No agent statement path, so MCP read stays closed.
+  questdb: false,
   // Agent mode executes metadata-only reads on S3, and MCP read stays closed on it until a change of its own opens it
   // (BACKLOG B104).
   s3: false,
@@ -762,6 +775,7 @@ export const CONNECTION_FORM_URI_MODE: Readonly<Record<DatabaseType, boolean>> =
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -829,6 +843,7 @@ export const CONNECTION_STRING_ACCEPTED: Readonly<Record<DatabaseType, boolean>>
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -892,6 +907,7 @@ export const OPENS_LOCAL_FILE: Readonly<Record<DatabaseType, boolean>> = Object.
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -953,6 +969,7 @@ export const OPENS_SERVER_LEVEL_WITHOUT_DATABASE: Readonly<Record<DatabaseType, 
   influxdb3: false,
   oxia: false,
   databend: false,
+  questdb: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -1016,12 +1033,11 @@ export interface WireCompatibleEngine {
  * so those results are recorded in `docs/providers/README.md` beside this table, with the
  * number that refused each of them.
  *
- * QuestDB is the entry NOT to add back without re-reading that section. It looks like a
- * query-only relative from the provider's side and is not one from the product's: the
- * editor always attaches a `queryId`, the provider then issues `SELECT pg_backend_pid()`
- * first, and QuestDB has no such function - so `provider.query(sql)` answers three rows
- * while pressing Run answers a 500. Same shape as Cloud Spanner, found the same way,
- * and only in a browser.
+ * QuestDB is the entry NOT to add back as a postgres relative without re-reading that
+ * section. It ships as the `questdb` type-id, whose provider does not call
+ * `pg_backend_pid()`. Through the postgres provider it looks like a query-only relative
+ * and is not one from the product's: the editor always attaches a `queryId`, that
+ * provider then issues `SELECT pg_backend_pid()` first, and QuestDB has no such function.
  */
 export const WIRE_COMPATIBLE_ENGINES: readonly WireCompatibleEngine[] = [
   {

@@ -86,6 +86,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   snowflake: "sql/snowflake/sql-writing",
   spark: "sql/spark/sql-writing",
   sparkplug: "industrial/sparkplug/sql-writing",
+  questdb: "sql/questdb/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",
 };

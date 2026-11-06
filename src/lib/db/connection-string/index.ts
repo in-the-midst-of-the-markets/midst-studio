@@ -5,6 +5,7 @@ import { COUCHBASE_CONNECTION_STRING } from "@/lib/db/providers/document/couchba
 import { DATABEND_CONNECTION_STRING } from "@/lib/db/providers/sql/databend/connection-string";
 import { DB2_CONNECTION_STRING } from "@/lib/db/providers/sql/db2/connection-string";
 import { DRUID_CONNECTION_STRING } from "@/lib/db/providers/sql/druid/connection-string";
+import { QUESTDB_CONNECTION_STRING } from "@/lib/db/providers/sql/questdb/connection-string";
 import { DUCKDB_CONNECTION_STRING } from "@/lib/db/providers/sql/duckdb/connection-string";
 import { ELASTICSEARCH_CONNECTION_STRING } from "@/lib/db/providers/sql/search/elasticsearch-connection-string";
 import { ETCD_CONNECTION_STRING } from "@/lib/db/providers/keyvalue/etcd/connection-string";
@@ -84,6 +85,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   postgres: POSTGRES_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,
+  questdb: QUESTDB_CONNECTION_STRING,
   rabbitmq: RABBITMQ_CONNECTION_STRING,
   redis: REDIS_CONNECTION_STRING,
   s3: S3_CONNECTION_STRING,

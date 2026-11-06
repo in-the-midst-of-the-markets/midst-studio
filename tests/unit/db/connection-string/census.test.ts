@@ -37,6 +37,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "db2",
     "druid",
     "duckdb",
+    "questdb",
     "libsql",
     "snowflake",
     "spark",

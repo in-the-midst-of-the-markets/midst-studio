@@ -600,6 +600,15 @@ export const CONNECTION_FORM: {
     // needs them; a default install ignores the Authorization header entirely.
     connectionFields: CONNECTION_FIELDS.druid,
   },
+  questdb: {
+    label: "QuestDB",
+    // The PostgreSQL wire port. The HTTP console is 9000 and is not this connection.
+    defaultPort: "8812",
+    // A postgresql:// paste belongs to the PostgreSQL type. QuestDB has no scheme of its own here.
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.questdb,
+    fieldPlaceholders: { user: "admin", database: "qdb" },
+  },
   elasticsearch: {
     label: "Elasticsearch",
     // 9200 for both products and both schemes: a TLS deployment serves HTTPS on the
@@ -1468,6 +1477,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "modbus",
   "netconf",
   "weaviate",
+  "questdb",
 ]);
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */

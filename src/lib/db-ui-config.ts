@@ -17,6 +17,7 @@ import {
   CouchbaseIcon,
   ClickHouseIcon,
   DruidIcon,
+  QuestDbIcon,
   ElasticsearchIcon,
   OpenSearchIcon,
   TrinoIcon,
@@ -121,6 +122,7 @@ export const DB_UI_CONFIG: {
   // assertion in tests/unit/lib/db-ui-config.test.ts rules a duplicate out.
   // `hue-teal` was free and is closer to Druid's own petrol-teal mark anyway.
   druid: branded(CONNECTION_FORM.druid, DruidIcon, "text-hue-teal"),
+  questdb: branded(CONNECTION_FORM.questdb, QuestDbIcon, "text-hue-mist-alt"),
   // The Elastic mark's own hues are teal (#00bfb3) and yellow (#fed10a); teal-400
   // and yellow-400 are already owned by druid and clickhouse, and the distinct-colour
   // assertion in tests/unit/lib/db-ui-config.test.ts rules a duplicate out. teal-300

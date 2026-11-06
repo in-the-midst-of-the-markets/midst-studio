@@ -147,6 +147,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   // what said so, all four times. Nothing else would: a duplicate rank only reorders two engines on
   // the page, so there is no failure to notice and no user to report it.
   sparkplug: 42,
+  questdb: 43,
 };
 
 /**

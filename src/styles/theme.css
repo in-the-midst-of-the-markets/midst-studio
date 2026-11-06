@@ -222,6 +222,7 @@
   --studio-hue-lime: #3c6300;
   --studio-hue-lime-alt: #35530e;
   --studio-hue-mist: #394447;
+  --studio-hue-mist-alt: #161b1d;
   /* OPC UA (#1677): every hue and every -alt step was taken by the time it registered, so the
      palette gains one, and a steel grey is the one colour a plant's address space can carry
      without borrowing another engine's. */
@@ -394,6 +395,7 @@
   --studio-hue-lime: #9ae600;
   --studio-hue-lime-alt: #bbf451;
   --studio-hue-mist: #9ca8ab;
+  --studio-hue-mist-alt: #d0d6d8;
   --studio-hue-slate: #90a1b9;
   --studio-hue-stone: #a6a09b;
   --studio-hue-neutral: #a1a1a1;
@@ -511,6 +513,7 @@
   --color-hue-lime: var(--studio-hue-lime);
   --color-hue-lime-alt: var(--studio-hue-lime-alt);
   --color-hue-mist: var(--studio-hue-mist);
+  --color-hue-mist-alt: var(--studio-hue-mist-alt);
   --color-hue-slate: var(--studio-hue-slate);
   --color-hue-stone: var(--studio-hue-stone);
   --color-hue-neutral: var(--studio-hue-neutral);

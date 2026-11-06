@@ -116,6 +116,7 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   // A ```databend block holds one statement in Databend's SQL, sent as it is to `POST /v1/query`. No alias: `sql`
   // names no engine, and `mysql` names the MySQL-wire driver Databend no longer connects through.
   databend: true,
+  questdb: true,
   bigquery: true,
   // A ```snowflake block holds one statement in Snowflake's SQL, sent as it is through the SQL API. No alias:
   // `snowsql` names Snowflake's command-line client, not a dialect.

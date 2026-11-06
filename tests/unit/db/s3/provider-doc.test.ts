@@ -1517,7 +1517,7 @@ describe("the chart and the operator name S3 where an evaluator searches", () =>
     const readme = read("charts/libredb-studio/README.md");
     expect(readme).toContain(`supporting ${word(EXTERNAL_DATABASE_TYPES.length)} engines - `);
     expect(readme).toContain(
-      "InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP and Sparkplug B.",
+      "InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B.",
     );
     expect(readme).toContain(`--version ${chart.version} \\`);
     expect(read("operator/helm-charts/libredb-studio/Chart.yaml")).toBe(read("charts/libredb-studio/Chart.yaml"));
@@ -1529,10 +1529,10 @@ describe("the chart and the operator name S3 where an evaluator searches", () =>
     };
     expect(csv.metadata.annotations.description).toContain(`for ${word(EXTERNAL_DATABASE_TYPES.length)} engines - `);
     expect(csv.metadata.annotations.description).toContain(
-      "Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP and Sparkplug B - with AI-powered query assistance.",
+      "Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B - with AI-powered query assistance.",
     );
     expect(flat(csv.spec.description)).toContain(
-      "Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP and Sparkplug B from the browser",
+      "Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B from the browser",
     );
   });
 });
@@ -1577,7 +1577,7 @@ describe("FEATURES, BRAND_MESSAGING and API_DOCS", () => {
     expect(brand).toContain(`- **Proof:** ${word(engines)} providers, each with its own reference document`);
     expect(brand).toContain(`| ${Word(engines)} database engines | One reference document per engine:`);
     expect(brand).toContain(
-      "Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP and Sparkplug B. One more, `libredb.md`, is the embedded provider",
+      "Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B. One more, `libredb.md`, is the embedded provider",
     );
     expect(brand).toContain(`against ${word(engines)} here.`);
     expect(brand).toContain(`"${Word(engines)} engines" beats "extensive database support".`);
@@ -1593,7 +1593,7 @@ describe("FEATURES, BRAND_MESSAGING and API_DOCS", () => {
     const capabilities = provider.getCapabilities();
     const keyScan = capabilities.keyScan;
     expect(api).toContain(
-      "Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP and Sparkplug B.",
+      "Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B.",
     );
     expect(api).toMatch(
       new RegExp(
@@ -1980,7 +1980,7 @@ describe("the agent docs count the type-ids and name S3 where they list engines"
     const guide = flat(read("docs/AGENT_GUIDE.md"));
     expect(guide).toContain(`which is the other ${word(provided)} (MySQL,`);
     expect(guide).toContain(
-      "Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, Modbus, NETCONF, SNMP, Sparkplug B and the bundled LibreDB store)",
+      "Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, Modbus, NETCONF, SNMP, Sparkplug B, QuestDB and the bundled LibreDB store)",
     );
     expect(guide).toContain(`so it reaches all ${word(ids)} engines.`);
     expect(guide).toContain(
@@ -2023,7 +2023,7 @@ describe("the agent docs count the type-ids and name S3 where they list engines"
     const noKeys = flow.split("On every engine that declares no foreign keys at all (")[1]?.split(") this block")[0];
     expect(noKeys?.split(/, | and /)).toHaveLength(ids - 8);
     expect(flow).toContain(
-      "Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, SNMP and Sparkplug B) this block carries no relations",
+      "Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, SNMP, QuestDB and Sparkplug B) this block carries no relations",
     );
     expect(flow).toContain(`replaces them on the other ${word(provided)}.`);
     expect(flow).toContain(
@@ -2036,26 +2036,26 @@ describe("the complete engine lists outside the agent docs", () => {
   test("63. every list that names Databend and claims to be complete names S3 too", () => {
     const readme = read("README.md");
     expect(readme).toContain(
-      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MTConnect and Modbus with SSL/TLS and SSH Tunnel support",
+      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MTConnect, Modbus and QuestDB with SSL/TLS and SSH Tunnel support",
     );
     expect(readme).toContain(
-      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, Sparkplug B | Web, Mobile |",
+      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B | Web, Mobile |",
     );
     expect(readme).toContain(
-      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, or Sparkplug B)",
+      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, or Sparkplug B)",
     );
     const zh = read("README_zh.md");
     expect(zh).toContain(
-      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MTConnect、Modbus、NETCONF、Sparkplug B，支持 SSL/TLS 与 SSH 隧道",
+      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MTConnect、Modbus、NETCONF、QuestDB, Sparkplug B，支持 SSL/TLS 与 SSH 隧道",
     );
     expect(zh).toContain(
-      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP、Sparkplug B | Web、移动端 |",
+      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B | Web、移动端 |",
     );
     expect(zh).toContain(
-      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP 或 Sparkplug B）",
+      "InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP 或 QuestDB, Sparkplug B）",
     );
     expect(read("README_ko.md")).toContain(
-      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MTConnect, Modbus, NETCONF, SNMP, Sparkplug B에 연결할 수 있으며",
+      "InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B에 연결할 수 있으며",
     );
     // The newest-engine history names Apache Spark as the newest in README.md, OPC UA one step back, Snowflake before
     // OPC UA, Firestore before RabbitMQ, MQTT before Firestore, Kubernetes before MQTT, S3 before Kubernetes and
@@ -2063,7 +2063,9 @@ describe("the complete engine lists outside the agent docs", () => {
     // straight back to MQTT. The chain is a claim about ORDER, so each link is pinned at both ends: an engine added
     // without moving the head leaves the previous head claiming a title it no longer holds, which is exactly what
     // this change did to Kubernetes until the `not` assertions below were added.
-    expect(readme).toContain("Weaviate is the newest: Weaviate's own REST requests typed in the editor");
+    expect(readme).toContain("QuestDB is the newest: QuestDB SQL typed in the editor");
+    expect(readme).toContain("Weaviate came before QuestDB: Weaviate's own REST requests typed in the editor");
+    expect(readme).not.toContain("Weaviate is the newest");
     expect(readme).toContain("Sparkplug B came before Weaviate: one broker read over MQTT");
     expect(readme).not.toContain("Sparkplug B is the newest");
     expect(readme).toContain("SNMP came before Sparkplug B: one agent read over UDP");

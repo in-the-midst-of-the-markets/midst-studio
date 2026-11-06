@@ -160,6 +160,7 @@
   --studio-hue-lime: var(--vscode-charts-yellow);
   --studio-hue-lime-alt: var(--vscode-charts-yellow);
   --studio-hue-mist: var(--vscode-descriptionForeground);
+  --studio-hue-mist-alt: var(--vscode-descriptionForeground);
   --studio-hue-slate: var(--vscode-descriptionForeground);
   --studio-hue-stone: var(--vscode-descriptionForeground);
   --studio-hue-neutral: var(--vscode-descriptionForeground);

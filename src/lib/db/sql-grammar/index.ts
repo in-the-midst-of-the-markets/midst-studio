@@ -31,6 +31,7 @@ import { OXIA_SQL_GRAMMAR } from "@/lib/db/providers/keyvalue/oxia/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
 import { QDRANT_SQL_GRAMMAR } from "@/lib/db/providers/vector/qdrant/sql-grammar";
+import { QUESTDB_SQL_GRAMMAR } from "@/lib/db/providers/sql/questdb/sql-grammar";
 import { WEAVIATE_SQL_GRAMMAR } from "@/lib/db/providers/vector/weaviate/sql-grammar";
 import { RABBITMQ_SQL_GRAMMAR } from "@/lib/db/providers/stream/rabbitmq/sql-grammar";
 import { REDIS_SQL_GRAMMAR } from "@/lib/db/providers/keyvalue/redis-sql-grammar";
@@ -84,6 +85,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   postgres: POSTGRES_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,
+  questdb: QUESTDB_SQL_GRAMMAR,
   rabbitmq: RABBITMQ_SQL_GRAMMAR,
   redis: REDIS_SQL_GRAMMAR,
   s3: S3_SQL_GRAMMAR,

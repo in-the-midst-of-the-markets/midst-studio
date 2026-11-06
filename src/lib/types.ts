@@ -37,6 +37,10 @@ export type DatabaseType =
   | "couchbase"
   | "clickhouse"
   | "druid"
+  // QuestDB, on its own PostgreSQL wire session (port 8812). Not the `postgres` provider:
+  // that one issues `SELECT pg_backend_pid()` when a run carries a query id, and QuestDB
+  // has no such function.
+  | "questdb"
   // Two type-ids, ONE provider implementation (issue #424 Phase 1,
   // `src/lib/db/providers/sql/search/index.ts`): the two products speak the same
   // shape of SQL over HTTP and differ only in wire detail. They stay separate ids

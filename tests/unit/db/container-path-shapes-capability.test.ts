@@ -40,6 +40,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   db2: "exact",
   clickhouse: "exact",
   druid: "exact",
+  questdb: "exact",
   cassandra: "exact",
   mongodb: "exact",
   redis: "exact",
@@ -187,7 +188,7 @@ describe("the declaration follows the check (#1147)", () => {
     expect(unknownTypeIds(callerFiles)).toEqual([]);
     const callers = callerFiles.map(providerTypeId).sort();
     const declaring = TYPES.filter((type) => EXPECTED_CONTAINER_PATH_SHAPES[type] !== "absent").sort();
-    expect(callers).toHaveLength(26);
+    expect(callers).toHaveLength(27);
     expect(callers).toEqual(declaring);
   });
 });

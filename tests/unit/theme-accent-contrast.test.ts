@@ -332,6 +332,9 @@ const IDENTITY_ALTS = [
   // where they were: 0.0205 in light (orange vs amber-alt) and 0.0160 in dark (rose-alt vs red-alt),
   // the same two pairs and the same two figures as before it was declared.
   "slate",
+  // QuestDB takes the step `mist` never had. `mist-900` in light and `mist-300` in dark are the
+  // steps the identity table already names for this hue's `-alt`.
+  "mist",
 ] as const;
 
 /**

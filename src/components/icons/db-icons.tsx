@@ -201,6 +201,25 @@ export const ClickHouseIcon: React.FC<IconProps> = ({ className, ...props }) => 
  * size the sidebar renders a DB icon at, so only the silhouette survives — the
  * five points are what makes it identifiable at that size.
  */
+/**
+ * A Q for QuestDB, drawn for Studio. Not the vendor mark.
+ */
+export const QuestDbIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="7" />
+    <path d="M16 16 L19 19" />
+  </svg>
+);
+
 export const DruidIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
     viewBox="0 0 24 24"
