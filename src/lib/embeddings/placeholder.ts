@@ -316,6 +316,32 @@ export interface EmbedNameValue {
 }
 
 const TEXT_CAP = 4000;
+const FILTER_ID = /^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
+
+/**
+ * A vector value that is exactly a filter id takes that filter's text.
+ * Any other words there are embedded as written. An id with no text stays a
+ * name, so the id itself is not embedded.
+ */
+export function bindVectorFilterIds(sql: string, values: readonly EmbedNameValue[]): string {
+  const ids = new Set<string>();
+  const byName = new Map<string, string>();
+  for (const item of values) {
+    const name = item.name.trim();
+    if (!FILTER_ID.test(name)) continue;
+    ids.add(name);
+    const value = item.value.trim();
+    if (value !== "") byName.set(name, value.slice(0, TEXT_CAP));
+  }
+  let next = sql;
+  for (const token of [...embedTokens(sql)].reverse()) {
+    if (token.kind !== "text" || !ids.has(token.value)) continue;
+    const text = byName.get(token.value);
+    const body = text === undefined ? `{{embed ${token.value}}}` : `{{embed ${JSON.stringify(text)}}}`;
+    next = `${next.slice(0, token.start)}${body}${next.slice(token.end)}`;
+  }
+  return next;
+}
 
 /**
  * Replaces `{{embed name}}` with `{{embed "value"}}` when that filter has text.

@@ -40,6 +40,7 @@ import {
 } from "@/lib/embeddings/models";
 import {
   bindEmbedPlaceholders,
+  bindVectorFilterIds,
   embedProbeText,
   embedTokens,
   spliceEmbeddingVectors,
@@ -193,6 +194,17 @@ describe("embed placeholders", () => {
     expect(
       bindEmbedPlaceholders('{"vector": {{cats}}} AND {{embed question}}', [{ name: "question", value: "dogs" }]),
     ).toBe('{"vector": {{cats}}} AND {{embed "dogs"}}');
+    expect(
+      bindVectorFilterIds('{"vector": {{vq_abc}}, "vector": {{a red mug}}}', [
+        { name: "vq_abc", value: "ceramic mug" },
+        { name: "empty", value: "   " },
+        { name: "bad name", value: "nope" },
+      ]),
+    ).toBe('{"vector": {{embed "ceramic mug"}}, "vector": {{a red mug}}}');
+    expect(bindVectorFilterIds('{"vector": {{empty}}}', [{ name: "empty", value: "  " }])).toBe(
+      '{"vector": {{embed empty}}}',
+    );
+    expect(bindVectorFilterIds("SELECT {{region}}", [{ name: "region", value: "east" }])).toBe("SELECT {{region}}");
   });
 });
 

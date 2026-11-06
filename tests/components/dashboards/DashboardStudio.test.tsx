@@ -25,8 +25,8 @@ setupChartCodeMonacoMock();
 mock.module("@/components/QueryEditor", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
-  return {
-    QueryEditor: ({
+  const QueryEditor = React.forwardRef(function QueryEditor(
+    {
       value,
       onContentChange,
       schemaContext,
@@ -34,14 +34,23 @@ mock.module("@/components/QueryEditor", () => {
       value: string;
       onContentChange?: (value: string) => void;
       schemaContext?: string;
-    }) =>
-      React.createElement("textarea", {
-        "aria-label": "Query SQL",
-        "data-schema": schemaContext ?? "",
-        value,
-        onChange: (event: { target: { value: string } }) => onContentChange?.(event.target.value),
-      }),
-  };
+    },
+    ref: { current: { insertText: (text: string) => void } | null },
+  ) {
+    React.useImperativeHandle(ref, () => ({
+      insertText(text: string) {
+        const gap = value.trim() === "" || /\s$/.test(value) ? "" : " ";
+        onContentChange?.(`${value}${gap}${text}`);
+      },
+    }));
+    return React.createElement("textarea", {
+      "aria-label": "Query SQL",
+      "data-schema": schemaContext ?? "",
+      value,
+      onChange: (event: { target: { value: string } }) => onContentChange?.(event.target.value),
+    });
+  });
+  return { QueryEditor };
 });
 
 import { DashboardStudio } from "@/components/dashboards/DashboardStudio";
@@ -660,6 +669,32 @@ describe("DashboardStudio", () => {
     await waitFor(() => expect(gate.release).not.toBeNull());
     view.unmount();
     gate.release?.();
+  });
+
+  test("a vector filter keeps a generated id and embeds the words typed in its box", () => {
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [{ id: "f1", name: "region", label: "Region", query: "", value: "", control: "select" }],
+    });
+    storage.setActiveDashboardId("sales");
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.click(view.getByRole("button", { name: "Vector text" }));
+    const name = (view.getByLabelText("Filter name") as HTMLInputElement).value;
+    expect(name).toMatch(/^vq_[a-f0-9]{10}$/);
+    expect(view.getByText(/in the vector value/)).toBeTruthy();
+    expect((view.getByLabelText("Filter placeholder") as HTMLInputElement).value).toBe("Text to embed");
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    const box = view.getByLabelText("Vector text") as HTMLInputElement;
+    expect(box.placeholder).toBe("Text to embed");
+    expect(view.getByText(`{{${name}}}`)).toBeTruthy();
+    fireEvent.change(box, { target: { value: "a red mug" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("a red mug");
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "1bad" } });
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    expect(view.queryByText("{{1bad}}")).toBeNull();
+    expect((view.getByLabelText("Vector text") as HTMLInputElement).placeholder).toBe("Text to embed");
   });
 
   test("inserts a dashboard variable id into the chart query", async () => {

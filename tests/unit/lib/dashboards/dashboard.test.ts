@@ -15,6 +15,7 @@ import {
   filterChoices,
   filterValueList,
   filterControlPatch,
+  vectorFilterName,
   filterFrameDocument,
   filterFrameMessage,
   filterLabel,
@@ -205,6 +206,19 @@ describe("dashboard layout", () => {
       ]),
     ).toBe('SELECT {{embed "cats"}} FROM sales WHERE region = {{region:east}}');
     expect(queryWithDashboardFilters(embedded, [{ name: "question", value: "  " }])).toBe(embedded);
+    const vector = '{"vector": {{vq_abc12345}}, "query": {"match": {"title": {{region}}}}}';
+    expect(
+      queryWithDashboardFilters(vector, [
+        { name: "vq_abc12345", value: "a red mug" },
+        { name: "region", value: "east" },
+      ]),
+    ).toBe('{"vector": {{embed "a red mug"}}, "query": {"match": {"title": {{region:east}}}}}');
+    expect(queryWithDashboardFilters('{"vector": {{a red mug}}}', [{ name: "vq_abc12345", value: "ignored" }])).toBe(
+      '{"vector": {{a red mug}}}',
+    );
+    expect(queryWithDashboardFilters('{"vector": {{vq_abc12345}}}', [{ name: "vq_abc12345", value: "  " }])).toBe(
+      '{"vector": {{embed vq_abc12345}}}',
+    );
   });
 
   test("sizes a slider and starts a custom filter from the stock script", () => {
@@ -224,6 +238,15 @@ describe("dashboard layout", () => {
       value: "0",
     });
     expect(filterControlPatch("search", { value: "" })).toEqual({ control: "search" });
+    const generated = filterControlPatch("vector", { value: "", name: "filter" });
+    expect(generated.control).toBe("vector");
+    expect(generated.name).toMatch(/^vq_[a-f0-9]{10}$/);
+    expect(generated.placeholder).toBe("Text to embed");
+    expect(filterControlPatch("vector", { value: "", name: "vq_abc12345", placeholder: "Find" })).toEqual({
+      control: "vector",
+      name: "vq_abc12345",
+    });
+    expect(vectorFilterName()).toMatch(/^vq_[a-f0-9]{10}$/);
     expect(filterControlPatch("custom", { value: "", script: "  " }).script).toBe(CUSTOM_FILTER_SCRIPT);
     expect(filterControlPatch("custom", { value: "", script: "setValue(value);" })).toEqual({ control: "custom" });
   });

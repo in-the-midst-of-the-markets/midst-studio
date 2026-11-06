@@ -1279,11 +1279,13 @@ export interface DashboardNote {
 }
 
 /** How a dashboard filter is drawn. Absent until the user picks one. */
-export type DashboardFilterControl = "select" | "slider" | "search" | "custom";
+export type DashboardFilterControl = "select" | "slider" | "search" | "vector" | "custom";
 
 /**
  * A dashboard filter. `query` fills the choices, unless `choiceSource` is `values`
  * and the list is typed in. A chart query references the selection with `{{name}}`.
+ * A vector filter's name is a generated id. `{{that id}}` in the vector value embeds
+ * the text typed in the box. Any other words in that value are embedded as written.
  * A custom filter's `script` is JavaScript edited in Monaco.
  */
 export interface DashboardFilter {

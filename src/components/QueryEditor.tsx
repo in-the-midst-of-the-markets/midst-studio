@@ -49,6 +49,8 @@ export interface QueryEditorRef {
   getEffectiveQuery: () => string;
   getValue: () => string;
   setValue: (value: string) => void;
+  /** Writes `text` at the caret, or at the end when the editor has no selection yet. */
+  insertText: (text: string) => void;
   focus: () => void;
   format: () => void;
 }
@@ -503,6 +505,19 @@ export const QueryEditor = forwardRef<QueryEditorRef, QueryEditorProps>(
         if (editorRef.current) {
           editorRef.current.setValue(newValue);
         }
+      },
+      insertText: (text: string) => {
+        const editor = editorRef.current;
+        if (!editor) return;
+        const selection = editor.getSelection();
+        if (selection === null) {
+          const current = editor.getValue();
+          const gap = current.trim() === "" || /\s$/.test(current) ? "" : " ";
+          editor.setValue(`${current}${gap}${text}`);
+          return;
+        }
+        editor.executeEdits("insert-text", [{ range: selection, text, forceMoveMarkers: true }]);
+        editor.focus();
       },
       focus: () => editorRef.current?.focus(),
       format: handleFormat,
