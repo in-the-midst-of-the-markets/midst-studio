@@ -96,6 +96,16 @@ export function useChartCode(
   const [ignoreStored, setIgnoreStored] = useState(false);
   const [seenSource, setSeenSource] = useState(source);
   const [seenRefresh, setSeenRefresh] = useState(refreshToken);
+  const [acceptedStored, setAcceptedStored] = useState(storedText);
+  if (storedText !== acceptedStored) {
+    setAcceptedStored(storedText);
+    if (storedText !== draft) {
+      setDraft(null);
+      setError(null);
+      setEditedOption(null);
+      setIgnoreStored(false);
+    }
+  }
   if (seenSource !== source) {
     setSeenSource(source);
     setSeenRefresh(refreshToken);

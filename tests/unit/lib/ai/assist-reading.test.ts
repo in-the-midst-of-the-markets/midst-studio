@@ -29,7 +29,7 @@ function request(overrides: Record<string, unknown> = {}) {
 }
 
 function plan(sql: string): AssistQueryPlan {
-  return { title: "Query", sql, connection: "", chart: null };
+  return { title: "Query", sql, connection: "", chart: null, code: null };
 }
 
 describe("readAssistResults", () => {

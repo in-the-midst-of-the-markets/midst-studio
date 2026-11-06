@@ -191,16 +191,22 @@ export function ChartWithEditor({
     setBrowsingId(null);
   }
   const source = chartSourceKey(choice?.typeId ?? null, choice?.variationId ?? null, choice?.selection ?? null);
-  const [mountSource] = useState(source);
+  const [appliedCode, setAppliedCode] = useState(savedCode);
+  const [codeSource, setCodeSource] = useState(source);
   const [droppedCode, setDroppedCode] = useState(false);
-  const shelfMoved = droppedCode || source !== mountSource;
+  if (savedCode !== appliedCode) {
+    setAppliedCode(savedCode);
+    if (droppedCode) setDroppedCode(false);
+    if (codeSource !== source) setCodeSource(source);
+  }
+  const shelfMoved = droppedCode || source !== codeSource;
   if (shelfMoved && !droppedCode) setDroppedCode(true);
   const typeMatches =
     savedView !== null &&
     choice !== null &&
     choice.typeId === savedView.typeId &&
     choice.variationId === savedView.variationId;
-  const shownCode = !shelfMoved && typeMatches ? savedCode : null;
+  const shownCode = !shelfMoved && (typeMatches || savedView === null) ? savedCode : null;
   const rememberRef = useRef(onRemember);
   useEffect(() => {
     rememberRef.current = onRemember;

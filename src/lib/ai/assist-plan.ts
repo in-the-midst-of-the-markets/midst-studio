@@ -8,6 +8,7 @@
  */
 
 import { assistStatementLanguage, isAssistRead } from "@/lib/ai/assist-language";
+import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { applyQueryFilters, promoteQueryFilters, queryIdentity } from "@/lib/charts/query-filters";
 
 export const ASSIST_SOURCES = ["openrouter", "fireworks", "gateway"] as const;
@@ -54,6 +55,8 @@ export interface AssistQueryPlan {
   /** The connected database this statement belongs to, or empty when the model did not name one. */
   readonly connection: string;
   readonly chart: AssistChart | null;
+  /** Chart JSON for the Code editor. Null leaves the chart's current code alone. */
+  readonly code: string | null;
 }
 
 export interface AssistPlan {
@@ -87,6 +90,10 @@ export const QUERY_CAP = 3;
 const TITLE_CAP = 120;
 const CONNECTION_CAP = 200;
 const CAPTION_CAP = 240;
+/** Chart JSON kept with a card. Longer text is dropped rather than stored cut in half. */
+const CHART_CODE_CAP = 100_000;
+/** How much of that JSON an earlier turn shows the model. The rest of the turn still has to fit. */
+const CHART_CODE_HISTORY = 2_000;
 /** How many earlier questions one new question may include. The chat defaults to five and can be raised to this. */
 export const ASSIST_HISTORY_MAX = 10;
 export const ASSIST_HISTORY_DEFAULT = 5;
@@ -134,6 +141,23 @@ function extractJsonObject(text: string): string | null {
 
 function prosePlan(text: string): AssistPlan {
   return { explanation: textOf(text, QUESTION_CAP), queries: [] };
+}
+
+/** Chart JSON the Code editor can show. Anything else leaves the current code alone. */
+function chartCodeOf(value: unknown): string | null {
+  if (value === null || typeof value !== "object" || !("code" in value)) return null;
+  const raw = value.code;
+  if (raw === undefined || raw === null) return null;
+  let text = "";
+  if (typeof raw === "string") text = raw.trim();
+  else if (typeof raw === "object") text = JSON.stringify(raw);
+  else return null;
+  if (text === "" || text.length > CHART_CODE_CAP) return null;
+  const parsed = parseChartCode(text);
+  if (!parsed.ok) return null;
+  const formatted = formatChartCode(stripChartValues(parsed.option));
+  if (formatted === "" || formatted.length > CHART_CODE_CAP) return null;
+  return formatted;
 }
 
 function chartOf(value: unknown): AssistChart | null {
@@ -206,6 +230,7 @@ function queryOf(value: unknown, databaseType: string, schemaContext: string): A
     sql,
     connection,
     chart: chartOf("chart" in value ? value.chart : undefined),
+    code: chartCodeOf(value),
   };
 }
 
@@ -354,15 +379,30 @@ function chartSpec(chart: AssistChart | null): string {
  * The charts already on screen, written ahead of the explanation so a long result
  * does not push them out of the turn. The model repeats a title to change that chart.
  */
+function chartCodeNote(code: string | null | undefined): string {
+  if (typeof code !== "string") return "";
+  const text = code.trim().replace(/\s+/g, " ");
+  if (text === "") return "";
+  const shown = text.length > CHART_CODE_HISTORY ? `${text.slice(0, CHART_CODE_HISTORY)}…` : text;
+  return ` Code: ${shown}`;
+}
+
 export function explanationWithCharts(
   explanation: string,
-  charts: readonly { readonly title: string; readonly sql: string; readonly chart: AssistChart | null }[],
+  charts: readonly {
+    readonly title: string;
+    readonly sql: string;
+    readonly chart: AssistChart | null;
+    readonly code?: string | null;
+  }[],
 ): string {
   const lines = charts.flatMap((chart) => {
     if (chartTitleKey(chart.title) === null) return [];
     const sql = chart.sql.trim();
     if (sql === "") return [];
-    return [`Chart "${chart.title.trim().replaceAll('"', "'")}": ${chartSpec(chart.chart)}. SQL: ${sql}`];
+    return [
+      `Chart "${chart.title.trim().replaceAll('"', "'")}": ${chartSpec(chart.chart)}. SQL: ${sql}${chartCodeNote(chart.code)}`,
+    ];
   });
   if (lines.length === 0) return explanation;
   const combined = explanation === "" ? lines.join("\n") : `${lines.join("\n")}\n${explanation}`;
@@ -421,6 +461,8 @@ export interface AssistChartPatch {
   readonly sql: string;
   readonly chart: AssistChart | null;
   readonly color: string | null;
+  /** Chart JSON to store. Null leaves the card's code to the caller. */
+  readonly code: string | null;
 }
 
 /** The statement and chart to put on a card a later answer is changing. */
@@ -438,7 +480,7 @@ export function assistChartPatch(card: AssistChartSubject, query: AssistQueryPla
   let chart = card.chart;
   if (nextChart !== null) chart = { ...nextChart, color };
   else if (card.chart !== null) chart = { ...card.chart, color };
-  return { sqlChanged, planChanged, sql: query.sql, chart, color };
+  return { sqlChanged, planChanged, sql: query.sql, chart, color, code: query.code };
 }
 
 function historyOf(value: unknown): AssistHistoryTurn[] | null {
@@ -544,7 +586,7 @@ ${
     : "Every comparison in WHERE or HAVING is a placeholder the chart can edit, even when the question did not ask for a filter. Write it where the literal would go, with no quotes around it: region = {{region:east|east,west,north}}. The default follows the colon. Category choices follow a pipe and are separated by commas. A comparison on a numeric column uses >=, <=, or =, a numeric default, and no choices. The placeholder name is the original column, as in total >= {{total:10}}. A renamed column is not that name: region AS area is filtered as region = {{region:east}}, not area. The studio substitutes a SQL literal before running and shows a Filters control for each placeholder. A connection whose engine is neo4j takes one read-only Cypher statement with its values in place. Do not write SQL or a placeholder on that connection. A question about an amount returns one category column and one number. A question about how records connect returns the relationship or the path."
 }
 
-A line in an earlier turn that starts with Chart " names a chart from those turns. Return a query with that same title to replace its sql, chart.type, chart.x, and chart.y. A title that is not already there adds a chart. A line that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement or its chart type. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour.`;
+A line in an earlier turn that starts with Chart " names a chart from those turns. Return a query with that same title to replace its sql, chart.type, chart.x, chart.y, and chart.code. chart.code is the chart's Code text: one JSON object for the title, series style, and colours. Leave out data, links, and indicator. Omit chart.code to keep the code already on that chart. A title that is not already there adds a chart. A line that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement, its chart type, or its chart.code. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour.`;
   const user = `Question:\n${prompt.questionBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },
