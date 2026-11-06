@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   cancelSubscriptionBody,
+  accessUntilLabel,
   cancellationNotice,
+  splitPriceLabel,
   checkoutSubscriptionLink,
   heldSubscriptions,
   isSubscriptionId,
@@ -340,9 +342,13 @@ describe("subscription bodies", () => {
 
 describe("cancellationNotice", () => {
   test("names the last day the database stays, in UTC", () => {
-    expect(cancellationNotice("2026-03-01T00:00:00.000Z")).toBe(
-      "Cancels on March 1, 2026. This database stays in your connections until then.",
-    );
+    expect(cancellationNotice("2026-03-01T00:00:00.000Z")).toBe("Subscription cancels March 1, 2026.");
+    expect(accessUntilLabel("2026-03-01T00:00:00.000Z")).toBe("Access until Mar 1, 2026");
+    expect(accessUntilLabel(null)).toBeNull();
+    expect(accessUntilLabel("not-a-date")).toBeNull();
+    expect(splitPriceLabel("$5/month")).toEqual({ amount: "$5", period: "/ month" });
+    expect(splitPriceLabel("$5.50/month")).toEqual({ amount: "$5.50", period: "/ month" });
+    expect(splitPriceLabel("Ask")).toEqual({ amount: "Ask", period: null });
     expect(cancellationNotice(null)).toBe("This database stays in your connections until the subscription ends.");
     expect(cancellationNotice("not-a-date")).toBe(
       "This database stays in your connections until the subscription ends.",

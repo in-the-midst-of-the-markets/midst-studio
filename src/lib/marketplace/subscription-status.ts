@@ -209,14 +209,41 @@ export function subscriptionsFromBody(value: unknown): SubscriptionView[] {
   });
 }
 
+/** The second line under a dated cancellation. */
+export const CANCELLATION_DETAIL = "This database stays in your connections until then.";
+
+function accessDate(accessUntil: string | null): Date | null {
+  if (accessUntil === null) return null;
+  const date = new Date(accessUntil);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** The short date beside a database that is already canceling, or null when the date is unknown. */
+export function accessUntilLabel(accessUntil: string | null): string | null {
+  const date = accessDate(accessUntil);
+  if (date === null) return null;
+  const formatted = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+  return `Access until ${formatted}`;
+}
+
 /** The sentence under a database whose cancellation is already scheduled. */
 export function cancellationNotice(accessUntil: string | null): string {
-  const kept = "This database stays in your connections until then.";
-  if (accessUntil === null) return "This database stays in your connections until the subscription ends.";
-  const date = new Date(accessUntil);
-  if (Number.isNaN(date.getTime())) return "This database stays in your connections until the subscription ends.";
+  const date = accessDate(accessUntil);
+  if (date === null) return "This database stays in your connections until the subscription ends.";
   const formatted = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(date);
-  return `Cancels on ${formatted}. ${kept}`;
+  return `Subscription cancels ${formatted}.`;
+}
+
+/** `$5/month` splits into the amount and the period. Anything else stays one label. */
+export function splitPriceLabel(label: string): { amount: string; period: string | null } {
+  const match = /^(\$[\d,]+(?:\.\d{2})?)(\/month)$/.exec(label);
+  if (match === null) return { amount: label, period: null };
+  return { amount: match[1] ?? label, period: "/ month" };
 }
 
 /** Form body for `POST /v1/subscriptions/:id`. The subscription keeps running until the period ends. */
