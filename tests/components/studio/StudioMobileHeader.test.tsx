@@ -85,9 +85,9 @@ const conn: DatabaseConnection = {
 
 describe("StudioMobileHeader", () => {
   test("offers Dash beside AI", () => {
-    const { getByRole, queryByRole } = render(<StudioMobileHeader {...defaults} />);
+    const { getByRole } = render(<StudioMobileHeader {...defaults} />);
     expect(getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
-    expect(queryByRole("link", { name: "IDE" })).toBeNull();
+    expect(getByRole("link", { name: "IDE" }).getAttribute("aria-current")).toBe("page");
   });
 
   afterEach(() => {
@@ -511,8 +511,9 @@ describe("StudioMobileHeader", () => {
     const ai = getAllByRole("link", { name: "AI" });
     expect(ai).toHaveLength(1);
     expect(ai[0]?.getAttribute("href")).toBe("/assist");
-    expect(ai[0]?.className.includes("bg-brand/15")).toBe(true);
-    expect(ai[0]?.className.includes("text-brand")).toBe(true);
+    expect(ai[0]?.className.includes("bg-raised")).toBe(true);
+    expect(ai[0]?.className.includes("bg-brand/15")).toBe(false);
+    expect(ai[0]?.className.includes("text-brand")).toBe(false);
     expect(ai[0]?.className.includes("bg-primary")).toBe(false);
     expect(getAllByRole("link", { name: "Dash" })).toHaveLength(1);
   });

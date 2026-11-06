@@ -64,11 +64,26 @@ describe("Models", () => {
   test("the page offers the IDE", async () => {
     mockGlobalFetch({ "/api/storage/config": { json: { provider: "local", serverMode: false } } });
     render(<ModelsPage />);
-    expect(await screen.findByRole("heading", { name: "Models" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "dbt project on GitHub" })).toBeTruthy();
-    expect(screen.getByText(/GitHub stores the dbt project/)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "IDE" }).getAttribute("href")).toBe("/");
+    expect(screen.queryByRole("heading", { name: "Models" })).toBeNull();
+    expect(await screen.findByRole("heading", { name: "dbt project on GitHub" })).toBeTruthy();
+    expect(screen.getByText("Models / Connect project")).toBeTruthy();
+    expect(screen.getByText(/Bring your dbt models into KnowSQL/)).toBeTruthy();
+    expect(screen.getByText("Code here. Data there.")).toBeTruthy();
+    const models = screen.getByRole("link", { name: "Models" });
+    expect(models.getAttribute("aria-current")).toBe("page");
+    expect(models.className.includes("bg-brand-tint/20")).toBe(true);
+    const ide = screen.getByRole("link", { name: "IDE" });
+    expect(ide.getAttribute("href")).toBe("/");
+    expect(ide.className.includes("bg-raised")).toBe(true);
+    expect(ide.className.includes("bg-brand/15")).toBe(false);
     expect(screen.getByRole("link", { name: "Dash" }).getAttribute("href")).toBe("/create");
+    const token = screen.getByLabelText("GitHub token") as HTMLInputElement;
+    expect(token.type).toBe("password");
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "Show token" }));
+    expect(token.type).toBe("text");
+    await user.click(screen.getByRole("button", { name: "Hide token" }));
+    expect(token.type).toBe("password");
   });
 
   test("saves a model, charts a metric and shows compiled SQL", async () => {

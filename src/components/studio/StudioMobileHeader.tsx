@@ -4,7 +4,7 @@ import React, { type RefObject } from "react";
 import type { DatabaseConnection } from "@/lib/types";
 import { connectionPulseTitle, type ConnectionPulse } from "@/hooks/use-connection-pulse";
 import type { QueryEditorRef } from "@/components/QueryEditor";
-import { IDE_MODE_LINK_CLASS, ModeLinks } from "@/components/ai-assist/AssistModeToggle";
+import { ModeLinks } from "@/components/ai-assist/AssistModeToggle";
 import { AssistConnectors } from "@/components/ai-assist/AssistConnectors";
 import { ChartSettingsDialog } from "@/components/charts/ChartSettingsDialog";
 import { CancelQueryButton, type CancelControlMode } from "./QueryToolbar";
@@ -159,14 +159,14 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
     <header className="md:hidden border-b border-hairline bg-surface/95 backdrop-blur-xl sticky top-0 z-30">
       {/* Row 1: DB Selector + Connection Info + User */}
       <div className="h-12 flex items-center justify-between px-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <MidstLockup className="shrink-0" markClassName="h-6 w-6" wordClassName="text-sm" />
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+          <MidstLockup className="shrink-0" markClassName="h-6 w-6" wordClassName="sr-only" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-2 gap-1 bg-overlay border-hairline-strong hover:bg-fill text-fg-secondary max-w-[160px]"
+                className="h-8 min-w-0 flex-1 overflow-hidden px-2 gap-1 bg-overlay border-hairline-strong hover:bg-fill text-fg-secondary max-w-[9rem]"
               >
                 <Database strokeWidth={1.5} className="w-3 h-3 text-brand shrink-0" />
                 <span className="truncate text-xs font-medium">
@@ -231,7 +231,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
             ))}
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 shrink items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -240,7 +240,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
           >
             <Gauge strokeWidth={1.5} className="w-3.5 h-3.5" />
           </Button>
-          <ModeLinks page="ide" className={IDE_MODE_LINK_CLASS} />
+          <ModeLinks page="ide" />
           {connectionPulse && (
             <div
               className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-fill"
