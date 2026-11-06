@@ -1297,6 +1297,9 @@ export type DashboardFilterControl = "select" | "slider" | "search" | "vector" |
  * not change it. In the vector value, `{{that id}}` embeds the text typed in the
  * box. Any other words in that value are embedded as written.
  * A custom filter's `script` is JavaScript edited in Monaco.
+ * A query used for a dropdown must come back as one column. Several columns
+ * wait until the user picks one. A choice longer than 25 characters is cut
+ * and ends with "...".
  */
 export interface DashboardFilter {
   id: string;
@@ -1310,6 +1313,8 @@ export interface DashboardFilter {
   choiceSource?: "query" | "values";
   /** Hardcoded choices, one value per line. Used when `choiceSource` is `values`. */
   valuesText?: string;
+  /** The one column a query-backed dropdown reads. Absent until a query returns several and the user picks one. */
+  choiceField?: string;
   query: string;
   connectionId?: string;
   value: string;

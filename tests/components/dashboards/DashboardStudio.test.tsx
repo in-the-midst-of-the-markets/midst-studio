@@ -527,7 +527,14 @@ describe("DashboardStudio", () => {
         if (body.sql === "SELECT blank FROM sales")
           return { json: { ...rows, rows: [{ region: "" }, { region: null }] } };
         if (body.sql?.startsWith("SELECT region FROM")) {
-          return { json: { ...rows, rows: [{ region: "east" }, { region: "west" }] } };
+          return {
+            json: {
+              rows: [{ region: "east" }, { region: "west" }],
+              fields: ["region"],
+              rowCount: 2,
+              executionTime: 1,
+            },
+          };
         }
         return { json: rows };
       },
@@ -571,6 +578,9 @@ describe("DashboardStudio", () => {
     await waitFor(() =>
       expect((view.getByLabelText("Filter selection") as HTMLSelectElement).options.length).toBeGreaterThan(1),
     );
+    fireEvent.click(view.getByRole("button", { name: "Choices" }));
+    expect((view.getByLabelText("Choice column") as HTMLSelectElement).value).toBe("region");
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
     expect(view.getByLabelText("Filter selection").closest("label")).toBeNull();
     expect(view.getByText(`{{${publicId}}}`)).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
@@ -656,6 +666,51 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("textbox", { name: "Query SQL" })).toBeTruthy();
   });
 
+  test("a dropdown query keeps one column and shortens a long value", async () => {
+    storage.saveConnection(connection);
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [
+        {
+          id: "f1",
+          name: "region",
+          query: "SELECT region, total FROM sales",
+          connectionId: "c1",
+          value: "",
+          control: "select",
+        },
+      ],
+    });
+    storage.setActiveDashboardId("sales");
+    const long = "abcdefghijklmnopqrstuvwxyz";
+    mockGlobalFetch({
+      "/api/db/query": {
+        json: {
+          rows: [{ region: "east", total: long }],
+          fields: ["region", "total"],
+          rowCount: 1,
+          executionTime: 1,
+        },
+      },
+    });
+    const view = render(<DashboardStudio />);
+    expect(await view.findByText("Choose one column.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Choices" }));
+    const column = view.getByLabelText("Choice column") as HTMLSelectElement;
+    expect(Array.from(column.options).map((option) => option.value)).toEqual(["", "region", "total"]);
+    expect(view.getByText("A value longer than 25 characters ends with ...")).toBeTruthy();
+    fireEvent.change(column, { target: { value: "" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.choiceField).toBeUndefined();
+    fireEvent.change(column, { target: { value: "total" } });
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.choiceField).toBe("total");
+    fireEvent.click(view.getByRole("button", { name: "Filter" }));
+    const clipped = `${long.slice(0, 25)}...`;
+    await waitFor(() => {
+      const select = view.getByLabelText("Filter selection") as HTMLSelectElement;
+      expect(Array.from(select.options).map((option) => option.value)).toContain(clipped);
+    });
+  });
+
   test("a filter query reports an empty list, a failure, and a late answer", async () => {
     storage.saveConnection(connection);
     const gate: { release: (() => void) | null } = { release: null };
@@ -671,7 +726,7 @@ describe("DashboardStudio", () => {
               resolve({ status: 400, json: { error: "refused" } });
               return;
             }
-            resolve({ json: { ...rows, rows: [{ region: "" }] } });
+            resolve({ json: { rows: [{ region: "" }], fields: ["region"], rowCount: 1, executionTime: 1 } });
           });
         }),
     });

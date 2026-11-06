@@ -49,7 +49,7 @@ import {
   CUSTOM_FILTER_SCRIPT,
   DASHBOARD_FRAME_CSP,
   DASHBOARD_INSTRUCTIONS_CAP,
-  filterChoices,
+  filterChoiceState,
   filterControlPatch,
   filterFrameDocument,
   filterFrameMessage,
@@ -1381,8 +1381,13 @@ function DashboardFilterCard({
   const [face, setFace] = useState<"filter" | "choices" | "design">(filter.control === undefined ? "design" : "filter");
   const [draft, setDraft] = useState(filter.query);
   const [seenQuery, setSeenQuery] = useState(filter.query);
-  const [choices, setChoices] = useState<string[]>([]);
-  const [status, setStatus] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState<{
+    query: string;
+    connectionId: string;
+    rows: readonly Record<string, unknown>[];
+    fields: readonly string[];
+  } | null>(null);
+  const [failure, setFailure] = useState<{ query: string; message: string } | null>(null);
   if (seenQuery !== filter.query) {
     setSeenQuery(filter.query);
     setDraft(filter.query);
@@ -1390,6 +1395,13 @@ function DashboardFilterCard({
   const reference = filterReference(filter.name);
   const caption = filter.label?.trim() || filter.name || "Filter";
   const listed = filter.choiceSource === "values" ? filterValueList(filter.valuesText ?? "") : null;
+  const requested = filter.query.trim();
+  const loadedMatches =
+    loaded !== null && loaded.query === requested && loaded.connectionId === (filter.connectionId ?? "");
+  const derived = loadedMatches ? filterChoiceState(loaded.rows, loaded.fields, filter.choiceField) : null;
+  const choices = derived?.choices ?? [];
+  const columns = derived?.columns ?? [];
+  const status = failure !== null && failure.query === requested ? failure.message : (derived?.status ?? null);
   const shownStatus = listed === null ? status : null;
 
   useEffect(() => {
@@ -1401,13 +1413,12 @@ function DashboardFilterCard({
     void loadSavedChart({ query, connectionId }, connections, appFetch, savedQueries).then((view) => {
       if (stopped) return;
       if (view.kind !== "result") {
-        setChoices([]);
-        setStatus(view.message);
+        setLoaded(null);
+        setFailure({ query, message: view.message });
         return;
       }
-      const next = filterChoices(view.result.rows, view.result.fields);
-      setChoices(next);
-      setStatus(next.length === 0 ? "That query did not return any choices." : null);
+      setFailure(null);
+      setLoaded({ query, connectionId, rows: view.result.rows, fields: view.result.fields });
     });
     return () => {
       stopped = true;
@@ -1431,8 +1442,7 @@ function DashboardFilterCard({
   const runChoices = () => {
     onChange({ query: draft });
     if (draft.trim() === "" || filter.connectionId === undefined || filter.connectionId === "") {
-      setChoices([]);
-      setStatus("Add a connection and a query to fill the choices.");
+      setFailure({ query: draft.trim(), message: "Add a connection and a query to fill the choices." });
     }
   };
 
@@ -1527,6 +1537,7 @@ function DashboardFilterCard({
             schemas={schemas}
             savedQueries={savedQueries}
             status={status}
+            columns={columns}
             onDraft={setDraft}
             onChange={onChange}
             onRun={runChoices}
@@ -1681,6 +1692,7 @@ function FilterChoices({
   schemas,
   savedQueries,
   status,
+  columns,
   onDraft,
   onChange,
   onRun,
@@ -1691,12 +1703,14 @@ function FilterChoices({
   readonly schemas: Readonly<Record<string, string>>;
   readonly savedQueries: readonly SavedQuery[];
   readonly status: string | null;
+  readonly columns: readonly string[];
   readonly onDraft: (value: string) => void;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
   readonly onRun: () => void;
 }) {
   const fromValues = filter.choiceSource === "values";
   const databaseType = connections.find((item) => item.id === filter.connectionId)?.type;
+  const selectedColumn = columns.length === 1 ? columns[0] : filter.choiceField;
   return (
     <div>
       <div className="mb-3 flex items-center rounded-lg border border-hairline bg-control p-0.5">
@@ -1767,6 +1781,27 @@ function FilterChoices({
               />
             </div>
           </div>
+          {columns.length > 0 && (
+            <label className="mt-3 block text-xs text-fg-muted">
+              Column
+              <select
+                aria-label="Choice column"
+                value={selectedColumn ?? ""}
+                onChange={(event) =>
+                  onChange({ choiceField: event.target.value === "" ? undefined : event.target.value })
+                }
+                className={`mt-1.5 ${fieldClass}`}
+              >
+                {columns.length > 1 && <option value="">Choose one column</option>}
+                {columns.map((column) => (
+                  <option key={column} value={column}>
+                    {column}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <p className="mt-2 text-xs text-fg-muted">A value longer than 25 characters ends with ...</p>
           <button
             type="button"
             onClick={onRun}

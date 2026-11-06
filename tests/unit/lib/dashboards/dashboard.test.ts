@@ -11,6 +11,8 @@ import {
   DEFAULT_DASHBOARD_NOTE_HEIGHT,
   dragBlockResize,
   dragResize,
+  filterChoiceColumn,
+  filterChoiceState,
   filterChoices,
   filterValueList,
   filterControlPatch,
@@ -186,6 +188,31 @@ describe("dashboard layout", () => {
       { region: { city: "east" } },
     ];
     expect(filterChoices(rows, ["region"])).toEqual(["east", "4", "true", "false"]);
+    expect(filterChoices([{ region: "x".repeat(25) }, { region: ` ${"y".repeat(26)} ` }], ["region"])).toEqual([
+      "x".repeat(25),
+      `${"y".repeat(25)}...`,
+    ]);
+    expect(filterChoices([{ region: "east", total: "west" }], ["region", "total"])).toEqual([]);
+    expect(filterChoices([{ region: "east", total: "west" }], ["region", "total"], "total")).toEqual(["west"]);
+    expect(filterChoices([{ region: "east" }], ["", "region"], "missing")).toEqual(["east"]);
+    expect(filterChoiceColumn(["a", "b"])).toBeNull();
+    expect(filterChoiceColumn(["a", "b"], "missing")).toBeNull();
+    expect(filterChoiceColumn([])).toBeNull();
+    expect(filterChoiceState([{ region: "" }], ["region"], undefined)).toEqual({
+      columns: ["region"],
+      choices: [],
+      status: "That query did not return any choices.",
+    });
+    expect(filterChoiceState([{ region: "east", total: "west" }], ["region", "total"])).toEqual({
+      columns: ["region", "total"],
+      choices: [],
+      status: "Choose one column.",
+    });
+    expect(filterChoiceState([], [])).toEqual({
+      columns: [],
+      choices: [],
+      status: "That query did not return any choices.",
+    });
     expect(filterValueList(" east \n\nwest\neast\n")).toEqual(["east", "west"]);
     expect(filterValueList("")).toEqual([]);
     expect(filterValueList(Array.from({ length: 30 }, (_, index) => `r${index}`).join("\n"))).toHaveLength(24);
@@ -264,10 +291,20 @@ describe("dashboard layout", () => {
 
   test("builds a sandboxed filter document and reads only its own messages", () => {
     const document = filterFrameDocument("f1", 'setValue("</script>")', "east", ["a<b"]);
-    expect(document).toContain("\\u003c");
-    expect(document.match(/<\/script>/g)?.length).toBe(2);
-    expect(document).toContain(String.raw`<\/script>`);
-    expect(document).toContain('"id":"f1"');
+    expect(document).toContain("frame-src 'none'");
+    expect(document).toContain("connect-src 'none'");
+    expect(document).toContain("worker-src 'none'");
+    expect(document.match(/<\/script>/g)?.length).toBe(1);
+    expect(document).toContain('title="Filter script"');
+    expect(document).toContain('sandbox="allow-scripts"');
+    expect(document).not.toContain("allow-same-origin");
+    const marker = "frame.srcdoc=";
+    const start = document.indexOf(marker);
+    const inner = JSON.parse(document.slice(start + marker.length, document.indexOf(";</script>", start))) as string;
+    expect(inner).toContain(String.raw`<\/script>`);
+    expect(inner).toContain("\\u003c");
+    expect(inner).toContain('"id":"f1"');
+    expect(inner).toContain("function setValue");
     expect(filterFrameMessage(null)).toBeNull();
     expect(filterFrameMessage("nope")).toBeNull();
     expect(filterFrameMessage({ source: "other", id: "f1", value: "east" })).toBeNull();
@@ -297,6 +334,7 @@ describe("dashboard layout", () => {
         control: "search",
         choiceSource: "values",
         valuesText: "east\nwest",
+        choiceField: "region",
         min: 1,
         max: 9,
         step: 2,
@@ -315,6 +353,7 @@ describe("dashboard layout", () => {
       control: "search",
       choiceSource: "values",
       valuesText: "east\nwest",
+      choiceField: "region",
       min: 1,
       max: 9,
       step: 2,
@@ -563,10 +602,14 @@ describe("dashboard layout", () => {
       italic: true,
     });
     const doc = noteFrameDocument("root.textContent = text;\n</script><script>", "Hello <b>", [{ n: 1 }], ["n"], look);
-    expect(doc).toContain("Hello \\u003cb");
-    expect(doc).toContain("<\\/script>");
-    expect(doc).toContain('"n":1');
-    expect(doc).toContain("font-size:32px");
+    const marker = "frame.srcdoc=";
+    const start = doc.indexOf(marker);
+    const inner = JSON.parse(doc.slice(start + marker.length, doc.indexOf(";</script>", start))) as string;
+    expect(inner).toContain("Hello \\u003cb");
+    expect(inner).toContain("<\\/script>");
+    expect(inner).toContain('"n":1');
+    expect(inner).toContain("font-size:32px");
+    expect(doc).toContain('title="Text script"');
     expect(doc).toContain("font-weight:700");
     expect(doc).toContain("font-style:italic");
     expect(doc).toContain("#112233");
@@ -578,7 +621,11 @@ describe("dashboard layout", () => {
     const loop: Record<string, unknown> = {};
     loop.self = loop;
     const safe = noteFrameDocument("root.textContent = text;", "Kept", [loop], ["self"], noteLook(undefined));
-    expect(safe).toContain("Kept");
-    expect(safe).toContain('"rows":[]');
+    const safeStart = safe.indexOf("frame.srcdoc=");
+    const safeInner = JSON.parse(
+      safe.slice(safeStart + "frame.srcdoc=".length, safe.indexOf(";</script>", safeStart)),
+    ) as string;
+    expect(safeInner).toContain("Kept");
+    expect(safeInner).toContain('"rows":[]');
   });
 });
