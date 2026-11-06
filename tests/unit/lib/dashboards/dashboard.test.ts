@@ -15,7 +15,6 @@ import {
   filterChoices,
   filterValueList,
   filterControlPatch,
-  vectorFilterName,
   filterFrameDocument,
   filterFrameMessage,
   filterLabel,
@@ -120,6 +119,7 @@ describe("dashboard layout", () => {
   test("starts a chart from scratch and keeps a connection when one is given", () => {
     const blank = freshDashboardChart([], undefined, "chart-1");
     expect(blank).toMatchObject({ id: "chart-1", name: "Chart", query: "", xAxis: "", yAxis: [] });
+    expect(blank.token).toMatch(/^c_[a-f0-9]{10}$/);
     expect(blank.connectionId).toBeUndefined();
     expect(freshDashboardChart([{ name: "Chart" }], "c1", "chart-2").connectionId).toBe("c1");
     expect(freshDashboardChart([], "").connectionId).toBeUndefined();
@@ -150,7 +150,15 @@ describe("dashboard layout", () => {
     expect(withNoteFields(queried, "missing", { query: "SELECT 2" }).notes).toEqual(queried.notes);
     expect(withNoteFields(board(), "n1", { query: "SELECT 1" }).notes).toEqual([]);
     const filtered = withFilter(board(), "c1", "f1");
-    expect(filtered.filters).toEqual([{ id: "f1", name: "filter", query: "", value: "", connectionId: "c1" }]);
+    expect(filtered.filters?.[0]).toMatchObject({
+      id: "f1",
+      label: "filter",
+      query: "",
+      value: "",
+      connectionId: "c1",
+    });
+    expect(filtered.filters?.[0]?.name).toMatch(/^id_[a-f0-9]{10}$/);
+    expect(withFilter(filtered, "c1", "f2").filters?.[1]?.label).toBe("filter2");
     expect(withFilter(board(), "").filters?.[0]?.connectionId).toBeUndefined();
     const renamed = withFilterFields(filtered, "f1", {
       name: "region",
@@ -238,15 +246,20 @@ describe("dashboard layout", () => {
       value: "0",
     });
     expect(filterControlPatch("search", { value: "" })).toEqual({ control: "search" });
-    const generated = filterControlPatch("vector", { value: "", name: "filter" });
+    expect(filterControlPatch("vector", { value: "", name: "filter" })).toEqual({
+      control: "vector",
+      placeholder: "Text to embed",
+    });
+    const generated = filterControlPatch("vector", { value: "", name: "1bad" });
     expect(generated.control).toBe("vector");
-    expect(generated.name).toMatch(/^vq_[a-f0-9]{10}$/);
+    expect(generated.name).toMatch(/^id_[a-f0-9]{10}$/);
     expect(generated.placeholder).toBe("Text to embed");
     expect(filterControlPatch("vector", { value: "", name: "vq_abc12345", placeholder: "Find" })).toEqual({
       control: "vector",
-      name: "vq_abc12345",
     });
-    expect(vectorFilterName()).toMatch(/^vq_[a-f0-9]{10}$/);
+    expect(filterControlPatch("vector", { value: "", name: "id_abc1234567", placeholder: "Find" })).toEqual({
+      control: "vector",
+    });
     expect(filterControlPatch("custom", { value: "", script: "  " }).script).toBe(CUSTOM_FILTER_SCRIPT);
     expect(filterControlPatch("custom", { value: "", script: "setValue(value);" })).toEqual({ control: "custom" });
   });
@@ -339,8 +352,11 @@ describe("dashboard layout", () => {
     expect(blank.name).toBe("Component");
     const placed = placeSavedComponent(board(), full, "new");
     expect(placed.filters?.[0]).toMatchObject({ id: "new", name: "region", query: "SELECT 1", componentId: "lib" });
-    expect(placeSavedComponent(placed, full, "newer").filters?.[1]?.name).toBe("region2");
-    expect(placeSavedComponent(board(), blank, "b").filters?.[0]?.name).toBe("filter");
+    expect(placeSavedComponent(placed, full, "newer").filters?.[1]?.name).toMatch(/^id_[a-f0-9]{10}$/);
+    expect(placeSavedComponent(placed, full, "newer").filters?.[1]?.label).toBe(" Region ");
+    const blankPlaced = placeSavedComponent(board(), blank, "b").filters?.[0];
+    expect(blankPlaced?.name).toMatch(/^id_[a-f0-9]{10}$/);
+    expect(blankPlaced?.label).toBe("filter");
   });
 
   test("describes the board as a cell inventory and trusted examples", () => {

@@ -1,5 +1,6 @@
 import { echartType } from "@/lib/charts/echarts-catalog";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
+import { chartPublicId, filterPublicId } from "@/lib/dashboards/public-id";
 import { bindEmbedPlaceholders, bindVectorFilterIds } from "@/lib/embeddings/placeholder";
 import type {
   DashboardFilter,
@@ -213,6 +214,7 @@ export function freshDashboardChart(
   return {
     id,
     name: chartLabel(existing),
+    token: chartPublicId(),
     chartType: "bar",
     xAxis: "",
     yAxis: [],
@@ -615,7 +617,8 @@ export function withFilter(dashboard: SavedDashboard, connectionId?: string, id 
   const filters = dashboard.filters ?? [];
   const filter: DashboardFilter = {
     id,
-    name: filterLabel(filters),
+    name: filterPublicId(),
+    label: filterLabel(filters.map((item) => ({ name: (item.label?.trim() || item.name).trim() }))),
     query: "",
     value: "",
     ...(connectionId !== undefined && connectionId !== "" ? { connectionId } : {}),
@@ -710,12 +713,18 @@ export function placeSavedComponent(
   id = crypto.randomUUID(),
 ): SavedDashboard {
   const filters = dashboard.filters ?? [];
+  const wanted = component.filter.name.trim();
+  const taken = new Set(filters.map((item) => item.name));
+  const name = FILTER_NAME.test(wanted) && !taken.has(wanted) ? wanted : filterPublicId();
   const filter: DashboardFilter = {
     ...component.filter,
     id,
-    name: nextLabel(filters, component.filter.name.trim() || "filter", ""),
+    name,
     componentId: component.id,
   };
+  if ((filter.label?.trim() ?? "") === "" && !FILTER_NAME.test(wanted)) {
+    filter.label = filterLabel(filters.map((item) => ({ name: (item.label?.trim() || item.name).trim() })));
+  }
   return { ...dashboard, updatedAt: new Date(), filters: [...filters, filter] };
 }
 
@@ -799,23 +808,16 @@ export function filterFrameMessage(data: unknown): { id: string; value: string }
   return { id, value: value.slice(0, FILTER_FRAME_VALUE_CAP) };
 }
 
-/** An id for a vector filter: `vq_` plus random hex, so it is not a word a query would use. */
-export function vectorFilterName(): string {
-  return `vq_${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
-}
-
-const VECTOR_FILTER_NAME = /^vq_[a-f0-9]{8,32}$/;
-
-/** Fields stored when the user picks a control. A slider starts at 0 to 100. A vector filter takes a generated id. */
+/** Fields stored when the user picks a control. A slider starts at 0 to 100. The filter's id stays as it is. */
 export function filterControlPatch(
   control: DashboardFilterControl,
   filter: Pick<DashboardFilter, "script" | "value"> & { name?: string; placeholder?: string },
 ): Partial<DashboardFilter> {
   if (control === "vector") {
     const current = filter.name?.trim() ?? "";
-    const name = VECTOR_FILTER_NAME.test(current) ? current : vectorFilterName();
+    const name = FILTER_NAME.test(current) ? current : filterPublicId();
     const placeholder = filter.placeholder?.trim() ? {} : { placeholder: "Text to embed" };
-    return { control, name, ...placeholder };
+    return { control, ...(name === current ? {} : { name }), ...placeholder };
   }
   if (control === "slider") {
     const slider = filterSlider(filter);

@@ -73,6 +73,7 @@ import {
   withoutFilter,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
+import { chartPublicId, isChartToken } from "@/lib/dashboards/public-id";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { presentChartOption } from "@/lib/charts/chart-present";
 import {
@@ -697,6 +698,17 @@ function ResizeHandle({
   );
 }
 
+/** The chart id on screen. A chart saved before ids existed gets one, and that same id is stored. */
+function useStableChartToken(chart: SavedChartConfig): string {
+  const [minted] = useState(() => (isChartToken(chart.token) ? chart.token : chartPublicId()));
+  const token = isChartToken(chart.token) ? chart.token : minted;
+  useEffect(() => {
+    if (isChartToken(chart.token)) return;
+    storage.saveChart({ ...chart, token: minted });
+  }, [chart, minted]);
+  return token;
+}
+
 function DashboardChart({
   chart,
   width,
@@ -736,6 +748,7 @@ function DashboardChart({
 }) {
   const theme = chartTheme(useEffectiveTheme());
   const settings = useChartSettings();
+  const chartId = useStableChartToken(chart);
   const [view, setView] = useState<SavedChartView | { kind: "loading" }>({ kind: "loading" });
   const [face, setFace] = useState<"chart" | "query" | "code">(() =>
     chart.query === undefined || chart.query === "" ? "query" : "chart",
@@ -910,6 +923,12 @@ function DashboardChart({
           </div>
         )}
       </div>
+      {!viewing && (
+        <label className="block px-4 pt-2 text-xs text-fg-muted">
+          ID
+          <input aria-label="Chart id" readOnly value={chartId} className={`mt-1.5 ${fieldClass}`} />
+        </label>
+      )}
       {shownFace === "chart" && !viewing && queryFilters.length > 0 && (
         <QueryFilterBar
           filters={queryFilters}
@@ -1555,7 +1574,13 @@ function DashboardFilterCard({
           />
         )}
         {(viewing ? filter.control !== undefined : filter.control !== undefined && face === "filter") && (
-          <FilterSurface filter={filter} choices={listed ?? choices} frameRef={frameRef} onChange={onChange} />
+          <FilterSurface
+            filter={filter}
+            choices={listed ?? choices}
+            frameRef={frameRef}
+            showId={!viewing}
+            onChange={onChange}
+          />
         )}
         {viewing && filter.control === undefined && (
           <p className="text-xs text-fg-muted">This filter is not ready to view.</p>
@@ -1624,19 +1649,14 @@ function FilterDesign({
             />
           </label>
           <label className="block text-xs text-fg-muted">
-            Name
-            <input
-              aria-label="Filter name"
-              value={filter.name}
-              onChange={(event) => onChange({ name: event.target.value })}
-              className={`mt-1.5 ${fieldClass}`}
-            />
+            ID
+            <input aria-label="Filter id" readOnly value={filter.name} className={`mt-1.5 ${fieldClass}`} />
           </label>
           <p className="text-xs text-fg-muted">
-            {filter.control === "vector" && reference !== null
-              ? `Type ${reference} in the vector value. The words in this box become that vector. Any other words in double brackets are embedded as written.`
-              : reference === null
-                ? "Use a name like region so a query can reference it."
+            {reference === null
+              ? "This id cannot be used in a query."
+              : filter.control === "vector"
+                ? `Type ${reference} in the vector value. The words in this box become that vector. Any other words in double brackets are embedded as written.`
                 : `Reference this selection in a query as ${reference}.`}
           </p>
           {(filter.control === "search" || filter.control === "vector" || filter.control === "custom") && (
@@ -1810,33 +1830,39 @@ function FilterSurface({
   filter,
   choices,
   frameRef,
+  showId,
   onChange,
 }: {
   readonly filter: DashboardFilter;
   readonly choices: readonly string[];
   readonly frameRef: RefObject<HTMLIFrameElement | null>;
+  readonly showId: boolean;
   readonly onChange: (patch: Partial<DashboardFilter>) => void;
 }) {
+  const token = showId ? filterReference(filter.name) : null;
+  const idLine = token === null ? null : <p className="font-mono text-xs text-fg-muted">{token}</p>;
   if (filter.control === "slider") {
     const slider = filterSlider(filter);
     return (
-      <input
-        type="range"
-        aria-label="Filter slider"
-        min={slider.min}
-        max={slider.max}
-        step={slider.step}
-        value={slider.value}
-        onChange={(event) => onChange({ value: event.target.value })}
-        className="w-full"
-      />
+      <div className="flex flex-col gap-2">
+        {idLine}
+        <input
+          type="range"
+          aria-label="Filter slider"
+          min={slider.min}
+          max={slider.max}
+          step={slider.step}
+          value={slider.value}
+          onChange={(event) => onChange({ value: event.target.value })}
+          className="w-full"
+        />
+      </div>
     );
   }
   if (filter.control === "search" || filter.control === "vector") {
-    const token = filter.control === "vector" ? filterReference(filter.name) : null;
     return (
       <div className="flex flex-col gap-2">
-        {token !== null && <p className="font-mono text-xs text-fg-muted">{token}</p>}
+        {idLine}
         <input
           type="search"
           aria-label={filter.control === "vector" ? "Vector text" : "Filter search"}
@@ -1850,30 +1876,36 @@ function FilterSurface({
   }
   if (filter.control === "custom") {
     return (
-      <iframe
-        ref={frameRef}
-        title="Custom filter"
-        sandbox="allow-scripts"
-        csp={DASHBOARD_FRAME_CSP}
-        srcDoc={filterFrameDocument(filter.id, filter.script ?? CUSTOM_FILTER_SCRIPT, filter.value, choices)}
-        className="h-full min-h-28 w-full rounded-lg border border-hairline bg-canvas"
-      />
+      <div className="flex h-full min-h-28 flex-col gap-2">
+        {idLine}
+        <iframe
+          ref={frameRef}
+          title="Custom filter"
+          sandbox="allow-scripts"
+          csp={DASHBOARD_FRAME_CSP}
+          srcDoc={filterFrameDocument(filter.id, filter.script ?? CUSTOM_FILTER_SCRIPT, filter.value, choices)}
+          className="min-h-0 w-full flex-1 rounded-lg border border-hairline bg-canvas"
+        />
+      </div>
     );
   }
   const options = filter.value !== "" && !choices.includes(filter.value) ? [filter.value, ...choices] : choices;
   return (
-    <select
-      aria-label="Filter selection"
-      value={filter.value}
-      onChange={(event) => onChange({ value: event.target.value })}
-      className={fieldClass}
-    >
-      <option value="">Choose</option>
-      {options.map((choice) => (
-        <option key={choice} value={choice}>
-          {choice}
-        </option>
-      ))}
-    </select>
+    <div className="flex flex-col gap-2">
+      {idLine}
+      <select
+        aria-label="Filter selection"
+        value={filter.value}
+        onChange={(event) => onChange({ value: event.target.value })}
+        className={fieldClass}
+      >
+        <option value="">Choose</option>
+        {options.map((choice) => (
+          <option key={choice} value={choice}>
+            {choice}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }

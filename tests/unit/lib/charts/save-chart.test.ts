@@ -54,6 +54,7 @@ describe("save chart", () => {
       typeId: "bar",
     });
     expect(saved?.createdAt).toBeInstanceOf(Date);
+    expect(saved?.token).toMatch(/^c_[a-f0-9]{10}$/);
     expect(buildSavedChart({ ...draft, name: "  " })).toBeNull();
     expect(buildSavedChart({ ...draft, refreshText: "soon" })).toBeNull();
     expect(buildSavedChart({ ...draft, refreshText: "" }, "plain")?.refreshSeconds).toBeUndefined();

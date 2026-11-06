@@ -26,6 +26,7 @@ import {
   remove,
   removeWorkspaceTabs,
 } from "./local-storage";
+import { chartTokenFor } from "../dashboards/public-id";
 import type { ConnectionGroup, StorageCollection } from "./types";
 
 const MAX_HISTORY_ITEMS = 500;
@@ -304,10 +305,14 @@ export const storage = {
   saveChart: (chart: SavedChartConfig) => {
     const charts = storage.getSavedCharts();
     const existingIndex = charts.findIndex((c) => c.id === chart.id);
+    const stored = {
+      ...chart,
+      token: chartTokenFor(chart.token, existingIndex > -1 ? charts[existingIndex]?.token : undefined),
+    };
     if (existingIndex > -1) {
-      charts[existingIndex] = chart;
+      charts[existingIndex] = stored;
     } else {
-      charts.push({ ...chart, createdAt: new Date() });
+      charts.push({ ...stored, createdAt: new Date() });
     }
     writeJSON("saved_charts", charts);
     dispatchChange("saved_charts", charts);

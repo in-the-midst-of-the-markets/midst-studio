@@ -549,14 +549,15 @@ describe("DashboardStudio", () => {
     expect((view.getByLabelText("Filter label") as HTMLInputElement).value).toBe("Area");
     fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Region" } });
     expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe("Region");
-    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
-    expect(view.getByText("Reference this selection in a query as {{region}}.")).toBeTruthy();
-    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "1bad" } });
-    expect(view.getByText("Use a name like region so a query can reference it.")).toBeTruthy();
+    const publicId = (view.getByLabelText("Filter id") as HTMLInputElement).value;
+    expect(publicId).toMatch(/^id_[a-f0-9]{10}$/);
+    expect((view.getByLabelText("Filter id") as HTMLInputElement).readOnly).toBe(true);
+    fireEvent.change(view.getByLabelText("Filter id"), { target: { value: "region" } });
+    expect((view.getByLabelText("Filter id") as HTMLInputElement).value).toBe(publicId);
+    expect(view.getByText(`Reference this selection in a query as {{${publicId}}}.`)).toBeTruthy();
     fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "" } });
-    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "" } });
-    expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe("Filter");
-    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "region" } });
+    expect((view.getByLabelText("Component title") as HTMLInputElement).value).toBe(publicId);
+    fireEvent.change(view.getByLabelText("Filter label"), { target: { value: "Region" } });
     fireEvent.click(view.getByRole("button", { name: "Choices" }));
     fireEvent.click(view.getByRole("button", { name: "Run choices" }));
     expect(view.getByRole("alert").textContent).toBe("Add a connection and a query to fill the choices.");
@@ -571,6 +572,12 @@ describe("DashboardStudio", () => {
       expect((view.getByLabelText("Filter selection") as HTMLSelectElement).options.length).toBeGreaterThan(1),
     );
     expect(view.getByLabelText("Filter selection").closest("label")).toBeNull();
+    expect(view.getByText(`{{${publicId}}}`)).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Query" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Query SQL" }), {
+      target: { value: `SELECT region, total FROM sales WHERE region = {{${publicId}}}` },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Run Revenue" }));
     fireEvent.change(view.getByLabelText("Filter selection"), { target: { value: "west" } });
     await waitFor(() => expect(posted.some((sql) => sql.includes("region = 'west'") && !sql.includes("{"))).toBe(true));
     fireEvent.click(view.getByRole("button", { name: "Design" }));
@@ -610,7 +617,7 @@ describe("DashboardStudio", () => {
     message({ source: "libredb-filter", id: filterId, value: "east" });
     message({ source: "libredb-filter", id: filterId, value: "north" });
     await waitFor(() => expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("north"));
-    fireEvent.click(view.getByRole("button", { name: "Remove region filter" }));
+    fireEvent.click(view.getByRole("button", { name: `Remove ${publicId} filter` }));
     expect(storage.getSavedDashboards()[0]?.filters).toEqual([]);
   });
 
@@ -690,6 +697,23 @@ describe("DashboardStudio", () => {
     gate.release?.();
   });
 
+  test("a filter id is fixed, and an unusable id says so", () => {
+    storage.saveDashboard({
+      ...board("sales", []),
+      filters: [{ id: "f1", name: "1bad", label: "Region", query: "", value: "", control: "select" }],
+    });
+    storage.setActiveDashboardId("sales");
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "Design" }));
+    const id = view.getByLabelText("Filter id") as HTMLInputElement;
+    expect(id.readOnly).toBe(true);
+    expect(id.value).toBe("1bad");
+    fireEvent.change(id, { target: { value: "region" } });
+    expect(id.value).toBe("1bad");
+    expect(view.getByText("This id cannot be used in a query.")).toBeTruthy();
+    expect(storage.getSavedDashboards()[0]?.filters?.[0]?.name).toBe("1bad");
+  });
+
   test("a vector filter keeps a generated id and embeds the words typed in its box", () => {
     storage.saveDashboard({
       ...board("sales", []),
@@ -699,20 +723,22 @@ describe("DashboardStudio", () => {
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Design" }));
     fireEvent.click(view.getByRole("button", { name: "Vector text" }));
-    const name = (view.getByLabelText("Filter name") as HTMLInputElement).value;
-    expect(name).toMatch(/^vq_[a-f0-9]{10}$/);
+    const name = (view.getByLabelText("Filter id") as HTMLInputElement).value;
+    expect(name).toBe("region");
+    expect((view.getByLabelText("Filter id") as HTMLInputElement).readOnly).toBe(true);
+    fireEvent.change(view.getByLabelText("Filter id"), { target: { value: "1bad" } });
+    expect((view.getByLabelText("Filter id") as HTMLInputElement).value).toBe("region");
     expect(view.getByText(/in the vector value/)).toBeTruthy();
     expect((view.getByLabelText("Filter placeholder") as HTMLInputElement).value).toBe("Text to embed");
     fireEvent.click(view.getByRole("button", { name: "Filter" }));
     const box = view.getByLabelText("Vector text") as HTMLInputElement;
     expect(box.placeholder).toBe("Text to embed");
-    expect(view.getByText(`{{${name}}}`)).toBeTruthy();
+    expect(view.getByText("{{region}}")).toBeTruthy();
     fireEvent.change(box, { target: { value: "a red mug" } });
     expect(storage.getSavedDashboards()[0]?.filters?.[0]?.value).toBe("a red mug");
-    fireEvent.click(view.getByRole("button", { name: "Design" }));
-    fireEvent.change(view.getByLabelText("Filter name"), { target: { value: "1bad" } });
-    fireEvent.click(view.getByRole("button", { name: "Filter" }));
-    expect(view.queryByText("{{1bad}}")).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Viewer" }));
+    expect(view.queryByText("{{region}}")).toBeNull();
+    expect(view.queryByLabelText("Filter id")).toBeNull();
     expect((view.getByLabelText("Vector text") as HTMLInputElement).placeholder).toBe("Text to embed");
   });
 
@@ -945,7 +971,7 @@ describe("DashboardStudio", () => {
 
   test("viewer mode shows charts and filters without the editing controls", async () => {
     storage.saveConnection(connection);
-    storage.saveChart(chart());
+    storage.saveChart(chart({ token: "c_abc1234567" }));
     storage.saveChart(
       chart({
         id: "plain",
@@ -972,6 +998,13 @@ describe("DashboardStudio", () => {
       ],
     });
     storage.setActiveDashboardId("sales");
+    const storedCharts = JSON.parse(localStorage.getItem("libredb_saved_charts") ?? "[]") as {
+      id?: string;
+      token?: string;
+    }[];
+    const plainChart = storedCharts.find((item) => item.id === "plain");
+    if (plainChart) delete plainChart.token;
+    localStorage.setItem("libredb_saved_charts", JSON.stringify(storedCharts));
     mockGlobalFetch({ "/api/db/query": { json: rows } });
     const view = render(<DashboardStudio />);
     expect(view.getByRole("button", { name: "Editor" }).getAttribute("aria-pressed")).toBe("true");
@@ -979,6 +1012,12 @@ describe("DashboardStudio", () => {
     expect(view.getByLabelText("Dashboard name")).toBeTruthy();
     expect(view.getAllByLabelText("Chart title")).toHaveLength(2);
     expect(view.getAllByLabelText("Component title")).toHaveLength(2);
+    await waitFor(() => expect(view.getAllByLabelText("Chart id")).toHaveLength(2));
+    await waitFor(() =>
+      expect(storage.getSavedCharts().find((item) => item.id === "plain")?.token).toMatch(/^c_[a-f0-9]{10}$/),
+    );
+    expect(storage.getSavedCharts().find((item) => item.id === "revenue")?.token).toBe("c_abc1234567");
+    expect(view.getByText("{{region}}")).toBeTruthy();
     expect(view.queryByRole("menuitem", { name: "Text box" })).toBeNull();
     expect(view.queryByRole("textbox", { name: "Text box" })).toBeNull();
 
@@ -1000,6 +1039,8 @@ describe("DashboardStudio", () => {
     expect(view.queryByRole("button", { name: "Ask AI" })).toBeNull();
     expect(view.queryByLabelText("Dashboard conversation")).toBeNull();
     expect(view.queryByLabelText("Chart title")).toBeNull();
+    expect(view.queryByLabelText("Chart id")).toBeNull();
+    expect(view.queryByText("{{region}}")).toBeNull();
     expect(view.queryByRole("button", { name: "Query" })).toBeNull();
     expect(view.queryByRole("button", { name: "Code" })).toBeNull();
     expect(view.queryByRole("button", { name: "Use Bar chart" })).toBeNull();
