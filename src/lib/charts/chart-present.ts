@@ -112,6 +112,40 @@ function withTooltipAffix(tooltip: unknown): unknown {
   return { ...record, formatter: tooltipFormatter(affix.prefix, affix.suffix) };
 }
 
+function blankAffix(record: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...record,
+    prefix: typeof record.prefix === "string" ? record.prefix : "",
+    suffix: typeof record.suffix === "string" ? record.suffix : "",
+  };
+}
+
+function axisWithBlankAffix(axis: unknown): unknown {
+  if (Array.isArray(axis)) return axis.map(axisWithBlankAffix);
+  const record = recordOf(axis);
+  if (record === null) return axis;
+  const label = recordOf(record.axisLabel);
+  return { ...record, axisLabel: blankAffix(label ?? {}) };
+}
+
+function tooltipWithBlankAffix(tooltip: unknown): unknown {
+  if (Array.isArray(tooltip)) return tooltip.map(tooltipWithBlankAffix);
+  const record = recordOf(tooltip);
+  if (record === null) return tooltip;
+  return blankAffix(record);
+}
+
+/** Empty prefix and suffix on each axis label and the tooltip, so a new chart's code shows both. */
+export function withBlankAffixes(option: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...option };
+  for (const key of AXIS_KEYS) {
+    if (!(key in next)) continue;
+    next[key] = axisWithBlankAffix(next[key]);
+  }
+  if ("tooltip" in next) next.tooltip = tooltipWithBlankAffix(next.tooltip);
+  return next;
+}
+
 /** The option the dashboard canvas draws. */
 export function presentChartOption(
   option: Record<string, unknown>,

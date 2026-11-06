@@ -36,13 +36,12 @@ import { loadAssistSchema } from "@/lib/ai/assist-schema";
 import { JsCodeEditor } from "@/components/editor/JsCodeEditor";
 import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEditor";
 import { QueryFilterBar } from "@/components/charts/QueryFilterBar";
-import { QueryEditor, type QueryEditorRef } from "@/components/QueryEditor";
+import { QueryEditor } from "@/components/QueryEditor";
 import { appFetch } from "@/lib/config/base-path";
 import {
   blockFrameSize,
   dashboardAssistContext,
   dashboardName,
-  dashboardVariables,
   DEFAULT_DASHBOARD_BLOCK_WIDTH,
   DEFAULT_DASHBOARD_FILTER_HEIGHT,
   dragBlockResize,
@@ -555,60 +554,6 @@ export function DashboardStudio() {
   );
 }
 
-function VariableInsert({
-  filters,
-  onInsert,
-}: {
-  readonly filters: readonly DashboardFilter[];
-  readonly onInsert: (token: string) => void;
-}) {
-  const variables = dashboardVariables(filters);
-  return (
-    <>
-      <label className="block px-4 pt-3 text-xs text-fg-muted">
-        Variable
-        <select
-          aria-label="Insert variable"
-          value=""
-          disabled={variables.length === 0}
-          onChange={(event) => {
-            if (event.target.value === "") return;
-            onInsert(event.target.value);
-          }}
-          className={`mt-1.5 ${fieldClass}`}
-        >
-          <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an id"}</option>
-          {variables.map((variable) => (
-            <option key={variable.id} value={variable.token}>
-              {variable.label} {variable.token}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block px-4 pt-3 text-xs text-fg-muted">
-        Embed
-        <select
-          aria-label="Embed as vector"
-          value=""
-          disabled={variables.length === 0}
-          onChange={(event) => {
-            if (event.target.value === "") return;
-            onInsert(event.target.value);
-          }}
-          className={`mt-1.5 ${fieldClass}`}
-        >
-          <option value="">{variables.length === 0 ? "No variables on this dashboard" : "Insert an embed"}</option>
-          {variables.map((variable) => (
-            <option key={variable.id} value={variable.embedToken}>
-              {variable.label} {variable.embedToken}
-            </option>
-          ))}
-        </select>
-      </label>
-    </>
-  );
-}
-
 function FaceButton({
   pressed,
   label,
@@ -786,7 +731,6 @@ function DashboardChart({
   const built = view.kind === "result" ? optionForSavedChart(chart, view.result, theme, settings) : null;
   const missingShelves = chart.typeId === undefined || chart.variationId === undefined;
   const sql = chart.query ?? "";
-  const editorRef = useRef<QueryEditorRef>(null);
   const [sqlDraft, setSqlDraft] = useState(sql);
   const [seenSql, setSeenSql] = useState(sql);
   if (seenSql !== sql) {
@@ -981,15 +925,8 @@ function DashboardChart({
                   ))}
                 </select>
               </label>
-              <VariableInsert
-                filters={filters}
-                onInsert={(token) => {
-                  editorRef.current?.insertText(token);
-                }}
-              />
               <div className="min-h-0 flex-1">
                 <QueryEditor
-                  ref={editorRef}
                   value={sqlDraft}
                   documentId={chart.id}
                   databaseType={databaseType}

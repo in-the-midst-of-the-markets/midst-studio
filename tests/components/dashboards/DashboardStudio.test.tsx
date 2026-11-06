@@ -742,7 +742,7 @@ describe("DashboardStudio", () => {
     expect((view.getByLabelText("Vector text") as HTMLInputElement).placeholder).toBe("Text to embed");
   });
 
-  test("inserts a dashboard variable id into the chart query", async () => {
+  test("a chart query uses a filter id without an insert menu", async () => {
     storage.saveConnection(connection);
     storage.saveChart(chart());
     storage.saveDashboard({
@@ -763,19 +763,11 @@ describe("DashboardStudio", () => {
     });
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Query" }));
-    const variable = view.getByLabelText("Insert variable") as HTMLSelectElement;
-    expect(Array.from(variable.options).map((option) => option.value)).toEqual(["", "{{region}}"]);
-    expect(variable.options[0]?.textContent).toBe("Insert an id");
-    fireEvent.change(variable, { target: { value: "" } });
-    fireEvent.change(variable, { target: { value: "{{region}}" } });
-    const embed = view.getByLabelText("Embed as vector") as HTMLSelectElement;
-    expect(Array.from(embed.options).map((option) => option.value)).toEqual(["", "{{embed region}}"]);
-    expect(embed.options[0]?.textContent).toBe("Insert an embed");
-    fireEvent.change(embed, { target: { value: "" } });
-    fireEvent.change(embed, { target: { value: "{{embed region}}" } });
-    expect((view.getByRole("textbox", { name: "Query SQL" }) as HTMLTextAreaElement).value).toBe(
-      "SELECT region, total FROM sales {{region}} {{embed region}}",
-    );
+    expect(view.queryByLabelText("Insert variable")).toBeNull();
+    expect(view.queryByLabelText("Embed as vector")).toBeNull();
+    fireEvent.change(view.getByRole("textbox", { name: "Query SQL" }), {
+      target: { value: "SELECT region, total FROM sales {{region}} {{embed region}}" },
+    });
     fireEvent.click(view.getByRole("button", { name: "Run Revenue" }));
     await waitFor(() => {
       const query = storage.getSavedCharts().find((item) => item.id === "revenue")?.query ?? "";

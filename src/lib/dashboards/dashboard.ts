@@ -652,39 +652,6 @@ export function filterReference(name: string): string | null {
   return FILTER_NAME.test(trimmed) ? `{{${trimmed}}}` : null;
 }
 
-/** One dashboard variable a query can insert. `token` is the id the filter gives the query. */
-export interface DashboardVariable {
-  id: string;
-  label: string;
-  token: string;
-  /** `{{embed name}}`, filled with this filter's text when the chart runs. */
-  embedToken: string;
-}
-
-/** Variables on this dashboard whose names are query ids. `exceptId` is the filter being edited. */
-export function dashboardVariables(filters: readonly DashboardFilter[], exceptId?: string): DashboardVariable[] {
-  const variables: DashboardVariable[] = [];
-  for (const filter of filters) {
-    if (filter.id === exceptId) continue;
-    const token = filterReference(filter.name);
-    if (token === null) continue;
-    const trimmed = filter.name.trim();
-    variables.push({
-      id: filter.id,
-      label: filter.label?.trim() || filter.name,
-      token,
-      embedToken: `{{embed ${trimmed}}}`,
-    });
-  }
-  return variables;
-}
-
-/** The query with `token` written at the end, or the token alone when the query is blank. */
-export function insertQueryVariable(sql: string, token: string): string {
-  if (sql.trim() === "") return token;
-  return `${sql}${/\s$/.test(sql) ? "" : " "}${token}`;
-}
-
 /** The library record for a filter. The placement id and the library link stay off the design. */
 export function savedComponentFromFilter(filter: DashboardFilter, id: string): SavedDashboardComponent {
   const design: DashboardFilterDesign = { name: filter.name, query: filter.query, value: filter.value };

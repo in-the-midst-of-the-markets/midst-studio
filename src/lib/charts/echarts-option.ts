@@ -5,6 +5,7 @@
  * import the library and a test can read every series without a canvas.
  */
 
+import { withBlankAffixes } from "@/lib/charts/chart-present";
 import { applyChartSettings, type ChartSettings } from "@/lib/charts/chart-settings";
 import { applyChartTitle } from "@/lib/charts/chart-title";
 import { CIRCLE_PACK, layoutCircles, type PackTree } from "@/lib/charts/circle-pack";
@@ -1416,8 +1417,9 @@ export function buildChartOption(input: ChartBuildInput): BuiltChart | null {
   const built = BUILDERS[type.id]?.(input) ?? null;
   if (built === null) return null;
   const titled = applyChartTitle(built.option, input.title ?? "");
-  if (input.settings === undefined) return { option: titled, notes: built.notes };
-  return { option: applyChartSettings(titled, input.typeId, input.variationId, input.settings), notes: built.notes };
+  const tuned =
+    input.settings === undefined ? titled : applyChartSettings(titled, input.typeId, input.variationId, input.settings);
+  return { option: withBlankAffixes(tuned), notes: built.notes };
 }
 
 /** Disconnects a resize observer, or does nothing where the browser has none. */
