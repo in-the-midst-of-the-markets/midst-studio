@@ -32,6 +32,8 @@ import { OXIA_EXECUTION_UI } from "@/lib/db/providers/keyvalue/oxia/execution-ui
 import { AIRTABLE_EXECUTION_UI } from "@/lib/db/providers/sql/airtable/execution-ui";
 import { HUBSPOT_EXECUTION_UI } from "@/lib/db/providers/sql/hubspot/execution-ui";
 import { STRIPE_EXECUTION_UI } from "@/lib/db/providers/sql/stripe/execution-ui";
+import { CLARITY_EXECUTION_UI } from "@/lib/db/providers/sql/clarity/execution-ui";
+import { GOOGLEANALYTICS_EXECUTION_UI } from "@/lib/db/providers/sql/googleanalytics/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -90,6 +92,8 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   airtable: AIRTABLE_EXECUTION_UI,
   hubspot: HUBSPOT_EXECUTION_UI,
   stripe: STRIPE_EXECUTION_UI,
+  clarity: CLARITY_EXECUTION_UI,
+  googleanalytics: GOOGLEANALYTICS_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

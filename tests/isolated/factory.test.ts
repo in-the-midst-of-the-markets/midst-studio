@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, libredb$/,
     );
   });
 
@@ -1581,6 +1581,8 @@ describe("createDatabaseProvider", () => {
       airtable: { host: "api.airtable.com" },
       hubspot: { host: "api.hubapi.com" },
       stripe: { host: "api.stripe.com" },
+      clarity: { host: "www.clarity.ms" },
+      googleanalytics: { host: "analyticsdata.googleapis.com" },
     };
 
     const declaringTypes: string[] = [];
@@ -1641,6 +1643,8 @@ describe("createDatabaseProvider", () => {
       airtable: { host: "api.airtable.com" },
       hubspot: { host: "api.hubapi.com" },
       stripe: { host: "api.stripe.com" },
+      clarity: { host: "www.clarity.ms" },
+      googleanalytics: { host: "analyticsdata.googleapis.com" },
     };
 
     const cannotCancel: string[] = [];
@@ -1653,10 +1657,14 @@ describe("createDatabaseProvider", () => {
       "airtable",
       "bigquery",
       "cassandra",
+      // No cancel: a Clarity export is one GET, and the API has nothing that stops it.
+      "clarity",
       "couchbase",
       "db2",
       "druid",
       "elasticsearch",
+      // No cancel: a Google Analytics report is one POST, and the Data API has nothing that stops it.
+      "googleanalytics",
       // No cancel: a HubSpot read is one search request, and the CRM API has nothing that stops it.
       "hubspot",
       "kafka",

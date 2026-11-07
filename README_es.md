@@ -136,9 +136,9 @@ Tomada en serio, esa frase deja de ser una preferencia y se vuelve una especific
 
 ## Capacidades principales
 
-### Cuarenta y siete motores, una sola interfaz
+### Cuarenta y nueve motores, una sola interfaz
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity and Google Analytics
 
 Todos los motores SQL comparten el mismo explorador de esquemas, los diagramas ER, la comparación de esquemas y los paneles de monitoreo. MongoDB y Redis no son motores SQL: no tienen diagrama ER ni comparación de esquemas. Druid, Elasticsearch, OpenSearch y Trino son doblemente excepcionales: sus interfaces SQL sobre HTTP no tienen una forma de URI que este build sepa interpretar, así que se configuran por host y puerto, y las migraciones que se generan explican la limitación en lugar de inventar DDL para un motor cuyo SQL no tiene sentencias de cambio de columna. Lo mismo pasa con las colecciones sin esquema de Couchbase. El diagrama ER de los clústeres de búsqueda tiene cajas pero no líneas: los índices no declaran claves foráneas, y en el modelo del motor no hay ninguna que declarar.
 
@@ -148,6 +148,8 @@ Todos los motores SQL comparten el mismo explorador de esquemas, los diagramas E
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
 | **Stripe** | none: the Stripe API | SELECT, WHERE, ORDER BY created, LIMIT, OFFSET and COUNT(*). Read-only |
+| **Microsoft Clarity** | none: the Clarity Data Export API | SELECT, WHERE days, ORDER BY, LIMIT and COUNT(*). Read-only. About 10 exports a day |
+| **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **PostgreSQL** | `pg` | IDE SQL completo, planes de ejecución EXPLAIN, transacciones, cancelación de consultas (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | IDE SQL completo, EXPLAIN, transacciones, cancelación de consultas (`KILL QUERY`) |
 | **Oracle** | `oracledb` (modo Thin) | IDE SQL completo, paginación con `FETCH FIRST N ROWS`, vistas de monitoreo `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, transacciones |

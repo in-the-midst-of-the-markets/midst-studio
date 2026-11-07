@@ -34,6 +34,12 @@ export type DatabaseType =
   // Stripe. The REST API, read-only. The editor runs a SQL subset that the provider
   // sends as list, search, and retrieve requests. Rows are not copied into another database.
   | "stripe"
+  // Microsoft Clarity. The Data Export API, read-only. One SELECT is one export of the
+  // last one to three days. Rows are not copied into another database.
+  | "clarity"
+  // Google Analytics. The GA4 Data API, read-only. One SELECT is one runReport for a
+  // property. Rows are not copied into another database.
+  | "googleanalytics"
   | "bigquery"
   | "snowflake"
   | "mysql"

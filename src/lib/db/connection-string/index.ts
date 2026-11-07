@@ -32,6 +32,8 @@ import { OXIA_CONNECTION_STRING } from "@/lib/db/providers/keyvalue/oxia/connect
 import { AIRTABLE_CONNECTION_STRING } from "@/lib/db/providers/sql/airtable/connection-string";
 import { HUBSPOT_CONNECTION_STRING } from "@/lib/db/providers/sql/hubspot/connection-string";
 import { STRIPE_CONNECTION_STRING } from "@/lib/db/providers/sql/stripe/connection-string";
+import { CLARITY_CONNECTION_STRING } from "@/lib/db/providers/sql/clarity/connection-string";
+import { GOOGLEANALYTICS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleanalytics/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -90,6 +92,8 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   airtable: AIRTABLE_CONNECTION_STRING,
   hubspot: HUBSPOT_CONNECTION_STRING,
   stripe: STRIPE_CONNECTION_STRING,
+  clarity: CLARITY_CONNECTION_STRING,
+  googleanalytics: GOOGLEANALYTICS_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

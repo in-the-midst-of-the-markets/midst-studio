@@ -152,6 +152,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   supabase: 45,
   hubspot: 46,
   stripe: 47,
+  clarity: 48,
+  googleanalytics: 49,
 };
 
 /**

@@ -18,6 +18,8 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   airtable: null,
   hubspot: null,
   stripe: null,
+  clarity: null,
+  googleanalytics: null,
   supabase: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   mysql: ["ADD COLUMN `extra` integer;", "DROP COLUMN `old`;"],
   mssql: ["ADD [extra] integer;", "DROP COLUMN [old];"],

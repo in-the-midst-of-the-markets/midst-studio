@@ -467,6 +467,39 @@ export const CONNECTION_FORM: {
       host: "The secret key is sent only to api.stripe.com.",
     },
   },
+  clarity: {
+    label: "Microsoft Clarity",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.clarity,
+    fieldLabels: { password: "Data Export token", host: "API host" },
+    fieldPlaceholders: { password: "eyJ…", host: "www.clarity.ms" },
+    fieldHints: {
+      password: "A Data Export token from Clarity settings. The project allows about 10 exports a day.",
+      host: "The token is sent only to www.clarity.ms.",
+    },
+  },
+  googleanalytics: {
+    label: "Google Analytics",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.googleanalytics,
+    fieldLabels: { password: "Key or access token", database: "Property ID", host: "API host" },
+    fieldPlaceholders: {
+      password: "ya29… or a service-account JSON",
+      database: "123456789",
+      host: "analyticsdata.googleapis.com",
+    },
+    fieldHints: {
+      password: "A service-account key JSON, or an access token with Analytics read access.",
+      database: "The numeric GA4 property id. Universal Analytics properties are not queried.",
+      host: "The access token is sent only to analyticsdata.googleapis.com. A service-account key is sent only to oauth2.googleapis.com.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1542,6 +1575,8 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "questdb",
   "hubspot",
   "stripe",
+  "clarity",
+  "googleanalytics",
 ]);
 
 /**
@@ -1549,7 +1584,12 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
  * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
  * The dialog draws a label before each group; clicking the label hides it.
  */
-export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze(["hubspot", "stripe"]);
+export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
+  "hubspot",
+  "stripe",
+  "clarity",
+  "googleanalytics",
+]);
 
 export interface ConnectionPickerCategory {
   readonly label: "SAAS Connectors" | "Databases";
@@ -1557,7 +1597,7 @@ export interface ConnectionPickerCategory {
 }
 
 /**
- * SAAS Connectors first, so HubSpot and Stripe are on screen when the dialog opens.
+ * SAAS Connectors first, so HubSpot, Stripe, Clarity and Google Analytics are on screen when the dialog opens.
  * Databases follow. The dialog hides a group when its label is clicked.
  */
 export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {

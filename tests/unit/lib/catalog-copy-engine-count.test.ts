@@ -127,6 +127,9 @@ const NUMERAL_WORDS: Record<string, number> = {
   "forty-eight": 48,
   // Two past the registry once Stripe joined it, so the next two providers still fail here.
   "forty-nine": 49,
+  // Two past the registry once Microsoft Clarity and Google Analytics joined it.
+  fifty: 50,
+  "fifty-one": 51,
 };
 
 /**

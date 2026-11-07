@@ -459,6 +459,10 @@ const CONNECTION_FIELD_ROWS = {
   hubspot: ["host", "password"],
   // Secret key in `password`. The host must be api.stripe.com; an empty field uses that host.
   stripe: ["host", "password"],
+  // Data Export token in `password`. The host must be www.clarity.ms; an empty field uses that host.
+  clarity: ["host", "password"],
+  // An access token or a service-account key in `password`, and the GA4 property id in `database`.
+  googleanalytics: ["host", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -604,6 +608,8 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   airtable: null,
   hubspot: null,
   stripe: null,
+  clarity: null,
+  googleanalytics: null,
   supabase: null,
   mysql: null,
   sqlite: null,

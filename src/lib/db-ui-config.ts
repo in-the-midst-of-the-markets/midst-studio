@@ -46,6 +46,8 @@ import {
   AirtableIcon,
   HubSpotIcon,
   StripeIcon,
+  ClarityIcon,
+  GoogleAnalyticsIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -107,6 +109,8 @@ export const DB_UI_CONFIG: {
   supabase: branded(CONNECTION_FORM.supabase, SupabaseIcon, "text-hue-emerald bg-hue-emerald-tint/10"),
   hubspot: branded(CONNECTION_FORM.hubspot, HubSpotIcon, "text-hue-orange bg-hue-orange-tint/10"),
   stripe: branded(CONNECTION_FORM.stripe, StripeIcon, "text-hue-violet bg-hue-violet/10"),
+  clarity: branded(CONNECTION_FORM.clarity, ClarityIcon, "text-hue-cyan bg-hue-cyan/10"),
+  googleanalytics: branded(CONNECTION_FORM.googleanalytics, GoogleAnalyticsIcon, "text-hue-amber bg-hue-amber/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

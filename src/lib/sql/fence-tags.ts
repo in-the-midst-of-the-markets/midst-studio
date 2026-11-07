@@ -40,6 +40,8 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   hubspot: true,
   // A ```stripe block holds the read-only SQL subset the Stripe connection sends to the API.
   stripe: true,
+  clarity: true,
+  googleanalytics: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same

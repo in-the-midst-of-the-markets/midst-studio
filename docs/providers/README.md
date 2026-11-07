@@ -11,6 +11,8 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Supabase | `supabase` | SQL | `pg` | SQL (PostgreSQL) | [supabase.md](./supabase.md) |
 | HubSpot | `hubspot` | SQL (CRM) | none (HTTP: the HubSpot CRM API) | SQL (a subset translated to the CRM API) | [hubspot.md](./hubspot.md) |
 | Stripe | `stripe` | SQL (payments) | none (HTTP: the Stripe API) | SQL (a read-only subset translated to the API) | [stripe.md](./stripe.md) |
+| Microsoft Clarity | `clarity` | SQL (product analytics) | none (HTTP: the Clarity Data Export API) | SQL (a read-only subset translated to the API) | [clarity.md](./clarity.md) |
+| Google Analytics | `googleanalytics` | SQL (product analytics) | none (HTTP: the Google Analytics Data API) | SQL (a read-only subset translated to the API) | [googleanalytics.md](./googleanalytics.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

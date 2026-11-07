@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Forty-seven external engines share one interface.
-The forty-eighth row is the embedded LibreDB store: it ships inside the image.
+Forty-nine external engines share one interface.
+The fiftieth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -157,6 +157,8 @@ The forty-eighth row is the embedded LibreDB store: it ships inside the image.
 | **Supabase** | `pg` | Hosted PostgreSQL |
 | **HubSpot** | none, HTTP | SQL over the CRM API |
 | **Stripe** | none, HTTP | Read-only SQL over the Stripe API |
+| **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
+| **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -164,13 +166,13 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak the wire protocol of one of the forty-seven drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
+Twenty-seven further engines speak a wire protocol of one of the forty-nine drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
 | MariaDB · Percona Server for MySQL | `mysql` | Full - both are drop-in builds: all fifteen surfaces answer and the numbers are correct. Percona's `version()` answers a bare 8.4.11-11, so the overview names it from `@@version_comment` |
 | Percona Distribution for PostgreSQL | `postgres` | Full - behaves as PostgreSQL throughout, with correct row counts and sizes, and unlike the MySQL build it names itself in `version()` |
-| ParadeDB | `postgres` | Full - correct numbers, but its nine extensions put 41 objects in the object browser for 2 user tables, and agent plan mode fails on a stock install because 539 non-system columns exceed the grounding capture's ceiling. `version()` names PostgreSQL only |
+| ParadeDB | `postgres` | Full - correct numbers, but its extensions crowd the object browser. `version()` names PostgreSQL only |
 | OrioleDB | `postgres` | Full - clean object browser and exact row counts, but its own storage is invisible to PostgreSQL's size functions, so every index reads 0 bytes and the cache hit ratio reads N/A. Nightly images only |
 | TiDB | `mysql` | Full - but a freshly loaded table reads 0 rows and 0 B until TiDB's background statistics catch up, the slow-query panel stays empty, and only a standalone `--store=unistore` server was probed |
 | Vitess | `mysql` | Full. Row counts and sizes are exact, but a running query cannot be cancelled: vtgate refuses `KILL QUERY` and the statement runs to completion. Per-index sizes read 0 bytes, and only an unsharded single-shard keyspace was probed |
@@ -179,7 +181,7 @@ Twenty-seven further engines speak the wire protocol of one of the forty-seven d
 | YugabyteDB | `postgres` | Full - but row counts and sizes read 0 until you run `ANALYZE`, and index sizes always read 0 bytes |
 | AlloyDB Omni | `postgres` | Full. Row counts and sizes are exact, but `version()` names AlloyDB nowhere, its own `google_ml` tables appear in the object browser, and the slow-query panel stays empty until `pg_stat_statements` is installed |
 | Valkey · DragonflyDB · KeyDB | `redis` | Full |
-| Garnet | `redis` | Full - every Redis surface answers, and the overview names the engine ahead of the compat level, as `Garnet 2.1.5 (Redis 7.4.3)`. Three readings are absences wearing a value: every size shows 0 B, the cache hit ratio shows 100% and max connections reads 0, because Garnet publishes neither `used_memory` nor keyspace counters |
+| Garnet | `redis` | Full. The overview names Garnet ahead of the Redis compat level. Sizes, the cache hit ratio and max connections are not published |
 | FerretDB | `mongodb` | Full - sign in with the backend PostgreSQL credentials |
 | StarRocks | `mysql` | Partial - the editor, object browser, metrics, slow queries and Explain work; the health and session panels do not, because the engine has no `information_schema.PROCESSLIST`. The version reads MySQL 5.1, and row counts, sizes and indexes are empty |
 | Apache Doris | `mysql` | Full - the engine StarRocks forked, and the more trustworthy of the two: every surface answers, counts and sizes are correct, cancel works, and Explain shows the engine's own plan. A freshly loaded table reads 0 for about a minute until its statistics land, no index is ever reported, and a foreign key is accepted but invisible and unenforced |
