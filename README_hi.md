@@ -148,7 +148,7 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **Airtable** | none: the Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one row by its record id |
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
-| **Stripe** | none: the Stripe API | SELECT, WHERE, ORDER BY created, LIMIT, OFFSET and COUNT(*). Read-only |
+| **Stripe** | none: the Queries and Reports API | Sigma SQL (SELECT or WITH) and REPORT. Read-only |
 | **PostgreSQL** | `pg` | पूरा SQL IDE, EXPLAIN plans, transactions, query cancel (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | पूरा SQL IDE, EXPLAIN, transactions, query cancel (`KILL QUERY`) |
 | **Oracle** | `oracledb` (Thin mode) | पूरा SQL IDE, `FETCH FIRST N ROWS` pagination, `V$` monitoring views, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, transactions |

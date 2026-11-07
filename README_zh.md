@@ -298,7 +298,7 @@ Studio 最主要的 AI 界面是编辑器旁边的 **Agent 侧栏**，下面列�
 | **Airtable** | none: the Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one row by its record id |
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
-| **Stripe** | none: the Stripe API | SELECT, WHERE, ORDER BY created, LIMIT, OFFSET and COUNT(*). Read-only |
+| **Stripe** | none: the Queries and Reports API | Sigma SQL (SELECT or WITH) and REPORT. Read-only |
 | **PostgreSQL** | `pg` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`pg_cancel_backend`） |
 | **MySQL** | `mysql2` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`KILL QUERY`） |
 | **Oracle** | `oracledb`（Thin 模式） | 完整 SQL IDE、`FETCH FIRST N ROWS` 分页、`V$` 监控视图、`ANALYZE TABLE`、`ALTER INDEX REBUILD`、事务 |
