@@ -156,7 +156,7 @@ The fiftieth row is the embedded LibreDB store: it ships inside the image.
 | **Airtable** | none, HTTP | SQL over the Web API |
 | **Supabase** | `pg` | Hosted PostgreSQL |
 | **HubSpot** | none, HTTP | SQL over the CRM API |
-| **Stripe** | none, HTTP | Read-only SQL over the Stripe API |
+| **Stripe** | none, HTTP | Sigma SQL and REPORT, read-only |
 | **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
@@ -181,7 +181,7 @@ Twenty-seven further engines speak a wire protocol of one of the forty-nine driv
 | YugabyteDB | `postgres` | Full - but row counts and sizes read 0 until you run `ANALYZE`, and index sizes always read 0 bytes |
 | AlloyDB Omni | `postgres` | Full. Row counts and sizes are exact, but `version()` names AlloyDB nowhere, its own `google_ml` tables appear in the object browser, and the slow-query panel stays empty until `pg_stat_statements` is installed |
 | Valkey · DragonflyDB · KeyDB | `redis` | Full |
-| Garnet | `redis` | Full. The overview names Garnet ahead of the Redis compat level. Sizes, the cache hit ratio and max connections are not published |
+| Garnet | `redis` | Full - the overview names it `Garnet 2.1.5 (Redis 7.4.3)`. Sizes show 0 B, the cache hit ratio shows 100% and max connections reads 0, because Garnet publishes neither `used_memory` nor keyspace counters |
 | FerretDB | `mongodb` | Full - sign in with the backend PostgreSQL credentials |
 | StarRocks | `mysql` | Partial - the editor, object browser, metrics, slow queries and Explain work; the health and session panels do not, because the engine has no `information_schema.PROCESSLIST`. The version reads MySQL 5.1, and row counts, sizes and indexes are empty |
 | Apache Doris | `mysql` | Full - the engine StarRocks forked, and the more trustworthy of the two: every surface answers, counts and sizes are correct, cancel works, and Explain shows the engine's own plan. A freshly loaded table reads 0 for about a minute until its statistics land, no index is ever reported, and a foreign key is accepted but invisible and unenforced |

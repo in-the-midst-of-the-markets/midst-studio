@@ -323,7 +323,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Airtable | `airtable` | SQL (the Web API) | [providers/airtable.md](./providers/airtable.md) |
 | Supabase | `supabase` | SQL (hosted PostgreSQL) | [providers/supabase.md](./providers/supabase.md) |
 | HubSpot | `hubspot` | SQL (the CRM API) | [providers/hubspot.md](./providers/hubspot.md) |
-| Stripe | `stripe` | SQL (the Stripe API, read-only) | [providers/stripe.md](./providers/stripe.md) |
+| Stripe | `stripe` | SQL (the Queries and Reports API, read-only) | [providers/stripe.md](./providers/stripe.md) |
 | Microsoft Clarity | `clarity` | SQL (the Clarity Data Export API, read-only) | [providers/clarity.md](./providers/clarity.md) |
 | Google Analytics | `googleanalytics` | SQL (the GA4 Data API, read-only) | [providers/googleanalytics.md](./providers/googleanalytics.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |

@@ -151,7 +151,7 @@ ER-диаграмма для Elasticsearch и OpenSearch показывает и
 | **Airtable** | none: the Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one row by its record id |
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
-| **Stripe** | none: the Stripe API | SELECT, WHERE, ORDER BY created, LIMIT, OFFSET and COUNT(*). Read-only |
+| **Stripe** | none: the Queries and Reports API | Sigma SQL (SELECT or WITH) and REPORT. Read-only |
 | **Microsoft Clarity** | none: the Clarity Data Export API | SELECT, WHERE days, ORDER BY, LIMIT and COUNT(*). Read-only. About 10 exports a day |
 | **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **PostgreSQL** | `pg` | Полноценная SQL IDE, планы выполнения EXPLAIN, транзакции, отмена запросов (`pg_cancel_backend`) |

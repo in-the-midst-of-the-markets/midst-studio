@@ -1,15 +1,14 @@
 /**
  * Stripe provider.
  *
- * Stripe is a REST API, not a SQL server. The editor still runs a small SQL subset
- * (`translate.ts`): SELECT with columns, WHERE, ORDER BY created, LIMIT and OFFSET, and
- * COUNT(*). Each statement is sent to the Stripe API. Nothing is copied into another
- * database, and a write is refused before a request.
+ * Stripe is not a SQL server. The editor runs Sigma SQL, and Studio sends that text to a
+ * query run on the Queries and Reports API. A REPORT statement runs a report template.
+ * Nothing is copied into another database. A write is refused before a request.
  *
  * The secret key is sent only to api.stripe.com, over TLS, on the shared HTTP transport.
  * That path does not use global fetch, so a proxy variable cannot carry the key. A redirect
- * is not followed. A result contains only the columns this connection declares, so a field
- * such as a payment intent's client_secret is not returned.
+ * is not followed. A result file is left where Stripe stored it: Studio reads inline rows
+ * and does not open the download URL.
  */
 import { SQLBaseProvider } from "../sql-base";
 import {
@@ -18,6 +17,7 @@ import {
   DatabaseConfigError,
   PermissionDeniedError,
   QueryError,
+  TimeoutError,
 } from "@/lib/db/errors";
 import {
   assertContainerPathShape,
@@ -60,57 +60,74 @@ import {
 } from "@/lib/db/http/node-transport";
 import { API_ANSWER_LIMIT, assignOwnField, pinnedApiHost, redactSecret } from "@/lib/db/http/pinned-api-host";
 import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
-import {
-  stripeColumns,
-  stripeListQuery,
-  stripeObject,
-  stripeSearchQuery,
-  STRIPE_OBJECTS,
-  type StripeColumn,
-  type StripeFilter,
-  type StripeObject,
-} from "./objects";
-import { translateStripeSql, type StripeSelect, type StripeStatement } from "./translate";
+import { prepareStripeStatement, type StripeReport, type StripeStatement } from "./translate";
 
 const PROVIDER = "stripe" as const;
 const DEFAULT_HOST = "api.stripe.com";
-const STRIPE_VERSION = "2026-10-28.endive";
+const STRIPE_VERSION = "2026-10-28.preview";
 const MAX_SOCKETS = 4;
-const DEADLINE_MS = 60_000;
+const POLL_MS = 250;
+const MAX_PAGES = 50;
+const INLINE_LIMIT = "1000";
+const SQL_LIMIT = 100_000;
+const DATASET = "analytical";
+const REPORTS = "reports";
 const EXACT_HOST = "The API host must be api.stripe.com. The secret key is sent only there.";
 const KEY_REQUIRED = "A Stripe secret key is required.";
 const KEY_LINE = "A Stripe secret key must be a single line of printable text.";
 const REDIRECT_REFUSED = "Stripe answered with a redirect, which Studio does not follow.";
 const BODY_TOO_LARGE = "Stripe's answer was larger than 2 MB and was not read.";
-const CONTAINER_NAME = "account";
-const MAX_ROWS = 1000;
-const PAGE_SIZE = 100;
-const COUNT_CAP = 10000;
 const PARAMS_REFUSED = "Write the value in the statement. Stripe does not bind parameters.";
 const NOT_CONNECTED = "Not connected to Stripe.";
-const CAP_WARNING = "Stripe returned the first 1000 matching rows. Add a WHERE clause to narrow them.";
-const COUNT_CAP_WARNING = "Stripe reports a count of 10000 when more objects match. Add a WHERE clause to narrow them.";
+const PAGE_REFUSED = "Stripe's next page was not on api.stripe.com, so it was not read.";
+const FILE_REFUSED = "Stripe returned a file instead of rows. Studio does not download that file.";
+const RUN_ID_REFUSED = "Stripe returned a run id Studio will not request.";
+const MORE_ROWS = "Stripe has more rows than this page of 1000. Narrow the query with WHERE or LIMIT.";
 
 const CONTAINER_LEVELS: ContainerLevels = Object.freeze([
-  { id: "schema", label: "Account", labelPlural: "Accounts" },
+  { id: "schema", label: "Dataset", labelPlural: "Datasets" },
 ] as const);
 
 const OBJECT_KINDS: readonly ObjectKindSpec[] = Object.freeze([
-  { id: "table", role: "relation", label: "Object", labelPlural: "Objects", hasColumns: true },
+  { id: "table", role: "relation", label: "Table", labelPlural: "Tables", hasColumns: true },
+  { id: "report", role: "relation", label: "Report", labelPlural: "Reports", hasColumns: true },
 ] as const);
 
 const CONTAINER_PATH: ContainerPathShapeEngine = { code: PROVIDER, label: "A Stripe", shapeNames: "label" };
 const OBJECT_PATH: ObjectPathShapeEngine = { code: PROVIDER, label: "A Stripe", attachedSegment: "required" };
 
-interface StripeRecord {
-  readonly id: string;
-  readonly fields: Record<string, unknown>;
+interface StripeClock {
+  now(): number;
+  wait(ms: number): Promise<void>;
 }
 
-interface StripePage {
-  readonly records: readonly StripeRecord[];
-  readonly hasMore: boolean;
-  readonly nextPage?: string;
+const SYSTEM_CLOCK: StripeClock = {
+  now: () => Date.now(),
+  wait: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
+
+interface ListedTable {
+  id: string;
+  name: string;
+  columns: ColumnSchema[] | null;
+}
+
+interface ReportParameter {
+  name: string;
+  type: string;
+  required: boolean;
+}
+
+interface ListedReport {
+  id: string;
+  name: string;
+  parameters: ReportParameter[] | null;
+}
+
+interface InlinePage {
+  columns: string[];
+  rows: Record<string, unknown>[];
+  more: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -138,41 +155,44 @@ function stripeMessage(body: unknown): string | undefined {
   if (isRecord(body.error) && typeof body.error.message === "string" && body.error.message !== "") {
     return body.error.message;
   }
+  const details = isRecord(body.status_details) ? body.status_details : undefined;
+  const errors = details === undefined ? undefined : details.query_errors;
+  if (Array.isArray(errors)) {
+    const lines = errors.flatMap((entry) =>
+      isRecord(entry) && typeof entry.message === "string" && entry.message !== "" ? [entry.message] : [],
+    );
+    if (lines.length > 0) return lines.join(" ");
+  }
+  if (details !== undefined && typeof details.message === "string" && details.message !== "") return details.message;
   if (typeof body.message === "string" && body.message !== "") return body.message;
   return undefined;
 }
 
-function readRecord(entry: unknown): StripeRecord {
-  if (!isRecord(entry) || typeof entry.id !== "string" || entry.id === "") {
-    throw new QueryError("Stripe returned a record with no id.", PROVIDER);
+function runId(body: unknown): string {
+  if (!isRecord(body) || typeof body.id !== "string" || !/^[A-Za-z0-9_]+$/.test(body.id)) {
+    throw new QueryError(RUN_ID_REFUSED, PROVIDER);
   }
-  return { id: entry.id, fields: entry };
+  return body.id;
 }
 
-function readPage(body: unknown): StripePage {
-  if (!isRecord(body) || !Array.isArray(body.data)) {
-    throw new QueryError("Stripe did not return records.", PROVIDER);
+function runStatus(body: unknown): string {
+  if (!isRecord(body) || typeof body.status !== "string" || body.status === "") {
+    throw new QueryError("Stripe did not return a run.", PROVIDER);
   }
-  const nextPage = typeof body.next_page === "string" && body.next_page !== "" ? body.next_page : undefined;
-  return { records: body.data.map((entry) => readRecord(entry)), hasMore: body.has_more === true, nextPage };
-}
-
-function columnValue(column: StripeColumn, fields: Record<string, unknown>): unknown {
-  const raw = fields[column.name];
-  if (raw === undefined || raw === null) return null;
-  if (column.epoch === true && typeof raw === "number") return new Date(raw * 1000).toISOString();
-  if (typeof raw === "string" || typeof raw === "number" || typeof raw === "boolean") return raw;
-  return null;
+  return body.status;
 }
 
 export class StripeProvider extends SQLBaseProvider {
   private ready = false;
   private transport: NodeTransport | null = null;
+  private tables: ListedTable[] = [];
+  private reports: ListedReport[] = [];
 
   constructor(
     config: DatabaseConnection,
     options: ProviderOptions = {},
     private readonly createTransport: (options: NodeTransportOptions) => NodeTransport = createNodeTransport,
+    private readonly clock: StripeClock = SYSTEM_CLOCK,
   ) {
     super(config, options);
     this.validate();
@@ -192,7 +212,7 @@ export class StripeProvider extends SQLBaseProvider {
       starterColumnLimit: {
         max: 8,
         starNote:
-          "This object has more fields than a select list can usefully show. Type a field name and completion fills it in.",
+          "This table has more fields than a select list can usefully show. Type a field name and completion fills it in.",
       },
       supportsInlineRowEdit: false,
       supportsResultPagination: true,
@@ -213,19 +233,49 @@ export class StripeProvider extends SQLBaseProvider {
   public override getLabels(): ProviderLabels {
     return {
       ...super.getLabels(),
-      entityName: "Object",
-      entityNamePlural: "Objects",
-      searchPlaceholder: "Search objects or fields...",
+      entityName: "Table",
+      entityNamePlural: "Tables",
+      searchPlaceholder: "Search tables or fields...",
     };
   }
 
   public async connect(): Promise<void> {
     if (this.ready) return;
+    let schemaError: unknown;
     try {
-      await this.request("/v1/customers", { limit: "1" });
+      this.tables = await this.collectPages(
+        "/v2/data/schemas",
+        {
+          dataset: DATASET,
+          limit: "100",
+          "include[0]": "columns",
+        },
+        readTable,
+      );
     } catch (error) {
-      this.closeTransport();
-      throw error;
+      this.tables = [];
+      if (!(error instanceof PermissionDeniedError)) {
+        this.closeTransport();
+        throw error;
+      }
+      schemaError = error;
+    }
+    try {
+      this.reports = await this.collectPages(
+        "/v2/data/reports",
+        { limit: "100", "include[0]": "parameters" },
+        readReport,
+      );
+    } catch (error) {
+      this.reports = [];
+      if (!(error instanceof PermissionDeniedError)) {
+        this.closeTransport();
+        throw error;
+      }
+      if (schemaError !== undefined) {
+        this.closeTransport();
+        throw schemaError;
+      }
     }
     this.ready = true;
     this.setConnected(true);
@@ -234,49 +284,55 @@ export class StripeProvider extends SQLBaseProvider {
   public async disconnect(): Promise<void> {
     this.closeTransport();
     this.ready = false;
+    this.tables = [];
+    this.reports = [];
     this.setConnected(false);
   }
 
   public async query(sql: string, params?: unknown[]): Promise<QueryResult> {
     if (params !== undefined && params.length > 0) throw new QueryError(PARAMS_REFUSED, PROVIDER, sql);
     this.requireReady();
-    const started = Date.now();
-    const statement = translateStripeSql(sql);
-    const result = await this.run(statement, sql);
-    return { ...result, executionTime: Date.now() - started };
+    const started = this.clock.now();
+    const statement = prepareStripeStatement(sql);
+    const result = await this.runStatement(statement, sql);
+    return { ...result, executionTime: this.clock.now() - started };
   }
 
   public async listContainers(parent?: readonly string[]): Promise<Container[]> {
     this.requireReady();
     if (parent !== undefined && parent.length > 0) return [];
-    return [{ path: [CONTAINER_NAME], name: CONTAINER_NAME, level: 0 }];
+    return [
+      { path: [DATASET], name: DATASET, level: 0 },
+      { path: [REPORTS], name: REPORTS, level: 0 },
+    ];
   }
 
   public async countObjects(container: readonly string[]): Promise<Record<string, KindCount>> {
     this.requireReady();
     assertContainerPathShape(this.getCapabilities(), container, CONTAINER_PATH);
-    return { table: { count: STRIPE_OBJECTS.length } };
+    if (container[0] === REPORTS) return { report: { count: this.reports.length } };
+    return { table: { count: this.tables.length } };
   }
 
   public async listObjects(container: readonly string[], kind: string): Promise<DatabaseObject[]> {
     this.requireKind(kind);
     this.requireReady();
     assertContainerPathShape(this.getCapabilities(), container, CONTAINER_PATH);
-    return STRIPE_OBJECTS.map((object) => ({ path: [...container, object.name], name: object.name, kind }));
+    if (kind === "report") {
+      if (container[0] !== REPORTS) return [];
+      return this.reports.map((report) => ({ path: [...container, report.name], name: report.name, kind }));
+    }
+    if (container[0] === REPORTS) return [];
+    return this.tables.map((table) => ({ path: [...container, table.name], name: table.name, kind }));
   }
 
   public async describeObject(path: readonly string[], kind: string): Promise<ObjectDetail> {
     const spec = this.requireKind(kind);
     this.requireReady();
     assertObjectPathShape(this.getCapabilities(), spec, kind, path, OBJECT_PATH);
-    const object = stripeObject(path[path.length - 1] ?? "");
-    const columns: ColumnSchema[] = stripeColumns(object).map((column) => ({
-      name: column.name,
-      type: column.type,
-      nullable: column.name !== "id",
-      isPrimary: column.name === "id",
-    }));
-    return { path, columns, indexes: [], foreignKeys: [] };
+    const name = path[path.length - 1] ?? "";
+    if (kind === "report") return { path, columns: await this.reportColumns(name), indexes: [], foreignKeys: [] };
+    return { path, columns: await this.tableColumns(name), indexes: [], foreignKeys: [] };
   }
 
   public async describeObjects(container: readonly string[], kind: string, limit?: number): Promise<ObjectDetailBatch> {
@@ -306,11 +362,11 @@ export class StripeProvider extends SQLBaseProvider {
   public async getOverview(): Promise<DatabaseOverview> {
     this.requireReady();
     return {
-      version: "Stripe API",
+      version: "Stripe Data API",
       uptime: "N/A",
       maxConnections: 0,
       databaseSize: "N/A",
-      tableCount: STRIPE_OBJECTS.length,
+      tableCount: this.tables.length,
       indexCount: 0,
     };
   }
@@ -349,133 +405,141 @@ export class StripeProvider extends SQLBaseProvider {
     return spec;
   }
 
-  private async run(
+  private async tableColumns(name: string): Promise<ColumnSchema[]> {
+    const table = this.tables.find((entry) => entry.name === name);
+    if (table === undefined) throw new QueryError(`Stripe has no table named ${name}.`, PROVIDER);
+    if (table.columns !== null) return table.columns;
+    const body = await this.call("GET", `/v2/data/schemas/${encodeURIComponent(table.id)}`);
+    const columns = readColumns(isRecord(body) ? body.columns : undefined) ?? [];
+    table.columns = columns;
+    return columns;
+  }
+
+  private async reportColumns(name: string): Promise<ColumnSchema[]> {
+    const report = this.reports.find((entry) => entry.name === name);
+    if (report === undefined) throw new QueryError(`Stripe has no report named ${name}.`, PROVIDER);
+    if (report.parameters !== null) return parameterColumns(report.parameters);
+    const body = await this.call("GET", `/v2/data/reports/${encodeURIComponent(report.id)}`);
+    const parameters = readParameters(isRecord(body) ? body.parameters : undefined) ?? [];
+    report.parameters = parameters;
+    return parameterColumns(parameters);
+  }
+
+  private async runStatement(
     statement: StripeStatement,
     sql: string,
   ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
-    if (statement.kind === "count") return this.countRows(statement);
-    return this.select(statement, sql);
+    if (statement.kind === "query") return this.runQuery(statement.sql, sql);
+    const report = statement.kind === "report" ? statement : this.previewReport(statement.name, sql);
+    return this.runReport(report);
   }
 
-  private async countRows(statement: {
-    readonly table: string;
-    readonly filters: readonly StripeFilter[];
-  }): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
-    const object = stripeObject(statement.table);
-    const id = this.loneId(statement.filters);
-    if (id !== undefined) {
-      await this.request(`/v1/${object.name}/${encodeURIComponent(id)}`);
-      return { rows: [{ row_count: 1 }], fields: ["row_count"], rowCount: 1 };
+  private previewReport(name: string, sql: string): StripeReport {
+    const report = this.reports.find((entry) => entry.name === name);
+    const missing = report?.parameters?.filter((parameter) => parameter.required) ?? [];
+    if (missing.length > 0) {
+      const list = missing.map((parameter) => `${parameter.name} => '...'`).join(", ");
+      throw new QueryError(`Report ${name} needs ${list}. Write REPORT ${name} (${list}).`, PROVIDER, sql);
     }
-    if (!object.search) {
-      throw new QueryError(
-        `Stripe does not report how many ${object.name} match. Read them with SELECT ... LIMIT.`,
-        PROVIDER,
-      );
+    return { kind: "report", name, parameters: {} };
+  }
+
+  private async runQuery(
+    querySql: string,
+    original: string,
+  ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
+    if (querySql.length > SQL_LIMIT) {
+      throw new QueryError("Stripe accepts a query of at most 100000 characters.", PROVIDER, original);
     }
-    const body = await this.request(`/v1/${object.name}/search`, {
-      query: stripeSearchQuery(object, statement.filters),
-      limit: "1",
-      "expand[]": "total_count",
+    const created = await this.call(
+      "POST",
+      "/v2/data/query_runs",
+      {},
+      {
+        query: { sql: querySql },
+        dataset: DATASET,
+        format: "csv",
+      },
+    );
+    const finished = await this.waitForRun(created, "query_runs", original);
+    return this.inlineResult(finished, "query_runs");
+  }
+
+  private async runReport(
+    report: StripeReport,
+  ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
+    const created = await this.call(
+      "POST",
+      "/v2/data/report_runs",
+      {},
+      {
+        report: { name: report.name },
+        parameters: report.parameters,
+        format: "csv",
+      },
+    );
+    const finished = await this.waitForRun(created, "report_runs", report.name);
+    return this.inlineResult(finished, "report_runs");
+  }
+
+  private async waitForRun(created: unknown, collection: "query_runs" | "report_runs", sql: string): Promise<unknown> {
+    let body = created;
+    const deadline = this.clock.now() + this.queryTimeout;
+    while (runStatus(body) === "running") {
+      if (this.clock.now() >= deadline)
+        throw new TimeoutError("Stripe did not finish the run in time.", PROVIDER, this.queryTimeout, sql);
+      await this.clock.wait(Math.min(POLL_MS, Math.max(0, deadline - this.clock.now())));
+      if (this.clock.now() >= deadline)
+        throw new TimeoutError("Stripe did not finish the run in time.", PROVIDER, this.queryTimeout, sql);
+      body = await this.call("GET", `/v2/data/${collection}/${runId(body)}`);
+    }
+    const status = runStatus(body);
+    if (status === "succeeded") return body;
+    if (status === "canceled") throw new QueryError("Stripe canceled the run.", PROVIDER, sql);
+    const message = redactSecret(stripeMessage(body) ?? `Stripe run ${status}.`, stripeToken(this.config));
+    throw new QueryError(message, PROVIDER, sql);
+  }
+
+  private async inlineResult(
+    finished: unknown,
+    collection: "query_runs" | "report_runs",
+  ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
+    const id = runId(finished);
+    const body = await this.call("GET", `/v2/data/${collection}/${id}`, {
+      "include[0]": "result.inline",
+      limit: INLINE_LIMIT,
     });
-    if (!isRecord(body) || typeof body.total_count !== "number") {
-      throw new QueryError("Stripe did not report a count.", PROVIDER);
-    }
-    const warnings: QueryWarning[] | undefined =
-      body.total_count >= COUNT_CAP ? [{ message: COUNT_CAP_WARNING, severity: "WARNING" }] : undefined;
+    const page = readInline(body);
+    const warnings: QueryWarning[] | undefined = page.more ? [{ message: MORE_ROWS, severity: "WARNING" }] : undefined;
     return {
-      rows: [{ row_count: body.total_count }],
-      fields: ["row_count"],
-      rowCount: 1,
+      rows: page.rows,
+      fields: uniqueFieldNames(page.columns),
+      rowCount: page.rows.length,
       ...(warnings === undefined ? {} : { warnings }),
     };
   }
 
-  private async select(
-    statement: StripeSelect,
-    sql: string,
-  ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
-    const object = stripeObject(statement.table);
-    this.knownColumns(object, statement.columns);
-    if (statement.offset >= MAX_ROWS) {
-      throw new QueryError("Stripe reads at most 1000 rows in one statement. Use a smaller OFFSET.", PROVIDER, sql);
-    }
-    const room = MAX_ROWS - statement.offset;
-    const want = statement.limit === null ? room : Math.min(statement.limit, room);
-    if (want === 0) return rowsOf([], statement.columns, object);
-    const id = this.loneId(statement.filters);
-    if (id !== undefined) {
-      if (statement.offset > 0) return rowsOf([], statement.columns, object);
-      const body = await this.request(`/v1/${object.name}/${encodeURIComponent(id)}`);
-      return rowsOf([readRecord(body)], statement.columns, object);
-    }
-    const list = stripeListQuery(object, statement.filters);
-    const maxRecords = statement.offset + want;
-    const collected: StripeRecord[] = [];
-    let cursor: string | undefined;
-    let more = false;
-    while (collected.length < maxRecords) {
-      const pageSize = Math.min(PAGE_SIZE, maxRecords - collected.length);
-      // oxlint-disable-next-line no-await-in-loop -- the next page's cursor is the offset this page returns.
-      const page = await this.page(object, statement.filters, list, pageSize, cursor);
-      collected.push(...page.records);
-      if (!page.hasMore || page.records.length === 0) {
-        more = false;
-        break;
+  private async collectPages<T>(
+    path: string,
+    query: Record<string, string>,
+    read: (entry: unknown) => T | undefined,
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    let next: { path: string; query?: Record<string, string> } | undefined = { path, query };
+    for (let page = 0; page < MAX_PAGES && next !== undefined; page += 1) {
+      const current = next;
+      // oxlint-disable-next-line no-await-in-loop -- the next page's address is in this page's answer.
+      const body = await this.call("GET", current.path, current.query);
+      const list = readList(body);
+      for (const entry of list.rows) {
+        const item = read(entry);
+        if (item !== undefined) rows.push(item);
       }
-      cursor = list === null ? page.nextPage : page.records[page.records.length - 1]?.id;
-      if (cursor === undefined) {
-        more = false;
-        break;
-      }
-      more = collected.length >= maxRecords;
+      next = list.next === null ? undefined : apiPage(list.next);
     }
-    const slice = collected.slice(statement.offset, statement.offset + want);
-    const capped = more && statement.offset + want >= MAX_ROWS;
-    const warnings: QueryWarning[] | undefined = capped ? [{ message: CAP_WARNING, severity: "WARNING" }] : undefined;
-    return { ...rowsOf(slice, statement.columns, object), ...(warnings === undefined ? {} : { warnings }) };
-  }
-
-  private async page(
-    object: StripeObject,
-    filters: readonly StripeFilter[],
-    list: Record<string, string> | null,
-    pageSize: number,
-    cursor: string | undefined,
-  ): Promise<StripePage> {
-    if (list === null) {
-      const body = await this.request(`/v1/${object.name}/search`, {
-        query: stripeSearchQuery(object, filters),
-        limit: String(pageSize),
-        ...(cursor === undefined ? {} : { page: cursor }),
-      });
-      return readPage(body);
-    }
-    const body = await this.request(`/v1/${object.name}`, {
-      ...list,
-      limit: String(pageSize),
-      ...(cursor === undefined ? {} : { starting_after: cursor }),
-    });
-    return readPage(body);
-  }
-
-  private loneId(filters: readonly StripeFilter[]): string | undefined {
-    const id = filters.find((filter) => filter.column.toLowerCase() === "id");
-    if (id === undefined) return undefined;
-    if (filters.length !== 1 || id.op !== "EQ" || typeof id.value !== "string" || id.value === "") {
-      throw new QueryError("Look up one Stripe object with WHERE id = '...' and no other condition.", PROVIDER);
-    }
-    return id.value;
-  }
-
-  private knownColumns(object: StripeObject, columns: readonly string[] | null): void {
-    if (columns === null) return;
-    const known = new Set(stripeColumns(object).map((column) => column.name.toLowerCase()));
-    for (const column of columns) {
-      if (!known.has(column.toLowerCase())) {
-        throw new QueryError(`Stripe object ${object.name} has no field ${column}.`, PROVIDER);
-      }
-    }
+    if (next !== undefined)
+      throw new QueryError("Stripe has more pages than Studio reads in one connection.", PROVIDER);
+    return rows;
   }
 
   private ensureTransport(): NodeTransport {
@@ -509,7 +573,12 @@ export class StripeProvider extends SQLBaseProvider {
     return new ConnectionError(redactSecret(message, token), PROVIDER, host);
   }
 
-  private async request(path: string, query: Record<string, string> = {}): Promise<unknown> {
+  private async call(
+    method: "GET" | "POST",
+    path: string,
+    query: Record<string, string> = {},
+    payload?: unknown,
+  ): Promise<unknown> {
     const token = stripeToken(this.config);
     const host = stripeApiHost(this.config);
     const transport = this.ensureTransport();
@@ -518,9 +587,10 @@ export class StripeProvider extends SQLBaseProvider {
     let response: { status: number; text: string };
     try {
       response = await transport.request({
-        method: "GET",
+        method,
         url,
-        signal: AbortSignal.timeout(DEADLINE_MS),
+        ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
+        signal: AbortSignal.timeout(this.queryTimeout),
         maxResponseBytes: API_ANSWER_LIMIT,
       });
     } catch (error) {
@@ -547,26 +617,111 @@ export class StripeProvider extends SQLBaseProvider {
   }
 }
 
-function rowsOf(
-  records: readonly StripeRecord[],
-  columns: readonly string[] | null,
-  object: StripeObject,
-): Pick<QueryResult, "rows" | "fields" | "rowCount"> {
-  const declared = stripeColumns(object);
-  const byName = new Map(declared.map((column) => [column.name.toLowerCase(), column]));
-  const names =
-    columns === null
-      ? declared.filter((column) => column.name !== "id")
-      : columns.flatMap((name) => {
-          const column = byName.get(name.toLowerCase());
-          return column === undefined || column.name === "id" ? [] : [column];
-        });
-  const fieldNames = uniqueFieldNames(["id", ...names.map((column) => column.name)]);
-  const rows = records.map((record) => {
-    const row: Record<string, unknown> = {};
-    assignOwnField(row, "id", record.id);
-    for (const column of names) assignOwnField(row, column.name, columnValue(column, record.fields));
-    return row;
-  });
-  return { rows, fields: fieldNames, rowCount: rows.length };
+function readList(body: unknown): { rows: unknown[]; next: string | null } {
+  if (!isRecord(body) || !Array.isArray(body.data)) throw new QueryError("Stripe did not return a list.", PROVIDER);
+  const next = typeof body.next_page_url === "string" && body.next_page_url !== "" ? body.next_page_url : null;
+  return { rows: body.data, next };
+}
+
+/** A next page Studio will request. Anything off api.stripe.com is refused, and the refusal does not repeat it. */
+function apiPage(value: string): { path: string; query: Record<string, string> } {
+  let url: URL;
+  try {
+    url = new URL(value, "https://api.stripe.com");
+  } catch {
+    throw new ConnectionError(PAGE_REFUSED, PROVIDER);
+  }
+  const port = url.port === "" ? "" : url.port;
+  const onApi =
+    url.protocol === "https:" &&
+    url.hostname === DEFAULT_HOST &&
+    url.username === "" &&
+    (port === "" || port === "443");
+  if (!onApi || !url.pathname.startsWith("/v2/data/")) throw new ConnectionError(PAGE_REFUSED, PROVIDER);
+  const query: Record<string, string> = {};
+  for (const [key, item] of url.searchParams) query[key] = item;
+  return { path: url.pathname, query };
+}
+
+function readTable(entry: unknown): ListedTable | undefined {
+  if (!isRecord(entry) || typeof entry.id !== "string" || typeof entry.name !== "string" || entry.name === "")
+    return undefined;
+  if (!/^[A-Za-z0-9_]+$/.test(entry.id)) return undefined;
+  return { id: entry.id, name: entry.name, columns: readColumns(entry.columns) };
+}
+
+function readReport(entry: unknown): ListedReport | undefined {
+  if (!isRecord(entry) || typeof entry.id !== "string" || typeof entry.name !== "string" || entry.name === "")
+    return undefined;
+  if (!/^[A-Za-z0-9_]+$/.test(entry.id)) return undefined;
+  return { id: entry.id, name: entry.name, parameters: readParameters(entry.parameters) };
+}
+
+function readColumns(value: unknown): ColumnSchema[] | null {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value)) return [];
+  const columns: ColumnSchema[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry) || typeof entry.name !== "string" || entry.name === "") continue;
+    columns.push({
+      name: entry.name,
+      type: typeof entry.type === "string" && entry.type !== "" ? entry.type : "varchar",
+      nullable: entry.is_primary_key !== true,
+      isPrimary: entry.is_primary_key === true,
+    });
+  }
+  return columns;
+}
+
+function readParameters(value: unknown): ReportParameter[] | null {
+  if (value === undefined || value === null) return null;
+  if (!isRecord(value)) return [];
+  const parameters: ReportParameter[] = [];
+  for (const [name, entry] of Object.entries(value)) {
+    if (name === "" || !isRecord(entry)) continue;
+    parameters.push({
+      name,
+      type: typeof entry.type === "string" && entry.type !== "" ? entry.type : "varchar",
+      required: entry.required === true,
+    });
+  }
+  return parameters;
+}
+
+function parameterColumns(parameters: readonly ReportParameter[]): ColumnSchema[] {
+  return parameters.map((parameter) => ({
+    name: parameter.name,
+    type: parameter.type,
+    nullable: !parameter.required,
+    isPrimary: false,
+  }));
+}
+
+function readInline(body: unknown): InlinePage {
+  if (!isRecord(body) || !isRecord(body.result)) throw new QueryError(FILE_REFUSED, PROVIDER);
+  const inline = body.result.inline;
+  if (!isRecord(inline) || !Array.isArray(inline.rows)) throw new QueryError(FILE_REFUSED, PROVIDER);
+  const declared = Array.isArray(inline.columns)
+    ? inline.columns.flatMap((column) =>
+        isRecord(column) && typeof column.name === "string" && column.name !== "" ? [column.name] : [],
+      )
+    : [];
+  const rows = inline.rows.map((entry) => readInlineRow(entry, declared));
+  const columns = declared.length > 0 ? declared : uniqueFieldNames(rows.flatMap((row) => Object.keys(row)));
+  return { columns, rows, more: typeof inline.next_page_url === "string" && inline.next_page_url !== "" };
+}
+
+function readInlineRow(entry: unknown, columns: readonly string[]): Record<string, unknown> {
+  const source = isRecord(entry) && isRecord(entry.data) ? entry.data : isRecord(entry) ? entry : {};
+  const names = columns.length > 0 ? columns : Object.keys(source);
+  const row: Record<string, unknown> = {};
+  for (const name of names) assignOwnField(row, name, scalar(source[name]));
+  return row;
+}
+
+function scalar(value: unknown): unknown {
+  if (value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean")
+    return value;
+  if (value === undefined) return null;
+  return JSON.stringify(value);
 }

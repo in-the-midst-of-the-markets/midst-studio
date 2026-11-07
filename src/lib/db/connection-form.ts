@@ -463,7 +463,7 @@ export const CONNECTION_FORM: {
     fieldLabels: { password: "Secret key", host: "API host" },
     fieldPlaceholders: { password: "sk_live_…", host: "api.stripe.com" },
     fieldHints: {
-      password: "A secret or restricted key with read access to the objects you query.",
+      password: "A secret or restricted key. Queries need Data, Queries, Read. Reports need Data, Reports, Read.",
       host: "The secret key is sent only to api.stripe.com.",
     },
   },
