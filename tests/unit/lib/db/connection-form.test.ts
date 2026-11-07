@@ -16,6 +16,7 @@ import { DEFAULT_CONNECTION_TYPE } from "@/lib/db/default-connection-type";
 import {
   CONNECTION_FORM,
   CONNECTION_PICKER_ORDER,
+  connectionPickerCategories,
   connectionFieldHint,
   connectionFieldPlaceholder,
   connectionFieldPlacement,
@@ -372,6 +373,17 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "hubspot",
       "stripe",
     ]);
+  });
+
+  test("splits the picker into Databases and SAAS, each in picker order", () => {
+    const categories = connectionPickerCategories();
+    expect(categories.map((category) => category.label)).toEqual(["Databases", "SAAS"]);
+    const databases = categories[0]?.types ?? [];
+    const saas = categories[1]?.types ?? [];
+    expect(saas).toEqual(["hubspot", "stripe"]);
+    expect(databases[0]).toBe("airtable");
+    expect(databases[1]).toBe("supabase");
+    expect([...databases, ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);
   });
 
   test("puts the four v0 engines in part 2 criterion 2's order", () => {

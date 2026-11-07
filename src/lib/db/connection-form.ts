@@ -1544,6 +1544,33 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "stripe",
 ]);
 
+/**
+ * Engines the connection dialog groups under SAAS. Everything else in
+ * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
+ * The dialog draws a label before each group; clicking the label hides it.
+ */
+export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze(["hubspot", "stripe"]);
+
+export interface ConnectionPickerCategory {
+  readonly label: "Databases" | "SAAS";
+  readonly types: readonly DatabaseType[];
+}
+
+/** Databases first, then SAAS. The dialog hides a group when its label is clicked. */
+export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
+  const saas = new Set<string>(SAAS_PICKER_TYPES);
+  const databases: DatabaseType[] = [];
+  const connectors: DatabaseType[] = [];
+  for (const type of CONNECTION_PICKER_ORDER) {
+    if (saas.has(type)) connectors.push(type);
+    else databases.push(type);
+  }
+  return [
+    { label: "Databases", types: databases },
+    { label: "SAAS", types: connectors },
+  ];
+}
+
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */
 export function offersSslPanel(type: DatabaseType): boolean {
   return CONNECTION_FORM[type].showSslPanel !== false;
