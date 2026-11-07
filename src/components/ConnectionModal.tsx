@@ -12,7 +12,6 @@ import {
   ENVIRONMENT_COLORS,
   ENVIRONMENT_LABELS,
   SSLMode,
-  type DatabaseType,
 } from "@/lib/types";
 import {
   Database,
@@ -118,8 +117,6 @@ interface ConnectionModalProps {
   onClose: () => void;
   onConnect: (conn: DatabaseConnection) => void;
   editConnection?: DatabaseConnection | null;
-  /** A new connection opens on this engine. SAAS Connectors sets HubSpot. */
-  presetType?: DatabaseType;
   /** Optional API adapter: when provided, bypasses the built-in /api/db/test-connection fetch. */
   onTestConnection?: (
     connection: DatabaseConnection,
@@ -132,7 +129,6 @@ export function ConnectionModal({
   onConnect,
   editConnection,
   onTestConnection,
-  presetType,
 }: ConnectionModalProps) {
   const isMobile = useIsMobile();
   const {
@@ -231,7 +227,6 @@ export function ConnectionModal({
     onConnect,
     editConnection,
     onTestConnection,
-    presetType,
   });
 
   // What an engine DECLARES for a connection field wins over this dialog's own words (#1085): an
