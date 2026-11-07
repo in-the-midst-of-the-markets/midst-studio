@@ -151,6 +151,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   airtable: 44,
   supabase: 45,
   hubspot: 46,
+  stripe: 47,
 };
 
 /**

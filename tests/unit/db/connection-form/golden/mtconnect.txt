@@ -65,6 +65,7 @@ button "NETCONF"
 button "Weaviate"
 button "QuestDB"
 button "HubSpot"
+button "Stripe"
 label[for=host] "Host"
 input#host type=none placeholder="localhost" describedby=none
 input#port type=none placeholder=none describedby=none

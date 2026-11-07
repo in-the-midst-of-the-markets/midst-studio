@@ -35,6 +35,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   postgres: "exact",
   airtable: "exact",
   hubspot: "exact",
+  stripe: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

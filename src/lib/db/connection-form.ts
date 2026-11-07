@@ -453,6 +453,20 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to a host under hubapi.com.",
     },
   },
+  stripe: {
+    label: "Stripe",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.stripe,
+    fieldLabels: { password: "Secret key", host: "API host" },
+    fieldPlaceholders: { password: "sk_live_…", host: "api.stripe.com" },
+    fieldHints: {
+      password: "A secret or restricted key with read access to the objects you query.",
+      host: "The secret key is sent only to a host under stripe.com.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1527,6 +1541,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "weaviate",
   "questdb",
   "hubspot",
+  "stripe",
 ]);
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */

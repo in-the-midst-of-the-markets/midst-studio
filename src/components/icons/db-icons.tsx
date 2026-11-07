@@ -218,6 +218,23 @@ export const AirtableIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A card, for a Stripe account. Not the vendor mark. */
+export const StripeIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <path d="M3 10h18" />
+  </svg>
+);
+
 /** A sprocket, for a HubSpot account. Not the vendor mark. */
 export const HubSpotIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
