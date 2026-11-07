@@ -119,6 +119,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "sqlite",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The SQL editor is the way a row is written.
   "airtable",
+  // No kind declares acceptsSourceEdits or acceptsRowWrites. The SQL editor is the way a record is written.
+  "hubspot",
   // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
   "supabase",
 ] as const);

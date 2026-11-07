@@ -567,3 +567,23 @@ describe("useConnectionForm: the real s3 row", () => {
     expect(result.current.credentialWarning).toBe(`Credential warning: ${pair.message}`);
   });
 });
+
+describe("useConnectionForm: a connector preset", () => {
+  test("opens a new connection on HubSpot with an empty host", () => {
+    const { result, rerender } = renderHook(
+      (props: { isOpen: boolean }) =>
+        useConnectionForm({
+          isOpen: props.isOpen,
+          onClose: () => {},
+          onConnect: () => {},
+          editConnection: null,
+          presetType: "hubspot",
+        }),
+      { initialProps: { isOpen: false } },
+    );
+    rerender({ isOpen: true });
+    expect(result.current.type).toBe("hubspot");
+    expect(result.current.host).toBe("");
+    expect(result.current.port).toBe("");
+  });
+});

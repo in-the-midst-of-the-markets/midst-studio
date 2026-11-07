@@ -56,6 +56,7 @@ const unconnected = (type: DatabaseType): DatabaseConnection => ({ ...UNCONNECTE
 export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection>> = Object.freeze({
   postgres: unconnected("postgres"),
   airtable: unconnected("airtable"),
+  hubspot: unconnected("hubspot"),
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

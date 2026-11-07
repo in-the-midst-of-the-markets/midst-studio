@@ -29,6 +29,7 @@ import { MSSQL_SQL_WRITING } from "@/lib/db/providers/sql/mssql-sql-writing";
 import { MYSQL_SQL_WRITING } from "@/lib/db/providers/sql/mysql-sql-writing";
 import { ORACLE_SQL_WRITING } from "@/lib/db/providers/sql/oracle-sql-writing";
 import { AIRTABLE_SQL_WRITING } from "@/lib/db/providers/sql/airtable/sql-writing";
+import { HUBSPOT_SQL_WRITING } from "@/lib/db/providers/sql/hubspot/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -90,6 +91,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   oxia: OXIA_SQL_WRITING,
   postgres: POSTGRES_SQL_WRITING,
   airtable: AIRTABLE_SQL_WRITING,
+  hubspot: HUBSPOT_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,

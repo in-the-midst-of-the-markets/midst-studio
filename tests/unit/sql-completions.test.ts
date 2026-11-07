@@ -4,6 +4,7 @@ import type * as Monaco from "monaco-editor";
 import { SHIPPED_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { SQL_EDITOR_LANGUAGE } from "@/lib/db/editor-language/sql";
 import type { DatabaseType } from "@/lib/types";
+import { sqlGrammarForExactType } from "@/lib/db/sql-grammar";
 import { resolveSqlGrammar } from "@/lib/sql/grammar";
 import type { ProviderCapabilities } from "@/lib/db/types";
 import { containerSpellingOf, quoteIdentifier } from "@/lib/query-generators";
@@ -691,6 +692,15 @@ describe("Completion dialect compatibility", () => {
   test.each(otherDialects)("%s preserves table insertion and qualified replacement", (dialect) => {
     const monaco = createMockMonaco();
     const label = "Sales.OrderDetails";
+    // A dialect that quotes names on completion inserts that spelling. The others keep the label.
+    const format = sqlGrammarForExactType(dialect).completion.formatSegment;
+    const inserted =
+      format === null
+        ? label
+        : label
+            .split(".")
+            .map((segment) => format(segment))
+            .join(".");
     registerSQLCompletionProvider(
       monaco,
       createSchemaCache({ tableItems: [{ label, labelLower: label.toLowerCase(), rowCount: 1, columnNames: "id" }] }),
@@ -701,21 +711,24 @@ describe("Completion dialect compatibility", () => {
         ._getProvider()!
         .provideCompletionItems(createMockModel(line), createPosition(1, line.length + 1));
       const suggestion = result.suggestions.find((item) => item.label === label)!;
-      expect(suggestion.insertText).toBe(label);
+      expect(suggestion.insertText).toBe(inserted);
       const range = suggestion.range as Monaco.IRange;
-      expect(line.slice(0, range.startColumn - 1) + suggestion.insertText).toBe("SELECT * FROM Sales.OrderDetails");
+      expect(line.slice(0, range.startColumn - 1) + suggestion.insertText).toBe(`SELECT * FROM ${inserted}`);
     }
   });
 
   test.each(otherDialects)("%s retains bare column lookup and existing delimiter behavior", (dialect) => {
     const monaco = createMockMonaco();
     registerSQLCompletionProvider(monaco, createSchemaCache(), dialect);
+    // Double quotes name a table only where the dialect reads them back. Backticks and brackets do not.
+    const quoted =
+      sqlGrammarForExactType(dialect).completion.readQuotedQualifier === null ? [] : ["id", "name", "email"];
     for (const [line, fullText, expected] of [
       ["SELECT users.", "SELECT users.", ["id", "name", "email"]],
       ["SELECT u.", "SELECT u. FROM users u", ["id", "name", "email"]],
       ["SELECT public.products.", "SELECT public.products.", ["id", "price"]],
-      ['SELECT "users".', 'SELECT "users".', []],
-      ['SELECT "public"."users".', 'SELECT "public"."users".', []],
+      ['SELECT "users".', 'SELECT "users".', quoted],
+      ['SELECT "public"."users".', 'SELECT "public"."users".', quoted],
       ["SELECT `users`.", "SELECT `users`.", []],
       ["SELECT [users].", "SELECT [users].", []],
       ["SELECT missing.", "SELECT missing.", []],
@@ -1439,6 +1452,48 @@ describe("dialect completion words", () => {
     expect(qualify[0].kind).toBe(17);
     // A name the shared list already holds is not offered twice.
     expect(items.filter((item) => item.label === "COUNT")).toHaveLength(1);
+  });
+
+  test("HubSpot offers the SQL it runs, and not a join or a shared function", () => {
+    const offered = labels("SELECT ", "hubspot");
+    expect(offered).toContain("ORDER BY");
+    expect(offered).toContain("COUNT");
+    expect(offered).not.toContain("JOIN");
+    expect(offered).not.toContain("WITH");
+    expect(offered).not.toContain("GROUP BY");
+    expect(offered).not.toContain("SUM");
+    expect(offered).not.toContain("INNER JOIN");
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, { tableItems: [], columnMap: new Map(), allColumns: new Map() }, "hubspot");
+    const items = monaco
+      ._getProvider()!
+      .provideCompletionItems(createMockModel("SELECT "), createPosition(1, 8)).suggestions;
+    const select = items.filter((item) => item.kind === 27 && item.label === "SELECT");
+    expect(select).toHaveLength(1);
+    expect(select[0].insertText).toContain('FROM "${1:contacts}"');
+    expect(select[0].insertText).toContain("WHERE ${2:email}");
+    expect(items.filter((item) => item.kind === 27 && item.label === "COUNT")).toHaveLength(1);
+    expect(items.some((item) => item.label === "JOIN")).toBe(false);
+  });
+
+  test("HubSpot completion after WHERE names a property, and after FROM an object", () => {
+    const columns = [
+      { label: "email", labelLower: "email", type: "text", isPrimary: false, tableName: "contacts" },
+      { label: "id", labelLower: "id", type: "text", isPrimary: true, tableName: "contacts" },
+    ];
+    const cache: SchemaCompletionCache = {
+      tableItems: [{ label: "contacts", labelLower: "contacts", columnNames: "id, email" }],
+      columnMap: new Map([["contacts", columns]]),
+      allColumns: new Map(columns.map((column) => [column.labelLower, column])),
+    };
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, cache, "hubspot");
+    const at = (line: string) =>
+      monaco._getProvider()!.provideCompletionItems(createMockModel(line), createPosition(1, line.length + 1))
+        .suggestions;
+    expect(at("SELECT * FROM contacts WHERE ").map((item) => item.label)).toContain("email");
+    expect(at("SELECT * FROM ").map((item) => item.label)).toContain("contacts");
+    expect(at("SELECT * FROM contacts INNER ").map((item) => item.label)).not.toContain("JOIN");
   });
 
   test("a dialect that declares no words matches the shared list, and none of them is offered Snowflake's", () => {

@@ -150,6 +150,7 @@ ER-диаграмма для Elasticsearch и OpenSearch показывает и
 | :--- | :--- | :--- |
 | **Airtable** | none: the Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one row by its record id |
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
+| **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
 | **PostgreSQL** | `pg` | Полноценная SQL IDE, планы выполнения EXPLAIN, транзакции, отмена запросов (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | Полноценная SQL IDE, EXPLAIN, транзакции, отмена запросов (`KILL QUERY`) |
 | **Oracle** | `oracledb` (тонкий клиент, режим Thin) | Полноценная SQL IDE, постраничный вывод через `FETCH FIRST N ROWS`, представления мониторинга `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, транзакции |

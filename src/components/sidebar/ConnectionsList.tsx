@@ -50,6 +50,11 @@ interface ConnectionsListProps {
    */
   onSearchMarketplace?: () => void;
   /**
+   * Opens the SaaS connector list. Shown under Search Marketplace, and only when the shell
+   * can add a connection of the user's own.
+   */
+  onOpenSaasConnectors?: () => void;
+  /**
    * The server runs under governance (docs/GOVERNANCE.md): the list holds the connections an
    * administrator granted, so an empty one says no access has been granted yet.
    */
@@ -77,6 +82,14 @@ function SearchMarketplaceButton({ onClick, fullWidth }: { onClick: () => void; 
   return (
     <Button variant="outline" size="sm" className={fullWidth ? "h-7 w-full text-xs" : "h-7 text-xs"} onClick={onClick}>
       Search Marketplace
+    </Button>
+  );
+}
+
+function SaasConnectorsButton({ onClick, fullWidth }: { onClick: () => void; fullWidth?: boolean }) {
+  return (
+    <Button variant="outline" size="sm" className={fullWidth ? "h-7 w-full text-xs" : "h-7 text-xs"} onClick={onClick}>
+      SAAS Connectors
     </Button>
   );
 }
@@ -148,6 +161,7 @@ export const ConnectionsList = React.memo(function ConnectionsList({
   onMoveConnectionToGroup,
   onAddConnection,
   onSearchMarketplace,
+  onOpenSaasConnectors,
   governed,
   accessUnavailable,
   onOpenNotes,
@@ -279,9 +293,10 @@ export const ConnectionsList = React.memo(function ConnectionsList({
 
   return (
     <>
-      {onSearchMarketplace && (listed.length > 0 || emptyMessage === null) && (
-        <div className="px-2 mb-3">
-          <SearchMarketplaceButton onClick={onSearchMarketplace} fullWidth />
+      {(onSearchMarketplace || onOpenSaasConnectors) && (listed.length > 0 || emptyMessage === null) && (
+        <div className="px-2 mb-3 flex flex-col gap-2">
+          {onSearchMarketplace && <SearchMarketplaceButton onClick={onSearchMarketplace} fullWidth />}
+          {onOpenSaasConnectors && <SaasConnectorsButton onClick={onOpenSaasConnectors} fullWidth />}
         </div>
       )}
       {pinned.map((connection) => (
@@ -319,14 +334,19 @@ export const ConnectionsList = React.memo(function ConnectionsList({
                 ? emptyMessage !== null && (
                     <div className="px-3 py-6 text-center border border-dashed border-border/50 rounded-lg mx-2">
                       <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{emptyMessage}</p>
-                      {(onAddConnection || onSearchMarketplace) && (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          {onAddConnection && (
-                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onAddConnection}>
-                              Add Internal Data
-                            </Button>
+                      {(onAddConnection || onSearchMarketplace || onOpenSaasConnectors) && (
+                        <div className="flex flex-col items-center gap-2">
+                          {(onAddConnection || onSearchMarketplace) && (
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                              {onAddConnection && (
+                                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onAddConnection}>
+                                  Add Internal Data
+                                </Button>
+                              )}
+                              {onSearchMarketplace && <SearchMarketplaceButton onClick={onSearchMarketplace} />}
+                            </div>
                           )}
-                          {onSearchMarketplace && <SearchMarketplaceButton onClick={onSearchMarketplace} />}
+                          {onOpenSaasConnectors && <SaasConnectorsButton onClick={onOpenSaasConnectors} />}
                         </div>
                       )}
                     </div>

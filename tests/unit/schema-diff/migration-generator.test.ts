@@ -1089,6 +1089,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     duckdb: { label: "DuckDB", distinguishingClause: "ALTER TABLE cannot add one yet;" },
     postgres: "key-follows-in-an-alter",
     airtable: "engine-has-no-foreign-key",
+    hubspot: "engine-has-no-foreign-key",
     supabase: "key-follows-in-an-alter",
     mysql: "key-follows-in-an-alter",
     oracle: "key-follows-in-an-alter",
@@ -1201,6 +1202,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   airtable: {
     label: "Airtable",
     reason: "Airtable table changes are not generated here; create the field in Airtable.",
+  },
+  hubspot: {
+    label: "HubSpot",
+    reason: "HubSpot property changes are not generated here; create the property in HubSpot.",
   },
   supabase: "has-own-branch",
   mysql: "has-own-branch",
@@ -1701,6 +1706,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
 const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANSACTION;" | false> = {
   postgres: "BEGIN;",
   airtable: false,
+  hubspot: false,
   supabase: "BEGIN;",
   mysql: "BEGIN;",
   // Measured live via @duckdb/node-api 1.5.5-r.4 (DuckDB v1.5.5, in-process, no server

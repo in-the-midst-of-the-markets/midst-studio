@@ -255,6 +255,30 @@ describe("generateSelectQuery: no constant predicate (#1410)", () => {
       expect(generateSelectQuery(["users"], sampleColumns, caps)).toContain("WHERE 1=1");
     }
   });
+
+  test("a property list past the declared count is SELECT * under one comment", () => {
+    const caps = makeCaps({
+      supportsConstantPredicate: false,
+      starterColumnLimit: { max: 1, starNote: "Type a property name.\nCompletion fills it in." },
+    });
+    expect(generateSelectQuery(["crm", "contacts"], sampleColumns, caps)).toBe(
+      "-- Type a property name. Completion fills it in.\nSELECT\n  *\nFROM crm.contacts\nLIMIT 100;",
+    );
+    const quiet = makeCaps({
+      supportsConstantPredicate: false,
+      starterColumnLimit: { max: 1, starNote: " \n " },
+    });
+    expect(generateSelectQuery(["crm", "contacts"], sampleColumns, quiet)).toBe(
+      "SELECT\n  *\nFROM crm.contacts\nLIMIT 100;",
+    );
+    const short = makeCaps({
+      supportsConstantPredicate: false,
+      starterColumnLimit: { max: 8, starNote: "unused" },
+    });
+    expect(generateSelectQuery(["crm", "contacts"], sampleColumns, short)).toBe(
+      "SELECT\n  id,\n  name\nFROM crm.contacts\nLIMIT 100;",
+    );
+  });
 });
 
 // ============================================================================

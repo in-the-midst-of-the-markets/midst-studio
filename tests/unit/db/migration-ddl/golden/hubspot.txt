@@ -1,0 +1,8 @@
+-- fixture: full
+-- Migration generated at 2026-10-19T12:00:00.000Z
+-- Dialect: hubspot
+-- Changes: 1 added, 1 removed, 2 modified
+
+-- HubSpot: Cannot generate table DDL. HubSpot property changes are not generated here; create the property in HubSpot.
+-- fixture: none
+-- No schema changes detected.

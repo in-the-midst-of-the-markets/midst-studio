@@ -93,7 +93,7 @@ afterAll(() => {
 
 describe("one engine's execution UI module cannot reach another engine's output", () => {
   test("one row per shipped type id", () => {
-    expect(IDS.length).toBe(46);
+    expect(IDS.length).toBe(47);
   });
 
   test("the groups replace every engine while holding every other engine real", () => {

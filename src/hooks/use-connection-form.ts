@@ -249,6 +249,8 @@ interface UseConnectionFormProps {
   onClose: () => void;
   onConnect: (conn: DatabaseConnection) => void;
   editConnection?: DatabaseConnection | null;
+  /** A new connection opens on this engine instead of the form default. */
+  presetType?: DatabaseType;
   /**
    * Optional API adapter: when provided, bypasses the built-in /api/db/test-connection fetch.
    *
@@ -494,7 +496,13 @@ function setterName(field: BodyConnectionField): string {
   return `set${field.charAt(0).toUpperCase()}${field.slice(1)}`;
 }
 
-export function useConnectionForm({ isOpen, onConnect, editConnection, onTestConnection }: UseConnectionFormProps) {
+export function useConnectionForm({
+  isOpen,
+  onConnect,
+  editConnection,
+  onTestConnection,
+  presetType,
+}: UseConnectionFormProps) {
   const D = CONNECTION_FORM_DEFAULTS;
   const [type, setType] = useState<DatabaseType>(D.type);
   const [name, setName] = useState(D.name);
@@ -799,6 +807,26 @@ export function useConnectionForm({ isOpen, onConnect, editConnection, onTestCon
         resetConnectionFields();
       }
     }
+  }
+
+  // A connector opens the same dialog already set to its engine. Applied while rendering, once per opening,
+  // after the close-reset above so a HubSpot connection does not come back as the form default.
+  const [appliedPreset, setAppliedPreset] = useState<{ open: boolean; type: DatabaseType | null }>({
+    open: false,
+    type: null,
+  });
+  if (
+    isOpen &&
+    !editConnection &&
+    presetType !== undefined &&
+    (!appliedPreset.open || appliedPreset.type !== presetType)
+  ) {
+    setAppliedPreset({ open: true, type: presetType });
+    setType(presetType);
+    setHost("");
+    setPort(getDBConfig(presetType).defaultPort);
+  } else if (!isOpen && appliedPreset.open) {
+    setAppliedPreset({ open: false, type: null });
   }
 
   /**

@@ -436,7 +436,21 @@ export const CONNECTION_FORM: {
     fieldHints: {
       password: "A personal access token with data and schema access to this base.",
       database: "The base id from the Airtable URL, the part that starts with app.",
-      host: "Leave this as api.airtable.com unless you were given another API host.",
+      host: "The token is sent only to a host under airtable.com.",
+    },
+  },
+  hubspot: {
+    label: "HubSpot",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.hubspot,
+    fieldLabels: { password: "Private app token", host: "API host" },
+    fieldPlaceholders: { password: "pat-…", host: "api.hubapi.com" },
+    fieldHints: {
+      password: "A private app token with the CRM scopes for the objects you query.",
+      host: "The token is sent only to a host under hubapi.com.",
     },
   },
   supabase: {
@@ -1512,6 +1526,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "netconf",
   "weaviate",
   "questdb",
+  "hubspot",
 ]);
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */

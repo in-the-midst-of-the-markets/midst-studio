@@ -368,16 +368,22 @@ export interface SqlGrammar {
   /**
    * Keywords and functions the editor's completion offers on this dialect beside the shared lists (SF-042). A function
    * is inserted as a call. A snippet is inserted as a snippet. Absent means the shared lists alone.
+   *
+   * `lists: "only"` offers these words, functions and snippets and no shared word the dialect cannot run. A connection
+   * whose SQL is a subset (HubSpot's CRM search) uses it, so the editor does not suggest `JOIN` or `SUM`. Absent
+   * means beside the shared lists, which is every dialect that declared words before this field.
    */
   readonly completionWords?: {
     readonly keywords: readonly string[];
     readonly functions: readonly string[];
     readonly snippets?: readonly { readonly label: string; readonly insertText: string }[];
+    readonly lists?: "only";
   };
   /**
    * Clause keywords this dialect's completion treats as a column position or a table position, beside the shared
    * set. A multi-word clause is written with single spaces. Its words, and the words of `completionWords`, are not
-   * read as a table alias. Absent means the shared set alone.
+   * read as a table alias. Absent means the shared set alone. When `completionWords.lists` is `"only"`, these clauses
+   * are the whole set.
    */
   readonly completionClauses?: {
     readonly column?: readonly string[];

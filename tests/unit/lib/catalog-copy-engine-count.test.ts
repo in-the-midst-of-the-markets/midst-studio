@@ -123,6 +123,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // still fail here instead of publishing a word nothing reads.
   "forty-six": 46,
   "forty-seven": 47,
+  // Two past the registry once HubSpot joined it, so the next two providers still fail here.
+  "forty-eight": 48,
 };
 
 /**

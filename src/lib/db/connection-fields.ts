@@ -455,6 +455,8 @@ const CONNECTION_FIELD_ROWS = {
   postgres: ["host", "port", "user", "password", "database"],
   // Token in `password`, base id in `database`, API host optional.
   airtable: ["host", "password", "database"],
+  // Token in `password`. The API host is optional and defaults to api.hubapi.com.
+  hubspot: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -598,6 +600,7 @@ const MODBUS_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
 export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | null>> = Object.freeze({
   postgres: null,
   airtable: null,
+  hubspot: null,
   supabase: null,
   mysql: null,
   sqlite: null,

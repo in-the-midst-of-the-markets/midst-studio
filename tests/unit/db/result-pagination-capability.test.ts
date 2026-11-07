@@ -67,6 +67,7 @@ const PAGED_STATEMENT: Readonly<Partial<Record<DatabaseType, string>>> = Object.
 const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
   airtable: true,
+  hubspot: true,
   supabase: true,
   mysql: true,
   sqlite: true,

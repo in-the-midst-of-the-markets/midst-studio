@@ -16,6 +16,7 @@ function diff(table: Partial<TableDiff>): SchemaDiff {
 const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   postgres: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   airtable: null,
+  hubspot: null,
   supabase: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   mysql: ["ADD COLUMN `extra` integer;", "DROP COLUMN `old`;"],
   mssql: ["ADD [extra] integer;", "DROP COLUMN [old];"],

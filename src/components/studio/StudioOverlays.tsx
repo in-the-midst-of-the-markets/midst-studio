@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { DatabaseConnection } from "@/lib/types";
+import type { DatabaseConnection, DatabaseType } from "@/lib/types";
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import type { ProviderCapabilities } from "@/lib/db/types";
 import { MobileNav } from "@/components/MobileNav";
@@ -60,6 +60,10 @@ interface StudioOverlaysProps {
   onAddConnection?: () => void;
   /** Absent in a shell with no marketplace route; the palette then offers no Search Marketplace. */
   onSearchMarketplace?: () => void;
+  /** Opens the SaaS connector list from the command palette. */
+  onOpenSaasConnectors?: () => void;
+  /** The connection dialog opens on this engine. Set when SAAS Connectors starts a HubSpot connection. */
+  connectionPreset?: DatabaseType | null;
   onExecuteQuery: () => void;
   onLoadSavedQuery: (query: string) => void;
   onLoadHistoryQuery: (query: string) => void;
@@ -84,6 +88,7 @@ export function StudioOverlays({
   capabilities,
   connectionModalOpen,
   editingConnection,
+  connectionPreset,
   onCloseConnectionModal,
   onConnectConnection,
   createTableModalOpen,
@@ -98,6 +103,7 @@ export function StudioOverlays({
   onTableClick,
   onAddConnection,
   onSearchMarketplace,
+  onOpenSaasConnectors,
   onExecuteQuery,
   onLoadSavedQuery,
   onLoadHistoryQuery,
@@ -126,6 +132,7 @@ export function StudioOverlays({
           <React.Suspense fallback={null}>
             <ConnectionModal
               isOpen={connectionModalOpen}
+              presetType={connectionPreset ?? undefined}
               onClose={onCloseConnectionModal}
               onConnect={onConnectConnection}
               editConnection={editingConnection}
@@ -187,6 +194,7 @@ export function StudioOverlays({
         onTableClick={onTableClick}
         onAddConnection={onAddConnection}
         onSearchMarketplace={onSearchMarketplace}
+        onOpenSaasConnectors={onOpenSaasConnectors}
         onExecuteQuery={onExecuteQuery}
         onLoadSavedQuery={onLoadSavedQuery}
         onLoadHistoryQuery={onLoadHistoryQuery}

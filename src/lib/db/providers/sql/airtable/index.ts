@@ -46,6 +46,7 @@ import type {
   TableStats,
 } from "@/lib/db/types";
 import type { ColumnSchema, QueryWarning } from "@/lib/types";
+import { assignOwnField, ownEntries, pinnedApiHost, readApiAnswer, redactSecret } from "@/lib/db/http/pinned-api-host";
 import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
 import { translateAirtableSql, type AirtableSelect, type AirtableStatement, type AirtableValue } from "./translate";
 
@@ -97,11 +98,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The host the token is sent to. A pasted `https://api.airtable.com/...` keeps the host only. */
+/** The host the token is sent to. Only a host under airtable.com is accepted. */
 export function airtableApiHost(config: DatabaseConnection): string {
-  const raw = config.host?.trim() || DEFAULT_HOST;
-  const stripped = raw.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
-  return stripped === "" ? DEFAULT_HOST : stripped;
+  return pinnedApiHost(config.host, "airtable.com", DEFAULT_HOST, PROVIDER);
 }
 
 function airtableMessage(body: unknown): string | undefined {
@@ -180,7 +179,7 @@ function readRecords(body: unknown): { records: AirtableRecord[]; offset?: strin
 }
 
 function fieldObject(pairs: readonly (readonly [string, AirtableValue])[]): Record<string, AirtableValue> {
-  return Object.fromEntries(pairs);
+  return ownEntries(pairs);
 }
 
 export class AirtableProvider extends SQLBaseProvider {
@@ -203,6 +202,7 @@ export class AirtableProvider extends SQLBaseProvider {
     if (!this.config.database?.trim()) {
       throw new DatabaseConfigError("An Airtable base id is required. It starts with app.", PROVIDER);
     }
+    airtableApiHost(this.config);
   }
 
   public override getCapabilities(): ProviderCapabilities {
@@ -514,6 +514,7 @@ export class AirtableProvider extends SQLBaseProvider {
     try {
       response = await this.fetchImpl(`https://${host}${path}`, {
         ...init,
+        redirect: "manual",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -522,9 +523,9 @@ export class AirtableProvider extends SQLBaseProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Airtable could not be reached.";
-      throw new ConnectionError(message, PROVIDER, host);
+      throw new ConnectionError(redactSecret(message, token), PROVIDER, host);
     }
-    const text = await response.text();
+    const text = await readApiAnswer(response, PROVIDER, "Airtable");
     let body: unknown = {};
     if (text !== "") {
       try {
@@ -534,7 +535,7 @@ export class AirtableProvider extends SQLBaseProvider {
       }
     }
     if (!response.ok) {
-      const message = airtableMessage(body) ?? `Airtable answered ${response.status}.`;
+      const message = redactSecret(airtableMessage(body) ?? `Airtable answered ${response.status}.`, token);
       if (response.status === 401) throw new AuthenticationError(message, PROVIDER);
       if (response.status === 403) throw new PermissionDeniedError(message, PROVIDER);
       throw new QueryError(message, PROVIDER);
@@ -552,10 +553,12 @@ function rowsOf(
   const declared = uniqueFieldNames(["_id", ...names]);
   const rows = records.map((record) => {
     const row: Record<string, unknown> = { _id: record.id };
-    for (const name of names) row[name] = Object.hasOwn(record.fields, name) ? record.fields[name] : null;
+    for (const name of names) {
+      assignOwnField(row, name, Object.hasOwn(record.fields, name) ? record.fields[name] : null);
+    }
     if (columns === null) {
       for (const [key, value] of Object.entries(record.fields)) {
-        if (!Object.hasOwn(row, key)) row[key] = value;
+        if (!Object.hasOwn(row, key)) assignOwnField(row, key, value);
       }
     }
     return row;

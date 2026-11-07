@@ -166,23 +166,28 @@ export const FUNCTION_ITEMS: PrecomputedItem[] = SQL_FUNCTIONS.map((f) => ({
 }));
 
 /**
- * The dialect's own keywords, functions and snippets (`SqlGrammar.completionWords`, SF-042) as completion items,
- * without the names the shared lists already hold, so no word is offered twice.
+ * The dialect's own keywords, functions and snippets (`SqlGrammar.completionWords`, SF-042) as completion items.
+ * Beside the shared lists, a name those lists already hold is left out, so no word is offered twice. `lists: "only"`
+ * keeps every declared word, because those lists are the whole offer.
  */
-function dialectItems(grammar: SqlGrammar): {
+function dialectItems(
+  grammar: SqlGrammar,
+  lists: "beside" | "only",
+): {
   keywords: PrecomputedItem[];
   functions: PrecomputedItem[];
   snippets: PrecomputedItem[];
 } {
   const words = grammar.completionWords;
   if (words === undefined) return { keywords: [], functions: [], snippets: [] };
+  const extra = (word: string, shared: readonly string[]) => lists === "only" || !shared.includes(word);
   return {
     keywords: words.keywords
-      .filter((kw) => !SQL_KEYWORDS.includes(kw))
+      .filter((kw) => extra(kw, SQL_KEYWORDS))
       .map((kw) => ({ ...KEYWORD_ITEMS[0], label: kw, labelLower: kw.toLowerCase(), insertText: kw })),
     functions: words.functions
-      .filter((f) => !SQL_FUNCTIONS.includes(f))
-      .map((f) => ({ ...FUNCTION_ITEMS[0], label: f, labelLower: f.toLowerCase(), insertText: f + "($1)" })),
+      .filter((fn) => extra(fn, SQL_FUNCTIONS))
+      .map((fn) => ({ ...FUNCTION_ITEMS[0], label: fn, labelLower: fn.toLowerCase(), insertText: fn + "($1)" })),
     snippets: (words.snippets ?? []).map((snippet) => ({
       label: snippet.label,
       labelLower: snippet.label.toLowerCase(),
@@ -469,12 +474,17 @@ export function registerSQLCompletionProvider(
   const grammar = resolveSqlGrammar(databaseType);
   const { completion } = sqlGrammarForExactType(databaseType);
   // The shared lists, then the dialect's own words (SF-042); the same lists on every dialect that declares none.
-  const dialect = dialectItems(grammar);
-  const keywordItems = [...KEYWORD_ITEMS, ...dialect.keywords];
-  const functionItems = [...FUNCTION_ITEMS, ...dialect.functions];
-  const snippetItems = [...SNIPPET_ITEMS, ...dialect.snippets];
-  const columnClauses = new Set<string>([...COLUMN_CLAUSES, ...(grammar.completionClauses?.column ?? [])]);
-  const tableClauses = new Set<string>([...TABLE_CLAUSES, ...(grammar.completionClauses?.table ?? [])]);
+  // `lists: "only"` is the subset the connection runs, and the shared words that subset refuses stay out.
+  const only = grammar.completionWords?.lists === "only";
+  const dialect = dialectItems(grammar, only ? "only" : "beside");
+  const keywordItems = only ? dialect.keywords : [...KEYWORD_ITEMS, ...dialect.keywords];
+  const functionItems = only ? dialect.functions : [...FUNCTION_ITEMS, ...dialect.functions];
+  const snippetItems = only ? dialect.snippets : [...SNIPPET_ITEMS, ...dialect.snippets];
+  const columnClauses = new Set<string>([
+    ...(only ? [] : COLUMN_CLAUSES),
+    ...(grammar.completionClauses?.column ?? []),
+  ]);
+  const tableClauses = new Set<string>([...(only ? [] : TABLE_CLAUSES), ...(grammar.completionClauses?.table ?? [])]);
   const reserved = reservedWords(grammar);
   const blanked = new WeakMap<Monaco.editor.ITextModel, { version: number; code: string }>();
   const spelling = schemaCompletionCache.containerSpelling;

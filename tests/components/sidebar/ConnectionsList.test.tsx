@@ -172,6 +172,7 @@ describe("ConnectionsList", () => {
     expect(queryByText("No database connections established yet.")).not.toBeNull();
     expect(queryByText("Add Internal Data")).toBeNull();
     expect(queryByText("Search Marketplace")).toBeNull();
+    expect(queryByText("SAAS Connectors")).toBeNull();
   });
 
   test("an empty list offers Search Marketplace beside Add Internal Data", () => {
@@ -226,6 +227,42 @@ describe("ConnectionsList", () => {
     fireEvent.click(button);
     expect(onSearchMarketplace).toHaveBeenCalledTimes(1);
     expect(queryByText("No database connections established yet.")).toBeNull();
+  });
+
+  test("SAAS Connectors sits under Search Marketplace", () => {
+    const onOpenSaasConnectors = mock(() => {});
+    const { getByRole } = render(
+      <ConnectionsList
+        connections={[mockPostgresConnection]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onSearchMarketplace={() => {}}
+        onOpenSaasConnectors={onOpenSaasConnectors}
+      />,
+    );
+
+    const button = getByRole("button", { name: "SAAS Connectors" });
+    expect(button.className.includes("w-full")).toBe(true);
+    fireEvent.click(button);
+    expect(onOpenSaasConnectors).toHaveBeenCalledTimes(1);
+  });
+
+  test("an empty list offers SAAS Connectors under Search Marketplace", () => {
+    const { getByRole } = render(
+      <ConnectionsList
+        connections={[]}
+        activeConnection={null}
+        onSelectConnection={defaultOnSelect}
+        onDeleteConnection={defaultOnDelete}
+        onAddConnection={defaultOnAdd}
+        onSearchMarketplace={() => {}}
+        onOpenSaasConnectors={() => {}}
+      />,
+    );
+
+    expect(getByRole("button", { name: "SAAS Connectors" })).not.toBeNull();
+    expect(getByRole("button", { name: "Search Marketplace" })).not.toBeNull();
   });
 
   test("an outage still offers Search Marketplace", () => {

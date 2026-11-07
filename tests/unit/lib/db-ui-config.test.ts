@@ -130,6 +130,7 @@ const ALL_TYPES: DatabaseType[] = [
   "questdb",
   "airtable",
   "supabase",
+  "hubspot",
 ];
 
 describe("db-ui-config", () => {
@@ -373,7 +374,7 @@ describe("db-ui-config", () => {
         });
       }
       const refusing = ALL_TYPES.filter((type) => !offersSshTunnel(type));
-      expect(refusing.sort()).toEqual(["bigquery", "firestore", "kafka", "rabbitmq", "snmp", "snowflake"]);
+      expect(refusing.sort()).toEqual(["bigquery", "firestore", "hubspot", "kafka", "rabbitmq", "snmp", "snowflake"]);
       // A file-based engine still answers true: its panel is hidden by isFileBased instead.
       expect(offersSshTunnel("sqlite")).toBe(true);
     });
@@ -404,6 +405,7 @@ describe("db-ui-config", () => {
         "airtable",
         "bigquery",
         "firestore",
+        "hubspot",
         "netconf",
         "opcua",
         "snmp",
@@ -1084,6 +1086,7 @@ describe("declared connection-field copy (#1085)", () => {
     expect(declared).toEqual([
       "airtable",
       "supabase",
+      "hubspot",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1668,6 +1671,7 @@ describe("db-showcase", () => {
         // a Supabase project already runs.
         "airtable",
         "supabase",
+        "hubspot",
       ]);
     });
   });
@@ -1898,7 +1902,7 @@ describe("the Snowflake entry", () => {
     // OPC UA's Endpoint URL carries its port inside the address, so a second box would ask twice.
     expect(
       ALL_TYPES.filter((type) => takesConnectionField(type, "host") && !takesConnectionField(type, "port")),
-    ).toEqual(["snowflake", "opcua", "airtable"]);
+    ).toEqual(["snowflake", "opcua", "airtable", "hubspot"]);
   });
 
   test("only snowflake declares a derived host hint, so every other Host box keeps its static hint", () => {

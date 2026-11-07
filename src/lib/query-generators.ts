@@ -462,12 +462,26 @@ export function generateSelectQuery(
   // Columns the engine refuses to project in a SELECT list (e.g. search mapped types like `flattened`, #1459)
   // are omitted so the starter query runs; an index holding only unprojectable columns falls back to `*`.
   const projectable = columns.filter((c) => c.projectable !== false);
-  const cols = projectable.map((c) => `  ${quoteIdentifier(c.name, capabilities)}`).join(",\n") || "  *";
+  // A long property list is not a statement a person edits. Past the declared count the editor gets `SELECT *`
+  // and completion fills a property name in.
+  const limit = capabilities.starterColumnLimit;
+  let cols = projectable.map((c) => `  ${quoteIdentifier(c.name, capabilities)}`).join(",\n") || "  *";
+  let note = "";
+  if (limit !== undefined && projectable.length > limit.max) {
+    cols = "  *";
+    note = starterNote(limit.starNote);
+  }
   // An SQL engine that spells its row bound its own way, from its `SQL_PORT_GENERATORS` record.
   if (engine?.selectList !== undefined) return engine.selectList(table, cols, sqlFormContext(capabilities));
   // A grammar with no constant predicate (CQL, #1410) gets no WHERE clause rather than one it refuses.
   const where = capabilities.supportsConstantPredicate === false ? "" : "\nWHERE 1=1";
-  return `SELECT\n${cols}\nFROM ${table}${where}\nLIMIT 100${terminator(capabilities)}`;
+  return `${note}SELECT\n${cols}\nFROM ${table}${where}\nLIMIT 100${terminator(capabilities)}`;
+}
+
+/** One comment line above a collapsed select list. A break in the note stays inside the comment. */
+function starterNote(note: string): string {
+  const line = note.replace(/[\r\n]+/g, " ").trim();
+  return line === "" ? "" : `-- ${line}\n`;
 }
 
 /**

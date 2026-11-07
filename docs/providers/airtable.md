@@ -2,7 +2,7 @@
 
 Airtable is its own connection type. Studio reaches a base over the Web API (`https://api.airtable.com`). It is not a SQL server. The editor still runs SQL: one `SELECT`, `INSERT`, `UPDATE`, or `DELETE` is translated into that API before anything is sent.
 
-The connection is an access token in the password field and a base id (the `app…` segment of the Airtable URL) in the database field. The API host defaults to `api.airtable.com`. Traffic is HTTPS, so the dialog has no TLS panel.
+The connection is an access token in the password field and a base id (the `app…` segment of the Airtable URL) in the database field. The API host defaults to `api.airtable.com`. The token is sent only to a host under `airtable.com`, over HTTPS, and a redirect is not followed. The dialog has no TLS panel.
 
 The object tree is the base's tables, from `GET /v0/meta/bases/{baseId}/tables`. The token needs schema access for that call and data access for the records.
 

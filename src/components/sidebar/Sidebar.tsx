@@ -101,6 +101,8 @@ interface SidebarProps {
    * subscribing to third-party data is a Stripe checkout, not a connection of the user's own.
    */
   onSearchMarketplace?: () => void;
+  /** Opens the SaaS connector list. Shown under Search Marketplace when a connection can be added. */
+  onOpenSaasConnectors?: () => void;
   /** Under governance: the list holds the granted connections, and an empty one says none are granted yet. */
   governed?: boolean;
   /** Under governance: the granted connections could not be served at the last read. */
@@ -209,6 +211,7 @@ export const Sidebar = React.memo(function Sidebar({
   onMoveConnectionToGroup,
   onAddConnection,
   onSearchMarketplace,
+  onOpenSaasConnectors,
   governed,
   connectionAccessUnavailable,
   onObjectClick,
@@ -491,6 +494,7 @@ export const Sidebar = React.memo(function Sidebar({
           onMoveConnectionToGroup={onMoveConnectionToGroup}
           onAddConnection={onAddConnection}
           onSearchMarketplace={onSearchMarketplace}
+          onOpenSaasConnectors={onOpenSaasConnectors}
           governed={governed}
           accessUnavailable={connectionAccessUnavailable}
         />
