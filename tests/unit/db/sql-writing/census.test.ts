@@ -87,6 +87,8 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   spark: "sql/spark/sql-writing",
   sparkplug: "industrial/sparkplug/sql-writing",
   questdb: "sql/questdb/sql-writing",
+  airtable: "sql/airtable/sql-writing",
+  supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",
 };
@@ -185,6 +187,7 @@ describe("SQL writing census", () => {
 // `TYPED_WRITERS`, `DECLARED_TYPE_REWRITE` and the snowflake, oracle and cassandra branches.
 const TODAY_DDL_OVERRIDES: Readonly<Partial<Record<DatabaseType, Partial<Record<InferredKind, string>>>>> = {
   postgres: { binary: "BYTEA" },
+  supabase: { binary: "BYTEA" },
   mysql: { numeric: "DOUBLE", timestamp: "DATETIME" },
   clickhouse: { binary: "String" },
   trino: { text: "VARCHAR", binary: "VARBINARY" },
@@ -205,6 +208,7 @@ const TODAY_DDL_OVERRIDES: Readonly<Partial<Record<DatabaseType, Partial<Record<
 
 const STANDS_ALONE_IDS: readonly DatabaseType[] = [
   "postgres",
+  "supabase",
   "mysql",
   "oracle",
   "mssql",
@@ -219,11 +223,13 @@ const STANDS_ALONE_IDS: readonly DatabaseType[] = [
 
 const TODAY_BARE_SPELLING: Readonly<Partial<Record<DatabaseType, Readonly<Record<string, string>>>>> = {
   postgres: { bit: "bit varying" },
+  supabase: { bit: "bit varying" },
   mysql: { bit: "bit(64)", datetime: "datetime(6)", timestamp: "timestamp(6)", time: "time(6)" },
 };
 
 const BINARY_FORM: Readonly<Partial<Record<DatabaseType, ExportSpec["binaryLiteral"]>>> = {
   postgres: binaryPgBytea,
+  supabase: binaryPgBytea,
   mssql: binaryZeroX,
   cassandra: binaryZeroX,
   oracle: binaryHexToRaw,
@@ -237,6 +243,7 @@ const BINARY_FORM: Readonly<Partial<Record<DatabaseType, ExportSpec["binaryLiter
 
 const TODAY_NON_FINITE: Readonly<Partial<Record<DatabaseType, ExportSpec["nonFinite"]>>> = {
   postgres: { NaN: "'NaN'", Infinity: "'Infinity'", "-Infinity": "'-Infinity'" },
+  supabase: { NaN: "'NaN'", Infinity: "'Infinity'", "-Infinity": "'-Infinity'" },
   duckdb: { NaN: "'NaN'", Infinity: "'Infinity'", "-Infinity": "'-Infinity'" },
   sqlite: { NaN: "NULL", Infinity: "9e999", "-Infinity": "-9e999" },
   oracle: { NaN: "BINARY_DOUBLE_NAN", Infinity: "BINARY_DOUBLE_INFINITY", "-Infinity": "-BINARY_DOUBLE_INFINITY" },
@@ -251,7 +258,18 @@ const TODAY_NON_FINITE: Readonly<Partial<Record<DatabaseType, ExportSpec["nonFin
 };
 
 const HOOKS: Readonly<Record<string, readonly DatabaseType[]>> = {
-  typedLiteral: ["cassandra", "clickhouse", "databend", "duckdb", "mssql", "postgres", "snowflake", "spark", "trino"],
+  typedLiteral: [
+    "cassandra",
+    "clickhouse",
+    "databend",
+    "duckdb",
+    "mssql",
+    "postgres",
+    "snowflake",
+    "spark",
+    "supabase",
+    "trino",
+  ],
   rewriteDeclared: ["cassandra"],
   declareFromSample: ["snowflake"],
   columnWriters: ["oracle"],
@@ -341,9 +359,12 @@ describe("SQL export census", () => {
     expect(SQL_WRITING[id].export.standsAlone).toBe(VERBATIM_DECLARED_TYPES_STAND_ALONE);
   });
 
-  test.each(["postgres", "duckdb"] as const)("%s: writes the quoted non-finite words, by the shared name", (id) => {
-    expect(SQL_WRITING[id].export.nonFinite).toBe(QUOTED_WORD_NON_FINITE);
-  });
+  test.each(["postgres", "duckdb", "supabase"] as const)(
+    "%s: writes the quoted non-finite words, by the shared name",
+    (id) => {
+      expect(SQL_WRITING[id].export.nonFinite).toBe(QUOTED_WORD_NON_FINITE);
+    },
+  );
 
   test("only snowflake writes its INSERT as a SELECT", () => {
     const select = rows.filter(([, spec]) => spec.export.insertForm === "select").map(([id]) => id);

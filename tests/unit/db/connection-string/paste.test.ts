@@ -207,7 +207,7 @@ describe("the Paste URL box's formats", () => {
     const listed = CONNECTION_PICKER_ORDER.flatMap((type) => CONNECTION_STRING[type].paste?.formats ?? []);
     expect(PASTE_FORMATS_TEXT).toBe(listed.join(", "));
     expect(listed.toSorted()).toEqual(CONNECTION_STRING_PASTES.flatMap(({ paste }) => paste.formats).toSorted());
-    expect(PASTE_FORMATS_TEXT.startsWith("postgres://, mysql://")).toBe(true);
+    expect(PASTE_FORMATS_TEXT.startsWith("postgresql://, postgres://, mysql://")).toBe(true);
   });
 });
 

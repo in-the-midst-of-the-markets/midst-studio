@@ -29,7 +29,9 @@ import { OPCUA_EXECUTION_UI } from "@/lib/db/providers/industrial/opcua/executio
 import { OPENSEARCH_EXECUTION_UI } from "@/lib/db/providers/sql/search/opensearch-execution-ui";
 import { ORACLE_EXECUTION_UI } from "@/lib/db/providers/sql/oracle-execution-ui";
 import { OXIA_EXECUTION_UI } from "@/lib/db/providers/keyvalue/oxia/execution-ui";
+import { AIRTABLE_EXECUTION_UI } from "@/lib/db/providers/sql/airtable/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
+import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
 import { QDRANT_EXECUTION_UI } from "@/lib/db/providers/vector/qdrant/execution-ui";
 import { WEAVIATE_EXECUTION_UI } from "@/lib/db/providers/vector/weaviate/execution-ui";
@@ -83,6 +85,8 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   oracle: ORACLE_EXECUTION_UI,
   oxia: OXIA_EXECUTION_UI,
   postgres: POSTGRES_EXECUTION_UI,
+  airtable: AIRTABLE_EXECUTION_UI,
+  supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,
   questdb: QUESTDB_EXECUTION_UI,

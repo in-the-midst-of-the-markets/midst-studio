@@ -31,6 +31,8 @@ import {
   S3Icon,
   FirestoreIcon,
   SparkIcon,
+  AirtableIcon,
+  SupabaseIcon,
 } from "@/components/icons/db-icons";
 
 describe("db-icons", () => {
@@ -66,6 +68,8 @@ describe("db-icons", () => {
     { name: "S3Icon", Component: S3Icon },
     { name: "FirestoreIcon", Component: FirestoreIcon },
     { name: "SparkIcon", Component: SparkIcon },
+    { name: "AirtableIcon", Component: AirtableIcon },
+    { name: "SupabaseIcon", Component: SupabaseIcon },
   ];
 
   for (const { name, Component, brandAsset } of icons) {

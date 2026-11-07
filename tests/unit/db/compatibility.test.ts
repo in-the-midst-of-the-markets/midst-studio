@@ -518,9 +518,9 @@ describe("wire-compatibility registry", () => {
     // The one place these numerals live. A new provider moves them here and nowhere else, and the derived
     // assertions around this test say how the counts relate.
     expect([SHIPPED_DATABASE_TYPES.length, EXTERNAL_DATABASE_TYPES.length, WIRE_COMPATIBLE_ENGINES.length]).toEqual([
-      44, 43, 27,
+      46, 45, 27,
     ]);
-    expect(connectableProductCount()).toBe(70);
+    expect(connectableProductCount()).toBe(72);
   });
 
   test("the Weaviate row of each record (#1566)", () => {
@@ -675,6 +675,8 @@ describe("MCP_EXPOSABLE (#1089)", () => {
     // Modbus refuses for a reason of its own, written beside its registration in
     // compatibility.ts rather than repeated here.
     expect(SHIPPED_DATABASE_TYPES.filter((type) => MCP_EXPOSABLE[type] !== true)).toEqual([
+      "airtable",
+      "supabase",
       "etcd",
       "oxia",
       "s3",

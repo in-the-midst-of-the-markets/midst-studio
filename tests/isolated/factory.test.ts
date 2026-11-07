@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, libredb$/,
     );
   });
 
@@ -1609,11 +1609,11 @@ describe("createDatabaseProvider", () => {
 
     // MySQL and Oracle commit around DDL; PostgreSQL declares its own COMMIT synonyms; Db2 a
     // compound block and CALL, which can run COMMIT; SQL Server rolls DDL back and has none.
-    expect(implicitCommitTypes.sort()).toEqual(["db2", "mysql", "oracle", "postgres"]);
+    expect(implicitCommitTypes.sort()).toEqual(["db2", "mysql", "oracle", "postgres", "supabase"]);
 
-    // The positive half, pinned by name: exactly five providers hold a transaction
-    // session, so a sixth (or a lost one) fails here and not only in the loop above.
-    expect(declaringTypes.sort()).toEqual(["db2", "mssql", "mysql", "oracle", "postgres"]);
+    // The positive half, pinned by name: exactly six providers hold a transaction
+    // session, so a seventh (or a lost one) fails here and not only in the loop above.
+    expect(declaringTypes.sort()).toEqual(["db2", "mssql", "mysql", "oracle", "postgres", "supabase"]);
   });
 
   // ─── supportsQueryCancel, by name (#1364) ───
@@ -1644,6 +1644,7 @@ describe("createDatabaseProvider", () => {
     }
 
     expect(cannotCancel.sort()).toEqual([
+      "airtable",
       "bigquery",
       "cassandra",
       "couchbase",

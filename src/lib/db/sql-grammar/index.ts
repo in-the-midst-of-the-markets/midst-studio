@@ -28,7 +28,9 @@ import { OPCUA_SQL_GRAMMAR } from "@/lib/db/providers/industrial/opcua/sql-gramm
 import { OPENSEARCH_SQL_GRAMMAR } from "@/lib/db/providers/sql/search/opensearch-sql-grammar";
 import { ORACLE_SQL_GRAMMAR } from "@/lib/db/providers/sql/oracle-sql-grammar";
 import { OXIA_SQL_GRAMMAR } from "@/lib/db/providers/keyvalue/oxia/sql-grammar";
+import { AIRTABLE_SQL_GRAMMAR } from "@/lib/db/providers/sql/airtable/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
+import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
 import { QDRANT_SQL_GRAMMAR } from "@/lib/db/providers/vector/qdrant/sql-grammar";
 import { QUESTDB_SQL_GRAMMAR } from "@/lib/db/providers/sql/questdb/sql-grammar";
@@ -83,6 +85,8 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   oracle: ORACLE_SQL_GRAMMAR,
   oxia: OXIA_SQL_GRAMMAR,
   postgres: POSTGRES_SQL_GRAMMAR,
+  airtable: AIRTABLE_SQL_GRAMMAR,
+  supabase: SUPABASE_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,
   questdb: QUESTDB_SQL_GRAMMAR,

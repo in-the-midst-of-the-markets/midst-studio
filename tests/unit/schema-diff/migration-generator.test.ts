@@ -1088,6 +1088,8 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     // Error: No support for that ALTER TABLE option yet!".
     duckdb: { label: "DuckDB", distinguishingClause: "ALTER TABLE cannot add one yet;" },
     postgres: "key-follows-in-an-alter",
+    airtable: "engine-has-no-foreign-key",
+    supabase: "key-follows-in-an-alter",
     mysql: "key-follows-in-an-alter",
     oracle: "key-follows-in-an-alter",
     // Measured on Db2 LUW 12.1.0.0 (#786): the trailing `ALTER TABLE … ADD CONSTRAINT … FOREIGN
@@ -1196,6 +1198,11 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   { label: string; reason: string } | "has-own-branch" | "postgres-branch-measured"
 > = {
   postgres: "has-own-branch",
+  airtable: {
+    label: "Airtable",
+    reason: "Airtable table changes are not generated here; create the field in Airtable.",
+  },
+  supabase: "has-own-branch",
   mysql: "has-own-branch",
   sqlite: "has-own-branch",
   // NOT "has-own-branch": libSQL accepts DROP COLUMN and RENAME COLUMN (measured on
@@ -1663,6 +1670,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "snmp",
           "sparkplug",
           "questdb",
+          "airtable",
         ].includes(dialect)
       ) {
         expect(sql).toContain(`-- ${expected.label}: Cannot generate table DDL.`);
@@ -1692,6 +1700,8 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
  */
 const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANSACTION;" | false> = {
   postgres: "BEGIN;",
+  airtable: false,
+  supabase: "BEGIN;",
   mysql: "BEGIN;",
   // Measured live via @duckdb/node-api 1.5.5-r.4 (DuckDB v1.5.5, in-process, no server
   // needed): `BEGIN;` opens a real transaction around DDL, so a `CREATE TABLE` issued

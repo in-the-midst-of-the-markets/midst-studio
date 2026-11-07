@@ -128,6 +128,8 @@ const ALL_TYPES: DatabaseType[] = [
   "snmp",
   "sparkplug",
   "questdb",
+  "airtable",
+  "supabase",
 ];
 
 describe("db-ui-config", () => {
@@ -399,6 +401,7 @@ describe("db-ui-config", () => {
         });
       }
       expect(ALL_TYPES.filter((type) => !offersSslPanel(type)).sort()).toEqual([
+        "airtable",
         "bigquery",
         "firestore",
         "netconf",
@@ -1079,6 +1082,8 @@ describe("declared connection-field copy (#1085)", () => {
       .filter(([, config]) => config.fieldLabels !== undefined || config.fieldHints !== undefined)
       .map(([type]) => type);
     expect(declared).toEqual([
+      "airtable",
+      "supabase",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1659,6 +1664,10 @@ describe("db-showcase", () => {
         "sparkplug",
         // Last, behind Sparkplug B: a time-series engine reached on the PostgreSQL wire, and the newest name.
         "questdb",
+        // Last, behind QuestDB: a spreadsheet reached over its Web API, then the hosted Postgres
+        // a Supabase project already runs.
+        "airtable",
+        "supabase",
       ]);
     });
   });
@@ -1889,7 +1898,7 @@ describe("the Snowflake entry", () => {
     // OPC UA's Endpoint URL carries its port inside the address, so a second box would ask twice.
     expect(
       ALL_TYPES.filter((type) => takesConnectionField(type, "host") && !takesConnectionField(type, "port")),
-    ).toEqual(["snowflake", "opcua"]);
+    ).toEqual(["snowflake", "opcua", "airtable"]);
   });
 
   test("only snowflake declares a derived host hint, so every other Host box keeps its static hint", () => {

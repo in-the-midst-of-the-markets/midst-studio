@@ -30,6 +30,8 @@ import type { DatabaseType } from "@/lib/types";
  */
 const SHIPPED: Readonly<Record<DatabaseType, true>> = Object.freeze({
   postgres: true,
+  airtable: true,
+  supabase: true,
   bigquery: true,
   snowflake: true,
   spark: true,
@@ -171,6 +173,8 @@ export const SHIPPED_DATABASE_TYPES: readonly DatabaseType[] = Object.freeze(Obj
  */
 const EXTERNAL: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
+  airtable: true,
+  supabase: true,
   bigquery: true,
   snowflake: true,
   spark: true,
@@ -275,6 +279,8 @@ export function isExternalDatabaseType(type: DatabaseType): boolean {
  */
 export const READ_ONLY_ENFORCED: Record<DatabaseType, boolean> = Object.freeze({
   postgres: false,
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -384,6 +390,8 @@ export const READ_ONLY_ENFORCED: Record<DatabaseType, boolean> = Object.freeze({
  */
 export const READS_FILE_ACCESS_POSTURE: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: false,
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -448,6 +456,8 @@ export const READS_FILE_ACCESS_POSTURE: Readonly<Record<DatabaseType, boolean>> 
  */
 export const SINGLE_WRITER_FILE: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: false,
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -507,6 +517,10 @@ export const SINGLE_WRITER_FILE: Readonly<Record<DatabaseType, boolean>> = Objec
  */
 export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
+  // No MCP surface is decided for the Web API yet.
+  airtable: false,
+  // Supabase is Postgres, and MCP stays closed on this type-id until a change of its own opens it.
+  supabase: false,
   bigquery: true,
   snowflake: true,
   spark: true,
@@ -620,6 +634,10 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
  */
 export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
+  // No agent statement path, so MCP read stays closed.
+  airtable: false,
+  // No agent statement path on this type-id yet, so MCP read stays closed.
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -745,6 +763,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
  */
 export const CONNECTION_FORM_URI_MODE: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: false,
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -809,6 +829,9 @@ export const CONNECTION_FORM_URI_MODE: Readonly<Record<DatabaseType, boolean>> =
  */
 export const CONNECTION_STRING_ACCEPTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
+  airtable: false,
+  // A saved connectionString is opened by the Postgres provider this type subclasses.
+  supabase: true,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -875,6 +898,8 @@ export const CONNECTION_STRING_ACCEPTED: Readonly<Record<DatabaseType, boolean>>
  */
 export const OPENS_LOCAL_FILE: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: false,
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,
@@ -939,6 +964,10 @@ export const OPENS_SERVER_LEVEL_WITHOUT_DATABASE: Readonly<Record<DatabaseType, 
   // An empty `database` on discrete fields reaches the whole server (`serverLevel` in providers/sql/postgres.ts);
   // a connection string never does.
   postgres: true,
+  // An empty database is filled in as `postgres` before the provider is built, so one connection
+  // never opens a session per database.
+  airtable: false,
+  supabase: false,
   bigquery: false,
   snowflake: false,
   spark: false,

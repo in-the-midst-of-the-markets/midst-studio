@@ -201,9 +201,42 @@ export const ClickHouseIcon: React.FC<IconProps> = ({ className, ...props }) => 
  * size the sidebar renders a DB icon at, so only the silhouette survives — the
  * five points are what makes it identifiable at that size.
  */
-/**
- * A Q for QuestDB, drawn for Studio. Not the vendor mark.
- */
+/** A grid, for an Airtable base. Not the vendor mark. */
+export const AirtableIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="4" width="16" height="16" rx="2" />
+    <path d="M4 10h16M4 15h16M10 4v16" />
+  </svg>
+);
+
+/** A database with a bolt, for a Supabase project. Not the vendor mark. */
+export const SupabaseIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <ellipse cx="12" cy="6" rx="7" ry="3" />
+    <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6" />
+    <path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+  </svg>
+);
+
+/** A Q for QuestDB, drawn for Studio. Not the vendor mark. */
 export const QuestDbIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
     viewBox="0 0 24 24"

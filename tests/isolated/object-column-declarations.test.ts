@@ -85,6 +85,8 @@ import { CENSUS_CONNECTION } from "../helpers/census-connection";
  */
 const EXPECTED_COLUMN_KINDS: Readonly<Record<DatabaseType, readonly string[]>> = Object.freeze({
   postgres: ["table", "view", "materialized_view", "sequence"],
+  airtable: ["table"],
+  supabase: ["table", "view", "materialized_view", "sequence"],
   mysql: ["table", "view"],
   oracle: ["table", "view", "materialized_view"],
   db2: ["table", "view", "materialized_query_table"],
@@ -248,7 +250,7 @@ describe("the fleet census of object column declarations", () => {
     // `EXTERNAL_DATABASE_TYPES.length` plus the embedded store. The names are not repeated here,
     // because a prose list of them is what goes stale while the assertion stays green: the registry
     // is the list, and this numeral only says how long it is.
-    expect(CENSUS_TYPES).toHaveLength(44);
+    expect(CENSUS_TYPES).toHaveLength(46);
     expect(Object.keys(EXPECTED_COLUMN_KINDS).sort()).toEqual([...SHIPPED_DATABASE_TYPES].sort());
     // A row naming nothing would make its type-id's census pass on the empty set, so the design's
     // table has three such rows, and they are named here: every engine but Oxia, S3, Kubernetes, MQTT, OPC UA and Modbus has at least one

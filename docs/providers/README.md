@@ -7,6 +7,8 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Provider | type-id | Family | Driver | Query language | Reference |
 |----------|---------|--------|--------|----------------|-----------|
 | PostgreSQL | `postgres` | SQL | `pg` | SQL | [postgres.md](./postgres.md) |
+| Airtable | `airtable` | SQL (records) | none (HTTP: the Airtable REST API) | SQL (a subset translated to the REST API) | [airtable.md](./airtable.md) |
+| Supabase | `supabase` | SQL | `pg` | SQL (PostgreSQL) | [supabase.md](./supabase.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

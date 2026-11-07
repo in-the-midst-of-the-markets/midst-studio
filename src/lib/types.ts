@@ -20,6 +20,14 @@ import type { VectorColumn } from "@/lib/db/vector/types";
 
 export type DatabaseType =
   | "postgres"
+  // Airtable. A base reached over the Web API. The editor runs a SQL subset (SELECT, INSERT,
+  // UPDATE, DELETE) that the provider translates into that API. The connection is an access
+  // token and a base id.
+  | "airtable"
+  // Supabase. A hosted Postgres database. The provider is the Postgres provider after the
+  // dialog's project ref, pooler host, or postgresql:// URL is turned into a host, so the SQL
+  // editor is Postgres SQL.
+  | "supabase"
   | "bigquery"
   | "snowflake"
   | "mysql"

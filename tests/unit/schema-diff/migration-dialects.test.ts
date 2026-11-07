@@ -15,6 +15,8 @@ function diff(table: Partial<TableDiff>): SchemaDiff {
 // silently inherit PostgreSQL's statements. Null means there is no table DDL.
 const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   postgres: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
+  airtable: null,
+  supabase: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   mysql: ["ADD COLUMN `extra` integer;", "DROP COLUMN `old`;"],
   mssql: ["ADD [extra] integer;", "DROP COLUMN [old];"],
   oracle: ['ADD ("extra" integer);', 'DROP COLUMN "old";'],

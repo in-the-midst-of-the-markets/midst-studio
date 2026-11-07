@@ -12,6 +12,9 @@ const unsupported: DbtTarget | null = null;
 
 export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   postgres: postgresTarget,
+  // The dbt Postgres adapter. The profile type stays `postgres`; the host is whatever the connection resolved to.
+  supabase: postgresTarget,
+  airtable: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,

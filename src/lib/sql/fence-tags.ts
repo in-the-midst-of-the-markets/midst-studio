@@ -32,6 +32,10 @@ import type { DatabaseType } from "@/lib/types";
  */
 const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   postgres: true,
+  // A ```airtable block holds the SQL subset the Airtable connection runs.
+  airtable: true,
+  // A ```supabase block holds Postgres SQL. Supabase is a hosted Postgres database.
+  supabase: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same
