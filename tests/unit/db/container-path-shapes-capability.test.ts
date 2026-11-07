@@ -33,6 +33,8 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   Record<DatabaseType, NonNullable<ProviderCapabilities["containerPathShapes"]> | "absent">
 > = Object.freeze({
   postgres: "exact",
+  airtable: "exact",
+  supabase: "exact",
   mysql: "exact",
   sqlite: "exact",
   libsql: "exact",

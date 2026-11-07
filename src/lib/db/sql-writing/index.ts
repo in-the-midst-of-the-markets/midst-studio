@@ -28,7 +28,9 @@ import { LIBSQL_SQL_WRITING } from "@/lib/db/providers/sql/libsql/sql-writing";
 import { MSSQL_SQL_WRITING } from "@/lib/db/providers/sql/mssql-sql-writing";
 import { MYSQL_SQL_WRITING } from "@/lib/db/providers/sql/mysql-sql-writing";
 import { ORACLE_SQL_WRITING } from "@/lib/db/providers/sql/oracle-sql-writing";
+import { AIRTABLE_SQL_WRITING } from "@/lib/db/providers/sql/airtable/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
+import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
 import { OPENSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/opensearch-sql-writing";
 import { SNOWFLAKE_SQL_WRITING } from "@/lib/db/providers/sql/snowflake/sql-writing";
@@ -87,6 +89,8 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   oracle: ORACLE_SQL_WRITING,
   oxia: OXIA_SQL_WRITING,
   postgres: POSTGRES_SQL_WRITING,
+  airtable: AIRTABLE_SQL_WRITING,
+  supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,
   questdb: QUESTDB_SQL_WRITING,

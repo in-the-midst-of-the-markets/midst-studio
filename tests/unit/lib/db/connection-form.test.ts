@@ -44,6 +44,8 @@ const MOVED_READERS = [
 // on purpose, and say why.
 const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
+  airtable: true,
+  supabase: true,
   mysql: true,
   sqlite: true,
   oracle: true,
@@ -298,9 +300,12 @@ describe("src/lib/db/connection-form.ts", () => {
 });
 
 describe("CONNECTION_PICKER_ORDER", () => {
-  test("starts with the product's default connection type, the one constant every no-connection reader names", () => {
+  test("opens on Airtable and Supabase, and keeps postgres as the no-connection default", () => {
     expect(form.DEFAULT_CONNECTION_TYPE).toBe(DEFAULT_CONNECTION_TYPE);
-    expect(CONNECTION_PICKER_ORDER[0]).toBe(DEFAULT_CONNECTION_TYPE);
+    expect(DEFAULT_CONNECTION_TYPE).toBe("postgres");
+    expect(CONNECTION_PICKER_ORDER[0]).toBe("airtable");
+    expect(CONNECTION_PICKER_ORDER[1]).toBe("supabase");
+    expect(CONNECTION_PICKER_ORDER[2]).toBe(DEFAULT_CONNECTION_TYPE);
   });
 
   test("offers every database type a connection can carry, each once", () => {
@@ -316,6 +321,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
 
   test("keeps the picker's shipped order", () => {
     expect(CONNECTION_PICKER_ORDER).toEqual([
+      "airtable",
+      "supabase",
       "postgres",
       "mysql",
       "sqlite",

@@ -38,6 +38,8 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "druid",
     "duckdb",
     "questdb",
+    "airtable",
+    "supabase",
     "libsql",
     "snowflake",
     "spark",

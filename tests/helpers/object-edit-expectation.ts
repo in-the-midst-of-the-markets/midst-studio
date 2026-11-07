@@ -117,6 +117,10 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   // a metric. A metric's shape is declared by the birth certificate its edge node publishes (#1720).
   "sparkplug",
   "sqlite",
+  // No kind declares acceptsSourceEdits or acceptsRowWrites. The SQL editor is the way a row is written.
+  "airtable",
+  // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
+  "supabase",
 ] as const);
 
 /**

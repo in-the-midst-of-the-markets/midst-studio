@@ -144,6 +144,8 @@ Todos os motores SQL compartilham o mesmo explorador de esquema, diagramas ER, c
 
 | Banco de dados | Driver | Capacidades |
 | :--- | :--- | :--- |
+| **Airtable** | none: the Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one row by its record id |
+| **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **PostgreSQL** | `pg` | IDE SQL completo, planos EXPLAIN, transações, cancelamento de consultas (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | IDE SQL completo, EXPLAIN, transações, cancelamento de consultas (`KILL QUERY`) |
 | **Oracle** | `oracledb` (modo Thin) | IDE SQL completo, paginação com `FETCH FIRST N ROWS`, views de monitoramento `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, transações |

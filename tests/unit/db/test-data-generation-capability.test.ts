@@ -19,6 +19,8 @@ import type { DatabaseType } from "@/lib/types";
  */
 const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   postgres: true,
+  airtable: false,
+  supabase: true,
   mysql: true,
   sqlite: true,
   libsql: true,

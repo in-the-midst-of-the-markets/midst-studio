@@ -119,6 +119,10 @@ const NUMERAL_WORDS: Record<string, number> = {
   "forty-three": 43,
   "forty-four": 44,
   "forty-five": 45,
+  // Two past the registry once Airtable and Supabase joined it, so the next two providers
+  // still fail here instead of publishing a word nothing reads.
+  "forty-six": 46,
+  "forty-seven": 47,
 };
 
 /**

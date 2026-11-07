@@ -148,6 +148,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   // the page, so there is no failure to notice and no user to report it.
   sparkplug: 42,
   questdb: 43,
+  airtable: 44,
+  supabase: 45,
 };
 
 /**

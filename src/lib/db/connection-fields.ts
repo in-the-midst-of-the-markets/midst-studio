@@ -453,6 +453,9 @@ export function savedFieldValue(field: BodyConnectionField, value: string): stri
 /** Each type's connection fields as literals, so the compiler can ask what a given type takes. */
 const CONNECTION_FIELD_ROWS = {
   postgres: ["host", "port", "user", "password", "database"],
+  // Token in `password`, base id in `database`, API host optional.
+  airtable: ["host", "password", "database"],
+  supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
   duckdb: ["database"],
@@ -594,6 +597,8 @@ const MODBUS_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
 /** Each type's seed-only fields, or null where a seed of another type may carry every field this type reads. */
 export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | null>> = Object.freeze({
   postgres: null,
+  airtable: null,
+  supabase: null,
   mysql: null,
   sqlite: null,
   duckdb: null,

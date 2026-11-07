@@ -425,6 +425,37 @@ export const CONNECTION_FORM: {
     showConnectionStringToggle: false,
     connectionFields: CONNECTION_FIELDS.postgres,
   },
+  airtable: {
+    label: "Airtable",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    connectionFields: CONNECTION_FIELDS.airtable,
+    fieldLabels: { password: "Access token", database: "Base ID", host: "API host" },
+    fieldPlaceholders: { password: "pat…", database: "app…", host: "api.airtable.com" },
+    fieldHints: {
+      password: "A personal access token with data and schema access to this base.",
+      database: "The base id from the Airtable URL, the part that starts with app.",
+      host: "Leave this as api.airtable.com unless you were given another API host.",
+    },
+  },
+  supabase: {
+    label: "Supabase",
+    defaultPort: "5432",
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.supabase,
+    fieldPlaceholders: {
+      host: "db.<project-ref>.supabase.co",
+      user: "postgres",
+      database: "postgres",
+    },
+    fieldHints: {
+      host: "The direct host, the pooler host, the project ref, or a postgresql:// URL from the Supabase dashboard.",
+      user: "postgres on the direct host. The pooler often wants postgres.<project-ref>.",
+      password: "The database password, not the anon key or the service role key.",
+      database: "postgres, unless you created another database.",
+    },
+  },
   mysql: {
     label: "MySQL",
     defaultPort: "3306",
@@ -1434,6 +1465,9 @@ export { DEFAULT_CONNECTION_TYPE };
  * tests/unit/lib/db/connection-form.test.ts enforces the coverage.
  */
 export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
+  // First in the dialog. The empty editor's default engine stays postgres (DEFAULT_CONNECTION_TYPE).
+  "airtable",
+  "supabase",
   DEFAULT_CONNECTION_TYPE,
   "mysql",
   "sqlite",
