@@ -377,6 +377,7 @@ describe("hashRunIsAmbiguous", () => {
 const GRAMMAR_COVERAGE: Record<DatabaseType, "established" | "default"> = {
   postgres: "established",
   airtable: "established",
+  hubspot: "established",
   supabase: "established",
   mysql: "established",
   sqlite: "established",
@@ -762,6 +763,7 @@ describe("every database type has a recorded grammar decision", () => {
 const SQL_TEXT_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
   airtable: true,
+  hubspot: true,
   supabase: true,
   mysql: true,
   sqlite: true,

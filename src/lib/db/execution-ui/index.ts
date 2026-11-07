@@ -30,6 +30,7 @@ import { OPENSEARCH_EXECUTION_UI } from "@/lib/db/providers/sql/search/opensearc
 import { ORACLE_EXECUTION_UI } from "@/lib/db/providers/sql/oracle-execution-ui";
 import { OXIA_EXECUTION_UI } from "@/lib/db/providers/keyvalue/oxia/execution-ui";
 import { AIRTABLE_EXECUTION_UI } from "@/lib/db/providers/sql/airtable/execution-ui";
+import { HUBSPOT_EXECUTION_UI } from "@/lib/db/providers/sql/hubspot/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -86,6 +87,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   oxia: OXIA_EXECUTION_UI,
   postgres: POSTGRES_EXECUTION_UI,
   airtable: AIRTABLE_EXECUTION_UI,
+  hubspot: HUBSPOT_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

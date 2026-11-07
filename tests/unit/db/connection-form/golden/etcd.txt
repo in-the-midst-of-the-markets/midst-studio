@@ -64,6 +64,7 @@ button "Modbus"
 button "NETCONF"
 button "Weaviate"
 button "QuestDB"
+button "HubSpot"
 label[for=host] "Host & Instance"
 input#host type=none placeholder="localhost" describedby="host-hint"
 input#port type=none placeholder=none describedby=none

@@ -30,6 +30,7 @@ import { OPENSEARCH_CONNECTION_STRING } from "@/lib/db/providers/sql/search/open
 import { ORACLE_CONNECTION_STRING } from "@/lib/db/providers/sql/oracle-connection-string";
 import { OXIA_CONNECTION_STRING } from "@/lib/db/providers/keyvalue/oxia/connection-string";
 import { AIRTABLE_CONNECTION_STRING } from "@/lib/db/providers/sql/airtable/connection-string";
+import { HUBSPOT_CONNECTION_STRING } from "@/lib/db/providers/sql/hubspot/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -86,6 +87,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   oxia: OXIA_CONNECTION_STRING,
   postgres: POSTGRES_CONNECTION_STRING,
   airtable: AIRTABLE_CONNECTION_STRING,
+  hubspot: HUBSPOT_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

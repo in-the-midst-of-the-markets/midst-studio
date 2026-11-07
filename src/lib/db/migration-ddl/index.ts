@@ -32,6 +32,7 @@ import { MSSQL_MIGRATION_DDL } from "@/lib/db/providers/sql/mssql-migration-ddl"
 import { MYSQL_MIGRATION_DDL } from "@/lib/db/providers/sql/mysql-migration-ddl";
 import { ORACLE_MIGRATION_DDL } from "@/lib/db/providers/sql/oracle-migration-ddl";
 import { AIRTABLE_MIGRATION_DDL } from "@/lib/db/providers/sql/airtable/migration-ddl";
+import { HUBSPOT_MIGRATION_DDL } from "@/lib/db/providers/sql/hubspot/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -88,6 +89,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   oxia: OXIA_MIGRATION_DDL,
   postgres: POSTGRES_MIGRATION_DDL,
   airtable: AIRTABLE_MIGRATION_DDL,
+  hubspot: HUBSPOT_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

@@ -56,6 +56,8 @@ interface CommandPaletteProps {
   onAddConnection?: () => void;
   /** Opens the marketplace. Optional, and the item is not rendered without it. */
   onSearchMarketplace?: () => void;
+  /** Opens the SaaS connector list. Shown under Search Marketplace when a connection can be added. */
+  onOpenSaasConnectors?: () => void;
   onExecuteQuery: () => void;
   onLoadSavedQuery: (query: string) => void;
   onLoadHistoryQuery: (query: string) => void;
@@ -87,6 +89,7 @@ export function CommandPalette({
   onTableClick,
   onAddConnection,
   onSearchMarketplace,
+  onOpenSaasConnectors,
   onExecuteQuery,
   onLoadSavedQuery,
   onLoadHistoryQuery,
@@ -184,6 +187,12 @@ export function CommandPalette({
             <CommandItem onSelect={() => runAction(onSearchMarketplace)}>
               <Store strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
               <span>Search Marketplace</span>
+            </CommandItem>
+          )}
+          {onOpenSaasConnectors && (
+            <CommandItem onSelect={() => runAction(onOpenSaasConnectors)}>
+              <Store strokeWidth={1.5} className="w-3.5 h-3.5 text-brand" />
+              <span>SAAS Connectors</span>
             </CommandItem>
           )}
           <CommandItem onSelect={() => runAction(onNavigateHealth)}>

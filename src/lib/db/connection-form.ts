@@ -439,6 +439,20 @@ export const CONNECTION_FORM: {
       host: "Leave this as api.airtable.com unless you were given another API host.",
     },
   },
+  hubspot: {
+    label: "HubSpot",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.hubspot,
+    fieldLabels: { password: "Private app token", host: "API host" },
+    fieldPlaceholders: { password: "pat-…", host: "api.hubapi.com" },
+    fieldHints: {
+      password: "A private app token with the CRM scopes for the objects you query.",
+      host: "Leave this as api.hubapi.com unless you were given another API host.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1512,6 +1526,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "netconf",
   "weaviate",
   "questdb",
+  "hubspot",
 ]);
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */

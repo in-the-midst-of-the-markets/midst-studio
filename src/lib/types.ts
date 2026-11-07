@@ -28,6 +28,9 @@ export type DatabaseType =
   // dialog's project ref, pooler host, or postgresql:// URL is turned into a host, so the SQL
   // editor is Postgres SQL.
   | "supabase"
+  // HubSpot. The CRM Web API. The editor runs a SQL subset that the provider sends as
+  // search, create, update, and delete requests. Rows are not copied into another database.
+  | "hubspot"
   | "bigquery"
   | "snowflake"
   | "mysql"

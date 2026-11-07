@@ -36,6 +36,8 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   airtable: true,
   // A ```supabase block holds Postgres SQL. Supabase is a hosted Postgres database.
   supabase: true,
+  // A ```hubspot block holds the SQL subset the HubSpot connection sends to the CRM API.
+  hubspot: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same

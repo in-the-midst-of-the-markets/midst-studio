@@ -34,6 +34,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
 > = Object.freeze({
   postgres: "exact",
   airtable: "exact",
+  hubspot: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

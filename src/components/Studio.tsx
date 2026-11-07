@@ -3,6 +3,7 @@
 import { appFetch } from "@/lib/config/base-path";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Sidebar, ConnectionsList } from "@/components/sidebar";
+import { SaasConnectorsDialog } from "@/components/sidebar/SaasConnectorsDialog";
 import { type ObjectSource, type TreeRowActionHandlers } from "@/components/object-tree";
 import { objectPathLabel, objectPathQuery } from "@/lib/db/object-path";
 import { QueryEditor, QueryEditorRef } from "@/components/QueryEditor";
@@ -20,7 +21,7 @@ import { StudioModals } from "@/components/studio/StudioModals";
 import { StudioOverlays } from "@/components/studio/StudioOverlays";
 import { AgentRail } from "@/components/agent/AgentRail";
 import { editorChatQuery, IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
-import { DatabaseConnection, type ColumnSchema, SavedQuery } from "@/lib/types";
+import { DatabaseConnection, type ColumnSchema, type DatabaseType, SavedQuery } from "@/lib/types";
 import type { DatabaseObject } from "@/lib/db/types";
 import {
   activationRowActionForKind,
@@ -540,6 +541,8 @@ export default function Studio() {
   // === Modal state ===
   const [isConnectionModalOpen, setIsConnectionModalOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
+  const [saasOpen, setSaasOpen] = useState(false);
+  const [connectionPreset, setConnectionPreset] = useState<DatabaseType | null>(null);
   const handleDuplicateConnection = useCallback((source: DatabaseConnection) => {
     setEditingConnection({
       ...structuredClone(source),
@@ -558,10 +561,21 @@ export default function Studio() {
     setIsConnectionModalOpen(true);
   }, []);
 
-  const handleAddConnection = useCallback(() => setIsConnectionModalOpen(true), []);
+  const handleAddConnection = useCallback(() => {
+    setConnectionPreset(null);
+    setIsConnectionModalOpen(true);
+  }, []);
   const closeConnectionModal = useCallback(() => {
     setIsConnectionModalOpen(false);
     setEditingConnection(null);
+    setConnectionPreset(null);
+  }, []);
+  const openSaasConnectors = useCallback(() => setSaasOpen(true), []);
+  const connectSaas = useCallback((type: DatabaseType) => {
+    setSaasOpen(false);
+    setEditingConnection(null);
+    setConnectionPreset(type);
+    setIsConnectionModalOpen(true);
   }, []);
 
   /*
@@ -573,6 +587,7 @@ export default function Studio() {
     offering what the server would answer with 403.
   */
   const addConnectionAction = conn.customConnections ? handleAddConnection : undefined;
+  const openSaasAction = conn.customConnections ? openSaasConnectors : undefined;
   const editConnectionAction = conn.customConnections ? handleEditConnection : undefined;
   const duplicateConnectionAction = conn.customConnections ? handleDuplicateConnection : undefined;
 
@@ -1319,6 +1334,7 @@ export default function Studio() {
                 {...connectionGroupProps}
                 onAddConnection={addConnectionAction}
                 onSearchMarketplace={searchMarketplace}
+                onOpenSaasConnectors={openSaasAction}
                 governed={conn.governance}
                 connectionAccessUnavailable={conn.connectionAccessUnavailable}
                 onObjectClick={onObjectClick}
@@ -1359,6 +1375,7 @@ export default function Studio() {
               onSelectConnection={conn.setActiveConnection}
               onAddConnection={addConnectionAction}
               onSearchMarketplace={searchMarketplace}
+              onOpenSaasConnectors={openSaasAction}
               onLogout={handleLogout}
               onSaveQuery={openSaveQuery}
               onClearQuery={handleClearQuery}
@@ -1451,6 +1468,16 @@ export default function Studio() {
                       >
                         Search Marketplace
                       </Button>
+                      {openSaasAction && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs border-hairline-strong hover:bg-fill"
+                          onClick={openSaasAction}
+                        >
+                          SAAS Connectors
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <ConnectionsList
@@ -1476,6 +1503,7 @@ export default function Studio() {
                     {...connectionGroupProps}
                     onAddConnection={addConnectionAction}
                     onSearchMarketplace={searchMarketplace}
+                    onOpenSaasConnectors={openSaasAction}
                     governed={conn.governance}
                     accessUnavailable={conn.connectionAccessUnavailable}
                   />
@@ -1785,6 +1813,8 @@ export default function Studio() {
       />
 
       {/* The standalone-only overlays, in `StudioOverlays`, imported by this shell alone. */}
+      <SaasConnectorsDialog open={saasOpen} onClose={() => setSaasOpen(false)} onConnect={connectSaas} />
+
       <StudioOverlays
         connections={conn.connections}
         activeConnection={conn.activeConnection}
@@ -1792,6 +1822,7 @@ export default function Studio() {
         capabilities={metadata?.capabilities}
         connectionModalOpen={isConnectionModalOpen}
         editingConnection={editingConnection}
+        connectionPreset={connectionPreset}
         onCloseConnectionModal={closeConnectionModal}
         onConnectConnection={handleConnect}
         createTableModalOpen={isCreateTableModalOpen}
@@ -1808,6 +1839,7 @@ export default function Studio() {
         onTableClick={onTableClick}
         onAddConnection={addConnectionAction}
         onSearchMarketplace={searchMarketplace}
+        onOpenSaasConnectors={openSaasAction}
         onExecuteQuery={handleMobileExecuteQuery}
         onLoadSavedQuery={handleLoadSavedQuery}
         onLoadHistoryQuery={handleLoadHistoryQuery}

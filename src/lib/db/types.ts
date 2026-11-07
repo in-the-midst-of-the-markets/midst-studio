@@ -1587,6 +1587,15 @@ export interface ProviderCapabilities {
    */
   supportsConstantPredicate?: boolean;
   /**
+   * How many columns Generate Query names before it writes `SELECT *` instead.
+   *
+   * Absent means every column is named, which is the statement the generators have always written.
+   * A CRM object can carry hundreds of properties, and a select list of all of them is not something
+   * a person edits. Past `max`, the statement is `SELECT *` under `starNote`, and column completion
+   * fills a property name in. A newline in the note is a space, so the note stays one comment line.
+   */
+  starterColumnLimit?: { readonly max: number; readonly starNote: string };
+  /**
    * Whether one INSERT may carry several rows in its VALUES list (#1410).
    *
    * Absent means it may: the import builder writes up to 100 rows per INSERT and the Test Data

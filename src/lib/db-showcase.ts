@@ -150,6 +150,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   questdb: 43,
   airtable: 44,
   supabase: 45,
+  hubspot: 46,
 };
 
 /**

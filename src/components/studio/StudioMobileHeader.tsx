@@ -69,6 +69,8 @@ interface StudioMobileHeaderProps {
   onAddConnection?: () => void;
   /** Opens the marketplace. Omitted in a shell that has no marketplace route. */
   onSearchMarketplace?: () => void;
+  /** Opens the SaaS connector list. Shown under Search Marketplace when a connection can be added. */
+  onOpenSaasConnectors?: () => void;
   onLogout: () => void;
   onSaveQuery: () => void;
   onClearQuery: () => void;
@@ -128,6 +130,7 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
   onSelectConnection,
   onAddConnection,
   onSearchMarketplace,
+  onOpenSaasConnectors,
   onLogout,
   onSaveQuery,
   onClearQuery,
@@ -188,6 +191,11 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                       Search Marketplace
                     </DropdownMenuItem>
                   )}
+                  {onOpenSaasConnectors && (
+                    <DropdownMenuItem onClick={onOpenSaasConnectors} className="text-fg-tertiary cursor-pointer">
+                      SAAS Connectors
+                    </DropdownMenuItem>
+                  )}
                 </>
               ) : (
                 <>
@@ -215,6 +223,11 @@ export const StudioMobileHeader = React.memo(function StudioMobileHeader({
                   {onSearchMarketplace && (
                     <DropdownMenuItem onClick={onSearchMarketplace} className="text-fg-muted cursor-pointer">
                       Search Marketplace
+                    </DropdownMenuItem>
+                  )}
+                  {onOpenSaasConnectors && (
+                    <DropdownMenuItem onClick={onOpenSaasConnectors} className="text-fg-muted cursor-pointer">
+                      SAAS Connectors
                     </DropdownMenuItem>
                   )}
                 </>

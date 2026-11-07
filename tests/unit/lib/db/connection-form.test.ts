@@ -45,6 +45,7 @@ const MOVED_READERS = [
 const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
   airtable: true,
+  hubspot: true,
   supabase: true,
   mysql: true,
   sqlite: true,

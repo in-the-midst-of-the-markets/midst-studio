@@ -129,7 +129,7 @@ describe("AirtableProvider", () => {
     expect(await opened.getTableStats()).toEqual([]);
     expect(await opened.getIndexStats()).toEqual([]);
     expect(await opened.getStorageStats()).toEqual([]);
-    await expect(opened.runMaintenance("analyze")).rejects.toBeInstanceOf(QueryError);
+    await expect(opened.runMaintenance()).rejects.toBeInstanceOf(QueryError);
     await expect(opened.describeObjects(["appBase"], "table", 0)).rejects.toBeInstanceOf(QueryError);
     await expect(opened.listObjects(["appBase"], "view")).rejects.toBeInstanceOf(QueryError);
     expect(opened.getCapabilities().supportsResultPagination).toBe(true);
