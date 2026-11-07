@@ -23,6 +23,8 @@
     "Other"
   ],
   "keywords": [
+    "Airtable",
+    "Supabase",
     "PostgreSQL",
     "MySQL",
     "SQLite",
@@ -50,8 +52,6 @@
     "BigQuery",
     "S3-compatible object storage",
     "Kubernetes",
-    "MQTT",
-    "Firestore",
     "SQL"
   ],
   "capabilities": {

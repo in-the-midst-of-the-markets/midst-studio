@@ -27,7 +27,7 @@ describe("engines/list's projection", () => {
   it("names the formats the paste box reads, the web box's own list, whatever engines are enabled", () => {
     assert.equal(engineCatalog(V0).pasteFormats, PASTE_FORMATS_TEXT);
     assert.equal(engineCatalog(null).pasteFormats, PASTE_FORMATS_TEXT);
-    assert.ok(PASTE_FORMATS_TEXT.startsWith("postgres://, "));
+    assert.ok(PASTE_FORMATS_TEXT.startsWith("postgresql://, postgres://"));
   });
 
   it("keeps the picker order whatever order the enabled list has", () => {
