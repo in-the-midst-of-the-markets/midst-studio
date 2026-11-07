@@ -486,7 +486,7 @@ export function ConnectionModal({
           </div>
 
           {/*
-            Databases, then SAAS. The label before each group hides that group's engines. The chosen
+            SAAS Connectors, then Databases. The label before each group hides that group's engines. The chosen
             engine stays selected while its group is hidden, and a second click on the label shows it again.
           */}
           <div className="space-y-4">

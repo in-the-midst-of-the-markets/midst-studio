@@ -6,7 +6,9 @@ import {
   PermissionDeniedError,
   QueryError,
 } from "@/lib/db/errors";
-import { StripeProvider, stripeApiHost, type StripeFetch } from "@/lib/db/providers/sql/stripe";
+import type { NodeRequest, NodeTransport, NodeTransportOptions } from "@/lib/db/http/node-transport";
+import { TransportError } from "@/lib/db/http/node-transport";
+import { StripeProvider, stripeApiHost } from "@/lib/db/providers/sql/stripe";
 import type { DatabaseConnection } from "@/lib/types";
 
 const connection = {
@@ -17,32 +19,54 @@ const connection = {
   createdAt: new Date(0),
 } as DatabaseConnection;
 
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(body === "" ? "" : JSON.stringify(body), { status });
-}
-
 function scripted(pages: { status?: number; body?: unknown; text?: string; throw?: unknown }[]): {
-  fetchImpl: StripeFetch;
-  calls: { url: string; init?: RequestInit }[];
+  createTransport: (options: NodeTransportOptions) => NodeTransport;
+  requests: { url: string }[];
+  options?: NodeTransportOptions;
+  closed: number;
 } {
-  const calls: { url: string; init?: RequestInit }[] = [];
-  const fetchImpl: StripeFetch = async (url, init) => {
-    calls.push({ url, init });
-    const next = pages.shift();
-    if (next === undefined) throw new Error(`no response for ${url}`);
-    if ("throw" in next) throw next.throw;
-    if (next.text !== undefined) return new Response(next.text, { status: next.status ?? 200 });
-    return jsonResponse(next.status ?? 200, next.body ?? {});
+  const requests: { url: string }[] = [];
+  const state: { options?: NodeTransportOptions; closed: number } = { closed: 0 };
+  const createTransport = (options: NodeTransportOptions): NodeTransport => {
+    state.options = options;
+    return {
+      async request(request: NodeRequest) {
+        requests.push({ url: request.url });
+        const next = pages.shift();
+        if (next === undefined) throw new Error(`no response for ${request.url}`);
+        if ("throw" in next) throw next.throw;
+        const text = next.text ?? JSON.stringify(next.body ?? {});
+        return { status: next.status ?? 200, contentType: "application/json", retryAfter: null, text };
+      },
+      close() {
+        state.closed += 1;
+      },
+    };
   };
-  return { calls, fetchImpl };
+  return {
+    createTransport,
+    requests,
+    get options() {
+      return state.options;
+    },
+    get closed() {
+      return state.closed;
+    },
+  };
 }
 
-function provider(fetchImpl: StripeFetch, extra: Partial<DatabaseConnection> = {}): StripeProvider {
-  return new StripeProvider({ ...connection, ...extra }, {}, fetchImpl);
+function provider(
+  createTransport: (options: NodeTransportOptions) => NodeTransport,
+  extra: Partial<DatabaseConnection> = {},
+): StripeProvider {
+  return new StripeProvider({ ...connection, ...extra }, {}, createTransport);
 }
 
-async function connected(fetchImpl: StripeFetch, extra: Partial<DatabaseConnection> = {}): Promise<StripeProvider> {
-  const opened = provider(fetchImpl, extra);
+async function connected(
+  createTransport: (options: NodeTransportOptions) => NodeTransport,
+  extra: Partial<DatabaseConnection> = {},
+): Promise<StripeProvider> {
+  const opened = provider(createTransport, extra);
   await opened.connect();
   return opened;
 }
@@ -60,10 +84,22 @@ const customer = {
 };
 
 describe("StripeProvider", () => {
-  test("requires a secret key and keeps only a host under stripe.com", () => {
-    expect(() => provider(async () => jsonResponse(200, {}), { password: "  " })).toThrow(DatabaseConfigError);
+  test("requires a printable secret key and sends it only to api.stripe.com", () => {
+    expect(() => new StripeProvider(connection)).not.toThrow();
+    expect(() => new StripeProvider({ ...connection, password: "  " })).toThrow(DatabaseConfigError);
+    const injected = "sk_test_secret_value\r\nX-Injected: 1";
+    expect(() => new StripeProvider({ ...connection, password: injected })).toThrow(/single line/);
+    try {
+      new StripeProvider({ ...connection, password: injected });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      expect(message).not.toContain("Injected");
+      expect(message).not.toContain("sk_test");
+    }
+    expect(() => new StripeProvider({ ...connection, password: "x".repeat(1024) })).toThrow(/single line/);
     expect(stripeApiHost(connection)).toBe("api.stripe.com");
     expect(stripeApiHost({ ...connection, host: " https://api.stripe.com/v1 " })).toBe("api.stripe.com");
+    expect(stripeApiHost({ ...connection, host: "http://api.stripe.com" })).toBe("api.stripe.com");
     expect(stripeApiHost({ ...connection, host: "   " })).toBe("api.stripe.com");
     for (const host of [
       "evil.com",
@@ -72,7 +108,7 @@ describe("StripeProvider", () => {
       "api.stripe.com:8443",
       "https://",
     ]) {
-      expect(() => provider(async () => jsonResponse(200, {}), { host })).toThrow(DatabaseConfigError);
+      expect(() => new StripeProvider({ ...connection, host })).toThrow(DatabaseConfigError);
       try {
         stripeApiHost({ ...connection, host });
       } catch (error) {
@@ -80,17 +116,26 @@ describe("StripeProvider", () => {
         expect(message).toContain("stripe.com");
         expect(message).not.toContain("evil");
         expect(message).not.toContain("8443");
+        expect(message).not.toContain("sk_test");
       }
     }
+    expect(() => stripeApiHost({ ...connection, host: "files.stripe.com" })).toThrow(
+      "The API host must be api.stripe.com. The secret key is sent only there.",
+    );
   });
 
   test("lists the account's objects and refuses a write", async () => {
-    const { fetchImpl, calls } = scripted([{ body: { data: [], has_more: false } }]);
-    const opened = await connected(fetchImpl);
+    const probe = scripted([{ body: { data: [], has_more: false } }]);
+    const opened = await connected(probe.createTransport);
     await opened.connect();
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.stripe.com/v1/customers?limit=1");
-    expect(calls[0]?.init?.redirect).toBe("manual");
+    expect(probe.requests).toHaveLength(1);
+    expect(probe.requests[0]?.url).toBe("https://api.stripe.com/v1/customers?limit=1");
+    expect(probe.options?.origin).toEqual({ scheme: "https", host: "api.stripe.com", port: 443 });
+    expect(probe.options?.tls).toEqual({ rejectUnauthorized: true, identity: "api.stripe.com" });
+    expect(probe.options?.refusesLinkLocal).toBe(true);
+    expect(probe.options?.refusesUpgrade).toBe(true);
+    expect(probe.options?.headers.Authorization).toBe("Bearer sk_test_secret_value");
+    expect(probe.options?.headers["Stripe-Version"]).toBe("2026-10-28.endive");
     expect(await opened.listContainers()).toEqual([{ path: ["account"], name: "account", level: 0 }]);
     expect(await opened.listContainers(["account"])).toEqual([]);
     expect(await opened.countObjects(["account"])).toEqual({ table: { count: 12 } });
@@ -117,7 +162,7 @@ describe("StripeProvider", () => {
 
   test("lists, searches, retrieves, and counts through the API", async () => {
     const page = { data: [customer], has_more: false };
-    const { fetchImpl, calls } = scripted([
+    const { createTransport, requests } = scripted([
       { body: { data: [customer], has_more: false } },
       { body: page },
       { body: { data: [customer], has_more: false, next_page: "page_2" } },
@@ -128,20 +173,20 @@ describe("StripeProvider", () => {
       { body: customer },
       { body: { data: [], has_more: true } },
     ]);
-    const opened = await connected(fetchImpl, { host: "api.stripe.com" });
+    const opened = await connected(createTransport, { host: "http://api.stripe.com" });
     const listed = await opened.query(
       "SELECT email, created FROM customers WHERE email = 'a@b.c' AND created >= 10 ORDER BY created DESC LIMIT 1",
     );
     expect(listed.rows).toEqual([{ id: "cus_1", email: "a@b.c", created: "2023-11-14T22:13:20.000Z" }]);
-    const listedUrl = new URL(calls[1]?.url ?? "");
+    const listedUrl = new URL(requests[1]?.url ?? "");
     expect(listedUrl.pathname).toBe("/v1/customers");
     expect(listedUrl.searchParams.get("email")).toBe("a@b.c");
     expect(listedUrl.searchParams.get("created[gte]")).toBe("10");
-    expect((calls[1]?.init?.headers as Record<string, string>)["Stripe-Version"]).toBe("2026-10-28.endive");
+    expect(listedUrl.protocol).toBe("https:");
 
     const searched = await opened.query("SELECT name FROM customers WHERE name = 'Ada' LIMIT 5");
     expect(searched.rows[0]).toMatchObject({ id: "cus_1", name: "Ada" });
-    expect(new URL(calls[2]?.url ?? "").pathname).toBe("/v1/customers/search");
+    expect(new URL(requests[2]?.url ?? "").pathname).toBe("/v1/customers/search");
     const stopped = await opened.query("SELECT name FROM customers WHERE name = 'Ada' LIMIT 5 OFFSET 1");
     expect(stopped.rows).toEqual([]);
 
@@ -151,15 +196,15 @@ describe("StripeProvider", () => {
       email: "a@b.c",
       delinquent: false,
       description: null,
-      livemode: false,
     });
+    expect(one.rows[0]).not.toHaveProperty("livemode");
     expect(one.rows[0]).not.toHaveProperty("metadata");
     expect(Object.hasOwn(one.rows[0] ?? {}, "object")).toBe(false);
-    expect(new URL(calls[4]?.url ?? "").pathname).toBe("/v1/customers/cus_1");
+    expect(new URL(requests[4]?.url ?? "").pathname).toBe("/v1/customers/cus_1");
 
     const counted = await opened.query("SELECT COUNT(*) FROM customers WHERE email = 'a@b.c'");
     expect(counted.rows).toEqual([{ row_count: 4 }]);
-    expect(new URL(calls[5]?.url ?? "").searchParams.get("expand[]")).toBe("total_count");
+    expect(new URL(requests[5]?.url ?? "").searchParams.get("expand[]")).toBe("total_count");
     const capped = await opened.query("SELECT COUNT(*) FROM customers");
     expect(capped.warnings?.[0]?.message).toContain("10000");
     const byId = await opened.query("SELECT COUNT(*) FROM refunds WHERE id = 're_1'");
@@ -183,60 +228,62 @@ describe("StripeProvider", () => {
         has_more: more,
       },
     });
-    const { fetchImpl, calls } = scripted([
+    const { createTransport, requests } = scripted([
       { body: { data: [], has_more: false } },
       ...Array.from({ length: 10 }, (_, index) => listPage(index, true)),
     ]);
-    const opened = await connected(fetchImpl);
+    const opened = await connected(createTransport);
     const capped = await opened.query("SELECT email FROM customers WHERE email = 'a@b.c'");
     expect(capped.rows).toHaveLength(1000);
     expect(capped.warnings?.[0]?.message).toContain("1000");
-    expect(new URL(calls[2]?.url ?? "").searchParams.get("starting_after")).toBe("cus_0_99");
+    expect(new URL(requests[2]?.url ?? "").searchParams.get("starting_after")).toBe("cus_0_99");
 
     const products = scripted([
       { body: { data: [], has_more: false } },
       { body: { data: [{ id: "prod_1", name: "Pro", active: true, created: 10 }], has_more: false } },
     ]);
-    const productsOpened = await connected(products.fetchImpl);
+    const productsOpened = await connected(products.createTransport);
     const active = await productsOpened.query("SELECT name FROM products WHERE active = FALSE");
     expect(active.rows).toEqual([{ id: "prod_1", name: "Pro" }]);
-    expect(new URL(products.calls[1]?.url ?? "").searchParams.get("active")).toBe("false");
+    expect(new URL(products.requests[1]?.url ?? "").searchParams.get("active")).toBe("false");
   });
 
   test("reports API failures without repeating the key", async () => {
     const token = "sk_test_secret_value";
     await expect(
-      provider(scripted([{ status: 401, body: { error: { message: "nope" } } }]).fetchImpl).connect(),
+      provider(scripted([{ status: 401, body: { error: { message: "nope" } } }]).createTransport).connect(),
     ).rejects.toBeInstanceOf(AuthenticationError);
     await expect(
-      provider(scripted([{ status: 403, body: { error: { message: "nope" } } }]).fetchImpl).connect(),
+      provider(scripted([{ status: 403, body: { error: { message: "nope" } } }]).createTransport).connect(),
     ).rejects.toBeInstanceOf(PermissionDeniedError);
-    await expect(provider(scripted([{ status: 400, body: {} }]).fetchImpl).connect()).rejects.toThrow(/answered 400/);
-    await expect(provider(scripted([{ status: 500, text: "down" }]).fetchImpl).connect()).rejects.toThrow("down");
+    await expect(provider(scripted([{ status: 400, body: {} }]).createTransport).connect()).rejects.toThrow(
+      /answered 400/,
+    );
+    await expect(provider(scripted([{ status: 500, text: "down" }]).createTransport).connect()).rejects.toThrow("down");
     await expect(
-      provider(scripted([{ throw: new Error(`offline ${token}`) }]).fetchImpl).connect(),
+      provider(scripted([{ throw: new Error(`offline ${token}`) }]).createTransport).connect(),
     ).rejects.toBeInstanceOf(ConnectionError);
-    await expect(provider(scripted([{ throw: "offline" }]).fetchImpl).connect()).rejects.toThrow(
+    await expect(provider(scripted([{ throw: "offline" }]).createTransport).connect()).rejects.toThrow(
       /could not be reached/,
     );
     await expect(
-      provider(scripted([{ status: 400, body: { error: { message: `bad ${token}` } } }]).fetchImpl).connect(),
+      provider(scripted([{ status: 400, body: { error: { message: `bad ${token}` } } }]).createTransport).connect(),
     ).rejects.toThrow(/••••/);
     const redirected = scripted([{ status: 302, text: "go" }]);
-    await expect(provider(redirected.fetchImpl).connect()).rejects.toThrow(/does not follow/);
+    await expect(provider(redirected.createTransport).connect()).rejects.toThrow(/does not follow/);
     const huge = "x".repeat(2 * 1024 * 1024 + 1);
-    await expect(provider(scripted([{ text: huge }]).fetchImpl).connect()).rejects.toThrow(/larger than 2 MB/);
+    await expect(provider(scripted([{ text: huge }]).createTransport).connect()).rejects.toThrow(/larger than 2 MB/);
 
     const shape = await connected(
-      scripted([{ body: { data: [], has_more: false } }, { body: { data: "nope" } }]).fetchImpl,
+      scripted([{ body: { data: [], has_more: false } }, { body: { data: "nope" } }]).createTransport,
     );
     await expect(shape.query("SELECT * FROM customers LIMIT 1")).rejects.toThrow(/did not return records/);
     const nameless = await connected(
-      scripted([{ body: { data: [], has_more: false } }, { body: { data: [{ email: "a" }] } }]).fetchImpl,
+      scripted([{ body: { data: [], has_more: false } }, { body: { data: [{ email: "a" }] } }]).createTransport,
     );
     await expect(nameless.query("SELECT * FROM customers LIMIT 1")).rejects.toThrow(/no id/);
     const uncounted = await connected(
-      scripted([{ body: { data: [], has_more: false } }, { body: { data: [] } }]).fetchImpl,
+      scripted([{ body: { data: [], has_more: false } }, { body: { data: [] } }]).createTransport,
     );
     await expect(uncounted.query("SELECT COUNT(*) FROM customers")).rejects.toThrow(/did not report a count/);
 
@@ -244,15 +291,15 @@ describe("StripeProvider", () => {
       string,
       unknown
     >;
-    const { fetchImpl } = scripted([
+    const { createTransport } = scripted([
       { body: { data: [], has_more: false } },
       { body: { data: [poisoned], has_more: false } },
     ]);
-    const opened = await connected(fetchImpl);
+    const opened = await connected(createTransport);
     const listed = await opened.query("SELECT * FROM customers LIMIT 1");
     expect(Object.hasOwn(listed.rows[0] ?? {}, "__proto__")).toBe(false);
 
-    const closed = provider(scripted([]).fetchImpl);
+    const closed = provider(scripted([]).createTransport);
     await expect(closed.query("SELECT * FROM customers")).rejects.toThrow(/Not connected/);
     await expect(closed.listContainers()).rejects.toThrow(/Not connected/);
     await expect(opened.runMaintenance()).rejects.toBeInstanceOf(QueryError);
@@ -266,5 +313,56 @@ describe("StripeProvider", () => {
     expect(await opened.getStorageStats()).toEqual([]);
     await opened.disconnect();
     await expect(opened.query("SELECT * FROM customers")).rejects.toThrow(/Not connected/);
+  });
+
+  test("does not follow a redirect, echo the key, or return a client secret", async () => {
+    const stolen = "https://evil.example/steal";
+    const redirected = scripted([{ throw: new TransportError("redirect", `Location: ${stolen}`) }]);
+    await expect(provider(redirected.createTransport).connect()).rejects.toThrow(/does not follow/);
+    expect(redirected.closed).toBe(1);
+    try {
+      await provider(
+        scripted([{ throw: new TransportError("redirect", `Location: ${stolen}`) }]).createTransport,
+      ).connect();
+    } catch (error) {
+      expect(error instanceof Error ? error.message : "").not.toContain("evil.example");
+    }
+    await expect(
+      provider(scripted([{ throw: new TransportError("too-large", "body") }]).createTransport).connect(),
+    ).rejects.toThrow(/larger than 2 MB/);
+    const token = "sk_test_secret_value";
+    await expect(
+      provider(scripted([{ throw: new TransportError("network", `reset ${token}`) }]).createTransport).connect(),
+    ).rejects.toThrow(/••••/);
+    await expect(
+      provider(scripted([{ throw: new DatabaseConfigError("blocked", "stripe") }]).createTransport).connect(),
+    ).rejects.toThrow("blocked");
+
+    const denied = scripted([{ status: 401, body: { error: { message: "nope" } } }]);
+    await expect(provider(denied.createTransport).connect()).rejects.toBeInstanceOf(AuthenticationError);
+    expect(denied.closed).toBe(1);
+
+    const intent = {
+      id: "pi_1",
+      amount: 100,
+      currency: "usd",
+      status: "requires_payment_method",
+      created: 10,
+      client_secret: "pi_1_secret_value",
+      object: "payment_intent",
+    };
+    const paid = scripted([{ body: { data: [], has_more: false } }, { body: intent }]);
+    const opened = await connected(paid.createTransport);
+    const rows = await opened.query("SELECT * FROM payment_intents WHERE id = 'pi_1'");
+    expect(rows.rows[0]).toMatchObject({ id: "pi_1", amount: 100, currency: "usd" });
+    expect(rows.rows[0]).not.toHaveProperty("client_secret");
+    expect(JSON.stringify(rows)).not.toContain("pi_1_secret_value");
+    expect(paid.requests[1]?.url).toBe("https://api.stripe.com/v1/payment_intents/pi_1");
+    await expect(opened.query("SELECT * FROM customers WHERE id = '..'")).rejects.toThrow(/was not sent/);
+    expect(paid.requests).toHaveLength(2);
+    await opened.disconnect();
+    expect(paid.closed).toBe(1);
+    const idle = provider(scripted([]).createTransport);
+    await idle.disconnect();
   });
 });

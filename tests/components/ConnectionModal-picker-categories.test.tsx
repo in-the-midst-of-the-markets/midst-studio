@@ -16,11 +16,11 @@ function openDialog(): void {
 }
 
 describe("connection picker categories", () => {
-  test("a click on Databases or SAAS hides that category, and the next click shows it", () => {
+  test("a click on Databases or SAAS Connectors hides that category, and the next click shows it", () => {
     openDialog();
 
     const databases = screen.getByRole("button", { name: "Databases" });
-    const saas = screen.getByRole("button", { name: "SAAS" });
+    const saas = screen.getByRole("button", { name: "SAAS Connectors" });
     expect(databases.getAttribute("aria-expanded")).toBe("true");
     expect(saas.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
@@ -39,6 +39,12 @@ describe("connection picker categories", () => {
     expect(databases.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Airtable" })).toBeDefined();
+
+    const order = screen.getAllByRole("button").map((button) => button.textContent?.replaceAll(/\s+/g, "") ?? "");
+    const stripeAt = order.indexOf("Stripe");
+    const airtableAt = order.indexOf("Airtable");
+    expect(stripeAt).toBeGreaterThan(-1);
+    expect(airtableAt).toBeGreaterThan(stripeAt);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("false");
