@@ -44,7 +44,15 @@ const UNCONNECTED = {
   createdAt: new Date(0),
 } as const;
 
-const unconnected = (type: DatabaseType): DatabaseConnection => ({ ...UNCONNECTED, type }) as DatabaseConnection;
+/** Hosts the pinned SaaS providers accept. The shared loopback host is not one of them. */
+const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
+  airtable: "api.airtable.com",
+  hubspot: "api.hubapi.com",
+  stripe: "api.stripe.com",
+};
+
+const unconnected = (type: DatabaseType): DatabaseConnection =>
+  ({ ...UNCONNECTED, type, host: CENSUS_HOST[type] ?? UNCONNECTED.host }) as DatabaseConnection;
 
 /**
  * One connection per shipped type-id, as a Record so the compiler owns exhaustiveness.
@@ -57,6 +65,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   postgres: unconnected("postgres"),
   airtable: unconnected("airtable"),
   hubspot: unconnected("hubspot"),
+  stripe: unconnected("stripe"),
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

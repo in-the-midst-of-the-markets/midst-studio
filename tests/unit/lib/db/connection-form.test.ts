@@ -46,6 +46,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
   airtable: true,
   hubspot: true,
+  stripe: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -369,6 +370,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "weaviate",
       "questdb",
       "hubspot",
+      "stripe",
     ]);
   });
 

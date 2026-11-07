@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Forty-three external engines share one interface.
-The forty-sixth row is the embedded LibreDB store: it ships inside the image.
+Forty-seven external engines share one interface.
+The forty-eighth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -153,6 +153,10 @@ The forty-sixth row is the embedded LibreDB store: it ships inside the image.
 | **RabbitMQ** | none | Read-only stream reader |
 | **OPC UA** | `node-opcua-client` | Read-only address-space browser; node values and raw history |
 | **QuestDB** | `pg` | QuestDB SQL, port 8812 |
+| **Airtable** | none, HTTP | SQL over the Web API |
+| **Supabase** | `pg` | Hosted PostgreSQL |
+| **HubSpot** | none, HTTP | SQL over the CRM API |
+| **Stripe** | none, HTTP | Read-only SQL over the Stripe API |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -160,7 +164,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak the wire protocol of one of the forty-six drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
+Twenty-seven further engines speak the wire protocol of one of the forty-seven drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

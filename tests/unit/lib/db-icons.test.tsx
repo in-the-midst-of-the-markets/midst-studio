@@ -33,6 +33,7 @@ import {
   SparkIcon,
   AirtableIcon,
   HubSpotIcon,
+  StripeIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 
@@ -71,6 +72,7 @@ describe("db-icons", () => {
     { name: "SparkIcon", Component: SparkIcon },
     { name: "AirtableIcon", Component: AirtableIcon },
     { name: "HubSpotIcon", Component: HubSpotIcon },
+    { name: "StripeIcon", Component: StripeIcon },
     { name: "SupabaseIcon", Component: SupabaseIcon },
   ];
 

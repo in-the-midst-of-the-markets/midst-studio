@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, libredb$/,
     );
   });
 
@@ -1578,6 +1578,9 @@ describe("createDatabaseProvider", () => {
       trino: { port: 8080, database: "tpch" },
       cassandra: { port: 9042, database: "probe", localDataCenter: "datacenter1" } as Partial<DatabaseConnection>,
       libredb: { database: CENSUS_LIBREDB_FILE },
+      airtable: { host: "api.airtable.com" },
+      hubspot: { host: "api.hubapi.com" },
+      stripe: { host: "api.stripe.com" },
     };
 
     const declaringTypes: string[] = [];
@@ -1635,6 +1638,9 @@ describe("createDatabaseProvider", () => {
       trino: { port: 8080, database: "tpch" },
       cassandra: { port: 9042, database: "probe", localDataCenter: "datacenter1" } as Partial<DatabaseConnection>,
       libredb: { database: CENSUS_LIBREDB_FILE },
+      airtable: { host: "api.airtable.com" },
+      hubspot: { host: "api.hubapi.com" },
+      stripe: { host: "api.stripe.com" },
     };
 
     const cannotCancel: string[] = [];
@@ -1685,6 +1691,8 @@ describe("createDatabaseProvider", () => {
       // budget and by what one datagram can carry (#1721).
       "snmp",
       "sparkplug",
+      // No cancel: a Stripe read is one API request, and the API has nothing that stops it.
+      "stripe",
     ]);
   });
 });
