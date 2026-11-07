@@ -82,8 +82,22 @@ describe("AirtableProvider", () => {
     expect(() => new AirtableProvider({ ...connection, password: " " })).toThrow(DatabaseConfigError);
     expect(() => new AirtableProvider({ ...connection, database: "" })).toThrow(/base id/);
     expect(airtableApiHost({ ...connection, host: "https://example.airtable.com/v0" })).toBe("example.airtable.com");
-    expect(airtableApiHost({ ...connection, host: "https://" })).toBe("api.airtable.com");
     expect(airtableApiHost(connection)).toBe("api.airtable.com");
+    expect(airtableApiHost({ ...connection, host: "   " })).toBe("api.airtable.com");
+  });
+
+  test("sends the token only to a host under airtable.com", () => {
+    for (const host of ["evil.com", "api.airtable.com.evil.com", "https://token@evil.com", "api.airtable.com:8443"]) {
+      expect(() => new AirtableProvider({ ...connection, host })).toThrow(DatabaseConfigError);
+      try {
+        airtableApiHost({ ...connection, host });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        expect(message).toContain("airtable.com");
+        expect(message).not.toContain("evil");
+        expect(message).not.toContain("8443");
+      }
+    }
   });
 
   test("loads the schema once and describes every field type", async () => {
@@ -248,5 +262,32 @@ describe("AirtableProvider", () => {
     const again = await connected(scripted([{ body: schema }]).fetchImpl);
     await again.disconnect();
     await expect(again.getOverview()).rejects.toThrow(/Not connected/);
+  });
+
+  test("does not follow a redirect or read an oversized answer", async () => {
+    const redirected = scripted([{ status: 302, text: "go" }]);
+    await expect(connected(redirected.fetchImpl)).rejects.toThrow(/does not follow/);
+    expect(redirected.calls[0]?.init?.redirect).toBe("manual");
+    const huge = "x".repeat(2 * 1024 * 1024 + 1);
+    await expect(connected(scripted([{ text: huge }]).fetchImpl)).rejects.toThrow(/larger than 2 MB/);
+  });
+
+  test("does not repeat the token and skips a reserved field name", async () => {
+    const token = "pat-secret-value";
+    await expect(
+      connected(scripted([{ status: 400, body: { error: `bad ${token}` } }]).fetchImpl, { password: token }),
+    ).rejects.toThrow(/••••/);
+    try {
+      await connected(scripted([{ throw: new Error(`down ${token}`) }]).fetchImpl, { password: token });
+    } catch (error) {
+      expect(error instanceof Error ? error.message : "").not.toContain(token);
+    }
+    const fields = JSON.parse('{"Name":"Ada","__proto__":{"polluted":true}}') as Record<string, string>;
+    const opened = await connected(
+      scripted([{ body: schema }, { body: { records: [{ id: "rec1", fields }] } }]).fetchImpl,
+    );
+    const listed = await opened.query("SELECT * FROM Notes LIMIT 1");
+    expect(listed.rows[0]).toMatchObject({ _id: "rec1", Name: "Ada" });
+    expect(Object.hasOwn(listed.rows[0] ?? {}, "__proto__")).toBe(false);
   });
 });

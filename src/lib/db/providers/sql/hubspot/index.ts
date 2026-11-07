@@ -46,6 +46,7 @@ import type {
   TableStats,
 } from "@/lib/db/types";
 import type { ColumnSchema, QueryWarning } from "@/lib/types";
+import { assignOwnField, ownEntries, pinnedApiHost, readApiAnswer, redactSecret } from "@/lib/db/http/pinned-api-host";
 import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
 import {
   translateHubSpotSql,
@@ -103,11 +104,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The host the token is sent to. A pasted `https://api.hubapi.com/...` keeps the host only. */
+/** The host the token is sent to. Only a host under hubapi.com is accepted. */
 export function hubSpotApiHost(config: DatabaseConnection): string {
-  const raw = config.host?.trim() || DEFAULT_HOST;
-  const stripped = raw.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
-  return stripped === "" ? DEFAULT_HOST : stripped;
+  return pinnedApiHost(config.host, "hubapi.com", DEFAULT_HOST, PROVIDER);
 }
 
 function hubSpotMessage(body: unknown): string | undefined {
@@ -164,12 +163,10 @@ function readPage(body: unknown): { records: HubSpotRecord[]; after?: string; to
 }
 
 function propertyObject(pairs: readonly (readonly [string, HubSpotValue])[]): Record<string, string> {
-  const properties: Record<string, string> = {};
-  for (const [name, value] of pairs) {
-    if (value === null) continue;
-    properties[name] = typeof value === "boolean" ? (value ? "true" : "false") : String(value);
-  }
-  return properties;
+  const present = pairs.filter((pair): pair is readonly [string, Exclude<HubSpotValue, null>] => pair[1] !== null);
+  return ownEntries(
+    present.map(([name, value]) => [name, typeof value === "boolean" ? (value ? "true" : "false") : String(value)]),
+  );
 }
 
 export class HubSpotProvider extends SQLBaseProvider {
@@ -189,6 +186,7 @@ export class HubSpotProvider extends SQLBaseProvider {
     if (!this.config.password?.trim()) {
       throw new DatabaseConfigError("A HubSpot private app token is required.", PROVIDER);
     }
+    hubSpotApiHost(this.config);
   }
 
   public override getCapabilities(): ProviderCapabilities {
@@ -496,6 +494,7 @@ export class HubSpotProvider extends SQLBaseProvider {
     try {
       response = await this.fetchImpl(`https://${host}${path}`, {
         ...init,
+        redirect: "manual",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -504,9 +503,9 @@ export class HubSpotProvider extends SQLBaseProvider {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "HubSpot could not be reached.";
-      throw new ConnectionError(message, PROVIDER, host);
+      throw new ConnectionError(redactSecret(message, token), PROVIDER, host);
     }
-    const text = await response.text();
+    const text = await readApiAnswer(response, PROVIDER, "HubSpot");
     let body: unknown = {};
     if (text !== "") {
       try {
@@ -516,7 +515,7 @@ export class HubSpotProvider extends SQLBaseProvider {
       }
     }
     if (!response.ok) {
-      const message = hubSpotMessage(body) ?? `HubSpot answered ${response.status}.`;
+      const message = redactSecret(hubSpotMessage(body) ?? `HubSpot answered ${response.status}.`, token);
       if (response.status === 401) throw new AuthenticationError(message, PROVIDER);
       if (response.status === 403) throw new PermissionDeniedError(message, PROVIDER);
       throw new QueryError(message, PROVIDER);
@@ -534,10 +533,12 @@ function rowsOf(
   const declared = uniqueFieldNames(["id", ...names]);
   const rows = records.map((record) => {
     const row: Record<string, unknown> = { id: record.id };
-    for (const name of names) row[name] = Object.hasOwn(record.properties, name) ? record.properties[name] : null;
+    for (const name of names) {
+      assignOwnField(row, name, Object.hasOwn(record.properties, name) ? record.properties[name] : null);
+    }
     if (columns === null) {
       for (const [key, value] of Object.entries(record.properties)) {
-        if (!Object.hasOwn(row, key)) row[key] = value;
+        if (!Object.hasOwn(row, key)) assignOwnField(row, key, value);
       }
     }
     return row;

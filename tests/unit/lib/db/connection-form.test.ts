@@ -368,6 +368,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "netconf",
       "weaviate",
       "questdb",
+      "hubspot",
     ]);
   });
 

@@ -1,14 +1,20 @@
 import type { ConnectionStringSpec, ParsedConnection } from "@/lib/db/connection-string/types";
+import { isSupabaseCloudHost } from "@/lib/db/providers/sql/supabase/connection";
 import type { SSLMode } from "@/lib/types";
 
 /**
- * A `postgresql://` URL whose host mentions Supabase. Every other `postgresql://` URL stays
- * with the Postgres type. This row is walked before that one, and the overlap is declared
- * in `CONNECTION_STRING_PASTE_OVERLAPS`.
+ * A `postgresql://` URL whose hostname is under supabase.co or supabase.com. A name that only
+ * contains those letters stays with the Postgres type. This row is walked before that one, and
+ * the overlap is declared in `CONNECTION_STRING_PASTE_OVERLAPS`.
  */
 function claimsSupabase(text: string): boolean {
   const lower = text.toLowerCase();
-  return (lower.startsWith("postgres://") || lower.startsWith("postgresql://")) && lower.includes("supabase");
+  if (!lower.startsWith("postgres://") && !lower.startsWith("postgresql://")) return false;
+  try {
+    return isSupabaseCloudHost(new URL(text.replace(/^postgres(ql)?:/i, "https:")).hostname);
+  } catch {
+    return false;
+  }
 }
 
 function sslOf(params: URLSearchParams): Pick<ParsedConnection, "sslMode" | "unmappedTLSParam"> {
@@ -29,12 +35,7 @@ function sslOf(params: URLSearchParams): Pick<ParsedConnection, "sslMode" | "unm
 
 function parseSupabaseUrl(text: string): ParsedConnection | null {
   if (!claimsSupabase(text)) return null;
-  let url: URL;
-  try {
-    url = new URL(text.replace(/^postgres(ql)?:/i, "https:"));
-  } catch {
-    return null;
-  }
+  const url = new URL(text.replace(/^postgres(ql)?:/i, "https:"));
   const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
   const tls = sslOf(url.searchParams);
   return {

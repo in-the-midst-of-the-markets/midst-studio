@@ -21,11 +21,19 @@ describe("Supabase host normalization", () => {
     expect(expandSupabaseHost("https://supabase.com/dashboard/project/abcdefghij/settings")).toBe(
       "db.abcdefghij.supabase.co",
     );
+    expect(
+      normalizeSupabaseConnection({ ...base, host: "https://supabase.com/dashboard/project/abcdefghij" }).host,
+    ).toBe("db.abcdefghij.supabase.co");
     expect(expandSupabaseHost("db.abcdefghij.supabase.co")).toBe("db.abcdefghij.supabase.co");
     expect(expandSupabaseHost("aws-0-us-east-1.pooler.supabase.com")).toBe("aws-0-us-east-1.pooler.supabase.com");
-    expect(expandSupabaseHost("https://db.supabase.co")).toBe("https://db.supabase.co");
+    expect(expandSupabaseHost("https://db.supabase.co")).toBe("db.supabase.co");
     expect(expandSupabaseHost("db.supabase.co")).toBe("db.supabase.co");
     expect(expandSupabaseHost("127.0.0.1")).toBe("127.0.0.1");
+    expect(expandSupabaseHost("https://www.supabase.com/dashboard/project/abcdefghij")).toBe(
+      "db.abcdefghij.supabase.co",
+    );
+    expect(expandSupabaseHost("https://www.supabase.com/dashboard/project/short")).toBe("www.supabase.com");
+    expect(expandSupabaseHost("ABCDEFGHIJ")).toBe("db.abcdefghij.supabase.co");
   });
 
   test("fills the Postgres defaults and turns TLS on for a Supabase host", () => {
@@ -94,6 +102,69 @@ describe("Supabase host normalization", () => {
     });
     expect(normalized).toMatchObject({ user: "owner", password: "secret", database: "app", port: 6543 });
   });
+
+  test("does not read a dashboard path off a host that is not supabase.com", () => {
+    expect(expandSupabaseHost("https://notsupabase.com/dashboard/project/abcdefghij")).toBe("notsupabase.com");
+    expect(expandSupabaseHost("https://evil.com/supabase.com/dashboard/project/abcdefghij")).toBe("evil.com");
+    const normalized = normalizeSupabaseConnection({ ...base, host: "notsupabase.com", ssl: { mode: "disable" } });
+    expect(normalized.host).toBe("notsupabase.com");
+    expect(normalized.ssl?.mode).toBe("disable");
+  });
+
+  test("takes a password out of an https host before expanding the project", () => {
+    const normalized = normalizeSupabaseConnection({
+      ...base,
+      host: "https://owner:s%40cret@abcdefghij.supabase.co/ignore",
+    });
+    expect(normalized.host).toBe("db.abcdefghij.supabase.co");
+    expect(normalized.password).toBe("s@cret");
+    expect(normalized.host).not.toContain("cret");
+  });
+
+  test("rewrites a cloud connection string that turns TLS off and keeps a verifying mode", () => {
+    const disabled = normalizeSupabaseConnection({
+      ...base,
+      connectionString: "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?sslmode=disable",
+    });
+    expect(disabled.connectionString).toContain("sslmode=require");
+    expect(disabled.connectionString).not.toContain("sslmode=disable");
+    expect(disabled.connectionString).toContain("secret");
+    expect(disabled.ssl?.mode).toBe("require");
+    const verifying = "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?sslmode=verify-full";
+    expect(normalizeSupabaseConnection({ ...base, connectionString: verifying }).connectionString).toBe(verifying);
+    const local = "postgresql://postgres:secret@127.0.0.1/postgres?sslmode=disable";
+    expect(normalizeSupabaseConnection({ ...base, connectionString: local }).connectionString).toBe(local);
+    const required = "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?sslmode=require";
+    expect(normalizeSupabaseConnection({ ...base, connectionString: required }).connectionString).toBe(required);
+    const allowed = "postgres://postgres:secret@db.abcdefghij.supabase.co/postgres?sslmode=allow";
+    const rewritten = normalizeSupabaseConnection({ ...base, connectionString: allowed }).connectionString ?? "";
+    expect(rewritten.startsWith("postgres:")).toBe(true);
+    expect(rewritten).toContain("sslmode=require");
+    const mixed = "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?SSLMODE=require&sslmode=disable";
+    const mixedOut = normalizeSupabaseConnection({ ...base, connectionString: mixed }).connectionString ?? "";
+    expect(mixedOut).toContain("sslmode=require");
+    expect(mixedOut.toLowerCase()).not.toContain("sslmode=disable");
+    const switchedOff = "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?ssl=0";
+    expect(normalizeSupabaseConnection({ ...base, connectionString: switchedOff }).connectionString).toContain(
+      "sslmode=require",
+    );
+    expect(normalizeSupabaseConnection({ ...base, connectionString: "postgresql://[" }).connectionString).toBe(
+      "postgresql://[",
+    );
+    expect(normalizeSupabaseConnection({ ...base, host: "postgresql://[" }).host).toBe("postgresql://[");
+    expect(
+      normalizeSupabaseConnection({ ...base, host: "db.abcdefghij.supabase.co", ssl: { mode: "verify-ca" } }).ssl?.mode,
+    ).toBe("verify-ca");
+  });
+
+  test("turns TLS on when a host field URL asked for plaintext", () => {
+    const normalized = normalizeSupabaseConnection({
+      ...base,
+      host: "postgresql://postgres:secret@db.abcdefghij.supabase.co/postgres?sslmode=disable",
+    });
+    expect(normalized.host).toBe("db.abcdefghij.supabase.co");
+    expect(normalized.ssl?.mode).toBe("require");
+  });
 });
 
 describe("Supabase paste", () => {
@@ -104,6 +175,8 @@ describe("Supabase paste", () => {
     expect(paste.claims("postgresql://postgres:pw@db.abcdefghij.supabase.co:5432/postgres")).toBe(true);
     expect(paste.names("POSTGRES://postgres@db.abcdefghij.supabase.co/postgres")).toBe(true);
     expect(paste.claims("postgresql://localhost/postgres")).toBe(false);
+    expect(paste.claims("postgresql://postgres:pw@notsupabase.com/postgres")).toBe(false);
+    expect(paste.claims("postgresql://postgres:pw@db.abcdefghij.supabase.co.evil.com/postgres")).toBe(false);
     expect(paste.parse("mysql://db.supabase.co")).toBeNull();
   });
 

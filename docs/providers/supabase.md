@@ -8,14 +8,14 @@ The host can be any of these:
 - the pooler host Supabase shows (`*.pooler.supabase.com`)
 - the project ref on its own
 - `https://<project-ref>.supabase.co`
-- a dashboard URL that contains `/project/<project-ref>`
+- a dashboard URL on `supabase.com` whose path is `/dashboard/project/<project-ref>`
 - a `postgresql://` URL copied from the Supabase dashboard, pasted into the host field or into the connection-string paste box
 
-An empty user becomes `postgres`. An empty database becomes `postgres`. An empty port becomes `5432`. The pooler often wants the user `postgres.<project-ref>`; type that when the direct user is refused. The password is the database password, not the anon key or the service role key.
+An empty user becomes `postgres`. An empty database becomes `postgres`. An empty port becomes `5432`. The pooler often wants the user `postgres.<project-ref>`; type that when the direct user is refused. The password is the database password, not the anon key or the service role key. A password written into the host URL is taken out of the host before the connection opens.
 
-A host that mentions Supabase uses TLS. A saved connection that left SSL off is turned to `require` before the pool opens, because Supabase does not accept a plaintext connection.
+A hostname under `supabase.co` or `supabase.com` uses TLS. A saved connection that left SSL off, and a connection string that says `sslmode=disable`, `allow` or `prefer`, is turned to `require` before the pool opens, because Supabase does not accept a plaintext connection. A verifying mode (`verify-full`, `verify-ca`, `verify-system`) is left as it was. A name that only contains the letters "supabase" is not treated as one of these hosts.
 
-A pasted `postgresql://` URL is this connection only when the host mentions Supabase. Every other `postgresql://` URL stays a Postgres connection.
+A pasted `postgresql://` URL is this connection only when its hostname is under `supabase.co` or `supabase.com`. Every other `postgresql://` URL stays a Postgres connection.
 
 ## SQL grammar
 
@@ -33,7 +33,7 @@ The module's `export` field spells column types through `ddlTypes` (a binary col
 
 ## Connection string
 
-[`connection-string.ts`](../../src/lib/db/providers/sql/supabase/connection-string.ts) shows no connection string scheme. There is no `readTls`. Its `paste` claims a `postgresql://` URL whose host mentions Supabase and fills the host, port, user, password and database. There is no seed load check. A saved `connectionString` is opened by the Postgres provider.
+[`connection-string.ts`](../../src/lib/db/providers/sql/supabase/connection-string.ts) shows no connection string scheme. There is no `readTls`. Its `paste` claims a `postgresql://` URL whose hostname is under `supabase.co` or `supabase.com` and fills the host, port, user, password and database. There is no seed load check. A saved `connectionString` is opened by the Postgres provider after a cloud host's plaintext `sslmode` is rewritten to `require`.
 
 ## Execution UI
 

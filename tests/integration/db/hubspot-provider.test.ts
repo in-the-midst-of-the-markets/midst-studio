@@ -70,8 +70,18 @@ describe("HubSpotProvider", () => {
     expect(() => provider(async () => jsonResponse(200, {}), { password: "  " })).toThrow(DatabaseConfigError);
     expect(hubSpotApiHost(connection)).toBe("api.hubapi.com");
     expect(hubSpotApiHost({ ...connection, host: " https://eu.hubapi.com/crm " })).toBe("eu.hubapi.com");
-    expect(hubSpotApiHost({ ...connection, host: "https://" })).toBe("api.hubapi.com");
     expect(hubSpotApiHost({ ...connection, host: "   " })).toBe("api.hubapi.com");
+    for (const host of ["evil.com", "api.hubapi.com.evil.com", "https://pat-token@evil.com", "api.hubapi.com:8443"]) {
+      expect(() => provider(async () => jsonResponse(200, {}), { host })).toThrow(DatabaseConfigError);
+      try {
+        hubSpotApiHost({ ...connection, host });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        expect(message).toContain("hubapi.com");
+        expect(message).not.toContain("evil");
+        expect(message).not.toContain("8443");
+      }
+    }
   });
 
   test("lists the CRM objects and their properties", async () => {
@@ -228,6 +238,8 @@ describe("HubSpotProvider", () => {
     await expect(provider(odd.fetchImpl).connect()).rejects.toThrow(/could not be reached/);
     const shape = repeated({ body: { results: "nope" } });
     await expect(provider(shape.fetchImpl).connect()).rejects.toThrow(/object properties/);
+    const unreadable = await connected(scripted([...propertyPages(), { body: { results: "nope" } }]).fetchImpl);
+    await expect(unreadable.query("SELECT * FROM contacts LIMIT 1")).rejects.toThrow(/did not return records/);
 
     const closed = provider(scripted([]).fetchImpl);
     await expect(closed.query("SELECT * FROM contacts")).rejects.toThrow(/Not connected/);
@@ -249,5 +261,35 @@ describe("HubSpotProvider", () => {
     const { fetchImpl } = scripted([...propertyPages(), { body: { results: [{ properties: {} }] } }]);
     const opened = await connected(fetchImpl);
     await expect(opened.query("SELECT * FROM contacts LIMIT 1")).rejects.toThrow(/no id/);
+  });
+
+  test("does not follow a redirect or read an oversized answer", async () => {
+    const repeated = (page: { status?: number; body?: unknown; text?: string }) =>
+      scripted(Array.from({ length: 7 }, () => page));
+    const redirected = repeated({ status: 302, text: "go" });
+    await expect(provider(redirected.fetchImpl).connect()).rejects.toThrow(/does not follow/);
+    expect(redirected.calls[0]?.init?.redirect).toBe("manual");
+    const huge = "x".repeat(2 * 1024 * 1024 + 1);
+    await expect(provider(repeated({ text: huge }).fetchImpl).connect()).rejects.toThrow(/larger than 2 MB/);
+  });
+
+  test("does not repeat the token and skips a reserved property name", async () => {
+    const token = "pat-secret-value";
+    const repeated = (page: { status?: number; body?: unknown; text?: string; throw?: unknown }) =>
+      scripted(Array.from({ length: 7 }, () => page));
+    await expect(
+      provider(repeated({ status: 400, body: { message: `bad ${token}` } }).fetchImpl, { password: token }).connect(),
+    ).rejects.toThrow(/••••/);
+    try {
+      await provider(repeated({ throw: new Error(`down ${token}`) }).fetchImpl, { password: token }).connect();
+    } catch (error) {
+      expect(error instanceof Error ? error.message : "").not.toContain(token);
+    }
+    const properties = JSON.parse('{"email":"a@b.c","__proto__":{"polluted":true}}') as Record<string, string>;
+    const { fetchImpl } = scripted([...propertyPages(), { body: { results: [{ id: "1", properties }] } }]);
+    const opened = await connected(fetchImpl);
+    const listed = await opened.query("SELECT * FROM contacts LIMIT 1");
+    expect(listed.rows[0]).toMatchObject({ id: "1", email: "a@b.c" });
+    expect(Object.hasOwn(listed.rows[0] ?? {}, "__proto__")).toBe(false);
   });
 });

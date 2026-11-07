@@ -436,7 +436,7 @@ export const CONNECTION_FORM: {
     fieldHints: {
       password: "A personal access token with data and schema access to this base.",
       database: "The base id from the Airtable URL, the part that starts with app.",
-      host: "Leave this as api.airtable.com unless you were given another API host.",
+      host: "The token is sent only to a host under airtable.com.",
     },
   },
   hubspot: {
@@ -450,7 +450,7 @@ export const CONNECTION_FORM: {
     fieldPlaceholders: { password: "pat-…", host: "api.hubapi.com" },
     fieldHints: {
       password: "A private app token with the CRM scopes for the objects you query.",
-      host: "Leave this as api.hubapi.com unless you were given another API host.",
+      host: "The token is sent only to a host under hubapi.com.",
     },
   },
   supabase: {

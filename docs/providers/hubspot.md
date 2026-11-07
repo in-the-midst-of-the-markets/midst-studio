@@ -2,7 +2,7 @@
 
 HubSpot is its own connection type. Studio reaches a CRM account over the Web API (`https://api.hubapi.com`). It is not a SQL server, and the rows are not copied into another database. The editor still runs SQL: one `SELECT`, `INSERT`, `UPDATE`, or `DELETE` is translated into that API before anything is sent.
 
-The connection is a private app token in the password field. The API host defaults to `api.hubapi.com`. Traffic is HTTPS, so the dialog has no TLS panel and no SSH tunnel.
+The connection is a private app token in the password field. The API host defaults to `api.hubapi.com`. The token is sent only to a host under `hubapi.com`, over HTTPS, and a redirect is not followed. The dialog has no TLS panel and no SSH tunnel.
 
 The object tree is the standard CRM objects: contacts, companies, deals, tickets, products, line items, and quotes. Columns come from `GET /crm/v3/properties/{object}`. The `id` column is the record id.
 
