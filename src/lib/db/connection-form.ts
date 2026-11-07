@@ -464,7 +464,7 @@ export const CONNECTION_FORM: {
     fieldPlaceholders: { password: "sk_live_…", host: "api.stripe.com" },
     fieldHints: {
       password: "A secret or restricted key with read access to the objects you query.",
-      host: "The secret key is sent only to a host under stripe.com.",
+      host: "The secret key is sent only to api.stripe.com.",
     },
   },
   supabase: {

@@ -2,9 +2,9 @@
 
 Stripe is its own connection type. Studio reaches an account over the Stripe API (`https://api.stripe.com`). It is not a SQL server, and the rows are not copied into another database. The editor still runs SQL: one `SELECT` or `COUNT(*)` is translated into that API before anything is sent. A write is refused before a request. The connection is read-only.
 
-The connection is a secret or restricted key in the password field. The key needs read access to the objects you query. The API host defaults to `api.stripe.com`. The key is sent only to a host under `stripe.com`, over HTTPS, and a redirect is not followed. The dialog has no TLS panel and no SSH tunnel. Requests send `Stripe-Version: 2026-10-28.endive`.
+The connection is a secret or restricted key in the password field. The key needs read access to the objects you query. The API host is `api.stripe.com`. The key is sent only there, over TLS, on the shared HTTP transport. That path does not use global fetch, so a proxy setting cannot carry the key. Any other host is refused, and the refusal does not repeat the host or the key. A redirect is not followed. The dialog has no TLS panel and no SSH tunnel. Requests send `Stripe-Version: 2026-10-28.endive`.
 
-The object tree is one account. The objects are customers, charges, payment intents, invoices, subscriptions, products, prices, refunds, payouts, balance transactions, disputes, and events. Columns are fixed. Amounts stay in the smallest currency unit. `created` and the other epoch columns are Unix seconds and come back as ISO timestamps. The `id` column is the object id.
+The object tree is one account. The objects are customers, charges, payment intents, invoices, subscriptions, products, prices, refunds, payouts, balance transactions, disputes, and events. Columns are fixed. A result contains only those columns, so a payment intent `client_secret` is not returned. Amounts stay in the smallest currency unit. `created` and the other epoch columns are Unix seconds and come back as ISO timestamps. The `id` column is the object id.
 
 ## SQL grammar
 

@@ -5,6 +5,11 @@
  * (`translate.ts`): SELECT with columns, WHERE, ORDER BY created, LIMIT and OFFSET, and
  * COUNT(*). Each statement is sent to the Stripe API. Nothing is copied into another
  * database, and a write is refused before a request.
+ *
+ * The secret key is sent only to api.stripe.com, over TLS, on the shared HTTP transport.
+ * That path does not use global fetch, so a proxy variable cannot carry the key. A redirect
+ * is not followed. A result contains only the columns this connection declares, so a field
+ * such as a payment intent's client_secret is not returned.
  */
 import { SQLBaseProvider } from "../sql-base";
 import {
@@ -46,7 +51,14 @@ import type {
   TableStats,
 } from "@/lib/db/types";
 import type { ColumnSchema, QueryWarning } from "@/lib/types";
-import { assignOwnField, pinnedApiHost, readApiAnswer, redactSecret } from "@/lib/db/http/pinned-api-host";
+import { endpointUrl, httpOrigin } from "@/lib/db/http/endpoint";
+import {
+  createNodeTransport,
+  TransportError,
+  type NodeTransport,
+  type NodeTransportOptions,
+} from "@/lib/db/http/node-transport";
+import { API_ANSWER_LIMIT, assignOwnField, pinnedApiHost, redactSecret } from "@/lib/db/http/pinned-api-host";
 import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
 import {
   stripeColumns,
@@ -63,6 +75,13 @@ import { translateStripeSql, type StripeSelect, type StripeStatement } from "./t
 const PROVIDER = "stripe" as const;
 const DEFAULT_HOST = "api.stripe.com";
 const STRIPE_VERSION = "2026-10-28.endive";
+const MAX_SOCKETS = 4;
+const DEADLINE_MS = 60_000;
+const EXACT_HOST = "The API host must be api.stripe.com. The secret key is sent only there.";
+const KEY_REQUIRED = "A Stripe secret key is required.";
+const KEY_LINE = "A Stripe secret key must be a single line of printable text.";
+const REDIRECT_REFUSED = "Stripe answered with a redirect, which Studio does not follow.";
+const BODY_TOO_LARGE = "Stripe's answer was larger than 2 MB and was not read.";
 const CONTAINER_NAME = "account";
 const MAX_ROWS = 1000;
 const PAGE_SIZE = 100;
@@ -83,8 +102,6 @@ const OBJECT_KINDS: readonly ObjectKindSpec[] = Object.freeze([
 const CONTAINER_PATH: ContainerPathShapeEngine = { code: PROVIDER, label: "A Stripe", shapeNames: "label" };
 const OBJECT_PATH: ObjectPathShapeEngine = { code: PROVIDER, label: "A Stripe", attachedSegment: "required" };
 
-export type StripeFetch = (input: string, init?: RequestInit) => Promise<Response>;
-
 interface StripeRecord {
   readonly id: string;
   readonly fields: Record<string, unknown>;
@@ -100,9 +117,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** The host the secret key is sent to. Only a host under stripe.com is accepted. */
+/** The host the secret key is sent to. Only api.stripe.com is accepted. */
 export function stripeApiHost(config: DatabaseConnection): string {
-  return pinnedApiHost(config.host, "stripe.com", DEFAULT_HOST, PROVIDER);
+  const host = pinnedApiHost(config.host, "stripe.com", DEFAULT_HOST, PROVIDER);
+  if (host !== DEFAULT_HOST) throw new DatabaseConfigError(EXACT_HOST, PROVIDER);
+  return host;
+}
+
+/** The secret key, refused when it could split an HTTP header or is too long to send. */
+function stripeToken(config: DatabaseConnection): string {
+  const token = config.password?.trim() ?? "";
+  if (token === "") throw new DatabaseConfigError(KEY_REQUIRED, PROVIDER);
+  const header = `Bearer ${token}`;
+  if (header.length > 1024 || !/^[\x21-\x7e]+$/.test(token)) throw new DatabaseConfigError(KEY_LINE, PROVIDER);
+  return token;
 }
 
 function stripeMessage(body: unknown): string | undefined {
@@ -139,11 +167,12 @@ function columnValue(column: StripeColumn, fields: Record<string, unknown>): unk
 
 export class StripeProvider extends SQLBaseProvider {
   private ready = false;
+  private transport: NodeTransport | null = null;
 
   constructor(
     config: DatabaseConnection,
     options: ProviderOptions = {},
-    private readonly fetchImpl: StripeFetch = fetch,
+    private readonly createTransport: (options: NodeTransportOptions) => NodeTransport = createNodeTransport,
   ) {
     super(config, options);
     this.validate();
@@ -151,9 +180,7 @@ export class StripeProvider extends SQLBaseProvider {
 
   public override validate(): void {
     super.validate();
-    if (!this.config.password?.trim()) {
-      throw new DatabaseConfigError("A Stripe secret key is required.", PROVIDER);
-    }
+    stripeToken(this.config);
     stripeApiHost(this.config);
   }
 
@@ -194,12 +221,18 @@ export class StripeProvider extends SQLBaseProvider {
 
   public async connect(): Promise<void> {
     if (this.ready) return;
-    await this.request("/v1/customers", { limit: "1" });
+    try {
+      await this.request("/v1/customers", { limit: "1" });
+    } catch (error) {
+      this.closeTransport();
+      throw error;
+    }
     this.ready = true;
     this.setConnected(true);
   }
 
   public async disconnect(): Promise<void> {
+    this.closeTransport();
     this.ready = false;
     this.setConnected(false);
   }
@@ -445,23 +478,57 @@ export class StripeProvider extends SQLBaseProvider {
     }
   }
 
-  private async request(path: string, query: Record<string, string> = {}): Promise<unknown> {
-    const token = this.config.password?.trim() ?? "";
+  private ensureTransport(): NodeTransport {
+    if (this.transport !== null) return this.transport;
     const host = stripeApiHost(this.config);
+    const token = stripeToken(this.config);
+    this.transport = this.createTransport({
+      origin: httpOrigin("https", host, 443),
+      tls: { rejectUnauthorized: true, identity: host },
+      maxSockets: MAX_SOCKETS,
+      headers: { Authorization: `Bearer ${token}`, "Stripe-Version": STRIPE_VERSION },
+      refusesLinkLocal: true,
+      refusesUpgrade: true,
+    });
+    return this.transport;
+  }
+
+  private closeTransport(): void {
+    this.transport?.close();
+    this.transport = null;
+  }
+
+  private wireFailure(error: unknown, token: string, host: string): Error {
+    if (error instanceof TransportError) {
+      if (error.kind === "redirect") return new ConnectionError(REDIRECT_REFUSED, PROVIDER);
+      if (error.kind === "too-large") return new QueryError(BODY_TOO_LARGE, PROVIDER);
+      return new ConnectionError(redactSecret(error.message, token), PROVIDER, host);
+    }
+    if (error instanceof DatabaseConfigError) return error;
+    const message = error instanceof Error ? error.message : "Stripe could not be reached.";
+    return new ConnectionError(redactSecret(message, token), PROVIDER, host);
+  }
+
+  private async request(path: string, query: Record<string, string> = {}): Promise<unknown> {
+    const token = stripeToken(this.config);
+    const host = stripeApiHost(this.config);
+    const transport = this.ensureTransport();
     const params = new URLSearchParams(query);
-    const suffix = params.size === 0 ? "" : `?${params.toString()}`;
-    let response: Response;
+    const url = endpointUrl(httpOrigin("https", host, 443), path, params.size === 0 ? undefined : params);
+    let response: { status: number; text: string };
     try {
-      response = await this.fetchImpl(`https://${host}${path}${suffix}`, {
+      response = await transport.request({
         method: "GET",
-        redirect: "manual",
-        headers: { Authorization: `Bearer ${token}`, "Stripe-Version": STRIPE_VERSION },
+        url,
+        signal: AbortSignal.timeout(DEADLINE_MS),
+        maxResponseBytes: API_ANSWER_LIMIT,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Stripe could not be reached.";
-      throw new ConnectionError(redactSecret(message, token), PROVIDER, host);
+      throw this.wireFailure(error, token, host);
     }
-    const text = await readApiAnswer(response, PROVIDER, "Stripe");
+    if (response.status >= 300 && response.status < 400) throw new ConnectionError(REDIRECT_REFUSED, PROVIDER);
+    const text = response.text;
+    if (text.length > API_ANSWER_LIMIT) throw new QueryError(BODY_TOO_LARGE, PROVIDER);
     let body: unknown = {};
     if (text !== "") {
       try {
@@ -470,7 +537,7 @@ export class StripeProvider extends SQLBaseProvider {
         body = { message: text };
       }
     }
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       const message = redactSecret(stripeMessage(body) ?? `Stripe answered ${response.status}.`, token);
       if (response.status === 401) throw new AuthenticationError(message, PROVIDER);
       if (response.status === 403) throw new PermissionDeniedError(message, PROVIDER);
@@ -499,23 +566,7 @@ function rowsOf(
     const row: Record<string, unknown> = {};
     assignOwnField(row, "id", record.id);
     for (const column of names) assignOwnField(row, column.name, columnValue(column, record.fields));
-    if (columns === null) {
-      for (const [key, value] of Object.entries(record.fields)) {
-        if (key === "object" || Object.hasOwn(row, key)) continue;
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean" || value === null) {
-          assignOwnField(row, key, value);
-        }
-      }
-    }
     return row;
   });
-  const seen: string[] = [];
-  if (columns === null) {
-    for (const row of rows) {
-      for (const key of Object.keys(row)) {
-        if (!seen.includes(key)) seen.push(key);
-      }
-    }
-  }
-  return { rows, fields: seen.length === 0 ? fieldNames : seen, rowCount: rows.length };
+  return { rows, fields: fieldNames, rowCount: rows.length };
 }
