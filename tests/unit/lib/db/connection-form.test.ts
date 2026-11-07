@@ -375,11 +375,11 @@ describe("CONNECTION_PICKER_ORDER", () => {
     ]);
   });
 
-  test("splits the picker into Databases and SAAS, each in picker order", () => {
+  test("splits the picker into SAAS Connectors and Databases, each in picker order", () => {
     const categories = connectionPickerCategories();
-    expect(categories.map((category) => category.label)).toEqual(["Databases", "SAAS"]);
-    const databases = categories[0]?.types ?? [];
-    const saas = categories[1]?.types ?? [];
+    expect(categories.map((category) => category.label)).toEqual(["SAAS Connectors", "Databases"]);
+    const saas = categories[0]?.types ?? [];
+    const databases = categories[1]?.types ?? [];
     expect(saas).toEqual(["hubspot", "stripe"]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

@@ -1545,18 +1545,21 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
 ]);
 
 /**
- * Engines the connection dialog groups under SAAS. Everything else in
+ * Engines the connection dialog groups under SAAS Connectors. Everything else in
  * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
  * The dialog draws a label before each group; clicking the label hides it.
  */
 export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze(["hubspot", "stripe"]);
 
 export interface ConnectionPickerCategory {
-  readonly label: "Databases" | "SAAS";
+  readonly label: "SAAS Connectors" | "Databases";
   readonly types: readonly DatabaseType[];
 }
 
-/** Databases first, then SAAS. The dialog hides a group when its label is clicked. */
+/**
+ * SAAS Connectors first, so HubSpot and Stripe are on screen when the dialog opens.
+ * Databases follow. The dialog hides a group when its label is clicked.
+ */
 export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
   const saas = new Set<string>(SAAS_PICKER_TYPES);
   const databases: DatabaseType[] = [];
@@ -1566,8 +1569,8 @@ export function connectionPickerCategories(): readonly ConnectionPickerCategory[
     else databases.push(type);
   }
   return [
+    { label: "SAAS Connectors", types: connectors },
     { label: "Databases", types: databases },
-    { label: "SAAS", types: connectors },
   ];
 }
 
