@@ -1,376 +1,208 @@
 /**
- * The SQL subset a read-only Stripe connection runs.
+ * What one Stripe statement asks for.
  *
- * Stripe has no SQL engine. The editor still speaks SQL, and this module turns one SELECT
- * into the list, search, or retrieve the provider sends. A write fails here, before a request.
+ * A query is Sigma SQL (`SELECT` or `WITH`) and is sent unchanged, apart from one trailing
+ * semicolon. A report is a report template. A report preview is the statement a click on a
+ * report writes (`SELECT * FROM "reports"."name"`), which runs that report rather than SQL.
  */
 import { QueryError } from "@/lib/db/errors";
-import type { StripeFilter } from "./objects";
 
 const PROVIDER = "stripe" as const;
 
-export type { StripeFilter };
-
-export interface StripeSelect {
-  readonly kind: "select";
-  readonly table: string;
-  readonly columns: readonly string[] | null;
-  readonly filters: readonly StripeFilter[];
-  readonly limit: number | null;
-  readonly offset: number;
+export interface StripeQuery {
+  readonly kind: "query";
+  readonly sql: string;
 }
 
-export interface StripeCount {
-  readonly kind: "count";
-  readonly table: string;
-  readonly filters: readonly StripeFilter[];
+export interface StripeReport {
+  readonly kind: "report";
+  readonly name: string;
+  readonly parameters: Readonly<Record<string, string | number | boolean>>;
 }
 
-export type StripeStatement = StripeSelect | StripeCount;
-
-type Token =
-  | { readonly t: "word"; readonly v: string }
-  | { readonly t: "ident"; readonly v: string }
-  | { readonly t: "string"; readonly v: string }
-  | { readonly t: "number"; readonly v: number }
-  | { readonly t: "op"; readonly v: string }
-  | { readonly t: "eof" };
-
-const READ_ONLY = "Stripe is read-only. This connection runs SELECT.";
-
-function fail(message: string): never {
-  throw new QueryError(message, PROVIDER);
+export interface StripeReportPreview {
+  readonly kind: "report-preview";
+  readonly name: string;
 }
 
-function tokenize(sql: string): Token[] {
-  const tokens: Token[] = [];
-  let i = 0;
-  const length = sql.length;
-  while (i < length) {
-    const c = sql[i];
-    if (c === " " || c === "\n" || c === "\t" || c === "\r") {
-      i += 1;
-      continue;
-    }
-    if (c === "-" && sql[i + 1] === "-") {
-      i += 2;
-      while (i < length && sql[i] !== "\n") i += 1;
-      continue;
-    }
-    if (c === "/" && sql[i + 1] === "*") {
-      const end = sql.indexOf("*/", i + 2);
-      if (end < 0) fail("A block comment is not closed.");
-      i = end + 2;
-      continue;
-    }
-    if (c === "'") {
-      let value = "";
-      i += 1;
-      let closed = false;
-      while (i < length) {
-        if (sql[i] === "'" && sql[i + 1] === "'") {
-          value += "'";
-          i += 2;
-          continue;
-        }
-        if (sql[i] === "'") {
-          closed = true;
-          i += 1;
-          break;
-        }
-        value += sql[i];
-        i += 1;
-      }
-      if (!closed) fail("A string is not closed.");
-      tokens.push({ t: "string", v: value });
-      continue;
-    }
-    if (c === '"') {
-      let value = "";
-      i += 1;
-      let closed = false;
-      while (i < length) {
-        if (sql[i] === '"' && sql[i + 1] === '"') {
-          value += '"';
-          i += 2;
-          continue;
-        }
-        if (sql[i] === '"') {
-          closed = true;
-          i += 1;
-          break;
-        }
-        value += sql[i];
-        i += 1;
-      }
-      if (!closed) fail("A name is not closed.");
-      tokens.push({ t: "ident", v: value });
-      continue;
-    }
-    if ((c === "-" && /[0-9]/.test(sql[i + 1] ?? "")) || /[0-9]/.test(c)) {
-      let raw = "";
-      if (c === "-") {
-        raw = "-";
-        i += 1;
-      }
-      while (i < length && /[0-9.]/.test(sql[i])) {
-        raw += sql[i];
-        i += 1;
-      }
-      const value = Number(raw);
-      if (!Number.isFinite(value)) fail("A number is not readable.");
-      tokens.push({ t: "number", v: value });
-      continue;
-    }
-    if (/[A-Za-z_]/.test(c)) {
-      let value = "";
-      while (i < length && /[A-Za-z0-9_]/.test(sql[i])) {
-        value += sql[i];
-        i += 1;
-      }
-      tokens.push({ t: "word", v: value });
-      continue;
-    }
-    if (
-      (c === "<" && sql[i + 1] === ">") ||
-      (c === "!" && sql[i + 1] === "=") ||
-      (c === "<" && sql[i + 1] === "=") ||
-      (c === ">" && sql[i + 1] === "=")
-    ) {
-      tokens.push({ t: "op", v: sql.slice(i, i + 2) });
-      i += 2;
-      continue;
-    }
-    if ("=<>(),*.;".includes(c)) {
-      tokens.push({ t: "op", v: c });
-      i += 1;
-      continue;
-    }
-    fail(`Stripe SQL cannot read "${c}".`);
-  }
-  tokens.push({ t: "eof" });
-  return tokens;
+export type StripeStatement = StripeQuery | StripeReport | StripeReportPreview;
+
+const READ_ONLY = "Stripe runs a SELECT or WITH query, or a REPORT. This connection is read-only.";
+const ONE_STATEMENT = "Stripe runs one statement at a time.";
+const UNREADABLE = "Stripe could not read that statement.";
+const REPORT_NAME = "A report name is the template's name, such as balance.summary.";
+
+/**
+ * The statement Studio will send. The SQL text of a query is the text Stripe runs, so it is
+ * not rewritten into another dialect.
+ */
+export function prepareStripeStatement(sql: string): StripeStatement {
+  const body = stripTrailingSemicolon(sql);
+  if (body.trim() === "") throw new QueryError(READ_ONLY, PROVIDER, sql);
+  if (hasAnotherStatement(body)) throw new QueryError(ONE_STATEMENT, PROVIDER, sql);
+  const preview = reportPreview(body);
+  if (preview !== undefined) return preview;
+  const keyword = leadingWord(body);
+  if (keyword === "REPORT") return parseReport(body, sql);
+  if (keyword === "SELECT" || keyword === "WITH") return { kind: "query", sql: body.trim() };
+  throw new QueryError(READ_ONLY, PROVIDER, sql);
 }
 
-class Parser {
-  private index = 0;
-
-  constructor(private readonly tokens: readonly Token[]) {}
-
-  parse(): StripeStatement {
-    const word = this.peekWord()?.toUpperCase();
-    if (word === "INSERT" || word === "UPDATE" || word === "DELETE") fail(READ_ONLY);
-    if (word !== "SELECT") fail("Start with SELECT.");
-    const statement = this.select();
-    this.eatOp(";");
-    if (this.peek().t !== "eof") fail("Stripe runs one statement at a time.");
-    return statement;
-  }
-
-  private select(): StripeStatement {
-    this.eatWord("SELECT");
-    if (this.peekWord()?.toUpperCase() === "COUNT") return this.count();
-    if (this.peekWord()?.toUpperCase() === "DISTINCT") fail("Stripe reads columns or *. DISTINCT is not available.");
-    const columns = this.columns();
-    this.eatWord("FROM");
-    const table = this.name();
-    const filters = this.filters();
-    this.order();
-    const bound = this.bound();
-    this.refuseClause();
-    return { kind: "select", table, columns, filters, limit: bound.limit, offset: bound.offset };
-  }
-
-  private count(): StripeCount {
-    this.eatWord("COUNT");
-    if (!this.eatOp("(") || !this.eatOp("*") || !this.eatOp(")")) fail("Write COUNT(*).");
-    if (this.peekWord()?.toUpperCase() === "AS") {
-      this.eatWord("AS");
-      this.name();
-    }
-    this.eatWord("FROM");
-    const table = this.name();
-    const filters = this.filters();
-    if (this.peekWord()?.toUpperCase() === "ORDER") fail("COUNT(*) takes no ORDER BY.");
-    // The shared limiter appends LIMIT to a SELECT, and COUNT(*) is one. The count is Stripe's total.
-    this.bound();
-    this.refuseClause();
-    return { kind: "count", table, filters };
-  }
-
-  private columns(): readonly string[] | null {
-    if (this.eatOp("*")) return null;
-    const names: string[] = [];
-    names.push(this.name());
-    while (this.eatOp(",")) names.push(this.name());
-    return names;
-  }
-
-  private filters(): StripeFilter[] {
-    if (this.peekWord()?.toUpperCase() !== "WHERE") return [];
-    this.eatWord("WHERE");
-    const filters: StripeFilter[] = [this.comparison()];
-    while (this.peekWord()?.toUpperCase() === "AND") {
-      this.eatWord("AND");
-      filters.push(this.comparison());
-    }
-    if (this.peekWord()?.toUpperCase() === "OR") fail("Combine Stripe filters with AND.");
-    return filters;
-  }
-
-  private comparison(): StripeFilter {
-    const column = this.name();
-    if (this.peekWord()?.toUpperCase() === "IS") {
-      fail("Stripe has no IS NULL filter. Compare the field with =.");
-    }
-    if (
-      this.peekWord()?.toUpperCase() === "NOT" ||
-      this.peekWord()?.toUpperCase() === "LIKE" ||
-      this.peekWord()?.toUpperCase() === "IN"
-    ) {
-      fail("Compare a Stripe field with =, or with <, <=, >, >= on a number.");
-    }
-    const op = this.operator();
-    const value = this.value();
-    return { column, op, value };
-  }
-
-  private operator(): StripeFilter["op"] {
-    const token = this.peek();
-    if (token.t !== "op") fail("Compare a Stripe field with =, or with <, <=, >, >= on a number.");
-    const map: Record<string, StripeFilter["op"] | undefined> = {
-      "=": "EQ",
-      "!=": "NEQ",
-      "<>": "NEQ",
-      "<": "LT",
-      "<=": "LTE",
-      ">": "GT",
-      ">=": "GTE",
-    };
-    const op = map[token.v];
-    if (op === undefined) fail("Compare a Stripe field with =, or with <, <=, >, >= on a number.");
-    this.index += 1;
-    return op;
-  }
-
-  private value(): string | number | boolean {
-    const token = this.peek();
-    if (token.t === "string") {
-      this.index += 1;
-      return token.v;
-    }
-    if (token.t === "number") {
-      this.index += 1;
-      return token.v;
-    }
-    const word = this.peekWord()?.toUpperCase();
-    if (word === "TRUE" || word === "FALSE") {
-      this.index += 1;
-      return word === "TRUE";
-    }
-    if (word === "NULL") fail("Stripe has no IS NULL filter. Compare the field with =.");
-    fail("A filter value must be text, a number, TRUE, or FALSE.");
-  }
-
-  private order(): void {
-    if (this.peekWord()?.toUpperCase() !== "ORDER") return;
-    this.eatWord("ORDER");
-    this.eatWord("BY");
-    const column = this.name();
-    if (column.toLowerCase() !== "created") {
-      fail("Stripe returns newest objects first. ORDER BY created DESC is the order the API sends.");
-    }
-    const direction = this.peekWord()?.toUpperCase();
-    if (direction === "ASC")
-      fail("Stripe returns newest objects first. ORDER BY created DESC is the order the API sends.");
-    if (direction === "DESC") this.eatWord("DESC");
-  }
-
-  private bound(): { limit: number | null; offset: number } {
-    let limit: number | null = null;
-    let offset = 0;
-    if (this.peekWord()?.toUpperCase() === "LIMIT") {
-      this.eatWord("LIMIT");
-      const first = this.wholeNumber();
-      if (this.eatOp(",")) {
-        offset = first;
-        limit = this.wholeNumber();
-      } else {
-        limit = first;
-      }
-    }
-    if (this.peekWord()?.toUpperCase() === "OFFSET") {
-      this.eatWord("OFFSET");
-      offset = this.wholeNumber();
-    }
-    return { limit, offset };
-  }
-
-  private wholeNumber(): number {
-    const token = this.peek();
-    if (token.t !== "number" || !Number.isInteger(token.v) || token.v < 0)
-      fail("LIMIT and OFFSET must be whole numbers.");
-    this.index += 1;
-    return token.v;
-  }
-
-  private refuseClause(): void {
-    const word = this.peekWord()?.toUpperCase();
-    if (
-      word === "JOIN" ||
-      word === "INNER" ||
-      word === "LEFT" ||
-      word === "RIGHT" ||
-      word === "FULL" ||
-      word === "CROSS"
-    ) {
-      fail("Stripe reads one object. JOIN is not available.");
-    }
-    if (word === "GROUP") fail("Stripe has no GROUP BY. Filter with WHERE.");
-    if (word === "UNION" || word === "WITH" || word === "HAVING") fail("Stripe runs one SELECT.");
-  }
-
-  private name(): string {
-    const first = this.bareName();
-    if (!this.eatOp(".")) return first;
-    const second = this.bareName();
-    if (this.eatOp(".")) fail("A Stripe name has at most a container and an object.");
-    return second;
-  }
-
-  private bareName(): string {
-    const token = this.peek();
-    if (token.t === "word" || token.t === "ident") {
-      this.index += 1;
-      return token.v;
-    }
-    fail("A name is required.");
-  }
-
-  private peek(): Token {
-    return this.tokens[this.index] ?? { t: "eof" };
-  }
-
-  private peekWord(): string | undefined {
-    const token = this.peek();
-    return token.t === "word" ? token.v : undefined;
-  }
-
-  private eatWord(expected: string): void {
-    const token = this.peek();
-    if (token.t !== "word" || token.v.toUpperCase() !== expected) fail(`Expected ${expected}.`);
-    this.index += 1;
-  }
-
-  private eatOp(op: string): boolean {
-    const token = this.peek();
-    if (token.t !== "op" || token.v !== op) return false;
-    this.index += 1;
-    return true;
-  }
+function stripTrailingSemicolon(sql: string): string {
+  const trimmed = sql.trim();
+  return trimmed.endsWith(";") ? trimmed.slice(0, -1).trimEnd() : trimmed;
 }
 
-/** One Stripe statement, or a QueryError that names what the subset cannot run. */
-export function translateStripeSql(sql: string): StripeStatement {
-  return new Parser(tokenize(sql)).parse();
+/** A click on a report, plus the row cap the shared limiter may append. */
+function reportPreview(sql: string): StripeReportPreview | undefined {
+  const match =
+    /^SELECT\s+\*\s+FROM\s+"reports"\s*\.\s*"((?:[^"]|"")*)"(?:\s+LIMIT\s+\d+)?(?:\s+OFFSET\s+\d+)?\s*$/i.exec(
+      sql.trim(),
+    );
+  if (match === null) return undefined;
+  const name = (match[1] ?? "").replaceAll('""', '"').trim();
+  if (name === "") throw new QueryError(REPORT_NAME, PROVIDER, sql);
+  return { kind: "report-preview", name };
+}
+
+function parseReport(sql: string, original: string): StripeReport {
+  const match = /^REPORT\s+([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*(\([\s\S]*\))?\s*$/i.exec(
+    sql.trim(),
+  );
+  if (match === null) throw new QueryError(REPORT_NAME, PROVIDER, original);
+  const name = match[1] ?? "";
+  const group = match[2];
+  if (group === undefined) return { kind: "report", name, parameters: {} };
+  return { kind: "report", name, parameters: parseParameters(group.slice(1, -1), original) };
+}
+
+function parseParameters(source: string, original: string): Readonly<Record<string, string | number | boolean>> {
+  const parameters: Record<string, string | number | boolean> = {};
+  const text = source.trim();
+  if (text === "") return parameters;
+  for (const part of splitParameters(text, original)) {
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)\s*(?:=>|=)\s*([\s\S]+)$/.exec(part.trim());
+    if (match === null) throw new QueryError("Write each report parameter as name => 'value'.", PROVIDER, original);
+    const key = match[1] ?? "";
+    parameters[key] = parseValue(match[2] ?? "", original);
+  }
+  return parameters;
+}
+
+function splitParameters(source: string, original: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let quote = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index] ?? "";
+    if (quote) {
+      current += character;
+      if (character === "'" && source[index + 1] === "'") {
+        current += "'";
+        index += 1;
+      } else if (character === "'") quote = false;
+      continue;
+    }
+    if (character === "'") {
+      quote = true;
+      current += character;
+      continue;
+    }
+    if (character === ",") {
+      parts.push(current);
+      current = "";
+      continue;
+    }
+    current += character;
+  }
+  if (quote) throw new QueryError(UNREADABLE, PROVIDER, original);
+  parts.push(current);
+  return parts;
+}
+
+function parseValue(token: string, original: string): string | number | boolean {
+  const value = token.trim();
+  if (/^true$/i.test(value)) return true;
+  if (/^false$/i.test(value)) return false;
+  if (/^-?\d+$/.test(value)) return Number(value);
+  if (value.startsWith("'") && value.endsWith("'") && value.length >= 2) {
+    return value.slice(1, -1).replaceAll("''", "'");
+  }
+  throw new QueryError(
+    "Write a report parameter as text in quotes, a whole number, or true or false.",
+    PROVIDER,
+    original,
+  );
+}
+
+function leadingWord(sql: string): string {
+  const word = readCode(sql).match(/[A-Za-z_][A-Za-z0-9_]*/);
+  return word === null ? "" : word[0].toUpperCase();
+}
+
+function hasAnotherStatement(sql: string): boolean {
+  const code = readCode(sql);
+  const semicolon = code.indexOf(";");
+  if (semicolon === -1) return false;
+  return code.slice(semicolon + 1).trim() !== "";
+}
+
+/** Statement text with comments and quoted runs blanked, so a semicolon inside them is not a second statement. */
+function readCode(sql: string): string {
+  let out = "";
+  let mode: "code" | "line" | "block" | "single" | "double" = "code";
+  for (let index = 0; index < sql.length; index += 1) {
+    const character = sql[index] ?? "";
+    const next = sql[index + 1] ?? "";
+    if (mode === "line") {
+      out += character === "\n" ? "\n" : " ";
+      if (character === "\n") mode = "code";
+      continue;
+    }
+    if (mode === "block") {
+      out += character === "\n" ? "\n" : " ";
+      if (character === "*" && next === "/") {
+        out += " ";
+        index += 1;
+        mode = "code";
+      }
+      continue;
+    }
+    if (mode === "single" || mode === "double") {
+      const quote = mode === "single" ? "'" : '"';
+      out += " ";
+      if (character === quote && next === quote) {
+        out += " ";
+        index += 1;
+      } else if (character === quote) mode = "code";
+      continue;
+    }
+    if (character === "-" && next === "-") {
+      out += "  ";
+      index += 1;
+      mode = "line";
+      continue;
+    }
+    if (character === "/" && next === "*") {
+      out += "  ";
+      index += 1;
+      mode = "block";
+      continue;
+    }
+    if (character === "'") {
+      out += " ";
+      mode = "single";
+      continue;
+    }
+    if (character === '"') {
+      out += " ";
+      mode = "double";
+      continue;
+    }
+    out += character;
+  }
+  if (mode === "single" || mode === "double" || mode === "block") {
+    throw new QueryError(UNREADABLE, PROVIDER, sql);
+  }
+  return out;
 }

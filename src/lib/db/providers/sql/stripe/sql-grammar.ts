@@ -2,9 +2,9 @@ import { DEFAULT_SQL_GRAMMAR, NO_EXTRA_WORDS } from "@/lib/db/sql-grammar/shared
 import type { SqlGrammar, SqlGrammarSpec } from "@/lib/db/sql-grammar/types";
 
 /**
- * The SQL the Stripe editor reads. Stripe itself has no SQL parser; the provider
- * translates a read-only subset (`translate.ts`). Completion offers only the words
- * that subset runs (`lists: "only"`). The shared limiter can append `LIMIT`.
+ * The SQL the Stripe editor reads. A query is Sigma SQL and is sent to a query run.
+ * Completion keeps the shared SQL words (JOIN, GROUP BY, WITH, and the rest) and adds
+ * the report statement. The shared limiter can append `LIMIT`.
  */
 const STRIPE_GRAMMAR: SqlGrammar = {
   ...DEFAULT_SQL_GRAMMAR,
@@ -14,23 +14,24 @@ const STRIPE_GRAMMAR: SqlGrammar = {
   alternateQuoting: false,
   doubleSlashComment: false,
   backslashAlwaysEscapes: false,
-  formatterLanguage: "mysql",
   completionWords: {
-    keywords: ["SELECT", "FROM", "WHERE", "AND", "ORDER BY", "DESC", "LIMIT", "OFFSET", "TRUE", "FALSE", "COUNT"],
-    functions: [],
-    lists: "only",
+    keywords: ["REPORT"],
+    functions: ["date_format", "date_trunc"],
     snippets: [
       {
         label: "SELECT",
-        insertText:
-          "SELECT *\nFROM \"${1:customers}\"\nWHERE ${2:email} = '${3:value}'\nORDER BY created DESC\nLIMIT ${4:50}",
+        insertText: "SELECT ${1:*}\nFROM ${2:balance_transactions}\nLIMIT ${3:100}",
       },
-      { label: "COUNT", insertText: 'SELECT COUNT(*) AS row_count\nFROM "${1:customers}"' },
+      {
+        label: "REPORT",
+        insertText:
+          "REPORT ${1:balance.summary} (\n  interval_start => '${2:2026-01-01T00:00:00.000Z}',\n  interval_end => '${3:2026-02-01T00:00:00.000Z}'\n)",
+      },
     ],
   },
   completionClauses: {
-    column: ["SELECT", "WHERE", "ORDER BY"],
-    table: ["FROM"],
+    column: ["SELECT", "WHERE", "ORDER BY", "GROUP BY", "JOIN"],
+    table: ["FROM", "JOIN"],
   },
 };
 

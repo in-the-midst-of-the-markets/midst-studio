@@ -1,29 +1,27 @@
 # Stripe Provider
 
-Stripe is its own connection type. Studio reaches an account over the Stripe API (`https://api.stripe.com`). It is not a SQL server, and the rows are not copied into another database. The editor still runs SQL: one `SELECT` or `COUNT(*)` is translated into that API before anything is sent. A write is refused before a request. The connection is read-only.
+Stripe is its own connection type. Studio reaches an account over the Queries and Reports API (`https://api.stripe.com`). It is not a SQL server, and the rows are not copied into another database. The editor runs Sigma SQL: a `SELECT` or `WITH` query is sent as a query run. A `REPORT` statement runs a report template. A write is refused before a request. The connection is read-only.
 
-The connection is a secret or restricted key in the password field. The key needs read access to the objects you query. The API host is `api.stripe.com`. The key is sent only there, over TLS, on the shared HTTP transport. That path does not use global fetch, so a proxy setting cannot carry the key. Any other host is refused, and the refusal does not repeat the host or the key. A redirect is not followed. The dialog has no TLS panel and no SSH tunnel. Requests send `Stripe-Version: 2026-10-28.endive`.
+The connection is a secret or restricted key in the password field. A query needs Data, Queries, Read (`data_queries_read`). A report needs Data, Reports, Read (`data_reports_read`). The API host is `api.stripe.com`. The key is sent only there, over TLS, on the shared HTTP transport. That path does not use global fetch, so a proxy setting cannot carry the key. Any other host is refused, and the refusal does not repeat the host or the key. A redirect is not followed. The dialog has no TLS panel and no SSH tunnel. Requests send `Stripe-Version: 2026-10-28.preview`.
 
-The object tree is one account. The objects are customers, charges, payment intents, invoices, subscriptions, products, prices, refunds, payouts, balance transactions, disputes, and events. Columns are fixed. A result contains only those columns, so a payment intent `client_secret` is not returned. Amounts stay in the smallest currency unit. `created` and the other epoch columns are Unix seconds and come back as ISO timestamps. The `id` column is the object id.
+The object tree has two datasets. `analytical` is the tables from the schema list, the same tables Sigma shows. `reports` is the report templates. Columns on a table come from its schema. Columns on a report are the parameters it accepts. Amounts stay in the smallest currency unit. A finished run is read back as inline rows, at most 1000 of them. Studio does not open the result file: that URL is on another host, and the key is not sent there.
 
 ## SQL grammar
 
 [`src/lib/db/providers/sql/stripe/sql-grammar.ts`](../../src/lib/db/providers/sql/stripe/sql-grammar.ts) declares `STRIPE_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
 
-Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
+Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's PostgreSQL language, the default when a grammar names none.
 
-The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `WHERE`, `AND`, `ORDER BY`, `DESC`, `LIMIT`, `OFFSET` and `COUNT`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `GROUP BY` or the shared function list. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when an object has more fields than that.
+Completion keeps the shared SQL words, so `JOIN`, `GROUP BY`, `WITH`, `ORDER BY` and the shared functions are offered. It adds `REPORT`, `date_format` and `date_trunc`. `SELECT` and `REPORT` are snippets. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when a table has more fields than that. A click on a table runs `SELECT *` from that table. A click on a report runs that report when it has no required parameter, and otherwise tells you the `REPORT` statement to write.
 
-What the provider actually runs is the subset, and a statement outside it fails before a request:
+What the provider sends:
 
-- `SELECT` columns or `*` from one object, with `WHERE` comparisons combined with `AND`, `ORDER BY created DESC`, `LIMIT` and `OFFSET`.
-- `COUNT(*)` from one searchable object.
+- `SELECT` or `WITH` text, as written, to `POST /v2/data/query_runs` on the `analytical` dataset. One trailing semicolon is removed. A second statement is refused.
+- `REPORT name` or `REPORT name (parameter => 'value', ...)`. A value is quoted text, a whole number, or true or false. The run is `POST /v2/data/report_runs`.
 
-A list filter (`email` on customers, `customer` on charges, and the other equality filters each object documents) is sent to the list endpoint, which is consistent. A field the list endpoint does not filter is sent to search when that object can be searched. Search is eventually consistent. `WHERE id = '...'` alone retrieves that one object. `id` plus another condition is refused.
+A query or a report run is asynchronous. Studio polls the run until it succeeds, fails, or the connection's query timeout passes. The rows come from `include[0]=result.inline`. A page that says another page exists is warned about, and that page is not followed, so a next-page URL cannot move the key off `api.stripe.com`.
 
-`created` is a range of Unix seconds (`<`, `<=`, `>`, `>=`). `OR`, a join, any other aggregate, `WITH`, `DISTINCT`, `IN`, `BETWEEN`, `NOT`, `IS NULL`, and a parameter list are refused with a sentence that says what to write instead. A result always includes `id`. One statement reads at most 1000 rows.
-
-`COUNT(*)` uses search `expand[]=total_count`. Stripe reports at most 10000, and a larger match set is warned about. A list-only object (refunds, payouts, balance transactions, disputes, events) has no total, and `COUNT(*)` on it is refused unless the filter is one id.
+`INSERT`, `UPDATE`, `DELETE` and any other statement are refused before a request. A parameter list is refused. The API does not bind parameters.
 
 ## SQL writing
 
@@ -57,8 +55,6 @@ The refusal reason it prints, verbatim:
 
 ## Query
 
-`SELECT` paging is `LIMIT n` and `LIMIT n OFFSET m`. The shared limiter appends the page bound. List pages use `starting_after`. Search pages use `page`. Offset is a number of rows, not that cursor. Pages are 100 records. An offset of 1000 or more is refused.
-
-The connect probe is `GET /v1/customers?limit=1`, so a key without that read fails at connect. Generate Query omits `WHERE 1=1` (`supportsConstantPredicate` is false), because that predicate is not a field comparison the translator can send.
+The connect probe lists schemas, then reports. A key that cannot read schemas can still connect when it can read reports, and the other way around. A key that can read neither fails at connect. Generate Query omits `WHERE 1=1` (`supportsConstantPredicate` is false).
 
 `EXPLAIN` is not offered (`supportsExplain` is false). There is no maintenance operation. There is no agent language pack: `AGENT_STATEMENT_LANGUAGE` is null for this type-id, and MCP stays closed.
