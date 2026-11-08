@@ -1,9 +1,10 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
 import {
-  CUSTOM_EMBEDDING_CHOICE,
   DEFAULT_EMBEDDING_MODEL,
   EMBEDDING_MODEL_OPTIONS,
   isListedEmbeddingModel,
@@ -21,6 +22,12 @@ function embeddingModelFace(model: string, choosingCustom: boolean, draft: strin
   return "Custom";
 }
 
+interface MenuBox {
+  readonly left: number;
+  readonly top: number;
+  readonly width: number;
+}
+
 /**
  * The model this connection uses when a vector value is written as `{{text}}`.
  * Voyage 4 is the default. Custom is any other model id the database was embedded with.
@@ -32,81 +39,137 @@ export function EmbeddingModelSelect({ connectionId }: { readonly connectionId?:
     () => DEFAULT_EMBEDDING_MODEL,
   );
   const listed = isListedEmbeddingModel(model);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [connection, setConnection] = useState(connectionId);
   const [choosingCustom, setChoosingCustom] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [box, setBox] = useState<MenuBox | null>(null);
   if (connection !== connectionId) {
     setConnection(connectionId);
     setChoosingCustom(false);
     setDraft(null);
+    setOpen(false);
   }
 
   const showCustom = choosingCustom || !listed;
   const shown = draft ?? (listed ? "" : model);
   const face = embeddingModelFace(model, choosingCustom, draft);
 
+  const closeMenu = (): void => {
+    setOpen(false);
+    setDraft(null);
+    if (listed) setChoosingCustom(false);
+  };
+
+  const openMenu = (): void => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect !== undefined) {
+      setBox({ left: rect.left, top: rect.bottom + 4, width: Math.max(rect.width, 192) });
+    }
+    setOpen(true);
+  };
+
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className="relative inline-flex h-7 items-center">
-        <span
-          aria-hidden="true"
-          className="pointer-events-none inline-flex items-center gap-1 text-xs font-medium text-fg-muted"
-        >
-          Model: {face}
-          <ChevronDown strokeWidth={1.5} className="h-3 w-3" />
-        </span>
-        <select
-          aria-label="Embedding model"
-          value={listed && !choosingCustom ? model : CUSTOM_EMBEDDING_CHOICE}
-          onChange={(event) => {
-            const next = event.target.value;
-            if (next === CUSTOM_EMBEDDING_CHOICE) {
-              setChoosingCustom(true);
-              return;
-            }
-            setChoosingCustom(false);
-            setDraft(null);
-            writeEmbeddingModel(connectionId, next);
-          }}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        >
-          {EMBEDDING_MODEL_OPTIONS.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-          <option value={CUSTOM_EMBEDDING_CHOICE}>Custom model</option>
-        </select>
-      </span>
-      {showCustom && (
-        <input
-          aria-label="Custom embedding model"
-          value={shown}
-          placeholder="model id"
-          spellCheck={false}
-          onChange={(event) => {
-            const next = event.target.value;
-            setDraft(next);
-            const trimmed = next.trim();
-            if (trimmed === "" || normalizeEmbeddingModel(trimmed) !== trimmed) return;
-            writeEmbeddingModel(connectionId, trimmed);
-          }}
-          onBlur={() => {
-            if (draft === null) {
-              setChoosingCustom(false);
-              return;
-            }
-            if (draft.trim() === "") {
-              writeEmbeddingModel(connectionId, "");
-              setDraft(null);
-              setChoosingCustom(false);
-              return;
-            }
-            if (normalizeEmbeddingModel(draft) === draft.trim()) setDraft(null);
-          }}
-          className="h-7 w-36 rounded border border-hairline bg-canvas px-1.5 font-mono text-xs text-fg"
-        />
-      )}
-    </span>
+    <>
+      <Button
+        ref={buttonRef}
+        type="button"
+        variant="ghost"
+        size="sm"
+        aria-label="Embedding model"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => {
+          if (open) closeMenu();
+          else openMenu();
+        }}
+        className="h-7 gap-1 px-2 text-xs font-medium text-fg-muted hover:text-fg-bright"
+      >
+        Model: {face}
+        <ChevronDown strokeWidth={1.5} className="size-3" />
+      </Button>
+      {open &&
+        box !== null &&
+        createPortal(
+          <>
+            <button
+              type="button"
+              aria-label="Close embedding model"
+              onClick={closeMenu}
+              className="fixed inset-0 z-40 cursor-default"
+            />
+            <div
+              role="menu"
+              aria-label="Embedding models"
+              tabIndex={-1}
+              onKeyDown={(event) => {
+                if (event.key !== "Escape") return;
+                event.preventDefault();
+                closeMenu();
+              }}
+              style={{ left: box.left, top: box.top, width: box.width }}
+              className="fixed z-50 flex flex-col overflow-hidden rounded-lg border border-hairline bg-raised p-1 shadow-md"
+            >
+              {EMBEDDING_MODEL_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="menuitem"
+                  aria-current={option.id === model && !choosingCustom ? "true" : undefined}
+                  onClick={() => {
+                    setChoosingCustom(false);
+                    setDraft(null);
+                    writeEmbeddingModel(connectionId, option.id);
+                    setOpen(false);
+                  }}
+                  className="rounded-md px-2 py-1.5 text-left text-xs text-fg hover:bg-fill-subtle"
+                >
+                  {option.name}
+                </button>
+              ))}
+              <button
+                type="button"
+                role="menuitem"
+                aria-current={showCustom ? "true" : undefined}
+                onClick={() => setChoosingCustom(true)}
+                className="rounded-md px-2 py-1.5 text-left text-xs text-fg hover:bg-fill-subtle"
+              >
+                Custom model
+              </button>
+              {showCustom && (
+                <input
+                  aria-label="Custom embedding model"
+                  value={shown}
+                  placeholder="model id"
+                  spellCheck={false}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setDraft(next);
+                    const trimmed = next.trim();
+                    if (trimmed === "" || normalizeEmbeddingModel(trimmed) !== trimmed) return;
+                    writeEmbeddingModel(connectionId, trimmed);
+                  }}
+                  onBlur={() => {
+                    if (draft === null) {
+                      setChoosingCustom(false);
+                      return;
+                    }
+                    if (draft.trim() === "") {
+                      writeEmbeddingModel(connectionId, "");
+                      setDraft(null);
+                      setChoosingCustom(false);
+                      return;
+                    }
+                    if (normalizeEmbeddingModel(draft) === draft.trim()) setDraft(null);
+                  }}
+                  className="mx-1 mb-1 h-7 rounded border border-hairline bg-canvas px-1.5 font-mono text-xs text-fg"
+                />
+              )}
+            </div>
+          </>,
+          document.body,
+        )}
+    </>
   );
 }
