@@ -1,6 +1,4 @@
 == discrete
-p#none "Configure your database connection parameters securely."
-button "Paste URL"
 label[for=name] "Connection Name"
 input#name type=none placeholder="My Database" describedby=none
 label[for=queryTimeout] "Query Timeout (ms)"

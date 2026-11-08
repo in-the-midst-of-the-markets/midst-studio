@@ -12,7 +12,7 @@ import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
  * Every field of the connection dialog that holds a secret or key material keeps the browser's spell checker and
  * text assistance off: a spell checker can send the text to an outside service and keep its words in the user's
  * dictionary. The real dialog and the real form hook are walked through every engine, every SSL mode that shows the
- * PEM fields, both SSH auth methods, the connection-string mode and the Paste URL box, so a secret field added later
+ * PEM fields, both SSH auth methods and the connection-string mode, so a secret field added later
  * without the attributes fails here.
  */
 
@@ -69,15 +69,6 @@ function renderDialog() {
 const reached = new Map<string, Field>();
 
 describe("the connection dialog's secret fields turn spell checking, autocorrect, autocapitalize and autocomplete off", () => {
-  test("in the Paste URL box", () => {
-    renderDialog();
-    const found = new Map<string, Field>();
-    fireEvent.click(screen.getByRole("button", { name: "Paste URL" }));
-    collect(found);
-    for (const [key, field] of found) reached.set(key, field);
-    expect(offending(found)).toEqual([]);
-  });
-
   test.each([...EXTERNAL_DATABASE_TYPES])("on %s", (type) => {
     renderDialog();
     const found = new Map<string, Field>();
@@ -153,6 +144,5 @@ describe("the connection dialog's secret fields turn spell checking, autocorrect
       expect(keys).toContain(expected);
     }
     expect(keys.filter((k) => k.includes("-----BEGIN")).length).toBe(4);
-    expect(keys.some((k) => k.startsWith("postgres://"))).toBe(true);
   });
 });

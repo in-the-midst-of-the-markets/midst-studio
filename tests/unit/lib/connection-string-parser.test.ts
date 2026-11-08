@@ -1957,7 +1957,7 @@ describe("parseConnectionString: Snowflake URLs, decomposed into fields and neve
     const result = parseConnectionString("snowflake://u:PW@my%20acct/d");
     expect(result!.type).toBe("snowflake");
     expect(result!.refusal).toBe(
-      "Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.",
+      "Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.",
     );
     expect(Object.keys(result!)).toEqual(["type", "refusal", "discardPaste"]);
   });
@@ -1966,7 +1966,7 @@ describe("parseConnectionString: Snowflake URLs, decomposed into fields and neve
     expect(parseConnectionString("https://myorg-myacct.snowflakecomputing.com:8443/")).toEqual({
       type: "snowflake",
       refusal:
-        "Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.",
+        "Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.",
       discardPaste: true,
     });
     expect(parseConnectionString("https://myorg-myacct.snowflakecomputing.com:443/")!.host).toBe(

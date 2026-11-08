@@ -30,7 +30,7 @@ const OREGON = /^us-west-2(?:\.aws)?$/i;
 export const SNOWFLAKE_FIELD_SENTENCES = {
   accountEmpty: "Enter Account: an account identifier such as myorg-myaccount, or its URL. Nothing was sent.",
   accountFormat:
-    "Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.",
+    "Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.",
   privateLinkRegion:
     "A PrivateLink account locator needs its region, such as xy12345.us-east-1.privatelink. Nothing was sent.",
   userEmpty: "Enter the user's login name. Nothing was sent.",

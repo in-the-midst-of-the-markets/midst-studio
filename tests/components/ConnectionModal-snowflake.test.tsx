@@ -100,50 +100,6 @@ function everythingDrawn(): string {
 }
 
 describe("a Snowflake text in the dialog keeps nothing of its secrets", () => {
-  function pasteText(text: string) {
-    fireEvent.click(screen.getByRole("button", { name: "Paste URL" }));
-    const box = document.querySelector('input[placeholder^="postgres://"]') as HTMLInputElement;
-    fireEvent.change(box, { target: { value: text } });
-    fireEvent.click(screen.getByRole("button", { name: "Parse" }));
-  }
-
-  test("a pasted inline key is refused by name, no field is set, and the key is nowhere in the dialog", () => {
-    const probe = mock(async (_connection: DatabaseConnection) => ({ success: true }));
-    render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} onTestConnection={probe} />);
-    pasteText(
-      "jdbc:snowflake://myorg-myacct.snowflakecomputing.com/?user=u-applied&token=T-SENTINEL&private_key_base64=K-SENTINEL",
-    );
-    expect(screen.getByTestId("connection-test-result").textContent).toContain(
-      "Studio does not take private_key_base64 from a pasted URL. Paste the key itself into Private key, not inside a URL.",
-    );
-    const drawn = everythingDrawn();
-    expect(drawn).not.toContain("K-SENTINEL");
-    expect(drawn).not.toContain("T-SENTINEL");
-    expect(drawn).not.toContain("u-applied");
-    // The dialog shows Snowflake's form, so the Private key box the sentence names is there, and fills nothing else:
-    // Account opens empty rather than holding the previous engine's localhost.
-    expect(field("authMethod")).toBeDefined();
-    expect(field("privateKey").value).toBe("");
-    expect(field("host").value).toBe("");
-    expect(field("user").value).toBe("");
-    expect(probe).toHaveBeenCalledTimes(0);
-  });
-
-  test("a pasted key path is refused on Snowflake's form, which shows the Private key box and nothing of the path", () => {
-    render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} />);
-    pasteText(
-      "jdbc:snowflake://myorg-myacct.snowflakecomputing.com/?user=u-applied&private_key_file=/home/u/P-SENTINEL.p8",
-    );
-    expect(screen.getByTestId("connection-test-result").textContent).toContain(
-      "Studio does not take private_key_file from a pasted URL. Studio reads no file: paste the key's contents into Private key.",
-    );
-    expect(field("privateKey").value).toBe("");
-    expect(field("host").value).toBe("");
-    const drawn = everythingDrawn();
-    expect(drawn).not.toContain("P-SENTINEL");
-    expect(drawn).not.toContain("u-applied");
-  });
-
   test("a jdbc: URL typed into Account is refused before any request, in a sentence holding nothing of it", async () => {
     const { probe } = openSnowflake();
     fireEvent.change(field("host"), {
@@ -155,25 +111,10 @@ describe("a Snowflake text in the dialog keeps nothing of its secrets", () => {
     await click("Test Connection");
     const sentence = screen.getByTestId("connection-test-result").textContent ?? "";
     expect(sentence).toContain(
-      "Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.",
+      "Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.",
     );
     expect(sentence).not.toContain("S-SENTINEL");
     expect(probe).toHaveBeenCalledTimes(0);
-  });
-
-  test("a pasted JDBC URL with a token fills the form and leaves the paste box empty", async () => {
-    render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} />);
-    pasteText("jdbc:snowflake://myorg-myacct.snowflakecomputing.com/?user=u&token=S-SENT&warehouse=wh");
-    expect(field("host").value).toBe("myorg-myacct.snowflakecomputing.com");
-    expect(field("user").value).toBe("u");
-    expect(field("warehouse").value).toBe("wh");
-    expect((field("authMethod") as unknown as HTMLSelectElement).value).toBe("pat");
-    expect(field("password").value).toBe("S-SENT");
-    expect(document.getElementById("privateKey")).toBeNull();
-    // The form state holds no text at once; the box itself goes when its exit animation ends.
-    await waitFor(() => expect(document.querySelector('input[placeholder^="postgres://"]')).toBeNull());
-    expect(everythingDrawn()).not.toContain("jdbc:snowflake");
-    expect(screen.getByTestId("host-hint").textContent).toBe("Studio connects to myorg-myacct.snowflakecomputing.com.");
   });
 });
 
@@ -299,13 +240,6 @@ describe("a new engine or a new account opens without the previous one's credent
     return probe;
   }
 
-  function paste(text: string) {
-    fireEvent.click(screen.getByRole("button", { name: "Paste URL" }));
-    const box = document.querySelector('input[placeholder^="postgres://"]') as HTMLInputElement;
-    fireEvent.change(box, { target: { value: text } });
-    fireEvent.click(screen.getByRole("button", { name: "Parse" }));
-  }
-
   test("PostgreSQL's user, password and database never reach Snowflake, and the token box opens empty", async () => {
     const probe = openDialog();
     fireEvent.change(field("name"), { target: { value: "kept name" } });
@@ -331,60 +265,10 @@ describe("a new engine or a new account opens without the previous one's credent
     expect(probe.mock.calls[0][0].name).toBe("kept name");
   });
 
-  test("a Snowflake URL pasted over PostgreSQL's fields carries none of them", () => {
-    openDialog();
-    fireEvent.change(field("user"), { target: { value: "pguser" } });
-    fireEvent.change(field("password"), { target: { value: "PG-SENTINEL" } });
-    fireEvent.change(field("database"), { target: { value: "pgdb" } });
-    paste("jdbc:snowflake://myorg-myacct.snowflakecomputing.com/?user=alice&authenticator=PROGRAMMATIC_ACCESS_TOKEN");
-    expect(field("user").value).toBe("alice");
-    expect(field("password").value).toBe("");
-    expect(field("database").value).toBe("");
-    expect(everythingDrawn()).not.toContain("PG-SENTINEL");
-  });
-
-  test("a second paste naming another account drops the first account's token, database and schema", async () => {
-    const probe = openDialog();
-    paste(
-      "jdbc:snowflake://acct-a.snowflakecomputing.com/?user=alice&warehouse=WH1&db=DB1&schema=S1&role=R1&authenticator=PROGRAMMATIC_ACCESS_TOKEN&token=TOKEN_A_123",
-    );
-    expect(field("password").value).toBe("TOKEN_A_123");
-    paste("jdbc:snowflake://other-acct.snowflakecomputing.com/?user=bob");
-    expect(field("host").value).toBe("other-acct.snowflakecomputing.com");
-    expect(field("user").value).toBe("bob");
-    expect(field("database").value).toBe("");
-    expect(field("schema").value).toBe("");
-    // The sign-in method is the first account's choice too, so the form opens on the default key pair.
-    expect((field("authMethod") as unknown as HTMLSelectElement).value).toBe("keypair");
-    expect(everythingDrawn()).not.toContain("TOKEN_A_123");
-    fireEvent.change(field("role"), { target: { value: "R" } });
-    fireEvent.change(field("privateKey"), { target: { value: pemArmour("BEGIN") } });
-    await click("Test Connection");
-    expect(JSON.stringify(probe.mock.calls[0][0])).not.toContain("TOKEN_A_123");
-  });
-
-  test("a paste naming the same account keeps what was typed for it", () => {
+  test("a typed key and passphrase do not survive a switch to PostgreSQL and back", () => {
     openDialog();
     choose("Snowflake");
     fireEvent.change(field("host"), { target: { value: "myorg-myacct" } });
-    fireEvent.change(field("privateKey"), { target: { value: "KEY-TYPED" } });
-    paste("snowflake://carol@MYORG-MYACCT/DB3");
-    expect(field("user").value).toBe("carol");
-    // The key is kept, and drawn as kept rather than as text (SF-014).
-    expect(screen.getByTestId("privateKey-stored")).toBeDefined();
-  });
-
-  test("a typed key and passphrase survive neither a paste for another account nor a switch to PostgreSQL and back", () => {
-    openDialog();
-    choose("Snowflake");
-    fireEvent.change(field("host"), { target: { value: "myorg-myacct" } });
-    fireEvent.change(field("privateKey"), { target: { value: "KEY-SENTINEL" } });
-    fireEvent.change(field("privateKeyPassphrase"), { target: { value: "PASS-SENTINEL" } });
-    paste("snowflake://carol@third-acct/DB3");
-    expect(field("host").value).toBe("third-acct.snowflakecomputing.com");
-    expect(field("privateKey").value).toBe("");
-    expect(field("privateKeyPassphrase").value).toBe("");
-
     fireEvent.change(field("privateKey"), { target: { value: "KEY-SENTINEL" } });
     fireEvent.change(field("privateKeyPassphrase"), { target: { value: "PASS-SENTINEL" } });
     choose("PostgreSQL");
@@ -492,25 +376,6 @@ describe("the Private key box draws no key once one is entered (SF-014)", () => 
   });
 });
 
-describe("the paste box's hint and its refusal name the same formats (SF-024)", () => {
-  test("an unparsed text is refused with the list the hint shows, the Snowflake forms included", () => {
-    render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Paste URL" }));
-    const hint = screen.getByTestId("paste-formats").textContent ?? "";
-    expect(hint.startsWith("Supports: ")).toBe(true);
-    const formats = hint.slice("Supports: ".length);
-    for (const form of ["jdbc:snowflake://", "snowflake://", "a Snowflake account URL", "couchbase://", "http(s)://"]) {
-      expect(formats).toContain(form);
-    }
-    const box = document.querySelector('input[placeholder^="postgres://"]') as HTMLInputElement;
-    fireEvent.change(box, { target: { value: "zz-libredbtest-nonexistent123" } });
-    fireEvent.click(screen.getByRole("button", { name: "Parse" }));
-    expect(screen.getByTestId("connection-test-result").textContent).toContain(
-      `Could not parse connection string. Supported formats: ${formats}`,
-    );
-  });
-});
-
 describe("the Account hint and Test agree (SF-025)", () => {
   test("a text Test refuses gets no hint, and its refusal is drawn under the box until the box is edited", async () => {
     const { probe } = openSnowflake();
@@ -522,7 +387,7 @@ describe("the Account hint and Test agree (SF-025)", () => {
     await click("Test Connection");
     expect(probe).toHaveBeenCalledTimes(0);
     const sentence =
-      "Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.";
+      "Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.";
     expect(screen.getByTestId("host-error").textContent).toBe(sentence);
     expect(field("host").getAttribute("aria-invalid")).toBe("true");
     fireEvent.change(field("host"), { target: { value: "  myorg-myacct " } });

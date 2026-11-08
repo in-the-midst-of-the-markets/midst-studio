@@ -1296,7 +1296,7 @@ describe("SeedConnectionSchema: Snowflake's static checks (SF-038)", () => {
     expect(found).toEqual([
       [
         "host",
-        'Seed connection "sf": host is refused: Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead.',
+        'Seed connection "sf": host is refused: Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier.',
       ],
     ]);
     expect(JSON.stringify(found)).not.toContain("attacker");

@@ -4,8 +4,8 @@
  * One rule, in one place: every `*.test.ts` / `*.test.tsx` file under `tests/`,
  * except `tests/live/`, whose files drive real database engines and are started by
  * hand (`bun tests/live/<file>.ts`). The rule is deliberately a rule and not a
- * hand-written list: `tests/components/WireCompatibilityHint.test.tsx` shipped with
- * #426 and never ran once, because the runner of the day named its files one by one.
+ * hand-written list. A file the runner of the day had to name one by one never ran
+ * once it was left off that list.
  *
  * A symbolic link or junction under `tests/` is refused by name rather than followed:
  * following one can run files from outside the repository, loop on a link to a parent

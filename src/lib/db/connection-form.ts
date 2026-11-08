@@ -238,7 +238,7 @@ export const SNOWFLAKE_FIELD_RULES: Readonly<Partial<Record<ConnectionField, Con
  * be held to the same words.
  */
 export const SPARK_FIELD_HINTS: Readonly<Partial<Record<ConnectionField, string>>> = Object.freeze({
-  host: "The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port. Paste an sc:// address with Paste URL.",
+  host: "The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port.",
   password:
     "The server's spark.connect.authenticate.token (Spark 4.0 and later), sent on every call. Leave it empty for a server without a token. Studio sends a token only over TLS or an SSH tunnel, unless the host is this machine.",
   database:

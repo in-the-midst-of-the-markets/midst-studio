@@ -66,11 +66,11 @@ The next connect of that connection reads the version on the remembered session,
 
 ### 2.1 Fields
 
-The dialog draws these fields in this order, and Paste URL beside them.
+The dialog draws these fields in this order.
 
 | Label | Field | Default | Hint | Refusal |
 | --- | --- | --- | --- | --- |
-| Host | `host` | none, required | `The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port. Paste an sc:// address with Paste URL.` | `Host is required: the name or address of the Spark Connect server, or of the TLS proxy in front of it. Nothing was sent.` |
+| Host | `host` | none, required | `The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port.` | `Host is required: the name or address of the Spark Connect server, or of the TLS proxy in front of it. Nothing was sent.` |
 | Port | `port` | 15002 | none | the shared port validator's sentence |
 | Token | `password` | empty: no token | `The server's spark.connect.authenticate.token (Spark 4.0 and later), sent on every call. Leave it empty for a server without a token. Studio sends a token only over TLS or an SSH tunnel, unless the host is this machine.` | `Token takes printable ASCII with no space at either end: a gRPC header cannot carry other characters, and Spark compares the token exactly. Nothing was sent.` |
 | Catalog | `database` | empty: the server's default catalog, `spark_catalog` unless `spark.sql.defaultCatalog` says otherwise | `The catalog unqualified names resolve in, and the one the tree opens first. Empty: the server's default catalog.` | `Catalog takes one catalog name without dots, as spark.sql.catalog.<name> names it. Nothing was sent.` |

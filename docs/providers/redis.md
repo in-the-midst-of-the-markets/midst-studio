@@ -53,8 +53,7 @@ generic components render Redis-appropriate wording.
 
 This provider is what a Valkey connection uses: there is no `valkey` type id, and choosing Redis in
 the connection dialog is the documented way to reach it. `ioredis` speaks the protocol all five
-servers share, and the connection dialog's wire-compatibility hint names the engines this driver has
-been measured against, from the same data
+servers share. The engines this driver has been measured against are listed from the same data
 ([`compatibility.ts`](../../src/lib/db/compatibility.ts)). The full per-engine table is in
 [`README.md`](./README.md#wire-compatible-engines); three behaviours belong here because they are
 this provider's code, not the engine's.

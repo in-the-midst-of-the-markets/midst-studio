@@ -415,9 +415,8 @@ describe("LoginPage showcase (issue #425)", () => {
   });
 
   test("claims no parity for a relative: no tier word reaches the login page", () => {
-    // WireCompatibilityHint carries the per-engine tier because the connection dialog has
-    // room to qualify it. This line does not, so it may not imply the relatives behave like
-    // their driver's own engine: it says what was measured and nothing more.
+    // This line does not carry the per-engine tier, so it may not imply the relatives behave
+    // like their driver's own engine: it says what was measured and nothing more.
     const { getByTestId } = renderShowcase();
     const text = getByTestId("wire-compatible-desktop").textContent ?? "";
     expect(/partial|query-only|fully supported/i.test(text)).toBe(false);

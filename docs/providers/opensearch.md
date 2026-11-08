@@ -465,8 +465,8 @@ const connection = {
 ### 4.2 A pasted OpenSearch URL is not ClickHouse
 
 `supportsConnectionString` is `false`: the provider never reads a stored `connectionString`, and the
-form has no URI mode (`showConnectionStringToggle` is `false`). Paste URL still fills the host, port,
-user and password. The row claims an `http://` or `https://` URL whose port is `9200` or `25060`, and
+form has no URI mode (`showConnectionStringToggle` is `false`). The row claims an `http://` or
+`https://` URL whose port is `9200` or `25060`, and
 any port on a host whose name contains `opensearch`. `https://` sets SSL mode `require` and `http://`
 sets `disable`. A ClickHouse host and a Snowflake host stay with those rows. Any other `http://` or
 `https://` URL, including `http://localhost:9201`, remains ClickHouse's catch-all

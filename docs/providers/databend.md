@@ -15,7 +15,7 @@ This document is the single reference point for the provider: design, architectu
 | **Query language** | `sql` |
 | **Default port** | `8000`, the query node's HTTP handler; Databend Cloud serves HTTPS on 443 ([4.1](#41-configuration-fields)) |
 | **Connection pooling** | One keep-alive agent per connection, three sockets; every statement runs in a session of its own ([3.4](#34-every-statement-runs-in-a-session-of-its-own)) |
-| **Connection string** | Not offered: a pasted `https://` address goes into Host, which splits it, and a `databend://` DSN into Paste URL of a new connection, which fills the fields ([4.1](#41-configuration-fields)) |
+| **Connection string** | Not offered: a pasted `https://` address goes into Host, which splits it ([4.1](#41-configuration-fields)) |
 | **EXPLAIN** | `databend-text`: plain `EXPLAIN` in both modes, never `EXPLAIN ANALYZE`, and no plan for the shapes that run while binding ([5.6](#56-explain-is-the-planning-form-only)) |
 | **Writes** | Every statement Databend accepts runs as written; no inline row edit, no object edit ([6.3](#63-object-edit-789-not-in-this-version)) |
 | **Transactions** | Not exposed: a transaction a statement leaves open is rolled back when the statement ends ([3.5](#35-what-a-statement-leaves-open-is-closed)) |
@@ -270,8 +270,8 @@ No SQL provider bounds the statement text it is handed ([D249](../BACKLOG.md)).
 | Warehouse | Databend Cloud: the warehouse= value of the DSN from Connect. A suspended warehouse resumes on the first statement, opening the connection included, because it reads the object tree, and is billed while it runs; with Warehouse set, Studio sends no background health checks. Self-hosted: leave empty unless your cluster routes requests by warehouse. |
 | Send the password without TLS | Ticked, the password crosses the network in cleartext to this host. Databend Cloud never needs this: it serves HTTPS on port 443. |
 
-The connection-string box is not offered, because it reads `http://` and `https://` as ClickHouse; a pasted address goes into Host, and a DSN goes into Paste URL of a new connection, which fills the fields.
-Paste URL reads `databend://`, `databend+http://` and `databend+https://` as BendSQL reads a DSN: TLS unless `sslmode=disable` (`databend+http://` without TLS), the DSN's port, else 443 with TLS and 80 without, the path as Database and `warehouse=` as Warehouse, or, with no `warehouse=`, the warehouse an older Databend Cloud host names (section 4.4).
+The connection-string box is not offered, because it reads `http://` and `https://` as ClickHouse; a pasted address goes into Host.
+A `databend://` address is read, and so are `databend+http://` and `databend+https://`, as BendSQL reads a DSN: TLS unless `sslmode=disable` (`databend+http://` without TLS), the DSN's port, else 443 with TLS and 80 without, the path as Database and `warehouse=` as Warehouse, or, with no `warehouse=`, the warehouse an older Databend Cloud host names (section 4.4).
 A paste that names a host sets Warehouse, clearing it when the DSN names none, and clears Send the password without TLS, which no DSN carries, so a box ticked for an earlier connection or paste never sends the password in cleartext to the pasted host.
 It keeps a password, user or database the DSN does not carry, so check them after a second paste ([D250](../BACKLOG.md)).
 A spelling Studio does not connect with fills no field and says what to paste instead; a DSN's `sslmode=require` or `sslmode=enable` fills SSL mode verify-system, not the unverified `require` of section 4.3, and says so; and a `tls_ca_file`, or an `sslmode` BendSQL does not read, fills the other fields and says what to set under SSL / TLS:
@@ -361,7 +361,7 @@ A password over no TLS is refused before any socket unless the host is a loopbac
 > This connection would send its password to Databend without TLS, to a host that is not this machine, where anyone on the path can read it. Choose an SSL mode under SSL / TLS, connect through an SSH tunnel, or tick Send the password without TLS to accept that risk for this connection. Nothing was sent.
 
 With SSL mode `disable` the dialog offers "Send the password without TLS"; ticked, the refusal is lifted for that connection only, and a seed writes it as `allowInsecureAuth: true`.
-A DSN pasted into Paste URL unticks it (section 4.1), so it is ticked again only for the pasted host.
+A parsed DSN clears it (section 4.1), so it is ticked again only for that host.
 Databend Cloud serves HTTPS on 443 with a public certificate: choose `verify-system`.
 A self-hosted query node serves plain HTTP on 8000 unless its HTTP handler is given a certificate; then choose `verify-ca` with its CA, or `verify-full` to check the host name too.
 Through an SSH tunnel the certificate is checked against the tunnel's far end, never the local forward.
