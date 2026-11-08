@@ -57,7 +57,16 @@ import {
   toggleAssistSaved,
   type AssistSavedPick,
 } from "@/lib/ai/assist-saved";
+import {
+  assistScheduleLabel,
+  draftAssistSchedule,
+  readAssistScheduleSnapshot,
+  subscribeAssistSchedules,
+  writeAssistSchedules,
+  type AssistSchedule,
+} from "@/lib/ai/assist-schedule";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
+import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
@@ -493,6 +502,7 @@ function errorText(body: unknown, fallback: string): string {
 
 const EMPTY_CONNECTIONS: readonly DatabaseConnection[] = [];
 const EMPTY_SAVED: readonly AssistSavedPick[] = [];
+const EMPTY_SCHEDULES: readonly AssistSchedule[] = [];
 
 let savedRaw = "\u0000";
 let savedSnapshot: readonly AssistSavedPick[] = EMPTY_SAVED;
@@ -590,7 +600,11 @@ export function AiAssist() {
   const [draft, setDraft] = useState("");
   const [attached, setAttached] = useState<readonly AssistSavedPick[]>([]);
   const savedCatalog = useSyncExternalStore(subscribeSaved, readSavedCatalog, () => EMPTY_SAVED);
+  const schedules = useSyncExternalStore(subscribeAssistSchedules, readAssistScheduleSnapshot, () => EMPTY_SCHEDULES);
   const attachedLive = attached.filter((item) => savedCatalog.some((pick) => pick.id === item.id));
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [intervalText, setIntervalText] = useState("");
+  const [scheduleNote, setScheduleNote] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -605,6 +619,9 @@ export function AiAssist() {
   const activeName = activeConversation?.name ?? DEFAULT_ASSIST_CONVERSATION_NAME;
   const [notice, setNotice] = useState<string | null>(null);
   const sendingRef = useRef(false);
+  const sendRef = useRef<
+    ((scheduled?: { readonly prompt: string; readonly sources: readonly AssistSavedPick[] }) => Promise<void>) | null
+  >(null);
   const turnsRef = useRef<readonly Turn[]>([]);
   const mounted = useRef(true);
 
@@ -645,6 +662,26 @@ export function AiAssist() {
     pinToEnd(chartsRef.current);
     pinToEnd(threadRef.current);
   }, [turns.length]);
+
+  // Each saved prompt waits out its interval, then runs again. Sources are read
+  // at that moment, so the queries run against whatever they say now.
+  useEffect(() => {
+    const handles = schedules.map((schedule) => {
+      const delay = refreshDelayMs(schedule.seconds);
+      if (delay === null) return 0;
+      return window.setInterval(() => {
+        const sources = schedule.sourceIds.flatMap((id) => {
+          const pick = assistSavedPicks(storage.getSavedQueries()).find((item) => item.id === id);
+          return pick === undefined ? [] : [pick];
+        });
+        if (schedule.prompt.trim() === "" && sources.length === 0) return;
+        void sendRef.current?.({ prompt: schedule.prompt, sources });
+      }, delay);
+    });
+    return () => {
+      for (const handle of handles) window.clearInterval(handle);
+    };
+  }, [schedules]);
 
   useEffect(() => {
     let cancelled = false;
@@ -758,9 +795,9 @@ export function AiAssist() {
     );
   };
 
-  const send = async () => {
-    const starting = attachedLive;
-    const asked = assistSavedAsk(draft, starting);
+  const send = async (scheduled?: { readonly prompt: string; readonly sources: readonly AssistSavedPick[] }) => {
+    const starting = scheduled === undefined ? attachedLive : scheduled.sources;
+    const asked = assistSavedAsk(scheduled === undefined ? draft : scheduled.prompt, starting);
     if (asked.question === "" || sendingRef.current) return;
     const model = modelFor(settings);
     if (model === "") {
@@ -773,8 +810,10 @@ export function AiAssist() {
     sendingRef.current = true;
     setSending(true);
     setNotice(null);
-    setDraft("");
-    setAttached([]);
+    if (scheduled === undefined) {
+      setDraft("");
+      setAttached([]);
+    }
     const history = historyOf(turnsRef.current, settings.historyMessages);
     const databaseType = assistDatabaseType(connections.map((item) => item.type));
     const at = askedAt();
@@ -947,6 +986,32 @@ export function AiAssist() {
       sendingRef.current = false;
       setSending(false);
     }
+  };
+  useEffect(() => {
+    sendRef.current = send;
+  });
+
+  const saveSchedule = () => {
+    const made = draftAssistSchedule({
+      id: nextId(),
+      prompt: draft,
+      sourceIds: attachedLive.map((pick) => pick.id),
+      intervalText,
+      existing: schedules.length,
+    });
+    if (!made.ok) {
+      setScheduleNote(made.error);
+      return;
+    }
+    writeAssistSchedules([...schedules, made.schedule]);
+    if (made.raised) {
+      setIntervalText(String(made.schedule.seconds));
+      setScheduleNote(`Raised to ${made.schedule.seconds} seconds, the shortest schedule.`);
+      return;
+    }
+    setScheduleOpen(false);
+    setIntervalText("");
+    setScheduleNote(null);
   };
 
   const applyConversation = (change: { book: AssistConversationBook; turns: readonly AssistTranscriptTurn[] }) => {
@@ -1293,6 +1358,77 @@ export function AiAssist() {
                   key under Connectors.
                 </p>
               )}
+              <div className="flex flex-col gap-2">
+                {schedules.length > 0 && (
+                  <ul aria-label="Scheduled prompts" className="flex flex-col gap-1">
+                    {schedules.map((schedule) => {
+                      const label = assistScheduleLabel(schedule, savedCatalog);
+                      return (
+                        <li key={schedule.id} className="flex items-center justify-between gap-2 text-xs text-fg">
+                          <span className="min-w-0 truncate">{label}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${label}`}
+                            onClick={() => writeAssistSchedules(schedules.filter((item) => item.id !== schedule.id))}
+                            className="shrink-0 rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+                          >
+                            Remove
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {scheduleOpen ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs text-fg-muted">
+                      Every
+                      <input
+                        aria-label="Schedule seconds"
+                        inputMode="numeric"
+                        value={intervalText}
+                        onChange={(event) => setIntervalText(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          event.preventDefault();
+                          saveSchedule();
+                        }}
+                        className="h-7 w-20 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
+                      />
+                      seconds
+                    </label>
+                    <button
+                      type="button"
+                      onClick={saveSchedule}
+                      className="rounded-full border border-hairline px-3 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                    >
+                      Save schedule
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduleOpen(false);
+                        setScheduleNote(null);
+                      }}
+                      className="rounded px-2 py-1 text-xs text-fg-muted hover:bg-fill-subtle"
+                    >
+                      Cancel
+                    </button>
+                    {scheduleNote !== null && <p className="text-xs text-fg-muted">{scheduleNote}</p>}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScheduleNote(null);
+                      setScheduleOpen(true);
+                    }}
+                    className="self-start rounded-full border border-hairline px-3 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                  >
+                    Schedule
+                  </button>
+                )}
+              </div>
               <AssistPromptBox
                 label="How can I help?"
                 value={draft}
