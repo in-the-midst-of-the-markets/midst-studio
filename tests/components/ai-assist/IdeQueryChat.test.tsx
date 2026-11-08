@@ -48,18 +48,33 @@ describe("editorChatQuery", () => {
 });
 
 describe("IdeQueryChat", () => {
-  test("opening configuration does not put the send button in the configuration scroller", () => {
+  test("the chat has one scrollbar for the reply, the configuration, and the prompt", () => {
     install(() => jsonResponse({ models: [] }));
     const view = render(<IdeQueryChat sql="SELECT 1" databaseType="postgres" schemaContext="orders" />);
     fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
     fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
+    const chat = view.getByLabelText("IDE conversation");
     const send = view.getByRole("button", { name: "Send" });
     const config = view.getByRole("button", { name: "Model configuration" });
-    const scroller = config.closest("[data-assist-config]");
-    expect(scroller).not.toBeNull();
-    expect(scroller?.contains(send)).toBe(false);
-    expect(scroller?.nextElementSibling?.contains(send)).toBe(true);
-    expect(scroller?.parentElement?.className).toContain("min-h-0");
+    expect(chat.className).toContain("overflow-y-auto");
+    expect(chat.className).not.toContain("flex-col");
+    expect(chat.querySelectorAll(".overflow-y-auto")).toHaveLength(0);
+    expect(chat.contains(config)).toBe(true);
+    expect(chat.contains(send)).toBe(true);
+    expect(config.closest("[data-assist-config]")?.className).not.toContain("overflow-y-auto");
+  });
+
+  test("the conversation scrolls to the latest reply", async () => {
+    install(() => jsonResponse({ explanation: "The last line of the reply.", queries: [] }));
+    const view = render(<IdeQueryChat sql="SELECT 1" databaseType="postgres" schemaContext="orders" />);
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    const chat = view.getByLabelText("IDE conversation");
+    Object.defineProperty(chat, "scrollHeight", { configurable: true, value: 800 });
+    Object.defineProperty(chat, "clientHeight", { configurable: true, value: 200 });
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "Count rows" } });
+    fireEvent.keyDown(view.getByLabelText("Build or revise a query"), { key: "Enter" });
+    expect(await view.findByText("The last line of the reply.")).toBeTruthy();
+    expect(chat.scrollTop).toBe(600);
   });
 
   test("builds a query, renders markdown, and puts the statement in the editor", async () => {
