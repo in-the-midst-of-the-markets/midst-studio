@@ -117,12 +117,22 @@ function namedPick(question: string, picks: readonly AssistSavedPick[]): AssistS
   return found;
 }
 
-function askedMetric(question: string, engine: string): string {
-  const named = /\bthe\s+([A-Za-z_$][\w$]*)\s+column\s+as\s+the\s+values\b/i.exec(question)?.[1] ?? "value";
-  const lower = named.toLowerCase();
-  if (engine === "weaviate" && (lower === "distance" || lower === "$distance")) return "$distance";
-  if (engine === "weaviate" && (lower === "certainty" || lower === "$certainty")) return "$certainty";
-  return named;
+function weaviateScore(name: string): string | null {
+  const lower = name.toLowerCase();
+  if (lower === "distance" || lower === "$distance") return "$distance";
+  if (lower === "certainty" || lower === "$certainty") return "$certainty";
+  return null;
+}
+
+function askedMetric(question: string, engine: string, sql: string): string {
+  const named = /\bthe\s+([A-Za-z_$][\w$]*)\s+column\s+as\s+the\s+values\b/i.exec(question)?.[1];
+  if (named !== undefined) {
+    if (engine === "weaviate") return weaviateScore(named) ?? named;
+    return named;
+  }
+  if (engine === "weaviate" && (/"distance"/.test(sql) || sql.includes("$distance"))) return "$distance";
+  if (engine === "weaviate" && (/"certainty"/.test(sql) || sql.includes("$certainty"))) return "$certainty";
+  return "value";
 }
 
 function categoryColumn(sql: string): string {
@@ -194,7 +204,7 @@ export function assistSavedChart(question: string, picks: readonly AssistSavedPi
   const type = askedChart(question);
   const pick = namedPick(question, picks);
   if (type === null || pick === null) return null;
-  const metric = askedMetric(question, pick.connectionType);
+  const metric = askedMetric(question, pick.connectionType, pick.sql);
   let sql = pick.sql;
   if (pick.connectionType === "weaviate" && metric === "$distance") sql = withDistance(sql);
   if (/\bsearch box\b/i.test(question)) sql = replaceVectorValue(sql, `{{search:${searchTerm(pick.sql)}}}`);

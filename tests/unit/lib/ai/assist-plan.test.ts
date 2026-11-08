@@ -492,6 +492,10 @@ describe("queries the user edited", () => {
       queries: [],
     });
     expect(splitAssistFollowUp([colored], [])).toEqual({ recolors: [], queries: [colored] });
+    expect(splitAssistFollowUp([colored], [{ sql: revenue.sql, locked: false, hasChart: false }])).toEqual({
+      recolors: [],
+      queries: [colored],
+    });
     const east = "SELECT month, revenue FROM orders WHERE region = {{region:east|east,west}}";
     const west = "SELECT month, revenue FROM orders WHERE region = {{region:west|east,west}}";
     const filtered = {
@@ -527,6 +531,9 @@ describe("queries the user edited", () => {
     expect(questionOnlyRecolors("make it red and show spend")).toBe(false);
     expect(questionOnlyRecolors(`change the colour to teal ${"y".repeat(80)}`)).toBe(false);
     expect(questionOnlyRecolors("show spend by region in purple")).toBe(false);
+    expect(requestedChartColor("Create a bar chart for this query colored purple weave_test")).toBe("#9546de");
+    expect(questionOnlyRecolors("Create a bar chart for this query colored purple weave_test")).toBe(false);
+    expect(questionOnlyRecolors("make it colored purple")).toBe(true);
     const revenue = { sql: "SELECT month, revenue FROM orders LIMIT 200", title: "Revenue" };
     const count = { sql: "SELECT 1", title: "Count" };
     expect(recolorsFromQuestion("hello", [revenue])).toEqual([]);
