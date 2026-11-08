@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { ASSIST_TEXT_CAP, type AssistQueryPlan } from "@/lib/ai/assist-plan";
+import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
 import {
   ASSIST_RESULT_CAP,
-  FOLLOW_RUNS,
   buildAssistReadingMessages,
   explanationWithResults,
-  followUpQueries,
   formatAssistResults,
   readAssistReading,
   readAssistResults,
@@ -22,14 +20,10 @@ function request(overrides: Record<string, unknown> = {}) {
     schemaContext: "[]",
     databaseType: "postgres",
     history: [],
-    pass: "follow",
+    pass: "final",
     results: [],
     ...overrides,
   });
-}
-
-function plan(sql: string): AssistQueryPlan {
-  return { title: "Query", sql, connection: "", chart: null, code: null };
 }
 
 describe("readAssistResults", () => {
@@ -72,7 +66,6 @@ describe("readAssistResults", () => {
 
   test("refuses a list past the result cap and skips a result with no statement", () => {
     expect(readAssistResults("no").ok).toBe(false);
-    expect(FOLLOW_RUNS).toBe(3);
     expect(readAssistResults(Array.from({ length: ASSIST_RESULT_CAP + 1 }, () => 1))).toEqual({
       ok: false,
       error: "The query results are not valid.",
@@ -182,11 +175,12 @@ describe("readAssistReading", () => {
     expect(request({ pass: "no" })).toEqual({ ok: false, error: "The reading is not valid." });
     expect(request({ pass: undefined })).toEqual({ ok: false, error: "The reading is not valid." });
     expect(request({ results: "no" })).toEqual({ ok: false, error: "The query results are not valid." });
-    const follow = request({ results: [{ sql: select, rowCount: 2, rows: [{}, {}] }] });
-    expect(follow.ok).toBe(true);
-    if (!follow.ok) return;
-    expect(follow.value.pass).toBe("follow");
-    expect(follow.value.results[0]?.rowCount).toBe(2);
+    expect(request({ pass: "follow" })).toEqual({ ok: false, error: "The reading is not valid." });
+    const kept = request({ results: [{ sql: select, rowCount: 2, rows: [{}, {}] }] });
+    expect(kept.ok).toBe(true);
+    if (!kept.ok) return;
+    expect(kept.value.pass).toBe("final");
+    expect(kept.value.results[0]?.rowCount).toBe(2);
     const final = request({ pass: "final", results: [] });
     expect(final.ok).toBe(true);
     if (!final.ok) return;
@@ -265,48 +259,21 @@ describe("explanationWithResults", () => {
   });
 });
 
-describe("followUpQueries", () => {
-  test("returns every statement that has not already run", () => {
-    const region = "SELECT region, revenue FROM orders";
-    const product = "SELECT product, revenue FROM orders";
-    expect(followUpQueries([plan(select), plan(region), plan(region), plan(product)], [select])).toEqual([
-      plan(region),
-      plan(product),
-    ]);
-    expect(followUpQueries([plan(`${select} LIMIT 50`)], [select])).toEqual([]);
-    expect(followUpQueries([], [select])).toEqual([]);
-  });
-});
-
 describe("buildAssistReadingMessages", () => {
-  test("asks for charted queries, then for the analysis and no further query", () => {
-    const follow = buildAssistReadingMessages({
-      pass: "follow",
-      databaseType: "postgres",
+  test("writes the analysis and plans no further query", () => {
+    const final = buildAssistReadingMessages({
+      databaseType: "",
       questionBlock: "FENCED-QUESTION",
       schemaBlock: "FENCED-SCHEMA",
       historyBlock: "FENCED-HISTORY",
       resultsBlock: "RESULT-TOKEN",
     });
-    expect(follow[0]?.content).toContain("The connected engine is postgres.");
-    expect(follow[0]?.content).toContain("The chart is required on every query.");
-    expect(follow[0]?.content).toContain("queries has up to 3 items");
-    expect(follow[0]?.content).toContain("explanation is Markdown");
-    expect(follow[0]?.content).toContain("`code`");
-    expect(follow[0]?.content).not.toContain("Do not plan another query.");
-    expect(follow[0]?.content).not.toContain("RESULT-TOKEN");
-    expect(follow[1]?.content).toContain("RESULT-TOKEN");
-    expect(follow[1]?.content).toContain("FENCED-QUESTION");
-
-    const final = buildAssistReadingMessages({
-      pass: "final",
-      databaseType: "",
-      questionBlock: "q",
-      schemaBlock: "s",
-      historyBlock: "h",
-      resultsBlock: "r",
-    });
     expect(final[0]?.content).toContain("The connected engine is SQL.");
+    expect(final[0]?.content).toContain("Do not plan another query.");
+    expect(final[0]?.content).not.toContain("RESULT-TOKEN");
+    expect(final[1]?.content).toContain("RESULT-TOKEN");
+    expect(final[1]?.content).toContain("FENCED-QUESTION");
+
     expect(final[0]?.content).toContain("queries is empty.");
     expect(final[0]?.content).toContain("explanation is Markdown the person reads");
     expect(final[0]?.content).not.toContain("several paragraphs");
@@ -314,34 +281,31 @@ describe("buildAssistReadingMessages", () => {
     expect(final[0]?.content).toContain("The words inside the sample explanation are a description of the field.");
     expect(final[0]?.content).toContain("Separate paragraphs with a blank line.");
     expect(final[0]?.content).not.toContain("East led");
+    expect(final[0]?.content).not.toContain("augment these query results");
+    expect(final[1]?.content).toContain("Results:\nRESULT-TOKEN");
+
+    const plain = buildAssistReadingMessages({
+      databaseType: "postgres",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+    });
+    expect(plain[0]?.content).toContain("The connected engine is postgres.");
+    expect(plain[0]?.content).not.toContain("You can search the web.");
 
     const graph = buildAssistReadingMessages({
-      pass: "follow",
       databaseType: "neo4j",
       questionBlock: "q",
       schemaBlock: "s",
       historyBlock: "h",
       resultsBlock: "r",
     });
-    expect(graph[0]?.content).toContain("one read-only Cypher statement");
+    expect(graph[0]?.content).toContain("Cite those names.");
     expect(graph[0]?.content).toContain("(:Label name)");
-    expect(graph[0]?.content).toContain("Add a query only for a number the rows do not already show.");
-    expect(graph[0]?.content).not.toContain("one read-only SELECT");
-    const graphFinal = buildAssistReadingMessages({
-      pass: "final",
-      databaseType: "neo4j",
-      questionBlock: "q",
-      schemaBlock: "s",
-      historyBlock: "h",
-      resultsBlock: "r",
-    });
-    expect(graphFinal[0]?.content).toContain("Cite those names.");
-    expect(final[0]?.content).toContain("Do not plan another query.");
-    expect(final[0]?.content).not.toContain("augment these query results");
-    expect(final[1]?.content).toContain("Results:\nr");
+    expect(graph[0]?.content).not.toContain("Add a query only for a number the rows do not already show.");
 
     const searched = buildAssistReadingMessages({
-      pass: "final",
       databaseType: "postgres",
       questionBlock: "q",
       schemaBlock: "s",
@@ -352,36 +316,15 @@ describe("buildAssistReadingMessages", () => {
     expect(searched[0]?.content).toContain("You can search the web.");
     expect(searched[0]?.content).toContain("augment these query results");
     expect(searched[0]?.content).toContain("The message you return is still one JSON object.");
-    const followSearch = buildAssistReadingMessages({
-      pass: "follow",
-      databaseType: "postgres",
-      questionBlock: "q",
-      schemaBlock: "s",
-      historyBlock: "h",
-      resultsBlock: "r",
-      webSearch: false,
-    });
-    expect(followSearch[0]?.content).not.toContain("You can search the web.");
 
-    const searchFollow = buildAssistReadingMessages({
-      pass: "follow",
+    const search = buildAssistReadingMessages({
       databaseType: "opensearch",
       questionBlock: "q",
       schemaBlock: "s",
       historyBlock: "h",
       resultsBlock: "r",
     });
-    expect(searchFollow[0]?.content).toContain("POST index/_search then one JSON object");
-    expect(searchFollow[0]?.content).toContain("The editor runs that request as written.");
-    expect(searchFollow[0]?.content).not.toContain("one read-only SELECT with LIMIT 200");
-    const searchFinal = buildAssistReadingMessages({
-      pass: "final",
-      databaseType: "opensearch",
-      questionBlock: "q",
-      schemaBlock: "s",
-      historyBlock: "h",
-      resultsBlock: "r",
-    });
-    expect(searchFinal[0]?.content).not.toContain("The editor runs that request as written.");
+    expect(search[0]?.content).not.toContain("The editor runs that request as written.");
+    expect(search[0]?.content).toContain("Do not plan another query.");
   });
 });

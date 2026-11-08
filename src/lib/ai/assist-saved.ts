@@ -1,8 +1,8 @@
 /**
  * Saved queries a person attaches to an AI Assist question.
  *
- * The chat can take several. They are run first, charted when the rows support a
- * chart, and handed to the model so it can read them and run more queries.
+ * The chat can take several. They are run first and charted when the rows support
+ * a chart. The model then writes the explanation from those rows.
  */
 
 import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
@@ -48,13 +48,13 @@ export function toggleAssistSaved(selected: readonly AssistSavedPick[], pick: As
 export interface AssistSavedAsk {
   /** What the person sees in the thread. */
   readonly display: string;
-  /** What the model reads, including the request to chart and to keep researching. */
+  /** What the model reads. */
   readonly question: string;
 }
 
 /**
  * The question that goes with the attached queries.
- * An empty draft still starts the research from those queries.
+ * An empty draft still asks about those queries.
  */
 export function assistSavedAsk(draft: string, saved: readonly { readonly name: string }[]): AssistSavedAsk {
   const typed = draft.trim();
@@ -68,8 +68,6 @@ export function assistSavedAsk(draft: string, saved: readonly { readonly name: s
     .join(", ");
   const lead = typed === "" ? "Analyze these saved queries." : typed;
   const display = clip(names === "" ? lead : `${lead}\n\n${names}`);
-  const question = clip(
-    `${display}\n\nChart each saved query when a chart fits, and run more queries when they would expand the research.`,
-  );
+  const question = clip(`${display}\n\nExplain what these saved queries show.`);
   return { display, question };
 }

@@ -17,9 +17,8 @@ import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 
 /**
- * AI Assist. POST plans queries, then reads the rows and may add more charted
- * queries on as many as three follow-ups, then writes the final analysis. GET lists the public catalogs and the
- * saved OpenRouter domain rankings. The model key is the browser's, or OPENROUTER_API_KEY when the browser did not
+ * AI Assist. POST plans queries, then reads those rows once and writes the analysis.
+ * GET lists the public catalogs and the saved OpenRouter domain rankings. The model key is the browser's, or OPENROUTER_API_KEY when the browser did not
  * send one for OpenRouter. The rankings are the public domain chart, copied once a day.
  */
 export const dynamic = "force-dynamic";
@@ -81,7 +80,6 @@ export async function POST(req: NextRequest) {
         reading.value.apiKey,
         reading.value.model,
         buildAssistReadingMessages({
-          pass: reading.value.pass,
           databaseType: reading.value.databaseType,
           questionBlock: fenceForPrompt(reading.value.question, "assist"),
           schemaBlock: fenceForPrompt(reading.value.schemaContext, "assist"),
