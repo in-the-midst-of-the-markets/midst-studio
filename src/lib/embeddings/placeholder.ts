@@ -106,7 +106,7 @@ function plainValue(body: string): string {
  * Text with no colon is the words themselves.
  */
 function labeledEmbed(body: string): string | null {
-  const match = /^\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*:(.*)$/s.exec(body);
+  const match = /^\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*:([\s\S]*)$/.exec(body);
   if (match === null) return null;
   const rest = match[2] ?? "";
   const pipe = rest.indexOf("|");
