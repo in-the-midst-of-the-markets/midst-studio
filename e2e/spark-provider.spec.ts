@@ -1,16 +1,15 @@
 import net from "node:net";
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { ApiErrorCode } from "../src/lib/api/error-codes";
 import { DB_UI_CONFIG, SPARK_FIELD_HINTS } from "../src/lib/db-ui-config";
 import { plaintextSecretRefusal } from "../src/lib/db/http/endpoint";
 import { SPARK_FIELD_SENTENCES } from "../src/lib/db/providers/sql/spark/connection-options";
 import { SPARK_ERROR_SENTENCES } from "../src/lib/db/providers/sql/spark/errors";
-import { SPARK_PASTE_SENTENCES } from "../src/lib/db/providers/sql/spark/sc-uri";
 
 /**
  * What a user sees in the connection dialog when choosing Apache Spark.
  *
- * No assertion here reaches Spark: the paste is parsed in the browser, the form's own rules refuse before Test
+ * No assertion here reaches Spark: the form's own rules refuse before Test
  * Connection sends anything (each refusal proves it by counting the requests to the test route), the plaintext-token
  * and nothing-listening refusals come from the real route, which the provider raises before or at its first socket, and
  * the one refusal that needs a Spark server (the version floor) is answered by route interception. It runs on the
@@ -46,25 +45,6 @@ function countTestRequests(page: Page): () => number {
     if (request.url().includes("/api/db/test-connection")) count += 1;
   });
   return () => count;
-}
-
-/** The Paste URL box, drawn while the Paste URL control is open. */
-function pasteBox(dialog: Locator): Locator {
-  return dialog.getByPlaceholder(/postgres:\/\//);
-}
-
-/** Opens Paste URL when it is closed, writes the address into its box and applies it with Parse. */
-async function pasteAddress(dialog: Locator, text: string) {
-  if ((await pasteBox(dialog).count()) === 0) await dialog.getByRole("button", { name: "Paste URL" }).click();
-  await pasteBox(dialog).fill(text);
-  await dialog.getByRole("button", { name: "Parse", exact: true }).click();
-}
-
-/** The SSL mode as the SSL / TLS toggle shows it: its badge names any mode but disable, upper-cased. */
-async function expectSslMode(dialog: Locator, mode: string) {
-  const toggle = dialog.getByRole("button", { name: /SSL \/ TLS/ });
-  if (mode === "disable") await expect(toggle).toHaveText(/^\s*SSL \/ TLS\s*$/);
-  else await expect(toggle).toContainText(mode.toUpperCase());
 }
 
 /** The answer the test route gives a ConnectionError, carrying the version refusal. */
@@ -115,62 +95,6 @@ test.describe("Apache Spark in the connection dialog", () => {
     await expect(dialog.getByText("SSL / TLS")).toBeVisible();
     // By its button: the Token hint names an SSH tunnel too.
     await expect(dialog.getByRole("button", { name: "SSH Tunnel" })).toBeVisible();
-  });
-
-  test("2. an sc:// paste fills Host, Port, Token and verify-system, and names user_id as not applied", async ({
-    page,
-  }) => {
-    const dialog = await chooseSpark(page);
-    await pasteAddress(dialog, "sc://spark.example.internal:15002/;use_ssl=true;token=e2e-test-value;user_id=x");
-    await expect(dialog.locator("#host")).toHaveValue("spark.example.internal");
-    await expect(dialog.locator("#port")).toHaveValue("15002");
-    await expect(dialog.locator("#password")).toHaveValue("e2e-test-value");
-    await expect(dialog.getByText("Not applied: user_id", { exact: false })).toBeVisible();
-    await expectSslMode(dialog, "verify-system");
-  });
-
-  test("3. a Databricks, a jdbc:sc:// and a path address are refused with their sentences, filling nothing", async ({
-    page,
-  }) => {
-    const dialog = await chooseSpark(page);
-    // The form's own starting values, which a refused paste leaves as they were.
-    const before = {
-      host: await dialog.locator("#host").inputValue(),
-      port: await dialog.locator("#port").inputValue(),
-      password: await dialog.locator("#password").inputValue(),
-    };
-    // The Databricks address may hold a token, so the box is cleared; the other two hold no secret and stay to be
-    // corrected.
-    for (const [address, sentence, kept] of [
-      [
-        "sc://adb-1.azuredatabricks.net:443/;token=e2e-test-value;x-databricks-cluster-id=0101",
-        SPARK_PASTE_SENTENCES.databricks,
-        "",
-      ],
-      [
-        "jdbc:sc://spark.example.internal:15002",
-        SPARK_PASTE_SENTENCES.jdbcPrefix,
-        "jdbc:sc://spark.example.internal:15002",
-      ],
-      [
-        "sc://spark.example.internal:15002/db",
-        SPARK_PASTE_SENTENCES.pathNotEmpty,
-        "sc://spark.example.internal:15002/db",
-      ],
-    ] as const) {
-      // oxlint-disable-next-line no-await-in-loop -- one paste at a time, so a failure names its address.
-      await pasteAddress(dialog, address);
-      // oxlint-disable-next-line no-await-in-loop -- as above.
-      await expect(dialog.getByText(sentence)).toBeVisible();
-      // oxlint-disable-next-line no-await-in-loop -- as above.
-      await expect(dialog.locator("#host")).toHaveValue(before.host);
-      // oxlint-disable-next-line no-await-in-loop -- as above.
-      await expect(dialog.locator("#port")).toHaveValue(before.port);
-      // oxlint-disable-next-line no-await-in-loop -- as above.
-      await expect(dialog.locator("#password")).toHaveValue(before.password);
-      // oxlint-disable-next-line no-await-in-loop -- as above.
-      await expect(pasteBox(dialog)).toHaveValue(kept);
-    }
   });
 
   test("4. a malformed Namespace and a Catalog holding a dot are refused before Test Connection sends anything", async ({

@@ -15,13 +15,11 @@ interface WireCompatibleLineProps {
  * every name come from `WIRE_COMPATIBLE_ENGINES`, so the next probed engine joins the
  * page by being added to the registry.
  *
- * What it deliberately does NOT carry is the per-engine tier. `WireCompatibilityHint` shows
- * it in the connection dialog, where there is room to say that Materialize is query-editor
- * only and that a Citus distributed table reports row counts you should not trust. A hero
- * line has no room for one qualification per relative, and the alternative to qualifying them is
- * not to imply parity: the wording claims a measurement, which is the one thing every entry
- * here really has (issue #424's claim discipline - "connects is not supported"), and the
- * docs table is where a reader finds out how much of the product each one gives them.
+ * What it deliberately does NOT carry is the per-engine tier. A hero line has no room for one
+ * qualification per relative, and the alternative to qualifying them is not to imply parity: the
+ * wording claims a measurement, which is the one thing every entry here really has (issue #424's
+ * claim discipline - "connects is not supported"), and the docs table is where a reader finds out
+ * how much of the product each one gives them.
  *
  * The two variants exist for the same reason `database-showcase.tsx` has two: the desktop
  * block sits in the hero's left column, pinned dark by a nested `dark` class, so it needs

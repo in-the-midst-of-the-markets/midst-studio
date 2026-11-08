@@ -74,7 +74,7 @@ Passphrase loses only a line break at its end, as a paste from a file leaves one
 An empty or malformed field is refused in the dialog and again by `connect()`, before any socket, with these sentences:
 
 - `Enter Account: an account identifier such as myorg-myaccount, or its URL. Nothing was sent.`
-- `Enter an account identifier such as myorg-myaccount, or its https URL; a jdbc: or snowflake:// URL goes into Paste URL instead. Nothing was sent.`
+- `Enter an account identifier such as myorg-myaccount, or its https URL. A jdbc: or snowflake:// URL is not an account identifier. Nothing was sent.`
 - `A PrivateLink account locator needs its region, such as xy12345.us-east-1.privatelink. Nothing was sent.`
 - `Enter the user's login name. Nothing was sent.`
 - `Enter the role every statement runs as. Nothing was sent.`

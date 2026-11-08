@@ -6,7 +6,7 @@ import { pemArmour } from "../tests/helpers/pem-armour";
 /**
  * What a user sees in the connection dialog when choosing Snowflake.
  *
- * No assertion here reaches Snowflake: the paste is parsed in the browser, the form's own checks refuse before Test
+ * No assertion here reaches Snowflake: the form's own checks refuse before Test
  * Connection sends anything, which each refusal test proves by counting the requests to the test route, and the one
  * refusal that needs an answer (the key-pair refusal with its registration statement) is answered in the browser by
  * route interception. It runs on the second server (the chromium-snowflake project of playwright.config.ts): each test
@@ -14,8 +14,6 @@ import { pemArmour } from "../tests/helpers/pem-armour";
  * from the module that owns it.
  */
 const snowflake = DB_UI_CONFIG.snowflake;
-const JDBC_URL =
-  "jdbc:snowflake://myorg-myacct.snowflakecomputing.com/?user=studio_svc&warehouse=STUDIO_WH&role=STUDIO_RO&db=SALES";
 const PEM_LINES = [pemArmour("BEGIN"), "A".repeat(32), pemArmour("END")];
 
 async function openDialog(page: Page) {
@@ -75,28 +73,6 @@ test.describe("Snowflake in the connection dialog", () => {
     await expect(dialog.locator("#host")).toHaveAttribute("placeholder", snowflake.fieldPlaceholders?.host ?? "");
     await dialog.locator("#host").fill("myorg-myacct");
     await expect(dialog.getByTestId("host-hint")).toHaveText(snowflakeHostHint("myorg-myacct") ?? "");
-    await expect(dialog.getByTestId("host-hint")).toHaveText("Studio connects to myorg-myacct.snowflakecomputing.com.");
-  });
-
-  test("the Supports line of Paste URL names the Snowflake forms", async ({ page }) => {
-    const dialog = await openDialog(page);
-    await dialog.getByRole("button", { name: "Paste URL" }).click();
-    const supports = dialog.getByText(/^Supports:/);
-    await expect(supports).toContainText("jdbc:snowflake://");
-    await expect(supports).toContainText("snowflake://");
-    await expect(supports).toContainText("a Snowflake account URL");
-  });
-
-  test("a JDBC paste switches to Snowflake and fills Account, User, Warehouse, Database and Role", async ({ page }) => {
-    const dialog = await openDialog(page);
-    await dialog.getByRole("button", { name: "Paste URL" }).click();
-    await dialog.getByPlaceholder(/postgres:\/\//).fill(JDBC_URL);
-    await dialog.getByRole("button", { name: "Parse", exact: true }).click();
-    await expect(dialog.locator("#host")).toHaveValue("myorg-myacct.snowflakecomputing.com");
-    await expect(dialog.locator("#user")).toHaveValue("studio_svc");
-    await expect(dialog.locator("#warehouse")).toHaveValue("STUDIO_WH");
-    await expect(dialog.locator("#database")).toHaveValue("SALES");
-    await expect(dialog.locator("#role")).toHaveValue("STUDIO_RO");
     await expect(dialog.getByTestId("host-hint")).toHaveText("Studio connects to myorg-myacct.snowflakecomputing.com.");
   });
 

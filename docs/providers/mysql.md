@@ -48,8 +48,8 @@ which is the SQL reference implementation. The headline differences:
 
 This provider is what a MariaDB connection uses: there is no `mariadb` type id, and choosing MySQL in
 the connection dialog is the documented way to reach it. `mysql2` speaks the protocol both servers
-share, and the connection dialog's `WireCompatibilityHint` names the engines this driver has been
-measured against. The full per-engine table is in [`README.md`](./README.md#wire-compatible-engines);
+share. The engines this driver has been measured against, and what each one is missing, are in
+[`README.md`](./README.md#wire-compatible-engines);
 two behaviours belong here because they are this provider's code, not the engine's.
 
 **The overview does not rename the server.** `VERSION()` is the only thing that says which engine

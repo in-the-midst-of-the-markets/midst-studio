@@ -295,8 +295,6 @@ mock.module("@/hooks/use-connection-form", () => ({
   useConnectionForm: mock(() => getDefaultForm()),
 }));
 
-import { PASTE_FORMATS_TEXT } from "@/lib/connection-paste-formats";
-
 // The account module is pure and not mocked: the Snowflake entry's derived-host hint is the real one.
 import { snowflakeHostHint } from "@/lib/db/providers/sql/snowflake/account-host";
 import { CONNECTION_FIELD_DESCRIPTORS } from "@/lib/db/connection-fields";
@@ -634,7 +632,7 @@ const MOCK_FIELD_COPY: Record<string, MockFieldCopy> = {
     fieldLabels: { host: "Host", port: "Port", password: "Token", database: "Catalog", schema: "Namespace" },
     fieldPlaceholders: { database: "server default (spark_catalog)", schema: "catalog default" },
     fieldHints: {
-      host: "The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port. Paste an sc:// address with Paste URL.",
+      host: "The host of the Spark Connect server, or of a TLS proxy in front of it. Spark Connect listens on 15002 unless the server was started on another port.",
       password:
         "The server's spark.connect.authenticate.token (Spark 4.0 and later), sent on every call. Leave it empty for a server without a token. Studio sends a token only over TLS or an SSH tunnel, unless the host is this machine.",
       database:
@@ -1192,13 +1190,17 @@ describe("ConnectionModal", () => {
     expect(queryByText("SSH Tunnel")).not.toBeNull();
   });
 
-  // ── 14. Paste URL button renders for new connection ────────────────────────
+  // ── 14. The dialog does not offer Paste URL or the wire-compatibility note ──
 
-  test("Paste URL button renders for new connection", () => {
+  test("the new-connection dialog has no Paste URL control and no wire-compatibility note", () => {
     const props = createDefaultProps();
-    const { queryByText } = render(React.createElement(ConnectionModal, props));
+    const { queryByText, queryByTestId } = render(React.createElement(ConnectionModal, props));
 
-    expect(queryByText("Paste URL")).not.toBeNull();
+    expect(queryByText("Paste URL")).toBeNull();
+    expect(queryByText("Configure your database connection parameters securely.")).toBeNull();
+    expect(queryByText(/This driver also serves/)).toBeNull();
+    expect(queryByTestId("wire-compat-hint")).toBeNull();
+    expect(queryByTestId("paste-formats")).toBeNull();
   });
 
   // ── 15. Environment selector renders ───────────────────────────────────────
@@ -1212,16 +1214,6 @@ describe("ConnectionModal", () => {
     expect(queryByText("STAGING")).not.toBeNull();
     expect(queryByText("DEV")).not.toBeNull();
     expect(queryByText("LOCAL")).not.toBeNull();
-  });
-
-  // ── 16. Paste URL shows input area when clicked ─────────────────────────
-
-  test("Paste URL shows paste input area when showPasteInput is true", () => {
-    mockFormOverrides = { showPasteInput: true };
-    const props = createDefaultProps();
-    const { queryByText } = render(React.createElement(ConnectionModal, props));
-    expect(queryByText("Paste Connection URL")).not.toBeNull();
-    expect(queryByText("Parse")).not.toBeNull();
   });
 
   // ── 17. SSL expanded shows SSL fields ───────────────────────────────────
@@ -1331,37 +1323,6 @@ describe("ConnectionModal", () => {
     const props = createDefaultProps();
     const { queryByText } = render(React.createElement(ConnectionModal, props));
     expect(queryByText("Instance Name")).not.toBeNull();
-  });
-
-  // ── 28. Paste URL hidden in edit mode ────────────────────────────────
-
-  test("Paste URL button hidden in edit mode", () => {
-    mockFormOverrides = { isEditMode: true };
-    const editConn = {
-      id: "e1",
-      name: "My PG",
-      type: "postgres" as const,
-      host: "localhost",
-      port: 5432,
-      createdAt: new Date(),
-    };
-    const props = createDefaultProps({ editConnection: editConn });
-    const { queryByText } = render(React.createElement(ConnectionModal, props));
-    expect(queryByText("Paste URL")).toBeNull();
-  });
-
-  // ── 29. Supports URL text shown in paste area ────────────────────────
-
-  test("paste area shows supported URL protocols", () => {
-    mockFormOverrides = { showPasteInput: true };
-    const props = createDefaultProps();
-    const { queryByText } = render(React.createElement(ConnectionModal, props));
-    expect(queryByText(/postgres:\/\//)).not.toBeNull();
-    // A `db2://` paste fills the fields (#786), so the list names it too.
-    expect(queryByText(/db2:\/\//)).not.toBeNull();
-    // So does a Databend DSN (Databend design 6.2), in the list and in the box's placeholder.
-    expect(queryByText(/databend:\/\//)).not.toBeNull();
-    expect(document.querySelector('input[placeholder*="databend://"]')).not.toBeNull();
   });
 
   // ── 29b. verify-system is offered, and says what it verifies (D26) ──────
@@ -2842,16 +2803,6 @@ describe("ConnectionModal: the Snowflake fields, the account-only host row and t
     mockDeclaredCopy = { fieldPlaceholders: { password: "a token" } };
     rerender(React.createElement(ConnectionModal, createDefaultProps()));
     expect((container.querySelector("#password") as HTMLInputElement).placeholder).toBe("a token");
-  });
-
-  test("the paste box keeps no autocomplete and no spell check, and names the Snowflake forms", () => {
-    mockFormOverrides = { showPasteInput: true };
-    const { getByText, container } = render(React.createElement(ConnectionModal, createDefaultProps()));
-    const paste = container.querySelector('input[placeholder^="postgres://"]') as HTMLInputElement;
-    expect(paste.getAttribute("autocomplete")).toBe("off");
-    expect(paste.getAttribute("spellcheck")).toBe("false");
-    expect(getByText(`Supports: ${PASTE_FORMATS_TEXT}`)).toBeDefined();
-    expect(PASTE_FORMATS_TEXT).toContain("jdbc:snowflake://, snowflake://, a Snowflake account URL or host");
   });
 
   describe("a refusal with a statement that fixes it", () => {

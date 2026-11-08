@@ -21,7 +21,6 @@ import {
   CircleCheck,
   CircleX,
   TriangleAlert,
-  ClipboardPaste,
   Lock,
   ChevronDown,
   ChevronRight,
@@ -52,9 +51,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CONNECTION_FORM_DEFAULTS, useConnectionForm } from "@/hooks/use-connection-form";
 import { connectionPickerCategories } from "@/lib/db/connection-form";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { WireCompatibilityHint } from "@/components/WireCompatibilityHint";
 import { ConnectionImportPanel } from "@/components/ConnectionImportPanel";
-import { PASTE_FORMATS_TEXT } from "@/lib/connection-paste-formats";
 
 /**
  * What each SSL mode actually does, in the panel where it is chosen.
@@ -180,10 +177,6 @@ export function ConnectionModal({
     testResult,
     setTestResult,
     withdrawResult,
-    pasteInput,
-    setPasteInput,
-    showPasteInput,
-    setShowPasteInput,
     isEditMode,
 
     // SSL/TLS
@@ -225,7 +218,6 @@ export function ConnectionModal({
     // Handlers
     handleTestConnection,
     handleConnect,
-    handlePasteConnectionString,
     applyImported,
 
     // Derived data
@@ -318,63 +310,7 @@ export function ConnectionModal({
               {isEditMode ? "Edit Connection" : "New Connection"}
             </h2>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-fg-muted">
-              {isEditMode
-                ? "Update your database connection parameters."
-                : "Configure your database connection parameters securely."}
-            </p>
-            {!isEditMode && (
-              <button
-                onClick={() => setShowPasteInput(!showPasteInput)}
-                className="flex items-center gap-1.5 text-xs font-medium text-brand hover:text-brand-bright transition-colors px-2 py-1 rounded-md hover:bg-brand-tint/10"
-              >
-                <ClipboardPaste strokeWidth={1.5} className="w-3 h-3" />
-                Paste URL
-              </button>
-            )}
-          </div>
         </div>
-
-        {/* Paste Connection String Input */}
-        <AnimatePresence>
-          {showPasteInput && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="mb-6 overflow-hidden"
-            >
-              <div className="p-3 rounded-lg border border-brand-tint/20 bg-brand-tint/5 space-y-2">
-                <Label className="text-xs font-medium text-brand">Paste Connection URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={pasteInput}
-                    onChange={(e) => setPasteInput(e.target.value)}
-                    placeholder="postgres://user:pass@host:5432/db  or  mongodb://...  or  databend://..."
-                    // A pasted URL can carry a password or a token: never offered back by the browser, never spell-checked.
-                    autoComplete="off"
-                    spellCheck={false}
-                    autoCorrect="off"
-                    autoCapitalize="off"
-                    className="h-9 bg-panel border-hairline focus:border-brand-tint/50 text-xs font-mono flex-1"
-                    onKeyDown={(e) => e.key === "Enter" && handlePasteConnectionString()}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handlePasteConnectionString}
-                    className="bg-brand-solid hover:bg-brand-solid-hover text-white h-9 px-4 text-xs font-medium"
-                  >
-                    Parse
-                  </Button>
-                </div>
-                <p data-testid="paste-formats" className="text-xs text-fg-muted">
-                  Supports: {PASTE_FORMATS_TEXT}
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <div className="space-y-4 md:space-y-6">
           {/* Connection Name - always visible */}
@@ -568,9 +504,6 @@ export function ConnectionModal({
               );
             })}
           </div>
-
-          {/* Wire-compatible engines served by the selected driver (#424) */}
-          <WireCompatibilityHint type={type} />
 
           {/*
             The import the selected engine declares, read from its entry rather than an isX branch, and only for a

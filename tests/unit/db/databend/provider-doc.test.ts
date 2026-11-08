@@ -442,10 +442,10 @@ describe("docs/providers/databend.md quotes what the code says", () => {
     expect(DOC).not.toContain("Run All");
   });
 
-  test("the header sends a DSN to Paste URL, and the overview names no other type's route (owner decision Q6)", () => {
+  test("the header sends a pasted address to Host, and the overview names no other type's route (owner decision Q6)", () => {
     const head = DOC.slice(0, DOC.indexOf("## 1. Overview"));
     expect(rowOf(head, "**Connection string**")).toBe(
-      "| **Connection string** | Not offered: a pasted `https://` address goes into Host, which splits it, and a `databend://` DSN into Paste URL of a new connection, which fills the fields ([4.1](#41-configuration-fields)) |",
+      "| **Connection string** | Not offered: a pasted `https://` address goes into Host, which splits it ([4.1](#41-configuration-fields)) |",
     );
     const overview = flat(sectionOf(DOC, "## 1. Overview"));
     expect(overview).not.toContain("`mysql`");
@@ -731,7 +731,7 @@ describe("docs/providers/databend.md quotes what the code says", () => {
     expect([port("databend+http://"), port("databend://"), port("databend+https://")]).toEqual(["80", "443", "443"]);
     expect(fields).toContain("and clears Send the password without TLS, which no DSN carries,");
     expect(flat(sectionOf(DOC, "### 4.3 TLS and the password rule"))).toContain(
-      "A DSN pasted into Paste URL unticks it (section 4.1), so it is ticked again only for the pasted host.",
+      "A parsed DSN clears it (section 4.1), so it is ticked again only for that host.",
     );
     for (const scheme of ["databend://", "databend+http://", "databend+https://"])
       expect(parseConnectionString(`${scheme}root@host/db`)?.allowInsecureAuth, scheme).toBe(false);
