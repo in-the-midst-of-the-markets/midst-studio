@@ -16,7 +16,7 @@ It requires VS Code 1.123 or later.
 - Document, key-value and wide-column: MongoDB, Couchbase, Firestore, Redis, etcd, Oxia, Apache Cassandra.
 - Search and vector: Elasticsearch, OpenSearch, Milvus, Qdrant, Weaviate.
 - Graph and time series: Neo4j, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), QuestDB.
-- SaaS: Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics.
+- SaaS: Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online.
 - Streams and messaging: Apache Kafka, RabbitMQ, MQTT.
 - Storage and platforms: S3-compatible object storage, Kubernetes.
 - Industrial and network: OPC UA, Sparkplug B, MTConnect, Modbus, SNMP, NETCONF.

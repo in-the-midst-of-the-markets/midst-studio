@@ -500,6 +500,25 @@ export const CONNECTION_FORM: {
       host: "The access token is sent only to analyticsdata.googleapis.com. A service-account key is sent only to oauth2.googleapis.com.",
     },
   },
+  quickbooks: {
+    label: "QuickBooks Online",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.quickbooks,
+    fieldLabels: { password: "Access token", database: "Company ID", host: "API host" },
+    fieldPlaceholders: {
+      password: "eyJ…",
+      database: "1234567890",
+      host: "quickbooks.api.intuit.com",
+    },
+    fieldHints: {
+      password: "An OAuth access token from the QuickBooks Online app. It lasts about an hour.",
+      database: "The company id, digits only. It is the realm id in the query address.",
+      host: "The token is sent only to quickbooks.api.intuit.com or sandbox-quickbooks.api.intuit.com.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1577,6 +1596,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "stripe",
   "clarity",
   "googleanalytics",
+  "quickbooks",
 ]);
 
 /**
@@ -1589,6 +1609,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "stripe",
   "clarity",
   "googleanalytics",
+  "quickbooks",
 ]);
 
 export interface ConnectionPickerCategory {

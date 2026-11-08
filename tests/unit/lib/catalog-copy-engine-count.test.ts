@@ -130,6 +130,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // Two past the registry once Microsoft Clarity and Google Analytics joined it.
   fifty: 50,
   "fifty-one": 51,
+  // Two past the registry once QuickBooks Online joined it.
+  "fifty-two": 52,
 };
 
 /**

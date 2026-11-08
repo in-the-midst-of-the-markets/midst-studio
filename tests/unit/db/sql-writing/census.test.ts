@@ -92,6 +92,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   stripe: "sql/stripe/sql-writing",
   clarity: "sql/clarity/sql-writing",
   googleanalytics: "sql/googleanalytics/sql-writing",
+  quickbooks: "sql/quickbooks/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",
