@@ -48,6 +48,20 @@ describe("editorChatQuery", () => {
 });
 
 describe("IdeQueryChat", () => {
+  test("opening configuration does not put the send button in the configuration scroller", () => {
+    install(() => jsonResponse({ models: [] }));
+    const view = render(<IdeQueryChat sql="SELECT 1" databaseType="postgres" schemaContext="orders" />);
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    fireEvent.click(view.getByRole("button", { name: "Model configuration" }));
+    const send = view.getByRole("button", { name: "Send" });
+    const config = view.getByRole("button", { name: "Model configuration" });
+    const scroller = config.closest("[data-assist-config]");
+    expect(scroller).not.toBeNull();
+    expect(scroller?.contains(send)).toBe(false);
+    expect(scroller?.nextElementSibling?.contains(send)).toBe(true);
+    expect(scroller?.parentElement?.className).toContain("min-h-0");
+  });
+
   test("builds a query, renders markdown, and puts the statement in the editor", async () => {
     const schema = `a\n${"b".repeat(30_000)}`;
     install((url, init) => {

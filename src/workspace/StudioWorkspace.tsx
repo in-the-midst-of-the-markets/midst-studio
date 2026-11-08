@@ -8,6 +8,7 @@ import { ObjectSourceView, type ObjectSourcePatch } from "@/components/object-so
 // MobileNav and mobile tab panels excluded in embedded mode — platform provides its own navigation
 import { QueryEditor, QueryEditorRef } from "@/components/QueryEditor";
 import { StudioTabBar, QueryToolbar, BottomPanel } from "@/components/studio/index";
+import { SIDEBAR_MIN_SIZE_PX } from "@/components/studio/pane-floors";
 import { StudioModals } from "@/components/studio/StudioModals";
 import { DEFAULT_MASKING_CONFIG, type MaskingConfig } from "@/lib/data-masking";
 import type { DatabaseObject } from "@/lib/db/types";
@@ -825,7 +826,7 @@ export function StudioWorkspace({
         */}
         {!isMobile && (
           <>
-            <ResizablePanel id="workspace-sidebar" defaultSize="22" minSize="15" maxSize="35">
+            <ResizablePanel id="workspace-sidebar" defaultSize="22" minSize={SIDEBAR_MIN_SIZE_PX} maxSize="35">
               <Sidebar
                 connections={conn.connections}
                 activeConnection={conn.activeConnection}

@@ -546,8 +546,16 @@ mock.module("@/components/ui/resizable", () => {
   return {
     ResizablePanelGroup: ({ children }: Record<string, unknown>) =>
       React.createElement("div", { "data-testid": "resizable-group" }, children),
-    ResizablePanel: ({ children }: Record<string, unknown>) =>
-      React.createElement("div", { "data-testid": "resizable-panel" }, children),
+    ResizablePanel: ({ children, id, minSize }: Record<string, unknown>) =>
+      React.createElement(
+        "div",
+        {
+          "data-testid": "resizable-panel",
+          "data-panel-id": id,
+          "data-min-size": minSize === undefined ? undefined : String(minSize),
+        },
+        children,
+      ),
     ResizableHandle: () => React.createElement("div", { "data-testid": "resizable-handle" }),
   };
 });
@@ -707,6 +715,11 @@ describe("Studio", () => {
     const sidebar = getByTestId("sidebar");
     expect(sidebar).not.toBeNull();
     expect(sidebar.textContent).toBe("Sidebar");
+    expect(document.querySelector('[data-panel-id="studio-sidebar"]')?.getAttribute("data-min-size")).toBe("240");
+    const editor = document.querySelector('[data-panel-id="studio-editor-top"]');
+    expect(editor?.getAttribute("data-min-size")).toBe("20");
+    expect(editor?.firstElementChild?.classList.contains("h-full")).toBe(true);
+    expect(editor?.querySelector(".min-h-48")).toBeNull();
   });
 
   test("shows desktop header", () => {
@@ -964,6 +977,13 @@ describe("Studio", () => {
     expect(connections.map((connection) => connection.id)).toEqual(["cross-db-joins", "c1"]);
     expect(connections[0]).toMatchObject({ name: "Cross_DB_Joins", type: "duckdb" });
     expect(document.body.textContent).toContain("including one from the marketplace");
+    const editor = document.querySelector('[data-panel-id="studio-editor-top"]');
+    expect(editor?.getAttribute("data-min-size")).toBe("480");
+    const column = editor?.firstElementChild;
+    expect(column?.classList.contains("min-h-full")).toBe(true);
+    expect(column?.classList.contains("h-full")).toBe(false);
+    const slot = column?.querySelector(".min-h-48");
+    expect(slot?.classList.contains("shrink-0")).toBe(true);
 
     const source = capturedSidebarProps.objectSource as (
       connection: unknown,

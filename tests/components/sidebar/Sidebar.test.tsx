@@ -686,6 +686,21 @@ describe("Sidebar", () => {
    * this rarely must not cost the panel a row: on an engine with no Objects / Keys switch the
    * panel below the header is the tree and nothing else, as it was before the control existed.
    */
+  test("the header lets the word shrink and keeps the icons off it", () => {
+    const { getByText, getByRole } = render(<Sidebar {...createDefaultProps()} />);
+    const word = getByText("KnowSQL");
+    expect(word.className).toContain("truncate");
+    expect(word.className).toContain("min-w-0");
+    const lockup = word.parentElement;
+    expect(lockup?.className).toContain("min-w-0");
+    const header = lockup?.parentElement;
+    expect(header?.className).toContain("overflow-hidden");
+    expect(header?.className).toContain("min-w-0");
+    const icons = getByRole("button", { name: "Add Internal Data" }).parentElement;
+    expect(icons?.className).toContain("shrink-0");
+    expect(icons?.parentElement).toBe(header);
+  });
+
   test("the refresh control sits in the header, just before the diagram control", () => {
     const { getByRole, getByTitle } = render(<Sidebar {...createDefaultProps()} />);
     const control = getByRole("button", { name: "Read the objects again" });
