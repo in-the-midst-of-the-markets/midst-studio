@@ -7,6 +7,7 @@
  */
 
 import type { AssistChart } from "@/lib/ai/assist-plan";
+import { clearQueryFilters, queryIdentity } from "@/lib/charts/query-filters";
 import {
   classifyColumns,
   defaultSelection,
@@ -254,4 +255,14 @@ export function titleForQuery(sql: string): string {
   const only = columns[0];
   if (columns.length === 1) return clipTitle(only === "*" && table !== "" ? table : (only ?? statement));
   return clipTitle(`${columns.slice(1).join(", ")} by ${columns[0] ?? ""}`);
+}
+
+/**
+ * The heading after a run.
+ * A new filter, or a new value in one, is still the same chart. The heading
+ * changes when the statement itself changes.
+ */
+export function titleAfterEdit(previousTitle: string, previousSql: string, sql: string): string {
+  if (queryIdentity(clearQueryFilters(sql)) === queryIdentity(clearQueryFilters(previousSql))) return previousTitle;
+  return titleForQuery(sql);
 }
