@@ -36,15 +36,33 @@ describe("EmbeddingModelSelect", () => {
   test("stores a catalog model, a custom model, and a per-connection override", () => {
     setEmbeddingStorage(new MemoryStorage());
     const view = render(<EmbeddingModelSelect connectionId="orders" />);
-    const select = view.getByLabelText("Embedding model") as HTMLSelectElement;
-    expect(select.value).toBe("voyage-4");
+    const open = view.getByLabelText("Embedding model");
     expect(view.getByText("Model: Voyage 4")).toBeTruthy();
-    fireEvent.change(select, { target: { value: "voyage-4-lite" } });
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
+
+    fireEvent.click(open);
+    fireEvent.click(open);
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
+    fireEvent.click(open);
+    fireEvent.click(view.getByRole("button", { name: "Close embedding model" }));
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
+
+    fireEvent.click(open);
+    const menu = view.getByRole("menu", { name: "Embedding models" });
+    fireEvent.keyDown(menu, { key: "Enter" });
+    expect(view.getByRole("menu", { name: "Embedding models" })).toBeTruthy();
+    fireEvent.keyDown(menu, { key: "Escape" });
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
+
+    fireEvent.click(open);
+    fireEvent.click(view.getByRole("menuitem", { name: "Voyage 4 lite" }));
     expect(view.getByText("Model: Voyage 4 lite")).toBeTruthy();
     expect(embeddingModelFor("orders")).toBe("voyage-4-lite");
     expect(embeddingModelFor("other")).toBe("voyage-4");
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
 
-    fireEvent.change(select, { target: { value: "__custom__" } });
+    fireEvent.click(open);
+    fireEvent.click(view.getByRole("menuitem", { name: "Custom model" }));
     expect(view.getByText("Model: Custom")).toBeTruthy();
     const input = view.getByLabelText("Custom embedding model") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "bad model" } });
@@ -59,19 +77,24 @@ describe("EmbeddingModelSelect", () => {
     fireEvent.blur(view.getByLabelText("Custom embedding model"));
     expect(embeddingModelFor("orders")).toBe("text-embedding-3-small");
     expect(view.getByText("Model: text-embedding-3-small")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Close embedding model" }));
+    expect(view.queryByLabelText("Custom embedding model")).toBeNull();
 
+    fireEvent.click(open);
     fireEvent.change(view.getByLabelText("Custom embedding model"), { target: { value: "" } });
     fireEvent.blur(view.getByLabelText("Custom embedding model"));
     expect(embeddingModelFor("orders")).toBe("voyage-4");
     expect(view.queryByLabelText("Custom embedding model")).toBeNull();
+    expect(view.getByText("Model: Voyage 4")).toBeTruthy();
 
-    fireEvent.change(view.getByLabelText("Embedding model"), { target: { value: "__custom__" } });
+    fireEvent.click(view.getByRole("menuitem", { name: "Custom model" }));
     fireEvent.blur(view.getByLabelText("Custom embedding model"));
     expect(view.queryByLabelText("Custom embedding model")).toBeNull();
 
     writeEmbeddingModel("billing", "voyage-code-4");
     view.rerender(<EmbeddingModelSelect connectionId="billing" />);
-    expect((view.getByLabelText("Embedding model") as HTMLSelectElement).value).toBe("voyage-code-4");
+    expect(view.getByText("Model: Voyage code 4")).toBeTruthy();
+    expect(view.queryByRole("menu", { name: "Embedding models" })).toBeNull();
   });
 
   test("renders the default model where there is no browser storage", () => {
