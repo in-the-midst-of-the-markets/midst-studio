@@ -235,6 +235,41 @@ export const StripeIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A pointer, for a Clarity project. Not the vendor mark. */
+export const ClarityIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M5 19V5" />
+    <path d="M5 12h6l2-4 3 8 2-4h3" />
+  </svg>
+);
+
+/** Bars, for a Google Analytics property. Not the vendor mark. */
+export const GoogleAnalyticsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M5 19V10" />
+    <path d="M12 19V5" />
+    <path d="M19 19v-7" />
+  </svg>
+);
+
 /** A sprocket, for a HubSpot account. Not the vendor mark. */
 export const HubSpotIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

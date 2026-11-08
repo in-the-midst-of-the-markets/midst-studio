@@ -36,6 +36,8 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   airtable: "exact",
   hubspot: "exact",
   stripe: "exact",
+  clarity: "exact",
+  googleanalytics: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

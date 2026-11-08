@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Forty-eight type-ids are supported by forty-six provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Fifty type-ids are supported by forty-eight provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -324,6 +324,8 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Supabase | `supabase` | SQL (hosted PostgreSQL) | [providers/supabase.md](./providers/supabase.md) |
 | HubSpot | `hubspot` | SQL (the CRM API) | [providers/hubspot.md](./providers/hubspot.md) |
 | Stripe | `stripe` | SQL (the Queries and Reports API, read-only) | [providers/stripe.md](./providers/stripe.md) |
+| Microsoft Clarity | `clarity` | SQL (the Clarity Data Export API, read-only) | [providers/clarity.md](./providers/clarity.md) |
+| Google Analytics | `googleanalytics` | SQL (the GA4 Data API, read-only) | [providers/googleanalytics.md](./providers/googleanalytics.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

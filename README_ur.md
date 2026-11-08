@@ -145,11 +145,11 @@ npx @libredb/studio
 
 ## <span dir="rtl">بنیادی صلاحیتیں</span>
 
-### <span dir="rtl">سینتالیس engines، ایک interface</span>
+### <span dir="rtl">انچاس engines، ایک interface</span>
 
 </div>
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity and Google Analytics
 
 <div dir="rtl" align="right">
 
@@ -163,6 +163,8 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
 | **Stripe** | none: the Queries and Reports API | Sigma SQL (SELECT or WITH) and REPORT. Read-only |
+| **Microsoft Clarity** | none: the Clarity Data Export API | SELECT, WHERE days, ORDER BY, LIMIT and COUNT(*). Read-only. About 10 exports a day |
+| **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **PostgreSQL** | `pg` | <span dir="rtl">مکمل SQL IDE، EXPLAIN execution plans، transactions، query cancellation (`pg_cancel_backend`)</span> |
 | **MySQL** | `mysql2` | <span dir="rtl">مکمل SQL IDE، EXPLAIN، transactions، query cancellation (`KILL QUERY`)</span> |
 | **Oracle** | <span dir="rtl">`oracledb` (Thin موڈ)</span> | <span dir="rtl">مکمل SQL IDE، `FETCH FIRST N ROWS` کے ساتھ pagination، `V$` monitoring views، `ANALYZE TABLE`، `ALTER INDEX REBUILD`، transactions</span> |

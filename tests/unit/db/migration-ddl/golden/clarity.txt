@@ -1,0 +1,8 @@
+-- fixture: full
+-- Migration generated at 2026-10-19T12:00:00.000Z
+-- Dialect: clarity
+-- Changes: 1 added, 1 removed, 2 modified
+
+-- Clarity: Cannot generate table DDL. Clarity object changes are not generated here; this connection is read-only.
+-- fixture: none
+-- No schema changes detected.

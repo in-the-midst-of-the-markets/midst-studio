@@ -136,9 +136,9 @@ LibreDB Studio устроен наоборот: **инструмент прих�
 
 ## Основные возможности
 
-### Сорок семь СУБД, один интерфейс
+### Сорок девять СУБД, один интерфейс
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity and Google Analytics
 
 Для всех SQL-СУБД доступен одинаковый набор инструментов: дерево объектов базы (схемы, таблицы, столбцы), ER-диаграммы, сравнение схем и панели мониторинга. MongoDB и Redis работают не на SQL, поэтому ER-диаграмм и сравнения схем для них нет.
 
@@ -152,6 +152,8 @@ ER-диаграмма для Elasticsearch и OpenSearch показывает и
 | **Supabase** | `pg` | Full PostgreSQL SQL. A project ref, a dashboard URL or a `postgresql://` string opens the project's database |
 | **HubSpot** | none: the CRM API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*), plus INSERT, UPDATE and DELETE of one record by its id |
 | **Stripe** | none: the Queries and Reports API | Sigma SQL (SELECT or WITH) and REPORT. Read-only |
+| **Microsoft Clarity** | none: the Clarity Data Export API | SELECT, WHERE days, ORDER BY, LIMIT and COUNT(*). Read-only. About 10 exports a day |
+| **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **PostgreSQL** | `pg` | Полноценная SQL IDE, планы выполнения EXPLAIN, транзакции, отмена запросов (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | Полноценная SQL IDE, EXPLAIN, транзакции, отмена запросов (`KILL QUERY`) |
 | **Oracle** | `oracledb` (тонкий клиент, режим Thin) | Полноценная SQL IDE, постраничный вывод через `FETCH FIRST N ROWS`, представления мониторинга `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, транзакции |

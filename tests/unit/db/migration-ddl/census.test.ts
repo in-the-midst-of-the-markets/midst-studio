@@ -50,6 +50,8 @@ const PLACEMENT: Record<DatabaseType, string> = {
   airtable: "sql/airtable/migration-ddl",
   hubspot: "sql/hubspot/migration-ddl",
   stripe: "sql/stripe/migration-ddl",
+  clarity: "sql/clarity/migration-ddl",
+  googleanalytics: "sql/googleanalytics/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -95,6 +97,10 @@ const REFUSED: DatabaseType[] = [
   "netconf",
   "snmp",
   "sparkplug",
+  "hubspot",
+  "stripe",
+  "clarity",
+  "googleanalytics",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

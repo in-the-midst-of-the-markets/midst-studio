@@ -132,6 +132,8 @@ const ALL_TYPES: DatabaseType[] = [
   "supabase",
   "hubspot",
   "stripe",
+  "clarity",
+  "googleanalytics",
 ];
 
 describe("db-ui-config", () => {
@@ -377,7 +379,9 @@ describe("db-ui-config", () => {
       const refusing = ALL_TYPES.filter((type) => !offersSshTunnel(type));
       expect(refusing.sort()).toEqual([
         "bigquery",
+        "clarity",
         "firestore",
+        "googleanalytics",
         "hubspot",
         "kafka",
         "rabbitmq",
@@ -414,7 +418,9 @@ describe("db-ui-config", () => {
       expect(ALL_TYPES.filter((type) => !offersSslPanel(type)).sort()).toEqual([
         "airtable",
         "bigquery",
+        "clarity",
         "firestore",
+        "googleanalytics",
         "hubspot",
         "netconf",
         "opcua",
@@ -1099,6 +1105,8 @@ describe("declared connection-field copy (#1085)", () => {
       "supabase",
       "hubspot",
       "stripe",
+      "clarity",
+      "googleanalytics",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1685,6 +1693,8 @@ describe("db-showcase", () => {
         "supabase",
         "hubspot",
         "stripe",
+        "clarity",
+        "googleanalytics",
       ]);
     });
   });
@@ -1915,7 +1925,7 @@ describe("the Snowflake entry", () => {
     // OPC UA's Endpoint URL carries its port inside the address, so a second box would ask twice.
     expect(
       ALL_TYPES.filter((type) => takesConnectionField(type, "host") && !takesConnectionField(type, "port")),
-    ).toEqual(["snowflake", "opcua", "airtable", "hubspot", "stripe"]);
+    ).toEqual(["snowflake", "opcua", "airtable", "hubspot", "stripe", "clarity", "googleanalytics"]);
   });
 
   test("only snowflake declares a derived host hint, so every other Host box keeps its static hint", () => {

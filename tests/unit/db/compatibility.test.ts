@@ -518,9 +518,9 @@ describe("wire-compatibility registry", () => {
     // The one place these numerals live. A new provider moves them here and nowhere else, and the derived
     // assertions around this test say how the counts relate.
     expect([SHIPPED_DATABASE_TYPES.length, EXTERNAL_DATABASE_TYPES.length, WIRE_COMPATIBLE_ENGINES.length]).toEqual([
-      48, 47, 27,
+      50, 49, 27,
     ]);
-    expect(connectableProductCount()).toBe(74);
+    expect(connectableProductCount()).toBe(76);
   });
 
   test("the Weaviate row of each record (#1566)", () => {
@@ -678,6 +678,8 @@ describe("MCP_EXPOSABLE (#1089)", () => {
       "airtable",
       "hubspot",
       "stripe",
+      "clarity",
+      "googleanalytics",
       "supabase",
       "etcd",
       "oxia",

@@ -27,6 +27,8 @@ describe("connection picker categories", () => {
     expect(screen.getByRole("button", { name: "Airtable" })).toBeDefined();
     expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
 
     fireEvent.click(databases);
     expect(databases.getAttribute("aria-expanded")).toBe("false");
@@ -34,6 +36,8 @@ describe("connection picker categories", () => {
     expect(screen.queryByRole("button", { name: "Airtable" })).toBeNull();
     expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
 
     fireEvent.click(databases);
     expect(databases.getAttribute("aria-expanded")).toBe("true");
@@ -42,14 +46,20 @@ describe("connection picker categories", () => {
 
     const order = screen.getAllByRole("button").map((button) => button.textContent?.replaceAll(/\s+/g, "") ?? "");
     const stripeAt = order.indexOf("Stripe");
+    const clarityAt = order.indexOf("MicrosoftClarity");
+    const analyticsAt = order.indexOf("GoogleAnalytics");
     const airtableAt = order.indexOf("Airtable");
     expect(stripeAt).toBeGreaterThan(-1);
-    expect(airtableAt).toBeGreaterThan(stripeAt);
+    expect(clarityAt).toBeGreaterThan(stripeAt);
+    expect(analyticsAt).toBeGreaterThan(clarityAt);
+    expect(airtableAt).toBeGreaterThan(analyticsAt);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("button", { name: "HubSpot" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Stripe" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Microsoft Clarity" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Google Analytics" })).toBeNull();
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
 
@@ -57,5 +67,7 @@ describe("connection picker categories", () => {
     expect(saas.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
   });
 });

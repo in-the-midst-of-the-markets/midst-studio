@@ -154,9 +154,12 @@ describe("HubSpotProvider", () => {
     expect(search.properties).toEqual(["email"]);
     expect(search.limit).toBe(1);
     expect(calls[7]?.url).toBe("https://eu.hubapi.com/crm/v3/objects/contacts/search");
-    expect(String(calls[7]?.init?.headers && (calls[7]?.init?.headers as Record<string, string>).Authorization)).toBe(
-      "Bearer pat-token",
-    );
+    const searchHeaders = calls[7]?.init?.headers;
+    const authorization =
+      searchHeaders !== null && typeof searchHeaders === "object"
+        ? (searchHeaders as Record<string, string>).Authorization
+        : "";
+    expect(String(authorization)).toBe("Bearer pat-token");
 
     const counted = await opened.query("SELECT COUNT(*) FROM CONTACTS");
     expect(counted.rows).toEqual([{ row_count: 1 }]);

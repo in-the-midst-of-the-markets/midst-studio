@@ -24,13 +24,14 @@ metadata:
     console.openshift.io/plugins: '["libredb-studio"]'
     containerImage: ghcr.io/libredb/libredb-studio-operator:1.2.0
     createdAt: "2026-10-30T20:24:04Z"
-    description: Open-source web-based SQL IDE for forty-seven engines - PostgreSQL,
+    description: Open-source web-based SQL IDE for forty-nine engines - PostgreSQL,
       MySQL, Oracle, Db2 LUW, SQL Server, SQLite, DuckDB, MongoDB, Redis, Couchbase,
       Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery,
       Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka,
       MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3,
       Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect,
-      Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot and Stripe - with AI-powered query assistance.
+      Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe,
+      Microsoft Clarity and Google Analytics - with AI-powered query assistance.
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
     features.operators.openshift.io/proxy-aware: "false"
@@ -69,7 +70,7 @@ spec:
     MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase,
     Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark,
     Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB,
-    InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot and Stripe from the browser,
+    InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity and Google Analytics from the browser,
     with AI-powered query assistance (natural-language-to-SQL, explain, fix),
     an ERD viewer, schema diff and a data profiler. No desktop client required.
 

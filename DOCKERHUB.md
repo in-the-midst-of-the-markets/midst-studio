@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Forty-seven external engines share one interface.
-The forty-eighth row is the embedded LibreDB store: it ships inside the image.
+Forty-nine external engines share one interface.
+The fiftieth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -157,6 +157,8 @@ The forty-eighth row is the embedded LibreDB store: it ships inside the image.
 | **Supabase** | `pg` | Hosted PostgreSQL |
 | **HubSpot** | none, HTTP | SQL over the CRM API |
 | **Stripe** | none, HTTP | Sigma SQL and REPORT, read-only |
+| **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
+| **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -164,13 +166,13 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak one of those drivers. Pick it in the connection dialog. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the forty-nine drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
 | MariaDB · Percona Server for MySQL | `mysql` | Full - both are drop-in builds: all fifteen surfaces answer and the numbers are correct. Percona's `version()` answers a bare 8.4.11-11, so the overview names it from `@@version_comment` |
 | Percona Distribution for PostgreSQL | `postgres` | Full - behaves as PostgreSQL throughout, with correct row counts and sizes, and unlike the MySQL build it names itself in `version()` |
-| ParadeDB | `postgres` | Full - correct numbers, but its nine extensions put 41 objects in the object browser for 2 user tables, and agent plan mode fails on a stock install because 539 non-system columns exceed the grounding capture's ceiling. `version()` names PostgreSQL only |
+| ParadeDB | `postgres` | Full - correct numbers, but its extensions crowd the object browser. `version()` names PostgreSQL only |
 | OrioleDB | `postgres` | Full - clean object browser and exact row counts, but its own storage is invisible to PostgreSQL's size functions, so every index reads 0 bytes and the cache hit ratio reads N/A. Nightly images only |
 | TiDB | `mysql` | Full - but a freshly loaded table reads 0 rows and 0 B until TiDB's background statistics catch up, the slow-query panel stays empty, and only a standalone `--store=unistore` server was probed |
 | Vitess | `mysql` | Full. Row counts and sizes are exact, but a running query cannot be cancelled: vtgate refuses `KILL QUERY` and the statement runs to completion. Per-index sizes read 0 bytes, and only an unsharded single-shard keyspace was probed |
