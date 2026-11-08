@@ -2794,6 +2794,68 @@ describe("AiAssist page", () => {
     fireEvent.click(view.getByRole("button", { name: "Back" }));
     expect(view.getByRole("menuitem", { name: "Saved query" })).toBeTruthy();
   });
+
+  test("keeps a named conversation apart from a new one", async () => {
+    const at = new Date().toISOString();
+    localStorage.setItem(
+      ASSIST_TRANSCRIPT_KEY,
+      JSON.stringify([{ id: "assist-1", role: "user", text: "Earlier question", at, cards: [] }]),
+    );
+    const view = render(<AiAssist />);
+    expect(await view.findByText("Earlier question")).toBeTruthy();
+    const listed = view.getByRole("combobox", { name: "Conversations" }) as HTMLSelectElement;
+    expect(listed.value).toBe("conv-1");
+    fireEvent.change(listed, { target: { value: "conv-1" } });
+    fireEvent.change(listed, { target: { value: "missing" } });
+    expect(view.getByText("Earlier question")).toBeTruthy();
+
+    const name = view.getByRole("textbox", { name: "Conversation name" });
+    fireEvent.keyDown(name, { key: "a" });
+    fireEvent.blur(name);
+    fireEvent.change(name, { target: { value: "   " } });
+    fireEvent.blur(name);
+    expect((view.getByRole("textbox", { name: "Conversation name" }) as HTMLInputElement).value).toBe(
+      "New conversation",
+    );
+    fireEvent.change(view.getByRole("textbox", { name: "Conversation name" }), {
+      target: { value: "  Radiator search  " },
+    });
+    fireEvent.keyDown(view.getByRole("textbox", { name: "Conversation name" }), { key: "Enter" });
+    expect((view.getByRole("textbox", { name: "Conversation name" }) as HTMLInputElement).value).toBe(
+      "Radiator search",
+    );
+
+    fireEvent.click(view.getByRole("button", { name: "New conversation" }));
+    expect(view.queryByText("Earlier question")).toBeNull();
+    const created = view.getByRole("combobox", { name: "Conversations" }) as HTMLSelectElement;
+    expect([...created.options].map((option) => option.text)).toEqual(["New conversation", "Radiator search"]);
+    await typeAndSend(view, "How many orders?");
+    expect(await view.findByText("How many orders?")).toBeTruthy();
+    expect((planPosts().at(-1)?.body as { history?: unknown[] } | undefined)?.history).toEqual([]);
+
+    fireEvent.change(view.getByRole("combobox", { name: "Conversations" }), { target: { value: "conv-1" } });
+    expect(await view.findByText("Earlier question")).toBeTruthy();
+    expect(view.queryByText("How many orders?")).toBeNull();
+    const radiator = view.getByRole("combobox", { name: "Conversations" }) as HTMLSelectElement;
+    const other = [...radiator.options].find((option) => option.value !== "conv-1");
+    fireEvent.change(radiator, { target: { value: other?.value } });
+    expect(await view.findByText("How many orders?")).toBeTruthy();
+    expect(view.queryByText("Earlier question")).toBeNull();
+
+    fireEvent.click(view.getByRole("button", { name: "Delete conversation" }));
+    expect(view.getByRole("button", { name: "Delete conversation" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(view.getByRole("button", { name: "Delete conversation" }));
+    expect(view.queryByRole("button", { name: "Confirm delete conversation" })).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "Delete conversation" }));
+    fireEvent.click(view.getByRole("button", { name: "Confirm delete conversation" }));
+    expect(view.queryByText("How many orders?")).toBeNull();
+    expect(await view.findByText("Earlier question")).toBeTruthy();
+    expect(
+      [...(view.getByRole("combobox", { name: "Conversations" }) as HTMLSelectElement).options].map(
+        (option) => option.text,
+      ),
+    ).toEqual(["Radiator search"]);
+  });
 });
 
 function readStored(): { source?: string } {

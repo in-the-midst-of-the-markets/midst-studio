@@ -12,9 +12,20 @@ import { renderProse } from "@/components/rich-text";
 import { appFetch } from "@/lib/config/base-path";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
 import {
+  ASSIST_CONVERSATIONS_KEY,
+  ASSIST_CONVERSATION_NAME_CAP,
   ASSIST_TRANSCRIPT_KEY,
+  createAssistConversation,
+  DEFAULT_ASSIST_CONVERSATION_NAME,
+  readAssistConversations,
   readAssistTranscript,
+  removeAssistConversation,
+  renameAssistConversation,
+  selectAssistConversation,
+  touchAssistConversation,
+  writeAssistConversations,
   writeAssistTranscript,
+  type AssistConversationBook,
   type AssistTranscriptTurn,
 } from "@/lib/ai/assist-history";
 import {
@@ -148,11 +159,49 @@ function readTranscriptSnapshot(): readonly Turn[] {
   return transcriptSnapshot;
 }
 
+const EMPTY_BOOK: AssistConversationBook = {
+  activeId: "conv-1",
+  conversations: [{ id: "conv-1", name: DEFAULT_ASSIST_CONVERSATION_NAME, updatedAt: "", turns: [] }],
+};
+let conversationRaw = "\u0000";
+let conversationSnapshot: AssistConversationBook = EMPTY_BOOK;
+
+function readConversationSnapshot(): AssistConversationBook {
+  const raw = localStorage.getItem(ASSIST_CONVERSATIONS_KEY) ?? "";
+  if (raw === conversationRaw) return conversationSnapshot;
+  conversationRaw = raw;
+  conversationSnapshot = readAssistConversations(Date.now());
+  for (const item of conversationSnapshot.conversations) bump(item.id);
+  return conversationSnapshot;
+}
+
+function rememberBook(book: AssistConversationBook): void {
+  writeAssistConversations(book, Date.now());
+  conversationRaw = "\u0000";
+  readConversationSnapshot();
+}
+
+function rememberTurns(turns: readonly Turn[]): readonly Turn[] {
+  writeAssistTranscript(storedOf(turns), Date.now());
+  const live = readAssistTranscript(Date.now()).map(fromStored);
+  transcriptSnapshot = live;
+  transcriptRaw = localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "";
+  noteIds(live);
+  return live;
+}
+
+function notifyTranscript(): void {
+  for (const listener of transcriptListeners) listener();
+}
+
 function publishTranscript(turns: readonly Turn[]): void {
   writeAssistTranscript(storedOf(turns), Date.now());
   transcriptSnapshot = turns;
   transcriptRaw = localStorage.getItem(ASSIST_TRANSCRIPT_KEY) ?? "";
-  for (const listener of transcriptListeners) listener();
+  noteIds(turns);
+  const book = touchAssistConversation(readAssistConversations(Date.now()), Date.now());
+  rememberBook(book);
+  notifyTranscript();
 }
 
 function storedOf(turns: readonly Turn[]): AssistTranscriptTurn[] {
@@ -531,6 +580,7 @@ export function AiAssist() {
   const schemaNotes = schemaReady ? loadedSchema.notes : [];
   const schemas = schemaReady ? loadedSchema.byConnection : {};
   const storedTurns = useSyncExternalStore(subscribeTranscript, readTranscriptSnapshot, () => EMPTY_TURNS);
+  const conversations = useSyncExternalStore(subscribeTranscript, readConversationSnapshot, () => EMPTY_BOOK);
   const [draftTurns, setDraftTurns] = useState<readonly Turn[] | null>(null);
   const turns = draftTurns ?? storedTurns;
   const threadRef = useRef<HTMLElement>(null);
@@ -542,6 +592,16 @@ export function AiAssist() {
   const attachedLive = attached.filter((item) => savedCatalog.some((pick) => pick.id === item.id));
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [nameFor, setNameFor] = useState(conversations.activeId);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  if (nameFor !== conversations.activeId) {
+    setNameFor(conversations.activeId);
+    setNameDraft(null);
+  }
+  const activeConversation =
+    conversations.conversations.find((item) => item.id === conversations.activeId) ?? conversations.conversations[0];
+  const activeName = activeConversation?.name ?? DEFAULT_ASSIST_CONVERSATION_NAME;
   const [notice, setNotice] = useState<string | null>(null);
   const sendingRef = useRef(false);
   const turnsRef = useRef<readonly Turn[]>([]);
@@ -891,6 +951,59 @@ export function AiAssist() {
     }
   };
 
+  const applyConversation = (change: { book: AssistConversationBook; turns: readonly AssistTranscriptTurn[] }) => {
+    rememberBook(change.book);
+    const live = rememberTurns(change.turns.map(fromStored));
+    turnsRef.current = live;
+    setDraftTurns(null);
+    setDraft("");
+    setAttached([]);
+    setNotice(null);
+    setConfirmClear(false);
+    setConfirmDelete(false);
+    notifyTranscript();
+  };
+
+  const openConversation = (id: string) => {
+    if (sendingRef.current) return;
+    const change = selectAssistConversation(
+      readAssistConversations(Date.now()),
+      id,
+      storedOf(turnsRef.current),
+      Date.now(),
+    );
+    if (change === null || change.turns === null) return;
+    applyConversation({ book: change.book, turns: change.turns });
+  };
+
+  const startConversation = () => {
+    if (sendingRef.current) return;
+    const change = createAssistConversation(
+      readAssistConversations(Date.now()),
+      storedOf(turnsRef.current),
+      Date.now(),
+      nextId(),
+    );
+    if (change === null || change.turns === null) return;
+    applyConversation({ book: change.book, turns: change.turns });
+  };
+
+  const commitName = () => {
+    const current = readAssistConversations(Date.now());
+    const renamed = renameAssistConversation(current, conversations.activeId, nameDraft ?? activeName, Date.now());
+    setNameDraft(null);
+    if (renamed === current) return;
+    rememberBook(renamed);
+    notifyTranscript();
+  };
+
+  const deleteConversation = () => {
+    if (sendingRef.current) return;
+    const change = removeAssistConversation(readAssistConversations(Date.now()), conversations.activeId, Date.now());
+    if (change === null || change.turns === null) return;
+    applyConversation({ book: change.book, turns: change.turns });
+  };
+
   const canSend = (draft.trim() !== "" || attachedLive.length > 0) && !sending && modelFor(settings) !== "";
 
   const queries = turns.flatMap((turn) => turn.cards);
@@ -997,6 +1110,70 @@ export function AiAssist() {
         </main>
 
         <aside className="flex w-full shrink-0 flex-col border-t border-hairline bg-surface 2xl:h-full 2xl:w-96 2xl:overflow-hidden 2xl:border-t-0 2xl:border-l">
+          <div className="flex shrink-0 flex-col gap-2 border-b border-hairline px-4 py-3">
+            <div className="flex items-center gap-2">
+              <select
+                aria-label="Conversations"
+                value={conversations.activeId}
+                disabled={sending}
+                onChange={(event) => openConversation(event.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+              >
+                {conversations.conversations.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                aria-label="New conversation"
+                disabled={sending}
+                onClick={startConversation}
+                className="shrink-0 rounded-lg border border-hairline px-2 py-1 text-xs font-medium text-fg hover:bg-fill-subtle disabled:opacity-50"
+              >
+                New
+              </button>
+              {confirmDelete && (
+                <button
+                  type="button"
+                  aria-label="Confirm delete conversation"
+                  onClick={deleteConversation}
+                  className="shrink-0 rounded px-2 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                >
+                  Confirm
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="Delete conversation"
+                aria-pressed={confirmDelete}
+                disabled={sending}
+                onClick={() => {
+                  setConfirmClear(false);
+                  setConfirmDelete((current) => !current);
+                }}
+                className={`shrink-0 rounded px-2 py-1 text-xs font-medium hover:bg-fill-subtle disabled:opacity-50 ${confirmDelete ? "bg-fill-subtle text-fg" : "text-fg-muted"}`}
+              >
+                Delete
+              </button>
+            </div>
+            <input
+              aria-label="Conversation name"
+              value={nameDraft ?? activeName}
+              placeholder="Name this conversation"
+              maxLength={ASSIST_CONVERSATION_NAME_CAP}
+              disabled={sending}
+              onChange={(event) => setNameDraft(event.target.value)}
+              onBlur={commitName}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                commitName();
+              }}
+              className="w-full rounded-lg border border-hairline bg-canvas px-2 py-1 text-sm text-fg"
+            />
+          </div>
           <div className="flex shrink-0 items-start justify-between gap-3 border-b border-hairline px-4 py-3">
             <div className="flex min-w-0 items-start gap-2">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-tint/15 text-brand">
