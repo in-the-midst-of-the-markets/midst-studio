@@ -166,6 +166,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   questdb: null,
   airtable: null,
   hubspot: null,
+  stripe: null,
   supabase: null,
   s3: null,
   kubernetes: null,

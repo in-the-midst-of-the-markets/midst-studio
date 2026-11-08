@@ -16,6 +16,7 @@ import { DEFAULT_CONNECTION_TYPE } from "@/lib/db/default-connection-type";
 import {
   CONNECTION_FORM,
   CONNECTION_PICKER_ORDER,
+  connectionPickerCategories,
   connectionFieldHint,
   connectionFieldPlaceholder,
   connectionFieldPlacement,
@@ -46,6 +47,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
   airtable: true,
   hubspot: true,
+  stripe: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -369,7 +371,19 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "weaviate",
       "questdb",
       "hubspot",
+      "stripe",
     ]);
+  });
+
+  test("splits the picker into SAAS Connectors and Databases, each in picker order", () => {
+    const categories = connectionPickerCategories();
+    expect(categories.map((category) => category.label)).toEqual(["SAAS Connectors", "Databases"]);
+    const saas = categories[0]?.types ?? [];
+    const databases = categories[1]?.types ?? [];
+    expect(saas).toEqual(["hubspot", "stripe"]);
+    expect(databases[0]).toBe("airtable");
+    expect(databases[1]).toBe("supabase");
+    expect([...databases, ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);
   });
 
   test("puts the four v0 engines in part 2 criterion 2's order", () => {

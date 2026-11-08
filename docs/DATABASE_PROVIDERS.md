@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Forty-four type-ids are supported by forty-two provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Forty-eight type-ids are supported by forty-six provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -320,6 +320,10 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | SNMP | `snmp` | Device (managed objects over UDP, read-only) | [providers/snmp.md](./providers/snmp.md) |
 | Sparkplug B | `sparkplug` | Industrial (one MQTT broker, read-only) | [providers/sparkplug.md](./providers/sparkplug.md) |
 | QuestDB | `questdb` | SQL (time series, PostgreSQL wire protocol, port 8812) | [providers/questdb.md](./providers/questdb.md) |
+| Airtable | `airtable` | SQL (the Web API) | [providers/airtable.md](./providers/airtable.md) |
+| Supabase | `supabase` | SQL (hosted PostgreSQL) | [providers/supabase.md](./providers/supabase.md) |
+| HubSpot | `hubspot` | SQL (the CRM API) | [providers/hubspot.md](./providers/hubspot.md) |
+| Stripe | `stripe` | SQL (the Queries and Reports API, read-only) | [providers/stripe.md](./providers/stripe.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

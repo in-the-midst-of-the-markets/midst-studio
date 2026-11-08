@@ -457,6 +457,8 @@ const CONNECTION_FIELD_ROWS = {
   airtable: ["host", "password", "database"],
   // Token in `password`. The API host is optional and defaults to api.hubapi.com.
   hubspot: ["host", "password"],
+  // Secret key in `password`. The host must be api.stripe.com; an empty field uses that host.
+  stripe: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -601,6 +603,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   postgres: null,
   airtable: null,
   hubspot: null,
+  stripe: null,
   supabase: null,
   mysql: null,
   sqlite: null,

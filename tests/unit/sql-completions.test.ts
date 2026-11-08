@@ -1496,6 +1496,26 @@ describe("dialect completion words", () => {
     expect(at("SELECT * FROM contacts INNER ").map((item) => item.label)).not.toContain("JOIN");
   });
 
+  test("Stripe offers the read-only SQL it runs", () => {
+    const offered = labels("SELECT ", "stripe");
+    expect(offered).toContain("ORDER BY");
+    expect(offered).toContain("COUNT");
+    expect(offered).not.toContain("JOIN");
+    expect(offered).not.toContain("INSERT");
+    expect(offered).not.toContain("UPDATE");
+    expect(offered).not.toContain("DELETE");
+    expect(offered).not.toContain("SUM");
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, { tableItems: [], columnMap: new Map(), allColumns: new Map() }, "stripe");
+    const items = monaco
+      ._getProvider()!
+      .provideCompletionItems(createMockModel("SELECT "), createPosition(1, 8)).suggestions;
+    const select = items.filter((item) => item.kind === 27 && item.label === "SELECT");
+    expect(select).toHaveLength(1);
+    expect(select[0].insertText).toContain('FROM "${1:customers}"');
+    expect(items.filter((item) => item.kind === 27 && item.label === "INSERT")).toHaveLength(0);
+  });
+
   test("a dialect that declares no words matches the shared list, and none of them is offered Snowflake's", () => {
     for (const type of [...SHIPPED_DATABASE_TYPES.filter((t) => t !== "snowflake"), undefined]) {
       const offered = labels("SELECT ", type);

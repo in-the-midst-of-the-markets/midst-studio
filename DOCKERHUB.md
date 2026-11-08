@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Forty-three external engines share one interface.
-The forty-sixth row is the embedded LibreDB store: it ships inside the image.
+Forty-seven external engines share one interface.
+The forty-eighth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -153,6 +153,10 @@ The forty-sixth row is the embedded LibreDB store: it ships inside the image.
 | **RabbitMQ** | none | Read-only stream reader |
 | **OPC UA** | `node-opcua-client` | Read-only address-space browser; node values and raw history |
 | **QuestDB** | `pg` | QuestDB SQL, port 8812 |
+| **Airtable** | none, HTTP | SQL over the Web API |
+| **Supabase** | `pg` | Hosted PostgreSQL |
+| **HubSpot** | none, HTTP | SQL over the CRM API |
+| **Stripe** | none, HTTP | Sigma SQL and REPORT, read-only |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -160,7 +164,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak the wire protocol of one of the forty-six drivers above: pick that driver in the connection dialog. Each was measured against a real instance, and how much worked is recorded per engine.
+Twenty-seven further engines speak one of those drivers. Pick it in the connection dialog. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
@@ -175,7 +179,7 @@ Twenty-seven further engines speak the wire protocol of one of the forty-six dri
 | YugabyteDB | `postgres` | Full - but row counts and sizes read 0 until you run `ANALYZE`, and index sizes always read 0 bytes |
 | AlloyDB Omni | `postgres` | Full. Row counts and sizes are exact, but `version()` names AlloyDB nowhere, its own `google_ml` tables appear in the object browser, and the slow-query panel stays empty until `pg_stat_statements` is installed |
 | Valkey · DragonflyDB · KeyDB | `redis` | Full |
-| Garnet | `redis` | Full - every Redis surface answers, and the overview names the engine ahead of the compat level, as `Garnet 2.1.5 (Redis 7.4.3)`. Three readings are absences wearing a value: every size shows 0 B, the cache hit ratio shows 100% and max connections reads 0, because Garnet publishes neither `used_memory` nor keyspace counters |
+| Garnet | `redis` | Full - the overview names it `Garnet 2.1.5 (Redis 7.4.3)`. Sizes show 0 B, the cache hit ratio shows 100% and max connections reads 0, because Garnet publishes neither `used_memory` nor keyspace counters |
 | FerretDB | `mongodb` | Full - sign in with the backend PostgreSQL credentials |
 | StarRocks | `mysql` | Partial - the editor, object browser, metrics, slow queries and Explain work; the health and session panels do not, because the engine has no `information_schema.PROCESSLIST`. The version reads MySQL 5.1, and row counts, sizes and indexes are empty |
 | Apache Doris | `mysql` | Full - the engine StarRocks forked, and the more trustworthy of the two: every surface answers, counts and sizes are correct, cancel works, and Explain shows the engine's own plan. A freshly loaded table reads 0 for about a minute until its statistics land, no index is ever reported, and a foreign key is accepted but invisible and unenforced |

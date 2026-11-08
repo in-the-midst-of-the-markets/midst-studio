@@ -31,6 +31,9 @@ export type DatabaseType =
   // HubSpot. The CRM Web API. The editor runs a SQL subset that the provider sends as
   // search, create, update, and delete requests. Rows are not copied into another database.
   | "hubspot"
+  // Stripe. The REST API, read-only. The editor runs a SQL subset that the provider
+  // sends as list, search, and retrieve requests. Rows are not copied into another database.
+  | "stripe"
   | "bigquery"
   | "snowflake"
   | "mysql"

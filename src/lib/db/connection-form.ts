@@ -453,6 +453,20 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to a host under hubapi.com.",
     },
   },
+  stripe: {
+    label: "Stripe",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.stripe,
+    fieldLabels: { password: "Secret key", host: "API host" },
+    fieldPlaceholders: { password: "sk_live_…", host: "api.stripe.com" },
+    fieldHints: {
+      password: "A secret or restricted key. Queries need Data, Queries, Read. Reports need Data, Reports, Read.",
+      host: "The secret key is sent only to api.stripe.com.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1527,7 +1541,38 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "weaviate",
   "questdb",
   "hubspot",
+  "stripe",
 ]);
+
+/**
+ * Engines the connection dialog groups under SAAS Connectors. Everything else in
+ * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
+ * The dialog draws a label before each group; clicking the label hides it.
+ */
+export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze(["hubspot", "stripe"]);
+
+export interface ConnectionPickerCategory {
+  readonly label: "SAAS Connectors" | "Databases";
+  readonly types: readonly DatabaseType[];
+}
+
+/**
+ * SAAS Connectors first, so HubSpot and Stripe are on screen when the dialog opens.
+ * Databases follow. The dialog hides a group when its label is clicked.
+ */
+export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
+  const saas = new Set<string>(SAAS_PICKER_TYPES);
+  const databases: DatabaseType[] = [];
+  const connectors: DatabaseType[] = [];
+  for (const type of CONNECTION_PICKER_ORDER) {
+    if (saas.has(type)) connectors.push(type);
+    else databases.push(type);
+  }
+  return [
+    { label: "SAAS Connectors", types: connectors },
+    { label: "Databases", types: databases },
+  ];
+}
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */
 export function offersSslPanel(type: DatabaseType): boolean {

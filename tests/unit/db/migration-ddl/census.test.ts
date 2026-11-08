@@ -49,6 +49,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   questdb: "sql/questdb/migration-ddl",
   airtable: "sql/airtable/migration-ddl",
   hubspot: "sql/hubspot/migration-ddl",
+  stripe: "sql/stripe/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",

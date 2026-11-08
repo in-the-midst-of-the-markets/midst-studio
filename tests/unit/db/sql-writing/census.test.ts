@@ -89,6 +89,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   questdb: "sql/questdb/sql-writing",
   airtable: "sql/airtable/sql-writing",
   hubspot: "sql/hubspot/sql-writing",
+  stripe: "sql/stripe/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

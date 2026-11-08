@@ -12,7 +12,6 @@ import {
   ENVIRONMENT_COLORS,
   ENVIRONMENT_LABELS,
   SSLMode,
-  type DatabaseType,
 } from "@/lib/types";
 import {
   Database,
@@ -25,6 +24,7 @@ import {
   ClipboardPaste,
   Lock,
   ChevronDown,
+  ChevronRight,
   Terminal,
   Settings2,
 } from "lucide-react";
@@ -50,6 +50,7 @@ import {
 } from "@/components/ConnectionFieldControl";
 import { motion, AnimatePresence } from "framer-motion";
 import { CONNECTION_FORM_DEFAULTS, useConnectionForm } from "@/hooks/use-connection-form";
+import { connectionPickerCategories } from "@/lib/db/connection-form";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WireCompatibilityHint } from "@/components/WireCompatibilityHint";
 import { ConnectionImportPanel } from "@/components/ConnectionImportPanel";
@@ -118,8 +119,6 @@ interface ConnectionModalProps {
   onClose: () => void;
   onConnect: (conn: DatabaseConnection) => void;
   editConnection?: DatabaseConnection | null;
-  /** A new connection opens on this engine. SAAS Connectors sets HubSpot. */
-  presetType?: DatabaseType;
   /** Optional API adapter: when provided, bypasses the built-in /api/db/test-connection fetch. */
   onTestConnection?: (
     connection: DatabaseConnection,
@@ -132,9 +131,17 @@ export function ConnectionModal({
   onConnect,
   editConnection,
   onTestConnection,
-  presetType,
 }: ConnectionModalProps) {
   const isMobile = useIsMobile();
+  const [hiddenPickerCategories, setHiddenPickerCategories] = useState<ReadonlySet<string>>(() => new Set());
+  const togglePickerCategory = (label: string): void => {
+    setHiddenPickerCategories((current) => {
+      const next = new Set(current);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
   const {
     // Connection fields
     type,
@@ -231,7 +238,6 @@ export function ConnectionModal({
     onConnect,
     editConnection,
     onTestConnection,
-    presetType,
   });
 
   // What an engine DECLARES for a connection field wins over this dialog's own words (#1085): an
@@ -479,57 +485,88 @@ export function ConnectionModal({
             </div>
           </div>
 
-          {/* DB Type Selector */}
-          <div className="grid grid-cols-2 gap-3">
-            {dbTypes.map((db) => (
-              <button
-                key={db.value}
-                onClick={() => {
-                  setType(db.value);
-                  const cfg = getDBConfig(db.value);
-                  if (cfg.defaultPort) setPort(cfg.defaultPort);
-                  /*
-                   * `localhost` IS NOT AN ENDPOINT URL, and this box held it. An engine whose whole
-                   * address is one URL - OPC UA is the only one that takes a host without a port -
-                   * was offered the generic host default, so a reader who picked it, typed nothing
-                   * and pressed Test Connection was refused for a value Studio put there. Measured
-                   * in a browser: the box read `localhost` under the label "Endpoint URL", beside a
-                   * placeholder showing `opc.tcp://plc.example.net:4840/`. Only the UNTOUCHED default
-                   * is cleared, so nothing a reader typed is lost, and it comes back when they pick
-                   * an engine that is addressed by host and port.
-                   */
-                  const addressIsOneUrl = !connectionFormLayout(cfg, {}).takesPort;
-                  if (addressIsOneUrl && host === CONNECTION_FORM_DEFAULTS.host) setHost("");
-                  if (!addressIsOneUrl && host === "") setHost(CONNECTION_FORM_DEFAULTS.host);
-                  setTestResult(null);
-                }}
-                disabled={isEditMode}
-                /*
-                 * WHICH ENGINE IS CHOSEN IS SAID, not only drawn. The chosen card is a tint and a
-                 * glow and nothing else, so a screen reader was told the grid holds 33 buttons and
-                 * nothing about which one is active - found by reading the accessibility tree of the
-                 * dialog. The security-mode buttons three fields below already answer this way.
-                 */
-                aria-pressed={type === db.value}
-                className={cn(
-                  "flex flex-col items-center justify-center p-3 md:p-4 rounded-xl border transition-all duration-200 gap-2 group",
-                  type === db.value
-                    ? "bg-brand-solid/10 border-brand-tint/50 shadow-[0_0_20px_rgba(149,70,222,0.1)]"
-                    : "bg-panel border-hairline hover:border-hairline-strong hover:bg-raised",
-                  isEditMode && type !== db.value && "opacity-30 cursor-not-allowed",
-                )}
-              >
-                <db.icon
-                  className={cn(
-                    "w-6 h-6 mb-1 transition-transform group-hover:scale-110",
-                    type === db.value ? db.color : "text-fg-subtle",
+          {/*
+            SAAS Connectors, then Databases. The label before each group hides that group's engines. The chosen
+            engine stays selected while its group is hidden, and a second click on the label shows it again.
+          */}
+          <div className="space-y-4">
+            {connectionPickerCategories().map((category) => {
+              const hidden = hiddenPickerCategories.has(category.label);
+              const entries = category.types.flatMap((pickerType) => {
+                const db = dbTypes.find((entry) => entry.value === pickerType);
+                return db === undefined ? [] : [db];
+              });
+              return (
+                <div key={category.label} className="space-y-2">
+                  <button
+                    type="button"
+                    aria-expanded={!hidden}
+                    onClick={() => togglePickerCategory(category.label)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-fg"
+                  >
+                    {hidden ? (
+                      <ChevronRight aria-hidden="true" className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown aria-hidden="true" className="w-3 h-3" />
+                    )}
+                    {category.label}
+                  </button>
+                  {!hidden && entries.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {entries.map((db) => (
+                        <button
+                          key={db.value}
+                          onClick={() => {
+                            setType(db.value);
+                            const cfg = getDBConfig(db.value);
+                            if (cfg.defaultPort) setPort(cfg.defaultPort);
+                            /*
+                             * `localhost` IS NOT AN ENDPOINT URL, and this box held it. An engine whose whole
+                             * address is one URL - OPC UA is the only one that takes a host without a port -
+                             * was offered the generic host default, so a reader who picked it, typed nothing
+                             * and pressed Test Connection was refused for a value Studio put there. Measured
+                             * in a browser: the box read `localhost` under the label "Endpoint URL", beside a
+                             * placeholder showing `opc.tcp://plc.example.net:4840/`. Only the UNTOUCHED default
+                             * is cleared, so nothing a reader typed is lost, and it comes back when they pick
+                             * an engine that is addressed by host and port.
+                             */
+                            const addressIsOneUrl = !connectionFormLayout(cfg, {}).takesPort;
+                            if (addressIsOneUrl && host === CONNECTION_FORM_DEFAULTS.host) setHost("");
+                            if (!addressIsOneUrl && host === "") setHost(CONNECTION_FORM_DEFAULTS.host);
+                            setTestResult(null);
+                          }}
+                          disabled={isEditMode}
+                          /*
+                           * WHICH ENGINE IS CHOSEN IS SAID, not only drawn. The chosen card is a tint and a
+                           * glow and nothing else, so a screen reader was told the grid holds 33 buttons and
+                           * nothing about which one is active - found by reading the accessibility tree of the
+                           * dialog. The security-mode buttons three fields below already answer this way.
+                           */
+                          aria-pressed={type === db.value}
+                          className={cn(
+                            "flex flex-col items-center justify-center p-3 md:p-4 rounded-xl border transition-all duration-200 gap-2 group",
+                            type === db.value
+                              ? "bg-brand-solid/10 border-brand-tint/50 shadow-[0_0_20px_rgba(149,70,222,0.1)]"
+                              : "bg-panel border-hairline hover:border-hairline-strong hover:bg-raised",
+                            isEditMode && type !== db.value && "opacity-30 cursor-not-allowed",
+                          )}
+                        >
+                          <db.icon
+                            className={cn(
+                              "w-6 h-6 mb-1 transition-transform group-hover:scale-110",
+                              type === db.value ? db.color : "text-fg-subtle",
+                            )}
+                          />
+                          <span className={cn("text-xs font-medium", type === db.value ? "text-fg" : "text-fg-muted")}>
+                            {db.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   )}
-                />
-                <span className={cn("text-xs font-medium", type === db.value ? "text-fg" : "text-fg-muted")}>
-                  {db.label}
-                </span>
-              </button>
-            ))}
+                </div>
+              );
+            })}
           </div>
 
           {/* Wire-compatible engines served by the selected driver (#424) */}

@@ -125,6 +125,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "forty-seven": 47,
   // Two past the registry once HubSpot joined it, so the next two providers still fail here.
   "forty-eight": 48,
+  // Two past the registry once Stripe joined it, so the next two providers still fail here.
+  "forty-nine": 49,
 };
 
 /**
