@@ -2541,6 +2541,36 @@ describe("AiAssist page", () => {
     expect(bodies[1]?.results?.[0]?.rows?.[0]?.revenue).toBe(10);
   });
 
+  test("sends saved queries for the question to check", async () => {
+    saveConnection();
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "q1",
+          name: "Monthly revenue",
+          query: "SELECT month, revenue FROM orders",
+          connectionType: "postgres",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const view = render(<AiAssist />);
+    await typeAndSend(view, "Chart monthly revenue");
+    expect(await view.findByText("Revenue rose.")).toBeTruthy();
+    const plan = planPosts()[0]?.body as { saved?: { name: string; sql: string; connection: string }[] };
+    expect(plan.saved).toEqual([
+      { name: "Monthly revenue", connection: "Orders", sql: "SELECT month, revenue FROM orders" },
+    ]);
+    const reading = posts().find((call) => {
+      const body = call.body;
+      return body !== null && typeof body === "object" && "pass" in body;
+    });
+    expect(reading?.body).not.toHaveProperty("saved");
+  });
+
   test("shows the analysis of the rows, and the plan when that reading returns none", async () => {
     saveConnection();
     let mode: "final" | "none" | "blank" | "throw" = "final";

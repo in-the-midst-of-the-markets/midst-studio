@@ -280,6 +280,9 @@ describe("buildAssistReadingMessages", () => {
     expect(final[0]?.content).not.toContain("One sentence is too short");
     expect(final[0]?.content).toContain("The words inside the sample explanation are a description of the field.");
     expect(final[0]?.content).toContain("Separate paragraphs with a blank line.");
+    expect(final[0]?.content).toContain("Cite the figure the question asked about.");
+    expect(final[0]?.content).toContain("Do not add a finding the question did not ask about.");
+    expect(final[0]?.content).not.toContain("what all of these rows show");
     expect(final[0]?.content).not.toContain("East led");
     expect(final[0]?.content).not.toContain("augment these query results");
     expect(final[1]?.content).toContain("Results:\nRESULT-TOKEN");

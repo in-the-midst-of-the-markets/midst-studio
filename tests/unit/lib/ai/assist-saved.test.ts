@@ -1,6 +1,15 @@
 import { describe, expect, test } from "bun:test";
 import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
-import { assistSavedAsk, assistSavedPicks, toggleAssistSaved } from "@/lib/ai/assist-saved";
+import {
+  ASSIST_SAVED_LIST_CAP,
+  assistSavedAsk,
+  assistSavedForPrompt,
+  assistSavedPicks,
+  formatAssistSaved,
+  readAssistSaved,
+  toggleAssistSaved,
+  type AssistSavedPick,
+} from "@/lib/ai/assist-saved";
 import type { SavedQuery } from "@/lib/types";
 
 function query(patch: Partial<SavedQuery> & Pick<SavedQuery, "id" | "name" | "query">): SavedQuery {
@@ -50,6 +59,65 @@ describe("assist saved queries", () => {
     const typed = assistSavedAsk("What stands out?", [{ name: "Orders" }]);
     expect(typed.display.startsWith("What stands out?")).toBe(true);
     expect(typed.display).toContain("Orders");
+  });
+
+  test("checks the saved catalog and keeps it inside the prompt", () => {
+    const pick = (id: string, sql = "SELECT 1", name = id): AssistSavedPick => ({
+      id,
+      name,
+      sql,
+      connectionId: id === "gone" ? "missing" : "c1",
+      connectionType: "postgres",
+    });
+    const connections = [{ id: "c1", name: `  ${"N".repeat(210)}  ` }];
+    const listed = assistSavedForPrompt(
+      [
+        pick("blank", "  "),
+        pick("orders", "  SELECT revenue FROM orders  ", "  Monthly revenue  "),
+        pick("gone", "SELECT 2", "   "),
+        ...Array.from({ length: 20 }, (_, index) => pick(`q${index}`, `SELECT ${index}`)),
+      ],
+      connections,
+    );
+    expect(listed).toHaveLength(ASSIST_SAVED_LIST_CAP);
+    expect(listed[0]).toEqual({
+      name: "Monthly revenue",
+      connection: "N".repeat(200),
+      sql: "SELECT revenue FROM orders",
+    });
+    expect(listed[1]).toEqual({ name: "Saved query", connection: "", sql: "SELECT 2" });
+    const longSql = assistSavedForPrompt([pick("long", `SELECT ${"1".repeat(2_100)}`, "L")], connections);
+    expect(longSql[0]?.sql).toHaveLength(2_000);
+
+    expect(formatAssistSaved([])).toBe("(none)");
+    expect(formatAssistSaved(listed.slice(0, 1))).toBe(
+      `Monthly revenue | ${"N".repeat(200)}\nSELECT revenue FROM orders`,
+    );
+
+    expect(readAssistSaved(undefined)).toEqual({ ok: true, value: [] });
+    expect(readAssistSaved(null)).toEqual({ ok: true, value: [] });
+    expect(readAssistSaved("no")).toEqual({ ok: false, error: "The saved queries are not valid." });
+    expect(readAssistSaved(Array.from({ length: ASSIST_SAVED_LIST_CAP + 1 }, () => ({ sql: "SELECT 1" })))).toEqual({
+      ok: false,
+      error: "The saved queries are too long.",
+    });
+    const twos = "2".repeat(2_100);
+    const read = readAssistSaved([
+      null,
+      "skip",
+      { sql: "  " },
+      { sql: 1 },
+      { sql: `  SELECT ${twos}  `, name: ` ${"R".repeat(130)} `, connection: 4 },
+      { sql: "SELECT 3", name: "   ", connection: " Orders " },
+      { sql: "SELECT 4", name: 1, connection: "Logs" },
+    ]);
+    expect(read.ok).toBe(true);
+    if (!read.ok) return;
+    expect(read.value).toEqual([
+      { name: "R".repeat(120), connection: "", sql: `SELECT ${twos}`.slice(0, 2_000) },
+      { name: "Saved query", connection: "Orders", sql: "SELECT 3" },
+      { name: "Saved query", connection: "Logs", sql: "SELECT 4" },
+    ]);
   });
 
   test("keeps a long question inside the limit the assistant accepts", () => {

@@ -150,6 +150,57 @@ describe("POST /api/ai/assist", () => {
     const end = joined.indexOf(UNTRUSTED_CONTENT_END, begin);
     expect(joined.slice(begin, end)).toContain(HOSTILE);
     expect(joined.slice(0, begin)).not.toContain(HOSTILE);
+    expect(messages[0]?.content).toContain("the one statement the question asks for");
+    expect(messages[1]?.content).toContain("(none)");
+  });
+
+  test("fences the saved queries a question may use, and refuses a catalog that is not a list", async () => {
+    let messages: { role: string; content: string }[] = [];
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      messages = (JSON.parse(String(init?.body)) as { messages: { role: string; content: string }[] }).messages;
+      return jsonResponse({
+        choices: [{ message: { content: '{"explanation":"Using the saved chart.","queries":[]}' } }],
+      });
+    }) as unknown as typeof fetch;
+    const savedSql = "SELECT secret_saved FROM orders";
+    const posted = {
+      source: "fireworks",
+      model: "accounts/acme/models/tuned",
+      apiKey: "fw-secret",
+      question: "Chart monthly revenue",
+      schemaContext: "orders",
+      databaseType: "postgres",
+      history: [],
+    };
+    const response = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { ...posted, saved: [{ name: "Monthly revenue", connection: "Orders", sql: savedSql }] },
+      }) as never,
+    );
+    expect(response.status).toBe(200);
+    const joined = messages.map((message) => message.content).join("\n");
+    expect(messages[0]?.content).not.toContain(savedSql);
+    expect(joined.split(savedSql).length - 1).toBe(1);
+    const savedAt = joined.indexOf("Saved queries:");
+    const schemaAt = joined.indexOf("Schema:", savedAt);
+    expect(joined.slice(savedAt, schemaAt)).toContain(savedSql);
+    expect(joined.slice(savedAt, schemaAt)).toContain("Monthly revenue | Orders");
+
+    const invalid = await POST(
+      createMockRequest("/api/ai/assist", { method: "POST", body: { ...posted, saved: "no" } }) as never,
+    );
+    expect(invalid.status).toBe(400);
+    expect(((await invalid.json()) as { error: string }).error).toBe("The saved queries are not valid.");
+
+    const tooLong = await POST(
+      createMockRequest("/api/ai/assist", {
+        method: "POST",
+        body: { ...posted, saved: Array.from({ length: 13 }, () => ({ sql: "SELECT 1" })) },
+      }) as never,
+    );
+    expect(tooLong.status).toBe(400);
+    expect(((await tooLong.json()) as { error: string }).error).toBe("The saved queries are too long.");
   });
 
   test("gives a model that can search the web its search tool", async () => {
