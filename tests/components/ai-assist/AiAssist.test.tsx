@@ -1146,13 +1146,16 @@ describe("AiAssist page", () => {
     );
     const view = render(<AiAssist />);
     const thread = view.getByRole("region", { name: "Conversation" });
+    const answer = view.getByRole("region", { name: "AI reply" });
     expect(await view.findByText("Show **this**")).toBeTruthy();
-    expect(thread.querySelector("strong")?.textContent).toBe("120");
-    expect(thread.querySelector("code")?.textContent).toBe("orders");
-    expect(thread.querySelectorAll("li").length).toBe(2);
-    expect(thread.querySelector("img")).toBeNull();
-    expect(thread.textContent).toContain('<img src=x onerror="steal()">');
-    expect(thread.textContent).not.toContain("**120**");
+    expect(thread.textContent).toContain("Show **this**");
+    expect(thread.textContent).not.toContain("120");
+    expect(answer.querySelector("strong")?.textContent).toBe("120");
+    expect(answer.querySelector("code")?.textContent).toBe("orders");
+    expect(answer.querySelectorAll("li").length).toBe(2);
+    expect(answer.querySelector("img")).toBeNull();
+    expect(answer.textContent).toContain('<img src=x onerror="steal()">');
+    expect(answer.textContent).not.toContain("**120**");
   });
 
   test("opens the conversation at the latest message", async () => {
