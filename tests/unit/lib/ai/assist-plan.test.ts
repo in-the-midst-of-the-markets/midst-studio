@@ -291,6 +291,15 @@ describe("buildAssistMessages", () => {
     expect(messages[1]?.content).toContain("FENCED-QUESTION");
     expect(messages[1]?.content).toContain("FENCED-SCHEMA");
     expect(messages[1]?.content).toContain("FENCED-HISTORY");
+    const placed = buildAssistMessages({
+      databaseType: "postgres",
+      questionBlock: "FENCED-QUESTION",
+      schemaBlock: "FENCED-SCHEMA",
+      historyBlock: "FENCED-HISTORY",
+      savedBlock: "SAVED-BLOCK",
+    });
+    expect(placed[0]?.content).not.toContain("SAVED-BLOCK");
+    expect(placed[1]?.content).toContain("Saved queries:\nSAVED-BLOCK");
   });
 
   test("says SQL when no engine was named", () => {
@@ -315,7 +324,12 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("was renamed or removed");
     expect(messages[0]?.content).toContain(">=, <=, or =");
     expect(messages[0]?.content).toContain("You have not seen the rows yet.");
+    expect(messages[0]?.content).toContain("the one statement the question asks for");
+    expect(messages[0]?.content).toContain("Read a saved query when the question needs it.");
+    expect(messages[0]?.content).toContain("only when the person attached that query");
+    expect(messages[0]?.content).toContain("The chart is the one the question asks for.");
     expect(messages[0]?.content).toContain("explanation is Markdown");
+    expect(messages[1]?.content).toContain("Saved queries:");
     expect(messages[0]?.content).not.toContain("one sentence");
     expect(messages[0]?.content).not.toContain("several paragraphs");
     expect(messages[0]?.content).toContain("`code`");

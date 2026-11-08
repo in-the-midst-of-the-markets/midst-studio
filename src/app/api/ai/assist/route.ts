@@ -4,6 +4,7 @@ import { buildAssistMessages, parseAssistPlan, readAssistRequest, type AssistSou
 import { buildDashboardMessages, readBoardContext } from "@/lib/ai/dashboard-prompt";
 import { buildEditorMessages, readEditorSql } from "@/lib/ai/editor-prompt";
 import { buildAssistReadingMessages, formatAssistResults, readAssistReading } from "@/lib/ai/assist-reading";
+import { formatAssistSaved, readAssistSaved } from "@/lib/ai/assist-saved";
 import {
   assistServerKeyConfigured,
   completeChat,
@@ -17,7 +18,8 @@ import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 
 /**
- * AI Assist. POST plans queries, then reads those rows once and writes the analysis.
+ * AI Assist. POST plans the one chart the question asks for. The plan can read
+ * saved queries when it needs one. Then it reads the rows once and writes a short answer.
  * GET lists the public catalogs and the saved OpenRouter domain rankings. The model key is the browser's, or OPENROUTER_API_KEY when the browser did not
  * send one for OpenRouter. The rankings are the public domain chart, copied once a day.
  */
@@ -141,6 +143,8 @@ export async function POST(req: NextRequest) {
 
     const request = readAssistRequest(posted);
     if (!request.ok) return NextResponse.json({ error: request.error }, { status: 400 });
+    const saved = readAssistSaved("saved" in record ? record.saved : undefined);
+    if (!saved.ok) return NextResponse.json({ error: saved.error }, { status: 400 });
     return await answerWith(
       request.value.source,
       request.value.apiKey,
@@ -150,6 +154,7 @@ export async function POST(req: NextRequest) {
         questionBlock: fenceForPrompt(request.value.question, "assist"),
         schemaBlock: fenceForPrompt(request.value.schemaContext, "assist"),
         historyBlock: fenceForPrompt(JSON.stringify(request.value.history), "assist"),
+        savedBlock: fenceForPrompt(formatAssistSaved(saved.value), "assist"),
       }),
       request.value.databaseType,
       request.value.schemaContext,

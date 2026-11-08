@@ -49,7 +49,13 @@ import {
 import { ASSIST_RESULT_CAP, explanationWithResults, readAssistResults } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { suggestAssistChart, titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
-import { assistSavedAsk, assistSavedPicks, toggleAssistSaved, type AssistSavedPick } from "@/lib/ai/assist-saved";
+import {
+  assistSavedAsk,
+  assistSavedForPrompt,
+  assistSavedPicks,
+  toggleAssistSaved,
+  type AssistSavedPick,
+} from "@/lib/ai/assist-saved";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
@@ -853,6 +859,7 @@ export function AiAssist() {
           databaseType,
           history,
           webSearch,
+          saved: assistSavedForPrompt(savedCatalog, connections),
         }),
       });
       const body: unknown = await response.json().catch(() => null);

@@ -1,8 +1,11 @@
 /**
- * Saved queries a person attaches to an AI Assist question.
+ * Saved queries a person attaches to an AI Assist question, and the catalog the
+ * model checks when it chooses the one chart that question asks for.
  *
- * The chat can take several. They are run first and charted when the rows support
- * a chart. The model then writes the explanation from those rows.
+ * Attached queries are the ones the person added with the plus button. They run
+ * first and are charted when the rows support a chart. The model then writes
+ * the explanation from those rows. Any other question can read the catalog when
+ * it needs a saved statement. Reading the catalog does not run those queries.
  */
 
 import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
@@ -16,9 +19,33 @@ export interface AssistSavedPick {
   readonly connectionType: string;
 }
 
+/** How many saved queries one question may show the model. */
+export const ASSIST_SAVED_LIST_CAP = 12;
+const SAVED_NAME_CAP = 120;
+const SAVED_SQL_CAP = 2_000;
+const SAVED_CONNECTION_CAP = 200;
+
+export interface AssistSavedListing {
+  readonly name: string;
+  readonly connection: string;
+  readonly sql: string;
+}
+
 function clip(text: string): string {
   const trimmed = text.trim();
   return trimmed.length > ASSIST_TEXT_CAP ? trimmed.slice(0, ASSIST_TEXT_CAP) : trimmed;
+}
+
+function clipField(value: unknown, cap: number): string {
+  if (typeof value !== "string") return "";
+  const text = value.trim().replace(/\s+/g, " ");
+  return text.length > cap ? text.slice(0, cap) : text;
+}
+
+function clipSql(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const text = value.trim();
+  return text.length > SAVED_SQL_CAP ? text.slice(0, SAVED_SQL_CAP) : text;
 }
 
 /** Saved queries the picker can offer. A blank statement is not one. */
@@ -37,6 +64,58 @@ export function assistSavedPicks(queries: readonly SavedQuery[]): AssistSavedPic
     });
   }
   return picks;
+}
+
+/**
+ * The catalog a question sends so the model can check saved queries.
+ * The list stops at the cap. A statement longer than the catalog allows is cut.
+ */
+export function assistSavedForPrompt(
+  picks: readonly AssistSavedPick[],
+  connections: readonly { readonly id: string; readonly name: string }[],
+): AssistSavedListing[] {
+  const listed: AssistSavedListing[] = [];
+  for (const pick of picks) {
+    if (listed.length === ASSIST_SAVED_LIST_CAP) break;
+    const sql = clipSql(pick.sql);
+    if (sql === "") continue;
+    const named = connections.find((item) => item.id === pick.connectionId);
+    const name = clipField(pick.name, SAVED_NAME_CAP);
+    listed.push({
+      name: name === "" ? "Saved query" : name,
+      connection: named === undefined ? "" : clipField(named.name, SAVED_CONNECTION_CAP),
+      sql,
+    });
+  }
+  return listed;
+}
+
+/** The saved-query catalog posted with a question. Anything else is refused. */
+export function readAssistSaved(
+  value: unknown,
+): { ok: true; value: AssistSavedListing[] } | { ok: false; error: string } {
+  if (value === undefined || value === null) return { ok: true, value: [] };
+  if (!Array.isArray(value)) return { ok: false, error: "The saved queries are not valid." };
+  if (value.length > ASSIST_SAVED_LIST_CAP) return { ok: false, error: "The saved queries are too long." };
+  const listed: AssistSavedListing[] = [];
+  for (const item of value) {
+    if (item === null || typeof item !== "object") continue;
+    const sql = clipSql("sql" in item ? item.sql : undefined);
+    if (sql === "") continue;
+    const name = clipField("name" in item ? item.name : undefined, SAVED_NAME_CAP);
+    listed.push({
+      name: name === "" ? "Saved query" : name,
+      connection: clipField("connection" in item ? item.connection : undefined, SAVED_CONNECTION_CAP),
+      sql,
+    });
+  }
+  return { ok: true, value: listed };
+}
+
+/** The catalog as text the prompt can fence. "(none)" when the person has saved nothing. */
+export function formatAssistSaved(listings: readonly AssistSavedListing[]): string {
+  if (listings.length === 0) return "(none)";
+  return listings.map((item) => `${item.name} | ${item.connection}\n${item.sql}`).join("\n\n");
 }
 
 /** Adds the query, or removes it when it is already attached. */
