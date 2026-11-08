@@ -4,7 +4,8 @@
  * `{{the text}}` is embedded only when it is the vector value: the JSON value of
  * `vector`, `data` or `nearest`, a Qdrant `query` that is that text or a list, or
  * the second argument of `knn`. A labeled value `{{search:car}}` embeds `car`
- * and the filter bar shows the label. The same brackets elsewhere stay a chart filter.
+ * and the filter bar shows the label. Quotes around that text are not part of the
+ * embed call: `{{search:"car"}}` embeds `car`. The same brackets elsewhere stay a chart filter.
  * `{{embed "text"}}` is what the server embeds. `{{embed name}}` is filled from a
  * dashboard filter first. A space after `embed` keeps that form out of the filter parser.
  */
@@ -103,14 +104,15 @@ function plainValue(body: string): string {
 
 /**
  * `{{search:car}}` and `{{search:car|car,bike}}`. The label is not embedded.
- * Text with no colon is the words themselves.
+ * Text with no colon is the words themselves. A quoted value is embedded without
+ * the quotation marks.
  */
 function labeledEmbed(body: string): string | null {
   const match = /^\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*:([\s\S]*)$/.exec(body);
   if (match === null) return null;
   const rest = match[2] ?? "";
   const pipe = rest.indexOf("|");
-  return (pipe < 0 ? rest : rest.slice(0, pipe)).trim();
+  return plainValue(pipe < 0 ? rest : rest.slice(0, pipe));
 }
 
 function readPlainToken(sql: string, at: number): EmbedToken | null {

@@ -195,6 +195,11 @@ describe("embed placeholders", () => {
       "cast iron",
     ]);
     expect(embedTokens('{"vector": {{search:car|car,bike}}}').map((token) => token.value)).toEqual(["car"]);
+    expect(embedTokens('{"vector": {{search:"car"}}}').map((token) => token.value)).toEqual(["car"]);
+    expect(embedTokens('{"vector": {{search:"red car"|red car,bike}}}').map((token) => token.value)).toEqual([
+      "red car",
+    ]);
+    expect(embedTokens('{"vector": {{search:"say \\"hi\\""}}}').map((token) => token.value)).toEqual(['say "hi"']);
     expect(embedProbeText('{"vector": {{search:car}}}')).toBe('{"vector": [0]}');
     expect(embedProbeText('{"vector": "{{a red mug}}", "data": [{{cats}}]}')).toBe('{"vector": [0], "data": [[0]]}');
     expect(spliceEmbeddingVectors('{"vector": {{a red mug}}}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
@@ -249,6 +254,9 @@ describe("expandQueryEmbeddings", () => {
         fetchImpl,
       );
       expect(plain).toEqual({ ok: true, sql: '{"vector": [0.25,0.5]} AND knn(vec, [0.25,0.5], 10)' });
+      const quoted = await expandQueryEmbeddings('{"vector": {{search:"car"}}}', "voyage-4", fetchImpl);
+      expect(quoted).toEqual({ ok: true, sql: '{"vector": [0.25,0.5]}' });
+      expect(sent.input).toEqual(["car"]);
     } finally {
       if (savedKey === undefined) delete process.env.VOYAGE_API_KEY;
       else process.env.VOYAGE_API_KEY = savedKey;
