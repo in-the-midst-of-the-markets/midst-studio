@@ -40,14 +40,13 @@ describe("assist saved queries", () => {
     expect(toggleAssistSaved(added, pick)).toEqual([]);
   });
 
-  test("asks to chart the attached queries and to keep researching", () => {
+  test("asks the model to explain the attached queries", () => {
     const plain = assistSavedAsk("What changed?", []);
     expect(plain).toEqual({ display: "What changed?", question: "What changed?" });
     const asked = assistSavedAsk("  ", [{ name: "Orders" }, { name: " People " }, { name: " " }]);
     expect(asked.display).toBe("Analyze these saved queries.\n\nOrders, People");
     expect(asked.question).toContain(asked.display);
-    expect(asked.question).toContain("Chart each saved query when a chart fits");
-    expect(asked.question).toContain("run more queries when they would expand the research");
+    expect(asked.question).toContain("Explain what these saved queries show.");
     const typed = assistSavedAsk("What stands out?", [{ name: "Orders" }]);
     expect(typed.display.startsWith("What stands out?")).toBe(true);
     expect(typed.display).toContain("Orders");

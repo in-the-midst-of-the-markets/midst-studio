@@ -2487,7 +2487,7 @@ describe("AiAssist page", () => {
     expect(kept.some((item) => item.text === "Too late.")).toBe(false);
   });
 
-  test("runs the query, adds the charts those rows suggest, then shows the final analysis", async () => {
+  test("runs the query, then shows the analysis of those rows", async () => {
     saveConnection();
     const revenue = "SELECT month, revenue FROM orders LIMIT 200";
     handler = (url, init) => {
@@ -2506,54 +2506,6 @@ describe("AiAssist page", () => {
                 connection: "Orders",
                 sql: revenue,
                 chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
-              },
-            ],
-          });
-        }
-        if (posted.pass === "follow") {
-          const seen = calls.filter((call) => {
-            const item = call.body;
-            return item !== null && typeof item === "object" && "pass" in item && item.pass === "follow";
-          }).length;
-          if (seen > 2) return jsonResponse({ explanation: "Nothing further.", queries: [] });
-          if (seen === 2) {
-            return jsonResponse({
-              explanation: "A channel split would help.",
-              queries: [
-                {
-                  title: "By channel",
-                  connection: "Orders",
-                  sql: "SELECT channel, revenue FROM orders",
-                  chart: { type: "bar", x: "channel", y: ["revenue"], caption: "by channel" },
-                },
-              ],
-            });
-          }
-          return jsonResponse({
-            explanation: "A region split would help.",
-            queries: [
-              {
-                title: "Revenue",
-                sql: revenue,
-                chart: { type: "bar", x: "month", y: ["revenue"], caption: "by month" },
-              },
-              {
-                title: "By region",
-                connection: "Orders",
-                sql: "SELECT region, revenue FROM orders",
-                chart: { type: "bar", x: "region", y: ["revenue"], caption: "by region" },
-              },
-              {
-                title: "By product",
-                connection: "Orders",
-                sql: "SELECT product, revenue FROM orders",
-                chart: { type: "bar", x: "product", y: ["revenue"], caption: "by product" },
-              },
-              {
-                title: "By region again",
-                connection: "Orders",
-                sql: "SELECT region, revenue FROM orders LIMIT 50",
-                chart: { type: "bar", x: "region", y: ["revenue"], caption: "again" },
               },
             ],
           });
@@ -2577,31 +2529,21 @@ describe("AiAssist page", () => {
     await typeAndSend(view);
     expect(await view.findByText("January revenue is 10.")).toBeTruthy();
     expect(view.queryByText("I will total revenue.")).toBeNull();
-    expect(view.queryByText("A region split would help.")).toBeNull();
     expect(view.getAllByRole("heading", { name: "Revenue" })).toHaveLength(1);
-    expect(view.getByRole("heading", { name: "By region" })).toBeTruthy();
-    expect(view.getByRole("heading", { name: "By product" })).toBeTruthy();
-    expect(view.getByRole("heading", { name: "By channel" })).toBeTruthy();
-    expect(view.queryByRole("heading", { name: "By region again" })).toBeNull();
     expect(view.queryByRole("heading", { name: "Ignored" })).toBeNull();
-    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(4);
+    expect(calls.filter((call) => call.url.includes("/api/db/query"))).toHaveLength(1);
     const bodies = posts().map((call) => call.body as { pass?: string; results?: { rows?: { revenue?: number }[] }[] });
-    expect(bodies).toHaveLength(5);
+    expect(bodies).toHaveLength(2);
     expect(bodies[0]?.pass).toBeUndefined();
     expect(bodies[0]).not.toHaveProperty("results");
-    expect(bodies[1]?.pass).toBe("follow");
+    expect(bodies[1]?.pass).toBe("final");
+    expect(bodies[1]?.results).toHaveLength(1);
     expect(bodies[1]?.results?.[0]?.rows?.[0]?.revenue).toBe(10);
-    expect(bodies[2]?.pass).toBe("follow");
-    expect(bodies[2]?.results).toHaveLength(3);
-    expect(bodies[3]?.pass).toBe("follow");
-    expect(bodies[3]?.results).toHaveLength(4);
-    expect(bodies[4]?.pass).toBe("final");
-    expect(bodies[4]?.results).toHaveLength(4);
   });
 
-  test("shows the final analysis when the follow-up fails, and the plan when neither reading returns one", async () => {
+  test("shows the analysis of the rows, and the plan when that reading returns none", async () => {
     saveConnection();
-    let mode: "final" | "none" | "follow" | "blank" | "throw" = "final";
+    let mode: "final" | "none" | "blank" | "throw" = "final";
     handler = (url, init) => {
       const method = init?.method ?? "GET";
       let body: unknown = null;
@@ -2632,11 +2574,6 @@ describe("AiAssist page", () => {
         if (mode === "throw") throw new Error("offline");
         if (mode === "blank") return new Response("nope", { status: 200 });
         if (mode === "none") return jsonResponse({ error: "no" }, 500);
-        if (mode === "follow") {
-          if (posted?.pass === "follow") return jsonResponse({ explanation: "Rows suggest a split.", queries: [] });
-          return jsonResponse({ explanation: "   ", queries: [] });
-        }
-        if (posted?.pass === "follow") return jsonResponse({ error: "no" }, 500);
         return jsonResponse({ explanation: "January revenue is 10.", queries: [] });
       }
       return defaultFetch(url, init);
@@ -2657,12 +2594,11 @@ describe("AiAssist page", () => {
 
     await ask("final", "January revenue is 10.", "I will total revenue.");
     await ask("none", "I will total revenue.", "January revenue is 10.");
-    await ask("follow", "Rows suggest a split.", "I will total revenue.");
     await ask("blank", "I will total revenue.", "January revenue is 10.");
     await ask("throw", "I will total revenue.", "January revenue is 10.");
   });
 
-  test("adds saved queries from the bottom of the chat and lets the assistant expand on them", async () => {
+  test("adds saved queries from the bottom of the chat and explains what they show", async () => {
     saveConnection();
     localStorage.setItem(
       "libredb_saved_queries",
@@ -2749,10 +2685,10 @@ describe("AiAssist page", () => {
     await waitFor(() => {
       const reading = posts().find((call) => {
         const body = call.body;
-        return body !== null && typeof body === "object" && "pass" in body && body.pass === "follow";
+        return body !== null && typeof body === "object" && "pass" in body && body.pass === "final";
       });
       const body = reading?.body as { question?: string; results?: { title?: string }[] } | undefined;
-      expect(body?.question).toContain("expand the research");
+      expect(body?.question).toContain("Explain what these saved queries show.");
       expect(body?.results?.map((item) => item.title)).toEqual(expect.arrayContaining(["Orders", "People"]));
     });
     expect(planPosts()).toEqual([]);

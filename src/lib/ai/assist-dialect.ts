@@ -315,12 +315,6 @@ export function assistValueRule(databaseType: string): string {
   return dialectOf(databaseType)?.values ?? SQL_VALUES;
 }
 
-/** The extra sentence a follow-up needs when this engine is not plain SQL or Cypher. */
-export function assistDialectNote(databaseType: string): string {
-  if (isCypher(databaseType)) return "";
-  return dialectOf(databaseType)?.rule ?? "";
-}
-
 /**
  * Whether this text is a native read for the engine.
  *

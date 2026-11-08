@@ -46,13 +46,7 @@ import {
   type AssistQueryPlan,
   type AssistRecolor,
 } from "@/lib/ai/assist-plan";
-import {
-  ASSIST_RESULT_CAP,
-  FOLLOW_RUNS,
-  explanationWithResults,
-  followUpQueries,
-  readAssistResults,
-} from "@/lib/ai/assist-reading";
+import { ASSIST_RESULT_CAP, explanationWithResults, readAssistResults } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { suggestAssistChart, titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import { assistSavedAsk, assistSavedPicks, toggleAssistSaved, type AssistSavedPick } from "@/lib/ai/assist-saved";
@@ -465,7 +459,7 @@ async function groundResults(input: {
   readonly databaseType: string;
   readonly history: readonly AssistHistoryTurn[];
   readonly results: ReturnType<typeof resultPayload>[];
-  readonly pass: "follow" | "final";
+  readonly pass: "final";
   readonly webSearch: boolean;
 }): Promise<AssistPlan | null> {
   try {
@@ -802,9 +796,9 @@ export function AiAssist() {
           }),
         );
       };
-      const expandResearch = async (researchId: string, ids: Set<string>, fallback: string) => {
-        const ranCards = () => turnsRef.current.flatMap((turn) => turn.cards).filter((card) => ids.has(card.id));
-        const readingInput = {
+      const writeAnalysis = async (researchId: string, ids: Set<string>, fallback: string) => {
+        const ran = turnsRef.current.flatMap((turn) => turn.cards).filter((card) => ids.has(card.id));
+        const final = await groundResults({
           source: settings.source,
           model,
           apiKey,
@@ -813,37 +807,14 @@ export function AiAssist() {
           databaseType,
           history,
           webSearch,
-        };
-        let followPlan: AssistPlan | null = null;
-        for (let run = 0; run < FOLLOW_RUNS; run += 1) {
-          // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
-          const reading = await groundResults({
-            ...readingInput,
-            pass: "follow",
-            results: ranCards().map(resultPayload),
-          });
-          if (reading !== null) followPlan = reading;
-          const existingSql = turnsRef.current.flatMap((turn) => turn.cards).map((card) => card.titledSql);
-          const extra = reading === null ? [] : followUpQueries(reading.queries, existingSql);
-          const extraCards = plannedCards(extra, connections, schemas);
-          for (const card of extraCards) ids.add(card.id);
-          if (extraCards.length === 0) {
-            if (reading !== null) break;
-          } else {
-            commit(
-              turnsRef.current.map((turn) =>
-                turn.id === researchId ? { ...turn, cards: [...turn.cards, ...extraCards] } : turn,
-              ),
-              true,
-            );
-            // oxlint-disable-next-line no-await-in-loop -- the next look reads the rows this look just ran
-            await executeCards(extraCards);
-          }
-        }
-        const final = await groundResults({ ...readingInput, pass: "final", results: ranCards().map(resultPayload) });
-        const analyzed = [final, followPlan].map((item) => item?.explanation.trim() ?? "").find((text) => text !== "");
+          pass: "final",
+          results: ran.map(resultPayload),
+        });
+        const analyzed = final?.explanation.trim() ?? "";
         commit(
-          turnsRef.current.map((turn) => (turn.id === researchId ? { ...turn, text: analyzed ?? fallback } : turn)),
+          turnsRef.current.map((turn) =>
+            turn.id === researchId ? { ...turn, text: analyzed === "" ? fallback : analyzed } : turn,
+          ),
           true,
         );
       };
@@ -867,7 +838,7 @@ export function AiAssist() {
           })),
           true,
         );
-        await expandResearch(researchId, ids, "The saved queries ran.");
+        await writeAnalysis(researchId, ids, "The saved queries ran.");
         return;
       }
       const response = await appFetch("/api/ai/assist", {
@@ -929,7 +900,7 @@ export function AiAssist() {
       );
       await executeCards([...applied.rerun, ...cards]);
       if (cards.length > 0) {
-        await expandResearch(assistantId, new Set(cards.map((card) => card.id)), plan.explanation);
+        await writeAnalysis(assistantId, new Set(cards.map((card) => card.id)), plan.explanation);
       }
     } catch {
       commit(

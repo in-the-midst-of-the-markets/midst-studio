@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
   assistAllowsSql,
-  assistDialectNote,
   assistNativeRead,
   assistSampleSql,
   assistStatementRule,
@@ -19,6 +18,7 @@ describe("assistStatementRule", () => {
       "sql is one read-only Cypher statement for this engine. Do not write SQL.",
     );
     expect(assistStatementRule("opensearch")).toContain("The editor runs that request as written.");
+    expect(assistStatementRule("opensearch")).toContain("Dynamic embeddings");
     expect(assistStatementRule("opensearch")).toContain("{{search:car}}");
     expect(assistStatementRule("opensearch")).toContain('{{embed "text"}}');
     expect(assistStatementRule("elasticsearch")).toContain("company_profiles/_search");
@@ -72,16 +72,6 @@ describe("assistValueRule", () => {
     expect(assistAllowsSql("qdrant")).toBe(false);
     expect(assistAllowsSql("")).toBe(true);
     expect(assistValueRule("")).toContain("{{region:east|east,west,north}}");
-  });
-});
-
-describe("assistDialectNote", () => {
-  test("is empty for SQL and Cypher and present for a search engine", () => {
-    expect(assistDialectNote("")).toBe("");
-    expect(assistDialectNote("postgres")).toBe("");
-    expect(assistDialectNote("neo4j")).toBe("");
-    expect(assistDialectNote("opensearch")).toContain("Dynamic embeddings");
-    expect(assistDialectNote("supabase")).toContain("Postgres");
   });
 });
 
