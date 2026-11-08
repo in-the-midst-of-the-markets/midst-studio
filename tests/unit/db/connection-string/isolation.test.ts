@@ -87,7 +87,7 @@ afterAll(() => {
 
 describe("one engine's connection string module cannot reach another engine's output", () => {
   test("one row per shipped type id", () => {
-    expect(IDS.length).toBe(50);
+    expect(IDS.length).toBe(51);
   });
 
   test("the groups replace every engine while holding every other engine real", () => {

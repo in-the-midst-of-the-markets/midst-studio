@@ -34,6 +34,7 @@ import { HUBSPOT_CONNECTION_STRING } from "@/lib/db/providers/sql/hubspot/connec
 import { STRIPE_CONNECTION_STRING } from "@/lib/db/providers/sql/stripe/connection-string";
 import { CLARITY_CONNECTION_STRING } from "@/lib/db/providers/sql/clarity/connection-string";
 import { GOOGLEANALYTICS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleanalytics/connection-string";
+import { QUICKBOOKS_CONNECTION_STRING } from "@/lib/db/providers/sql/quickbooks/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -94,6 +95,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   stripe: STRIPE_CONNECTION_STRING,
   clarity: CLARITY_CONNECTION_STRING,
   googleanalytics: GOOGLEANALYTICS_CONNECTION_STRING,
+  quickbooks: QUICKBOOKS_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

@@ -67,6 +67,7 @@ describe("prepareStripeStatement", () => {
 
   test("quotes a name the way the editor completes it", () => {
     const format = STRIPE_SQL_GRAMMAR.completion.formatSegment;
+    if (format === null) throw new Error("Stripe completion is missing.");
     expect(format('say"hi')).toBe('"say""hi"');
     const read = STRIPE_SQL_GRAMMAR.completion.readQuotedQualifier;
     expect(read?.('"balance".')).toBe("balance");

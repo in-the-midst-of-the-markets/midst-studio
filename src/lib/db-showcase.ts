@@ -154,6 +154,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   stripe: 47,
   clarity: 48,
   googleanalytics: 49,
+  quickbooks: 50,
 };
 
 /**

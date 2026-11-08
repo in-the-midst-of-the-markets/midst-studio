@@ -40,6 +40,9 @@ export type DatabaseType =
   // Google Analytics. The GA4 Data API, read-only. One SELECT is one runReport for a
   // property. Rows are not copied into another database.
   | "googleanalytics"
+  // QuickBooks Online. The Accounting query API, read-only. One SELECT is one query
+  // for a company. Rows are not copied into another database. This is not QuickBooks Desktop.
+  | "quickbooks"
   | "bigquery"
   | "snowflake"
   | "mysql"

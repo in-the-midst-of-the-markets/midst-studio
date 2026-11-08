@@ -71,6 +71,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   stripe: true,
   clarity: true,
   googleanalytics: true,
+  quickbooks: true,
   supabase: true,
   mysql: true,
   sqlite: true,

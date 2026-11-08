@@ -36,6 +36,7 @@ import { HUBSPOT_MIGRATION_DDL } from "@/lib/db/providers/sql/hubspot/migration-
 import { STRIPE_MIGRATION_DDL } from "@/lib/db/providers/sql/stripe/migration-ddl";
 import { CLARITY_MIGRATION_DDL } from "@/lib/db/providers/sql/clarity/migration-ddl";
 import { GOOGLEANALYTICS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleanalytics/migration-ddl";
+import { QUICKBOOKS_MIGRATION_DDL } from "@/lib/db/providers/sql/quickbooks/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -96,6 +97,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   stripe: STRIPE_MIGRATION_DDL,
   clarity: CLARITY_MIGRATION_DDL,
   googleanalytics: GOOGLEANALYTICS_MIGRATION_DDL,
+  quickbooks: QUICKBOOKS_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

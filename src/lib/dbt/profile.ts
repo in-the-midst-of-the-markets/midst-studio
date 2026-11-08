@@ -19,6 +19,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   stripe: unsupported,
   clarity: unsupported,
   googleanalytics: unsupported,
+  quickbooks: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,

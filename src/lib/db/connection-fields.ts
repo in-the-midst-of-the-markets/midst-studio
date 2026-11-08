@@ -463,6 +463,8 @@ const CONNECTION_FIELD_ROWS = {
   clarity: ["host", "password"],
   // An access token or a service-account key in `password`, and the GA4 property id in `database`.
   googleanalytics: ["host", "password", "database"],
+  // An OAuth access token in `password`, and the company id in `database`.
+  quickbooks: ["host", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -610,6 +612,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   stripe: null,
   clarity: null,
   googleanalytics: null,
+  quickbooks: null,
   supabase: null,
   mysql: null,
   sqlite: null,

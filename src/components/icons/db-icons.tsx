@@ -270,6 +270,25 @@ export const GoogleAnalyticsIcon: React.FC<IconProps> = ({ className, ...props }
   </svg>
 );
 
+/** A ledger page, for a QuickBooks Online company. Not the vendor mark. */
+export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M7 3h8l4 4v14H7z" />
+    <path d="M15 3v4h4" />
+    <path d="M9 12h6" />
+    <path d="M9 16h6" />
+  </svg>
+);
+
 /** A sprocket, for a HubSpot account. Not the vendor mark. */
 export const HubSpotIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
