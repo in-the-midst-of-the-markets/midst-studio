@@ -120,6 +120,25 @@ describe("IdeQueryChat", () => {
     expect(view.queryByLabelText("Build or revise a query")).toBeNull();
   });
 
+  test("offers a search request the editor can run", async () => {
+    const search = `POST company_profiles/_search
+{"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10}}}}`;
+    install((_url, init) => {
+      if ((init?.method ?? "GET") === "GET") return jsonResponse({ models: [] });
+      return jsonResponse({ explanation: "Nearest profiles.", queries: [{ title: "Similar", sql: search }] });
+    });
+    const onUseQuery = mock(() => {});
+    const view = render(
+      <IdeQueryChat sql="" databaseType="opensearch" schemaContext="company_profiles" onUseQuery={onUseQuery} />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Ask AI" }));
+    fireEvent.change(view.getByLabelText("Build or revise a query"), { target: { value: "similar companies" } });
+    fireEvent.click(view.getByRole("button", { name: "Send" }));
+    expect(await view.findByText("Nearest profiles.")).toBeTruthy();
+    fireEvent.click(view.getByRole("button", { name: "Use this query" }));
+    expect(onUseQuery).toHaveBeenCalledWith(search);
+  });
+
   test("keeps the last model and reports a failure", async () => {
     let posts = 0;
     let release: ((response: Response) => void) | undefined;

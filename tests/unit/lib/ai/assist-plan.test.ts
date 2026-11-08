@@ -157,6 +157,23 @@ describe("parseAssistPlan", () => {
       "SELECT month, revenue FROM orders WHERE region = {{region:east}} AND total >= {{total:10}} LIMIT 200",
     );
   });
+
+  test("keeps an OpenSearch request the editor can run", () => {
+    const search = `POST company_profiles/_search
+{"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10, "note": "WHERE region = 'east'"}}}}`;
+    const plan = parseAssistPlan(
+      JSON.stringify({ explanation: "Nearest profiles.", queries: [{ title: "Similar", sql: search }] }),
+      "opensearch",
+    );
+    expect(plan.queries[0]?.sql).toBe(search);
+    expect(parseAssistPlan(JSON.stringify({ queries: [{ sql: search }] }), "postgres").queries).toEqual([]);
+    expect(
+      parseAssistPlan(
+        JSON.stringify({ queries: [{ sql: 'POST company_profiles/_doc/1\n{"name":"Ada"}' }] }),
+        "opensearch",
+      ).queries,
+    ).toEqual([]);
+  });
 });
 
 describe("acceptAssistPlan", () => {
@@ -316,6 +333,19 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("Do not write SQL or a placeholder.");
     expect(messages[0]?.content).toContain("the studio draws the graph");
     expect(messages[0]?.content).not.toContain("one read-only SELECT");
+    expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
+  });
+
+  test("tells OpenSearch to write the request the editor runs", () => {
+    const messages = buildAssistMessages({
+      databaseType: "opensearch",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+    });
+    expect(messages[0]?.content).toContain("The editor runs that request as written.");
+    expect(messages[0]?.content).toContain("POST index/_search then one JSON object");
+    expect(messages[0]?.content).toContain("{{the words}}");
     expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
   });
 

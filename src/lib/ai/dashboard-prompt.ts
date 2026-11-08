@@ -7,7 +7,7 @@
  * Instructions are the author's rule for a case an example cannot say.
  */
 
-import { assistStatementLanguage } from "@/lib/ai/assist-language";
+import { assistStatementRule } from "@/lib/ai/assist-dialect";
 
 /** The longest board inventory a question may send. */
 export const BOARD_CONTEXT_CAP = 8_000;
@@ -29,10 +29,7 @@ export interface DashboardPrompt {
 /** The messages for a question about the dashboard that is open. */
 export function buildDashboardMessages(prompt: DashboardPrompt): { role: "system" | "user"; content: string }[] {
   const engine = prompt.databaseType === "" ? "SQL" : prompt.databaseType;
-  const cypher = assistStatementLanguage(prompt.databaseType) === "cypher";
-  const statementRule = cypher
-    ? "sql is one read-only Cypher statement for this engine. Do not write SQL."
-    : "sql is one read-only statement for this engine.";
+  const statementRule = assistStatementRule(prompt.databaseType);
   const system = `You are the analyst for one dashboard in KnowSQL. The connected engine is ${engine}.
 
 The fenced board is a cell inventory. Each numbered line is one cell: a chart or a component. Read it from the top. Components are listed first because they publish {{tokens}}. A later cell that names the same token depends on that component. A long query is cut on purpose, and the line says how many characters were omitted. Do not invent the omitted text.

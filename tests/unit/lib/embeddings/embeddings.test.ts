@@ -191,6 +191,9 @@ describe("embed placeholders", () => {
       '"abc',
       "cats",
     ]);
+    expect(embedTokens('{"query": {{cast iron}}, "query": {"title": {{title}}}}').map((token) => token.value)).toEqual([
+      "cast iron",
+    ]);
     expect(embedProbeText('{"vector": "{{a red mug}}", "data": [{{cats}}]}')).toBe('{"vector": [0], "data": [[0]]}');
     expect(spliceEmbeddingVectors('{"vector": {{a red mug}}}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');
     expect(spliceEmbeddingVectors('{"vector": "{{a red mug}}"}', [[0.25, 0.5]])).toBe('{"vector": [0.25,0.5]}');

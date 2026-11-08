@@ -294,7 +294,9 @@ function vectorFieldTokens(sql: string, claimed: ReadonlySet<number>): EmbedToke
   for (const match of sql.matchAll(/"(vector|data|nearest|query)"\s*:/g)) {
     const key = match[1] ?? "";
     const valueAt = skipSpace(sql, (match.index ?? 0) + match[0].length);
-    if (key === "query" && sql[valueAt] === "{") continue;
+    // A Qdrant query object is a search, not a vector. `{{text}}` starts with the
+    // same brace and is the vector value, so only a real object is left alone.
+    if (key === "query" && sql[valueAt] === "{" && sql[valueAt + 1] !== "{") continue;
     const valueEnd = jsonValueEnd(sql, valueAt);
     if (valueEnd === null) continue;
     collectInValue(sql, valueAt, valueEnd, claimed, out);
