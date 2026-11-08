@@ -1071,38 +1071,50 @@ export function AiAssist() {
           )}
           <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
             {turns.map((turn) =>
-              turn.cards.map((card) => {
-                const target =
-                  card.connectionId === null ? undefined : connections.find((item) => item.id === card.connectionId);
-                return (
-                  <ChartWithEditor
-                    key={card.id}
-                    title={card.title}
-                    sql={card.sql}
-                    connectionId={card.connectionId ?? undefined}
-                    databaseType={target?.type}
-                    schemaContext={
-                      card.connectionId === null ? schemaContext : (schemas[card.connectionId] ?? schemaContext)
-                    }
-                    result={card.result}
-                    error={card.error}
-                    chart={card.chart}
-                    color={card.color}
-                    running={card.running}
-                    savedView={card.view}
-                    savedCode={card.code}
-                    onRemember={(view, code) => {
-                      const current = turnsRef.current
-                        .flatMap((turn) => turn.cards)
-                        .find((item) => item.id === card.id);
-                      if (current === undefined || (sameChartView(current.view, view) && current.code === code)) return;
-                      updateCard(card.id, { view, code }, true);
-                    }}
-                    onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
-                    onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
-                  />
-                );
-              }),
+              turn.role !== "assistant" ? null : (
+                <section key={turn.id} aria-label="AI reply" className="flex flex-col gap-8">
+                  {turn.text !== "" && (
+                    <div className="space-y-1 text-sm leading-6 text-fg [&_h4]:text-sm [&_h4]:font-medium [&_h4]:text-fg [&_li]:text-sm [&_li]:leading-6 [&_li]:text-fg [&_p]:text-sm [&_p]:leading-6 [&_p]:text-fg">
+                      {renderProse(turn.text)}
+                    </div>
+                  )}
+                  {turn.cards.map((card) => {
+                    const target =
+                      card.connectionId === null
+                        ? undefined
+                        : connections.find((item) => item.id === card.connectionId);
+                    return (
+                      <ChartWithEditor
+                        key={card.id}
+                        title={card.title}
+                        sql={card.sql}
+                        connectionId={card.connectionId ?? undefined}
+                        databaseType={target?.type}
+                        schemaContext={
+                          card.connectionId === null ? schemaContext : (schemas[card.connectionId] ?? schemaContext)
+                        }
+                        result={card.result}
+                        error={card.error}
+                        chart={card.chart}
+                        color={card.color}
+                        running={card.running}
+                        savedView={card.view}
+                        savedCode={card.code}
+                        onRemember={(view, code) => {
+                          const current = turnsRef.current
+                            .flatMap((item) => item.cards)
+                            .find((item) => item.id === card.id);
+                          if (current === undefined || (sameChartView(current.view, view) && current.code === code))
+                            return;
+                          updateCard(card.id, { view, code }, true);
+                        }}
+                        onSqlChange={(sql) => updateCard(card.id, { sql }, false)}
+                        onRun={(sql) => void runCard(card.id, card.connectionId, sql)}
+                      />
+                    );
+                  })}
+                </section>
+              ),
             )}
           </div>
         </main>
@@ -1238,18 +1250,7 @@ export function AiAssist() {
                     <p className="text-xs font-medium text-fg-muted">You</p>
                     <p className="mt-1 rounded-xl bg-brand-tint/15 px-3 py-2 text-sm text-fg">{turn.text}</p>
                   </section>
-                ) : (
-                  <section key={turn.id}>
-                    {turn.text !== "" && (
-                      <>
-                        <p className="text-xs font-medium text-fg-muted">AI</p>
-                        <div className="mt-1 space-y-1 rounded-xl bg-fill-subtle px-3 py-2 text-sm leading-6 text-fg-secondary [&_h4]:text-sm [&_h4]:font-medium [&_h4]:text-fg [&_li]:text-sm [&_li]:leading-6 [&_li]:text-fg-secondary [&_p]:text-sm [&_p]:leading-6 [&_p]:text-fg-secondary">
-                          {renderProse(turn.text)}
-                        </div>
-                      </>
-                    )}
-                  </section>
-                ),
+                ) : null,
               )}
             </div>
           </section>
