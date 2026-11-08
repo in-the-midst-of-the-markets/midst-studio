@@ -3,6 +3,7 @@ import {
   assistChoiceForVariation,
   nextAssistChoice,
   suggestAssistChart,
+  titleAfterEdit,
   titleForQuery,
   type AssistChartChoice,
 } from "@/lib/ai/assist-chart";
@@ -200,5 +201,17 @@ describe("titleForQuery", () => {
     expect(titleForQuery("   ")).toBe("Query");
     expect(titleForQuery("SELECT /* unfinished")).toBe("SELECT");
     expect(titleForQuery(`SELECT ${"revenue".repeat(40)}, month FROM t`)).toHaveLength(120);
+  });
+
+  test("keeps the title when a filter or its value changes", () => {
+    const post =
+      'POST /v1/search/CompanyProfile/near-vector { "vector": {{search:query}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"] }';
+    const searched = post.replace("{{search:query}}", "{{search:design}}");
+    const filtered = `${searched} WHERE symbol = {{symbol:ACME}}`;
+    expect(titleAfterEdit("weave_test", post, searched)).toBe("weave_test");
+    expect(titleAfterEdit("weave_test", post, filtered)).toBe("weave_test");
+    expect(titleAfterEdit("Revenue", "SELECT month, revenue FROM orders", "SELECT region, cost FROM sales")).toBe(
+      "cost by region",
+    );
   });
 });

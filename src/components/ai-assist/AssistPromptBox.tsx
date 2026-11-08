@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUp, Plus, X } from "lucide-react";
+import { ArrowUp, Calendar, Plus, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
 
@@ -9,6 +9,16 @@ export interface AssistSavedChoice {
   readonly id: string;
   readonly name: string;
   readonly detail: string;
+}
+
+/** The calendar beside the plus button. */
+export interface AssistScheduleControl {
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
+  readonly interval: string;
+  readonly onInterval: (value: string) => void;
+  readonly onSave: () => void;
+  readonly note: string | null;
 }
 
 /**
@@ -30,6 +40,7 @@ export function AssistPromptBox({
   savedChoices,
   selectedSavedIds,
   onToggleSaved,
+  schedule,
 }: {
   label: string;
   value: string;
@@ -42,10 +53,13 @@ export function AssistPromptBox({
   savedChoices?: readonly AssistSavedChoice[];
   selectedSavedIds?: readonly string[];
   onToggleSaved?: (id: string) => void;
+  schedule?: AssistScheduleControl;
 }) {
   const [menu, setMenu] = useState<"closed" | "add" | "saved">("closed");
   const addRef = useRef<HTMLButtonElement>(null);
+  const scheduleRef = useRef<HTMLButtonElement>(null);
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
+  const [scheduleAnchor, setScheduleAnchor] = useState<MenuAnchor | null>(null);
   const choices = savedChoices ?? [];
   const canAdd = savedChoices !== undefined && onToggleSaved !== undefined;
   const selected = new Set(selectedSavedIds ?? []);
@@ -56,7 +70,7 @@ export function AssistPromptBox({
     const place = (): void => {
       const button = addRef.current;
       if (button === null) return;
-      setAnchor(menuAnchor(button));
+      setAnchor(menuAnchor(button, MENU_WIDTH));
     };
     place();
     window.addEventListener("resize", place);
@@ -66,6 +80,22 @@ export function AssistPromptBox({
       window.removeEventListener("scroll", place, true);
     };
   }, [menu]);
+
+  useLayoutEffect(() => {
+    if (schedule?.open !== true) return;
+    const place = (): void => {
+      const button = scheduleRef.current;
+      if (button === null) return;
+      setScheduleAnchor(menuAnchor(button, SCHEDULE_WIDTH));
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [schedule?.open]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -111,7 +141,10 @@ export function AssistPromptBox({
                   type="button"
                   aria-label="Add to chat"
                   aria-expanded={menu !== "closed"}
-                  onClick={() => setMenu((current) => (current === "closed" ? "add" : "closed"))}
+                  onClick={() => {
+                    schedule?.onOpenChange(false);
+                    setMenu((current) => (current === "closed" ? "add" : "closed"));
+                  }}
                   className="inline-flex size-8 items-center justify-center rounded-full border border-hairline text-fg hover:bg-fill-subtle"
                 >
                   <Plus className="size-4" aria-hidden="true" />
@@ -186,6 +219,80 @@ export function AssistPromptBox({
                   )}
               </>
             )}
+            {schedule !== undefined && (
+              <>
+                <button
+                  ref={scheduleRef}
+                  type="button"
+                  aria-label="Schedule"
+                  aria-expanded={schedule.open}
+                  onClick={() => {
+                    setMenu("closed");
+                    schedule.onOpenChange(!schedule.open);
+                  }}
+                  className="inline-flex size-8 items-center justify-center rounded-full border border-hairline text-fg hover:bg-fill-subtle"
+                >
+                  <Calendar className="size-4" aria-hidden="true" />
+                </button>
+                {schedule.open &&
+                  scheduleAnchor !== null &&
+                  createPortal(
+                    <>
+                      <button
+                        type="button"
+                        aria-label="Close schedule"
+                        onClick={() => schedule.onOpenChange(false)}
+                        className="fixed inset-0 z-40 cursor-default"
+                      />
+                      <section
+                        aria-label="Schedule"
+                        style={{
+                          left: scheduleAnchor.left,
+                          bottom: scheduleAnchor.bottom,
+                          maxHeight: scheduleAnchor.maxHeight,
+                          width: SCHEDULE_WIDTH,
+                        }}
+                        className="fixed z-50 flex flex-col gap-2 overflow-y-auto rounded-lg border border-hairline bg-raised p-2 shadow-md"
+                      >
+                        <label className="flex items-center gap-1 text-xs text-fg-muted">
+                          Every
+                          <input
+                            aria-label="Schedule seconds"
+                            inputMode="numeric"
+                            value={schedule.interval}
+                            onChange={(event) => schedule.onInterval(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter") return;
+                              event.preventDefault();
+                              schedule.onSave();
+                            }}
+                            className="h-7 w-20 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
+                          />
+                          seconds
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={schedule.onSave}
+                            className="rounded-full border border-hairline px-3 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
+                          >
+                            Save schedule
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => schedule.onOpenChange(false)}
+                            className="rounded px-2 py-1 text-xs text-fg-muted hover:bg-fill-subtle"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        {schedule.note !== null && <p className="text-xs text-fg-muted">{schedule.note}</p>}
+                      </section>
+                    </>,
+                    document.body,
+                  )}
+              </>
+            )}
             <p className="text-xs text-fg-muted">Shift + Enter for a new line</p>
           </div>
           <button
@@ -211,15 +318,16 @@ interface MenuAnchor {
 }
 
 const MENU_WIDTH = 256;
+const SCHEDULE_WIDTH = 320;
 const MENU_GAP = 8;
 
 /**
  * The chat column clips overflow, so an absolute menu opening into the
  * conversation gets cut off by the reply text. Anchor it to the viewport instead.
  */
-function menuAnchor(button: HTMLButtonElement): MenuAnchor {
+function menuAnchor(button: HTMLButtonElement, width: number): MenuAnchor {
   const rect = button.getBoundingClientRect();
-  const left = Math.min(Math.max(MENU_GAP, rect.left), Math.max(MENU_GAP, window.innerWidth - MENU_WIDTH - MENU_GAP));
+  const left = Math.min(Math.max(MENU_GAP, rect.left), Math.max(MENU_GAP, window.innerWidth - width - MENU_GAP));
   return {
     left,
     bottom: window.innerHeight - rect.top + MENU_GAP,

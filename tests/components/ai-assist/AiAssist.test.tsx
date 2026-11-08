@@ -2815,6 +2815,16 @@ describe("AiAssist page", () => {
       "Create a bar chart using the distance column as the values and create a search box to decide the vector query weave_test",
     );
     expect(await view.findByRole("heading", { name: "weave_test" })).toBeTruthy();
+    const filter = within(view.getByRole("group", { name: "Filter" }));
+    fireEvent.click(filter.getByRole("button", { name: "symbol" }));
+    expect(filter.getByRole("button", { name: "symbol" }).getAttribute("aria-pressed")).toBe("true");
+    expect(view.getByRole("heading", { name: "weave_test" })).toBeTruthy();
+    expect(view.queryByRole("heading", { name: /POST \/v1/ })).toBeNull();
+    const search = view.getByRole("textbox", { name: "search" });
+    fireEvent.change(search, { target: { value: "design" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect((search as HTMLInputElement).value).toBe("design");
+    expect(view.getByRole("heading", { name: "weave_test" })).toBeTruthy();
     const ran = calls.find((call) => call.url.includes("/api/db/query"));
     const sql = ran?.body !== null && typeof ran?.body === "object" && "sql" in ran.body ? String(ran.body.sql) : "";
     expect(sql).toContain("{{search:dirtbike}}");
@@ -2932,6 +2942,9 @@ describe("AiAssist page", () => {
       saveConnection();
       const view = render(<AiAssist />);
       fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
+      fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      fireEvent.click(view.getByRole("button", { name: "Close schedule" }));
+      expect(view.queryByRole("button", { name: "Save schedule" })).toBeNull();
       fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
       fireEvent.click(view.getByRole("button", { name: "Cancel" }));
       expect(view.getByRole("button", { name: /^Schedule$/ })).toBeTruthy();

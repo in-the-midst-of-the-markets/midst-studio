@@ -48,7 +48,7 @@ import {
 } from "@/lib/ai/assist-plan";
 import { ASSIST_RESULT_CAP, explanationWithResults, readAssistResults } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
-import { suggestAssistChart, titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { suggestAssistChart, titleAfterEdit, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import {
   assistSavedAsk,
   assistSavedChart,
@@ -759,14 +759,14 @@ export function AiAssist() {
         ...turn,
         cards: turn.cards.map((card) => {
           if (card.id !== id) return card;
-          const changed = queryFilterShape(sql) !== queryFilterShape(card.titledSql);
+          const title = titleAfterEdit(card.title, card.titledSql, sql);
           return {
             ...card,
             sql,
-            title: changed ? titleForQuery(sql) : card.title,
+            title,
             titledSql: sql,
             locked: queryFilterShape(sql) !== queryFilterShape(card.modelSql),
-            chart: changed && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
+            chart: title !== card.title && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
             running: true,
             error: null,
           };
@@ -1358,77 +1358,26 @@ export function AiAssist() {
                   key under Connectors.
                 </p>
               )}
-              <div className="flex flex-col gap-2">
-                {schedules.length > 0 && (
-                  <ul aria-label="Scheduled prompts" className="flex flex-col gap-1">
-                    {schedules.map((schedule) => {
-                      const label = assistScheduleLabel(schedule, savedCatalog);
-                      return (
-                        <li key={schedule.id} className="flex items-center justify-between gap-2 text-xs text-fg">
-                          <span className="min-w-0 truncate">{label}</span>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${label}`}
-                            onClick={() => writeAssistSchedules(schedules.filter((item) => item.id !== schedule.id))}
-                            className="shrink-0 rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-                {scheduleOpen ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label className="flex items-center gap-1 text-xs text-fg-muted">
-                      Every
-                      <input
-                        aria-label="Schedule seconds"
-                        inputMode="numeric"
-                        value={intervalText}
-                        onChange={(event) => setIntervalText(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key !== "Enter") return;
-                          event.preventDefault();
-                          saveSchedule();
-                        }}
-                        className="h-7 w-20 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
-                      />
-                      seconds
-                    </label>
-                    <button
-                      type="button"
-                      onClick={saveSchedule}
-                      className="rounded-full border border-hairline px-3 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
-                    >
-                      Save schedule
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setScheduleOpen(false);
-                        setScheduleNote(null);
-                      }}
-                      className="rounded px-2 py-1 text-xs text-fg-muted hover:bg-fill-subtle"
-                    >
-                      Cancel
-                    </button>
-                    {scheduleNote !== null && <p className="text-xs text-fg-muted">{scheduleNote}</p>}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setScheduleNote(null);
-                      setScheduleOpen(true);
-                    }}
-                    className="self-start rounded-full border border-hairline px-3 py-1 text-xs font-medium text-fg hover:bg-fill-subtle"
-                  >
-                    Schedule
-                  </button>
-                )}
-              </div>
+              {schedules.length > 0 && (
+                <ul aria-label="Scheduled prompts" className="flex flex-col gap-1">
+                  {schedules.map((schedule) => {
+                    const label = assistScheduleLabel(schedule, savedCatalog);
+                    return (
+                      <li key={schedule.id} className="flex items-center justify-between gap-2 text-xs text-fg">
+                        <span className="min-w-0 truncate">{label}</span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${label}`}
+                          onClick={() => writeAssistSchedules(schedules.filter((item) => item.id !== schedule.id))}
+                          className="shrink-0 rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
               <AssistPromptBox
                 label="How can I help?"
                 value={draft}
@@ -1447,6 +1396,17 @@ export function AiAssist() {
                   const pick = savedCatalog.find((item) => item.id === id);
                   if (pick === undefined) return;
                   setAttached((current) => toggleAssistSaved(current, pick));
+                }}
+                schedule={{
+                  open: scheduleOpen,
+                  onOpenChange: (open) => {
+                    setScheduleNote(null);
+                    setScheduleOpen(open);
+                  },
+                  interval: intervalText,
+                  onInterval: setIntervalText,
+                  onSave: saveSchedule,
+                  note: scheduleNote,
                 }}
               />
             </div>
