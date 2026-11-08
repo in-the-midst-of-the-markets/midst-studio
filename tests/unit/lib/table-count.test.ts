@@ -57,6 +57,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   clarity: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   googleanalytics: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   quickbooks: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  odoo: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   supabase: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   mysql: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   sqlite: 'SELECT COUNT(*) AS row_count\nFROM "Order""Items";',

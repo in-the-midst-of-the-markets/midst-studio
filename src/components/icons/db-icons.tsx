@@ -270,6 +270,25 @@ export const GoogleAnalyticsIcon: React.FC<IconProps> = ({ className, ...props }
   </svg>
 );
 
+/** Stacked modules, for an Odoo database. Not the vendor mark. */
+export const OdooIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="4" width="7" height="7" rx="1.5" />
+    <rect x="13" y="4" width="7" height="7" rx="1.5" />
+    <rect x="4" y="13" width="7" height="7" rx="1.5" />
+    <rect x="13" y="13" width="7" height="7" rx="1.5" />
+  </svg>
+);
+
 /** A ledger page, for a QuickBooks Online company. Not the vendor mark. */
 export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

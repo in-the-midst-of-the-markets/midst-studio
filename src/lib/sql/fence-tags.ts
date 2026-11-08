@@ -43,6 +43,8 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   clarity: true,
   googleanalytics: true,
   quickbooks: true,
+  // A ```odoo block holds the read-only SQL subset the Odoo connection sends to JSON-2.
+  odoo: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same

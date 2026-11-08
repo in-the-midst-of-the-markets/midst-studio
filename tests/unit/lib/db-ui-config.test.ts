@@ -135,6 +135,7 @@ const ALL_TYPES: DatabaseType[] = [
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "odoo",
 ];
 
 describe("db-ui-config", () => {
@@ -385,6 +386,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "kafka",
+        "odoo",
         "quickbooks",
         "rabbitmq",
         "snmp",
@@ -425,6 +427,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "netconf",
+        "odoo",
         "opcua",
         "quickbooks",
         "snmp",
@@ -1111,6 +1114,7 @@ describe("declared connection-field copy (#1085)", () => {
       "clarity",
       "googleanalytics",
       "quickbooks",
+      "odoo",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1700,6 +1704,7 @@ describe("db-showcase", () => {
         "clarity",
         "googleanalytics",
         "quickbooks",
+        "odoo",
       ]);
     });
   });
@@ -1930,7 +1935,17 @@ describe("the Snowflake entry", () => {
     // OPC UA's Endpoint URL carries its port inside the address, so a second box would ask twice.
     expect(
       ALL_TYPES.filter((type) => takesConnectionField(type, "host") && !takesConnectionField(type, "port")),
-    ).toEqual(["snowflake", "opcua", "airtable", "hubspot", "stripe", "clarity", "googleanalytics", "quickbooks"]);
+    ).toEqual([
+      "snowflake",
+      "opcua",
+      "airtable",
+      "hubspot",
+      "stripe",
+      "clarity",
+      "googleanalytics",
+      "quickbooks",
+      "odoo",
+    ]);
   });
 
   test("only snowflake declares a derived host hint, so every other Host box keeps its static hint", () => {

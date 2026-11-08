@@ -21,6 +21,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   clarity: null,
   googleanalytics: null,
   quickbooks: null,
+  odoo: null,
   supabase: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   mysql: ["ADD COLUMN `extra` integer;", "DROP COLUMN `old`;"],
   mssql: ["ADD [extra] integer;", "DROP COLUMN [old];"],

@@ -45,6 +45,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "clarity",
     "googleanalytics",
     "quickbooks",
+    "odoo",
     "libsql",
     "snowflake",
     "spark",

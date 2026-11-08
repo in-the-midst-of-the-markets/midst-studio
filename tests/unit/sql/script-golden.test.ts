@@ -74,6 +74,14 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   influxdb3: "every-code-semicolon",
   databend: "every-code-semicolon",
   libredb: "every-code-semicolon",
+  airtable: "every-code-semicolon",
+  hubspot: "every-code-semicolon",
+  stripe: "every-code-semicolon",
+  clarity: "every-code-semicolon",
+  googleanalytics: "every-code-semicolon",
+  quickbooks: "every-code-semicolon",
+  odoo: "every-code-semicolon",
+  supabase: "every-code-semicolon",
 };
 
 const EXPECTED: Readonly<Record<string, readonly Reading[]>> = {

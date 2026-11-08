@@ -53,6 +53,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   clarity: "sql/clarity/migration-ddl",
   googleanalytics: "sql/googleanalytics/migration-ddl",
   quickbooks: "sql/quickbooks/migration-ddl",
+  odoo: "sql/odoo/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -103,6 +104,7 @@ const REFUSED: DatabaseType[] = [
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "odoo",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

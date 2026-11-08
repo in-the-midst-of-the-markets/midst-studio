@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, libredb$/,
     );
   });
 
@@ -1584,6 +1584,7 @@ describe("createDatabaseProvider", () => {
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
       quickbooks: { host: "quickbooks.api.intuit.com" },
+      odoo: { host: "census.odoo.com" },
     };
 
     const declaringTypes: string[] = [];
@@ -1647,6 +1648,7 @@ describe("createDatabaseProvider", () => {
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
       quickbooks: { host: "quickbooks.api.intuit.com" },
+      odoo: { host: "census.odoo.com" },
     };
 
     const cannotCancel: string[] = [];
@@ -1688,6 +1690,8 @@ describe("createDatabaseProvider", () => {
       // cancel and nothing to cancel it with. A read is bounded instead, by the session's deadline
       // and the framing's byte cap (#1724).
       "netconf",
+      // No cancel: an Odoo read is one POST, and JSON-2 has nothing that stops it.
+      "odoo",
       // No cancel either: a read is bounded instead, at most 200 nodes or 500 values a request, and
       // the protocol has no service that stops one in flight (#1677).
       // No cancel: the eight read services the seam names have no Cancel among them.

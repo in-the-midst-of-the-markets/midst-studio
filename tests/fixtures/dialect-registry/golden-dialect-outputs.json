@@ -35,6 +35,66 @@
   "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
   "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
  },
+ "stripe": {
+  "queryLanguage": "sql",
+  "queryDialect": null,
+  "tabType": "sql",
+  "monacoLanguage": "sql",
+  "offersColumnProfiling": true,
+  "offersCodeGeneration": true,
+  "offersCountQuery": true,
+  "tableQuery": "SELECT * FROM c0.\"Order\"\"Items\";",
+  "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
+  "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
+ },
+ "clarity": {
+  "queryLanguage": "sql",
+  "queryDialect": null,
+  "tabType": "sql",
+  "monacoLanguage": "sql",
+  "offersColumnProfiling": true,
+  "offersCodeGeneration": true,
+  "offersCountQuery": true,
+  "tableQuery": "SELECT * FROM c0.\"Order\"\"Items\";",
+  "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
+  "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
+ },
+ "googleanalytics": {
+  "queryLanguage": "sql",
+  "queryDialect": null,
+  "tabType": "sql",
+  "monacoLanguage": "sql",
+  "offersColumnProfiling": true,
+  "offersCodeGeneration": true,
+  "offersCountQuery": true,
+  "tableQuery": "SELECT * FROM c0.\"Order\"\"Items\";",
+  "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
+  "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
+ },
+ "quickbooks": {
+  "queryLanguage": "sql",
+  "queryDialect": null,
+  "tabType": "sql",
+  "monacoLanguage": "sql",
+  "offersColumnProfiling": true,
+  "offersCodeGeneration": true,
+  "offersCountQuery": true,
+  "tableQuery": "SELECT * FROM c0.\"Order\"\"Items\";",
+  "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
+  "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
+ },
+ "odoo": {
+  "queryLanguage": "sql",
+  "queryDialect": null,
+  "tabType": "sql",
+  "monacoLanguage": "sql",
+  "offersColumnProfiling": true,
+  "offersCodeGeneration": true,
+  "offersCountQuery": true,
+  "tableQuery": "SELECT * FROM c0.\"Order\"\"Items\";",
+  "selectQuery": "SELECT\n  id,\n  name\nFROM c0.\"Order\"\"Items\"\nLIMIT 100;",
+  "countQuery": "SELECT COUNT(*) AS row_count\nFROM c0.\"Order\"\"Items\";"
+ },
  "supabase": {
   "queryLanguage": "sql",
   "queryDialect": null,

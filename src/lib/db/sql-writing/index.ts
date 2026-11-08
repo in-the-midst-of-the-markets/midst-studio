@@ -34,6 +34,7 @@ import { STRIPE_SQL_WRITING } from "@/lib/db/providers/sql/stripe/sql-writing";
 import { CLARITY_SQL_WRITING } from "@/lib/db/providers/sql/clarity/sql-writing";
 import { GOOGLEANALYTICS_SQL_WRITING } from "@/lib/db/providers/sql/googleanalytics/sql-writing";
 import { QUICKBOOKS_SQL_WRITING } from "@/lib/db/providers/sql/quickbooks/sql-writing";
+import { ODOO_SQL_WRITING } from "@/lib/db/providers/sql/odoo/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -100,6 +101,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   clarity: CLARITY_SQL_WRITING,
   googleanalytics: GOOGLEANALYTICS_SQL_WRITING,
   quickbooks: QUICKBOOKS_SQL_WRITING,
+  odoo: ODOO_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,
