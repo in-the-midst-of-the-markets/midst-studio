@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
+import { ASSIST_SCHEDULE_KEY } from "@/lib/ai/assist-schedule";
 import { readAssistSettings, writeAssistSettings } from "@/lib/ai/assist-settings";
 import type { AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
@@ -2916,6 +2917,118 @@ describe("AiAssist page", () => {
         (option) => option.text,
       ),
     ).toEqual(["Radiator search"]);
+  });
+
+  test("runs a scheduled prompt on its interval and can remove it", async () => {
+    const queued: Array<{ fn: () => void; ms: number }> = [];
+    const realSet = window.setInterval;
+    const realClear = window.clearInterval;
+    window.setInterval = ((fn: () => void, ms?: number) => {
+      queued.push({ fn, ms: Number(ms) });
+      return queued.length;
+    }) as typeof window.setInterval;
+    window.clearInterval = (() => {}) as typeof window.clearInterval;
+    try {
+      saveConnection();
+      const view = render(<AiAssist />);
+      fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
+      fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+      expect(view.getByRole("button", { name: /^Schedule$/ })).toBeTruthy();
+      fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
+      expect(view.getByText("Name how many seconds between runs.")).toBeTruthy();
+      fireEvent.change(view.getByLabelText("Schedule seconds"), { target: { value: "soon" } });
+      fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
+      expect(view.getByText("Refresh must be a whole number of seconds.")).toBeTruthy();
+      fireEvent.change(view.getByLabelText("Schedule seconds"), { target: { value: "5" } });
+      fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
+      expect(view.getByText("Raised to 60 seconds, the shortest schedule.")).toBeTruthy();
+      expect(view.getByText("What changed? · every 60s")).toBeTruthy();
+      fireEvent.change(view.getByLabelText("Schedule seconds"), { target: { value: "120" } });
+      fireEvent.keyDown(view.getByLabelText("Schedule seconds"), { key: "Enter" });
+      expect(view.queryByRole("button", { name: "Save schedule" })).toBeNull();
+      expect(view.getByText("What changed? · every 120s")).toBeTruthy();
+      expect(planPosts()).toHaveLength(0);
+      const before = planPosts().length;
+      const run = queued.at(-1);
+      expect(run?.ms).toBe(120_000);
+      await act(async () => {
+        run?.fn();
+      });
+      expect(await view.findAllByText("What changed?")).toBeTruthy();
+      await waitFor(() => expect(planPosts().length).toBeGreaterThan(before));
+      fireEvent.click(view.getByRole("button", { name: "Remove What changed? · every 120s" }));
+      expect(view.queryByText("What changed? · every 120s")).toBeNull();
+    } finally {
+      window.setInterval = realSet;
+      window.clearInterval = realClear;
+    }
+  });
+
+  test("reruns a scheduled source from its latest statement and skips a source that is gone", async () => {
+    const queued: Array<{ fn: () => void }> = [];
+    const realSet = window.setInterval;
+    const realClear = window.clearInterval;
+    window.setInterval = ((fn: () => void) => {
+      queued.push({ fn });
+      return queued.length;
+    }) as typeof window.setInterval;
+    window.clearInterval = (() => {}) as typeof window.clearInterval;
+    try {
+      saveConnection();
+      localStorage.setItem(
+        ASSIST_SCHEDULE_KEY,
+        JSON.stringify([{ id: "gone-schedule", prompt: "", sourceIds: ["missing"], seconds: 60 }]),
+      );
+      const skipped = render(<AiAssist />);
+      await act(async () => {
+        queued[0]?.fn();
+      });
+      expect(planPosts()).toHaveLength(0);
+      skipped.unmount();
+      queued.length = 0;
+      localStorage.removeItem(ASSIST_SCHEDULE_KEY);
+      localStorage.setItem(
+        "libredb_saved_queries",
+        JSON.stringify([
+          {
+            id: "q1",
+            name: "Orders",
+            query: "SELECT region, total FROM sales",
+            connectionType: "postgres",
+            connectionId: "c1",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ]),
+      );
+      const view = render(<AiAssist />);
+      fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+      fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
+      fireEvent.click(view.getByRole("menuitemcheckbox", { name: /Orders/ }));
+      fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      fireEvent.change(view.getByLabelText("Schedule seconds"), { target: { value: "90" } });
+      fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
+      expect(view.getByText("Saved sources · Orders · every 90s")).toBeTruthy();
+      const stored = JSON.parse(localStorage.getItem("libredb_saved_queries") ?? "[]") as { query: string }[];
+      stored[0].query = "SELECT fresh FROM sales";
+      localStorage.setItem("libredb_saved_queries", JSON.stringify(stored));
+      await act(async () => {
+        queued.at(-1)?.fn();
+      });
+      await waitFor(() => {
+        const sql = calls
+          .filter((call) => call.url.includes("/api/db/query"))
+          .map((call) =>
+            call.body !== null && typeof call.body === "object" && "sql" in call.body ? call.body.sql : "",
+          );
+        expect(sql).toContain("SELECT fresh FROM sales");
+      });
+    } finally {
+      window.setInterval = realSet;
+      window.clearInterval = realClear;
+    }
   });
 });
 
