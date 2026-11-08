@@ -2756,6 +2756,68 @@ describe("AiAssist page", () => {
     expect(listed[1]).toContain("Older");
   });
 
+  test("draws a bar chart from a named saved query when the model only describes it", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        {
+          id: "c1",
+          name: "Profiles",
+          type: "weaviate",
+          host: "localhost",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "q1",
+          name: "weave_test",
+          query:
+            'POST /v1/search/CompanyProfile/near-vector\n{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"], "returnMetadata": ["certainty"]}',
+          connectionType: "weaviate",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-03-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) body = JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        return jsonResponse({
+          explanation: "The saved query weave_test is a Weaviate near-vector search.",
+          queries: [],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({
+          rows: [{ symbol: "ACME", $distance: 0.2 }],
+          fields: ["symbol", "$distance"],
+          rowCount: 1,
+          executionTime: 4,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(
+      view,
+      "Create a bar chart using the distance column as the values and create a search box to decide the vector query weave_test",
+    );
+    expect(await view.findByRole("heading", { name: "weave_test" })).toBeTruthy();
+    const ran = calls.find((call) => call.url.includes("/api/db/query"));
+    const sql = ran?.body !== null && typeof ran?.body === "object" && "sql" in ran.body ? String(ran.body.sql) : "";
+    expect(sql).toContain("{{search:dirtbike}}");
+    expect(sql).toContain('"distance"');
+    expect(view.getByRole("textbox", { name: "search" })).toBeTruthy();
+  });
+
   test("says when there is no saved query to add", () => {
     saveConnection();
     const view = render(<AiAssist />);

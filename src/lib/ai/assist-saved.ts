@@ -84,6 +84,128 @@ export function assistSavedPicks(queries: readonly SavedQuery[]): AssistSavedPic
   return picks;
 }
 
+export interface AssistSavedChart {
+  readonly title: string;
+  readonly sql: string;
+  readonly connectionId: string | null;
+  readonly chart: {
+    readonly type: "bar" | "line" | "area" | "scatter" | "stacked-bar";
+    readonly x: string;
+    readonly y: readonly string[];
+  };
+}
+
+function askedChart(question: string): AssistSavedChart["chart"]["type"] | null {
+  if (/\bstacked[ -]?bars?\b/i.test(question)) return "stacked-bar";
+  if (/\bline\s+charts?\b/i.test(question)) return "line";
+  if (/\barea\s+charts?\b/i.test(question)) return "area";
+  if (/\bscatter(?:\s+charts?|\s+plots?)?\b/i.test(question)) return "scatter";
+  if (/\bbar\s+charts?\b/i.test(question)) return "bar";
+  if (/\bcharts?\b/i.test(question)) return "bar";
+  return null;
+}
+
+function namedPick(question: string, picks: readonly AssistSavedPick[]): AssistSavedPick | null {
+  let found: AssistSavedPick | null = null;
+  for (const pick of picks) {
+    const name = pick.name.trim();
+    if (name.length < 2) continue;
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!new RegExp(`(?:^|[^A-Za-z0-9_])${escaped}(?![A-Za-z0-9_])`, "i").test(question)) continue;
+    if (found === null || name.length > found.name.length) found = pick;
+  }
+  return found;
+}
+
+function askedMetric(question: string, engine: string): string {
+  const named = /\bthe\s+([A-Za-z_$][\w$]*)\s+column\s+as\s+the\s+values\b/i.exec(question)?.[1] ?? "value";
+  const lower = named.toLowerCase();
+  if (engine === "weaviate" && (lower === "distance" || lower === "$distance")) return "$distance";
+  if (engine === "weaviate" && (lower === "certainty" || lower === "$certainty")) return "$certainty";
+  return named;
+}
+
+function categoryColumn(sql: string): string {
+  const named = /"returnProperties"\s*:\s*\[\s*"([^"\\]+)"/.exec(sql)?.[1]?.trim() ?? "";
+  return named === "" ? "category" : named;
+}
+
+function searchTerm(sql: string): string {
+  const plain = /\{\{\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*\}\}/.exec(sql)?.[1];
+  return plain === undefined || plain === "search" ? "query" : plain;
+}
+
+function replaceVectorValue(sql: string, token: string): string {
+  const key = sql.search(/"vector"\s*:/);
+  if (key < 0) return sql;
+  const colon = sql.indexOf(":", key);
+  let index = colon + 1;
+  while (index < sql.length && /\s/.test(sql[index] ?? "")) index += 1;
+  if (sql.startsWith("{{", index)) {
+    const end = sql.indexOf("}}", index);
+    if (end < 0) return sql;
+    if (/^\{\{\s*search\s*:/.test(sql.slice(index, end + 2))) return sql;
+    return `${sql.slice(0, index)}${token}${sql.slice(end + 2)}`;
+  }
+  if (sql[index] === "[") {
+    let depth = 0;
+    for (let cursor = index; cursor < sql.length; cursor += 1) {
+      const char = sql[cursor];
+      if (char === "[") depth += 1;
+      else if (char === "]") {
+        depth -= 1;
+        if (depth === 0) return `${sql.slice(0, index)}${token}${sql.slice(cursor + 1)}`;
+      }
+    }
+    return sql;
+  }
+  if (sql[index] === '"') {
+    const end = sql.indexOf('"', index + 1);
+    if (end < 0) return sql;
+    return `${sql.slice(0, index)}${token}${sql.slice(end + 1)}`;
+  }
+  const number = /^[-\d.eE+]+/.exec(sql.slice(index));
+  if (number !== null && number[0] !== "")
+    return `${sql.slice(0, index)}${token}${sql.slice(index + number[0].length)}`;
+  return sql;
+}
+
+function withDistance(sql: string): string {
+  if (/"returnMetadata"\s*:\s*\[[^\]]*"distance"/.test(sql)) return sql;
+  if (/"returnMetadata"\s*:/.test(sql)) {
+    return sql.replace(/"returnMetadata"\s*:\s*\[([^\]]*)\]/, (_full, inner: string) => {
+      const body = inner.trim();
+      return `"returnMetadata": [${body === "" ? '"distance"' : `${body}, "distance"`}]`;
+    });
+  }
+  const last = sql.lastIndexOf("}");
+  if (last < 0) return sql;
+  const prefix = sql.slice(0, last).trimEnd();
+  const joiner = prefix.endsWith("{") || prefix.endsWith("[") ? "" : ", ";
+  return `${prefix}${joiner}"returnMetadata": ["distance"]${sql.slice(last)}`;
+}
+
+/**
+ * The chart a question asks for from a saved query it names.
+ * Used when the model only describes that query. Null when the question does
+ * not ask for a chart, or does not name one of these queries.
+ */
+export function assistSavedChart(question: string, picks: readonly AssistSavedPick[]): AssistSavedChart | null {
+  const type = askedChart(question);
+  const pick = namedPick(question, picks);
+  if (type === null || pick === null) return null;
+  const metric = askedMetric(question, pick.connectionType);
+  let sql = pick.sql;
+  if (pick.connectionType === "weaviate" && metric === "$distance") sql = withDistance(sql);
+  if (/\bsearch box\b/i.test(question)) sql = replaceVectorValue(sql, `{{search:${searchTerm(pick.sql)}}}`);
+  return {
+    title: pick.name,
+    sql,
+    connectionId: pick.connectionId,
+    chart: { type, x: categoryColumn(sql), y: [metric] },
+  };
+}
+
 /**
  * The catalog a question sends so the model can check saved queries.
  * The list stops at the cap. A statement longer than the catalog allows is cut.

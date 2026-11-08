@@ -4,6 +4,7 @@ import {
   ASSIST_SAVED_LIST_CAP,
   assistSavedAsk,
   assistSavedForPrompt,
+  assistSavedChart,
   assistSavedPicks,
   formatAssistSaved,
   readAssistSaved,
@@ -11,6 +12,10 @@ import {
   type AssistSavedPick,
 } from "@/lib/ai/assist-saved";
 import type { SavedQuery } from "@/lib/types";
+
+function chartPick(name: string, sql: string, connectionType = "postgres"): AssistSavedPick {
+  return { id: name, name, sql, connectionId: "c1", connectionType };
+}
 
 function query(patch: Partial<SavedQuery> & Pick<SavedQuery, "id" | "name" | "query">): SavedQuery {
   return {
@@ -163,6 +168,95 @@ describe("assist saved queries", () => {
       { name: "Saved query", connection: "Orders", sql: "SELECT 3" },
       { name: "Saved query", connection: "Logs", sql: "SELECT 4" },
     ]);
+  });
+
+  test("builds the chart a question asks for from the saved query it names", () => {
+    const near = (body: string) => `POST /v1/search/CompanyProfile/near-vector\n${body}`;
+    const question =
+      "Create a bar chart using the distance column as the values and create a search box to decide the vector query weave_test";
+    const saved = near(
+      '{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"], "returnMetadata": ["certainty"]}',
+    );
+    const chart = assistSavedChart(question, [
+      { id: "short", name: "a", sql: "SELECT 1", connectionId: null, connectionType: "postgres" },
+      { id: "weave", name: "weave", sql: "SELECT 1", connectionId: "c1", connectionType: "postgres" },
+      { id: "q", name: "weave_test", sql: saved, connectionId: "c1", connectionType: "weaviate" },
+    ]);
+    expect(chart?.title).toBe("weave_test");
+    expect(chart?.connectionId).toBe("c1");
+    expect(chart?.chart).toEqual({ type: "bar", x: "symbol", y: ["$distance"] });
+    expect(chart?.sql).toContain("{{search:dirtbike}}");
+    expect(chart?.sql).toContain('"certainty", "distance"');
+
+    const listed = assistSavedChart("Make a line chart of Orders", [
+      { id: "orders", name: "Orders", sql: "SELECT 1", connectionId: null, connectionType: "postgres" },
+    ]);
+    expect(listed?.chart.type).toBe("line");
+    expect(listed?.sql).toBe("SELECT 1");
+
+    expect(
+      assistSavedChart("Create an area chart of revenue", [
+        { id: "orders", name: "Orders", sql: "SELECT 1", connectionId: null, connectionType: "postgres" },
+      ]),
+    ).toBeNull();
+    expect(assistSavedChart("What is weave_test?", [chartPick("weave_test", saved)])).toBeNull();
+
+    const arrayBody = near('{"vector": [0.2, 0.4], "returnMetadata": []}');
+    const arrayChart = assistSavedChart(
+      "Create a scatter chart using the distance column as the values and a search box for weave_test",
+      [chartPick("weave_test", arrayBody, "weaviate")],
+    );
+    expect(arrayChart?.chart.type).toBe("scatter");
+    expect(arrayChart?.sql).toContain("{{search:query}}");
+    expect(arrayChart?.sql).toContain('"returnMetadata": ["distance"]');
+
+    const textBody = near('{"vector": "car"}');
+    expect(
+      assistSavedChart("Create a stacked bar chart and a search box for weave_test", [
+        chartPick("weave_test", textBody, "weaviate"),
+      ])?.sql,
+    ).toContain("{{search:query}}");
+
+    const numbered = near('{"vector": 0.5, "returnMetadata": ["distance"]}');
+    const numberedChart = assistSavedChart(
+      "Create a bar chart using the certainty column as the values and a search box for weave_test",
+      [chartPick("weave_test", numbered, "weaviate")],
+    );
+    expect(numberedChart?.chart.y).toEqual(["$certainty"]);
+    expect(numberedChart?.sql).toContain("{{search:query}}");
+    expect(numberedChart?.sql).toContain('"distance"');
+
+    const labeled = near('{"vector": {{search:car}}, "returnProperties": ["symbol"]}');
+    const labeledChart = assistSavedChart(question, [chartPick("weave_test", labeled, "weaviate")]);
+    expect(labeledChart?.sql).toContain("{{search:car}}");
+    expect(labeledChart?.sql).toContain('"returnMetadata": ["distance"]');
+    expect(labeledChart?.chart.x).toBe("symbol");
+
+    expect(
+      assistSavedChart("Create a chart of weave_test", [
+        chartPick("weave_test", "POST /v1/search/C/near-vector", "weaviate"),
+      ])?.chart,
+    ).toEqual({ type: "bar", x: "category", y: ["value"] });
+    expect(
+      assistSavedChart("Create a chart and a search box for weave_test", [
+        chartPick("weave_test", 'POST /v1/search/C/near-vector\n{"vector": {{', "weaviate"),
+      ])?.sql,
+    ).toContain('{"vector": {{');
+    expect(
+      assistSavedChart("Create a chart and a search box for weave_test", [
+        chartPick("weave_test", 'POST /v1/search/C/near-vector\n{"vector": [0.2', "weaviate"),
+      ])?.sql,
+    ).toContain("[0.2");
+    expect(
+      assistSavedChart("Create a chart and a search box for weave_test", [
+        chartPick("weave_test", 'POST /v1/search/C/near-vector\n{"vector": "car', "weaviate"),
+      ])?.sql,
+    ).toContain('"car');
+    expect(
+      assistSavedChart("Create a bar chart using the distance column as the values and a search box for weave_test", [
+        chartPick("weave_test", near('{"vector": true}'), "weaviate"),
+      ])?.sql,
+    ).toContain('"vector": true');
   });
 
   test("keeps a long question inside the limit the assistant accepts", () => {
