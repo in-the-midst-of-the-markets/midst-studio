@@ -34,6 +34,51 @@ describe("assist saved queries", () => {
     ]);
   });
 
+  test("lists the most recently saved query first", () => {
+    const picks = assistSavedPicks([
+      query({
+        id: "old",
+        name: "Older",
+        query: "SELECT 1",
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      }),
+      query({
+        id: "fresh",
+        name: "Newer",
+        query: "SELECT 2",
+        createdAt: new Date("2026-01-02T00:00:00.000Z"),
+        updatedAt: new Date("2026-03-01T00:00:00.000Z"),
+      }),
+      query({
+        id: "tied",
+        name: "Tied",
+        query: "SELECT 3",
+        updatedAt: new Date("2026-03-01T00:00:00.000Z"),
+      }),
+      query({
+        id: "created",
+        name: "Created later",
+        query: "SELECT 4",
+        createdAt: new Date("2026-02-01T00:00:00.000Z"),
+        updatedAt: new Date(Number.NaN),
+      }),
+      query({
+        id: "blank",
+        name: "Blank",
+        query: "  ",
+        updatedAt: new Date("2026-04-01T00:00:00.000Z"),
+      }),
+      query({
+        id: "undated",
+        name: "Undated",
+        query: "SELECT 5",
+        createdAt: undefined as unknown as Date,
+        updatedAt: undefined as unknown as Date,
+      }),
+    ]);
+    expect(picks.map((pick) => pick.name)).toEqual(["Newer", "Tied", "Created later", "Older", "Undated"]);
+  });
+
   test("keeps the connection a query was saved from", () => {
     const [pick] = assistSavedPicks([
       query({ id: "q1", name: "Orders", query: "SELECT 1", connectionId: "c1", connectionType: "mysql" }),

@@ -2726,6 +2726,36 @@ describe("AiAssist page", () => {
     expect(view.queryByRole("button", { name: "Remove Orders" })).toBeNull();
   });
 
+  test("lists the most recently saved query first in the plus menu", () => {
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "old",
+          name: "Older",
+          query: "SELECT 1",
+          connectionType: "postgres",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "new",
+          name: "Newer",
+          query: "SELECT 2",
+          connectionType: "postgres",
+          createdAt: "2026-01-02T00:00:00.000Z",
+          updatedAt: "2026-03-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const view = render(<AiAssist />);
+    fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
+    const listed = view.getAllByRole("menuitemcheckbox").map((item) => item.textContent ?? "");
+    expect(listed[0]).toContain("Newer");
+    expect(listed[1]).toContain("Older");
+  });
+
   test("says when there is no saved query to add", () => {
     saveConnection();
     const view = render(<AiAssist />);

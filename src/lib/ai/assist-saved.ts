@@ -48,10 +48,28 @@ function clipSql(value: unknown): string {
   return text.length > SAVED_SQL_CAP ? text.slice(0, SAVED_SQL_CAP) : text;
 }
 
-/** Saved queries the picker can offer. A blank statement is not one. */
+function savedInstant(value: Date | undefined): number {
+  if (!(value instanceof Date)) return Number.NaN;
+  return value.getTime();
+}
+
+/** When the query was last saved. A missing stamp sorts as the oldest. */
+function savedAt(query: SavedQuery): number {
+  const updated = savedInstant(query.updatedAt);
+  if (Number.isFinite(updated)) return updated;
+  const created = savedInstant(query.createdAt);
+  return Number.isFinite(created) ? created : 0;
+}
+
+/**
+ * Saved queries the picker can offer. A blank statement is not one.
+ * The most recently saved query is first, so the plus menu leads with it.
+ */
 export function assistSavedPicks(queries: readonly SavedQuery[]): AssistSavedPick[] {
+  const ordered = queries.map((query, index) => ({ query, index, at: savedAt(query) }));
+  ordered.sort((left, right) => right.at - left.at || left.index - right.index);
   const picks: AssistSavedPick[] = [];
-  for (const query of queries) {
+  for (const { query } of ordered) {
     const sql = query.query.trim();
     if (sql === "") continue;
     const name = query.name.trim();
