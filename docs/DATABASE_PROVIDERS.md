@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Fifty-one type-ids are supported by forty-nine provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Fifty-two type-ids are supported by fifty provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -327,6 +327,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Microsoft Clarity | `clarity` | SQL (the Clarity Data Export API, read-only) | [providers/clarity.md](./providers/clarity.md) |
 | Google Analytics | `googleanalytics` | SQL (the GA4 Data API, read-only) | [providers/googleanalytics.md](./providers/googleanalytics.md) |
 | QuickBooks Online | `quickbooks` | SQL (the QuickBooks Online query API, read-only) | [providers/quickbooks.md](./providers/quickbooks.md) |
+| Odoo | `odoo` | SQL (the Odoo JSON-2 API, read-only) | [providers/odoo.md](./providers/odoo.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

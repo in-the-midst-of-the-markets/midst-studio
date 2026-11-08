@@ -98,7 +98,7 @@ Every one of those tags is published on three bases, and the suffix is appended 
 | Suffix | Base | Engines | Use |
 |-----|-------------|-----|-----|
 | none | Debian trixie-slim (glibc) | all, and the only one where Oracle Thick mode can be layered on | the default, and what every example here pulls |
-| `-alpine` | Alpine 3.23 (musl) | all, Oracle Thin only | far fewer OS findings: Trivy 0.73.0 on 2026-09-15 scored the Debian base 3 CRITICAL / 52 HIGH against 0 / 2 for `node:26-alpine`. The findings belong to Debian. |
+| `-alpine` | Alpine 3.23 (musl) | all, Oracle Thin only | Trivy 0.73.0 on 2026-09-15 scored the Debian base 3 CRITICAL / 52 HIGH against 0 / 2 for `node:26-alpine`. |
 | `-alpine-slim` | Alpine 3.23 with Alpine's own `nodejs` | all except DuckDB | smallest; also drops sharp and runs Alpine's packaged Node rather than the official image's unstripped binary |
 
 `-alpine` is the same product as the default image. `-alpine-slim` is the only variant that trades features for size: opening a DuckDB connection on it answers with a message naming the tags that do ship that driver. Oracle Thick mode needs Oracle Instant Client, which has no musl build, so it stays on the default tag. None of the three carries the application source.
@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Fifty external engines share one interface.
-The fifty-first row is the embedded LibreDB store: it ships inside the image.
+Fifty-one external engines share one interface.
+The fifty-second row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -160,6 +160,7 @@ The fifty-first row is the embedded LibreDB store: it ships inside the image.
 | **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **QuickBooks Online** | none, HTTP | Read-only company query |
+| **Odoo** | none, HTTP | Read-only JSON-2 |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -167,7 +168,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the fifty drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the fifty-one drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

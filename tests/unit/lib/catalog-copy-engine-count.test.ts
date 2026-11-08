@@ -132,6 +132,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-one": 51,
   // Two past the registry once QuickBooks Online joined it.
   "fifty-two": 52,
+  // Two past the registry once Odoo joined it.
+  "fifty-three": 53,
 };
 
 /**

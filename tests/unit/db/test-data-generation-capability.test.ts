@@ -25,6 +25,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   clarity: false,
   googleanalytics: false,
   quickbooks: false,
+  odoo: false,
   supabase: true,
   mysql: true,
   sqlite: true,

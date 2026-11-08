@@ -30,6 +30,7 @@ describe("connection picker categories", () => {
     expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
     expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
 
     fireEvent.click(databases);
     expect(databases.getAttribute("aria-expanded")).toBe("false");
@@ -40,6 +41,7 @@ describe("connection picker categories", () => {
     expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
     expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
 
     fireEvent.click(databases);
     expect(databases.getAttribute("aria-expanded")).toBe("true");
@@ -51,12 +53,14 @@ describe("connection picker categories", () => {
     const clarityAt = order.indexOf("MicrosoftClarity");
     const analyticsAt = order.indexOf("GoogleAnalytics");
     const quickbooksAt = order.indexOf("QuickBooksOnline");
+    const odooAt = order.indexOf("Odoo");
     const airtableAt = order.indexOf("Airtable");
     expect(stripeAt).toBeGreaterThan(-1);
     expect(clarityAt).toBeGreaterThan(stripeAt);
     expect(analyticsAt).toBeGreaterThan(clarityAt);
     expect(quickbooksAt).toBeGreaterThan(analyticsAt);
-    expect(airtableAt).toBeGreaterThan(quickbooksAt);
+    expect(odooAt).toBeGreaterThan(quickbooksAt);
+    expect(airtableAt).toBeGreaterThan(odooAt);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("false");
@@ -65,6 +69,7 @@ describe("connection picker categories", () => {
     expect(screen.queryByRole("button", { name: "Microsoft Clarity" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Google Analytics" })).toBeNull();
     expect(screen.queryByRole("button", { name: "QuickBooks Online" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Odoo" })).toBeNull();
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
 
@@ -75,5 +80,6 @@ describe("connection picker categories", () => {
     expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
     expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
   });
 });

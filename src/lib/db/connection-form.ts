@@ -519,6 +519,23 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to quickbooks.api.intuit.com or sandbox-quickbooks.api.intuit.com.",
     },
   },
+  odoo: {
+    label: "Odoo",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.odoo,
+    fieldLabels: { password: "API key", host: "API host" },
+    fieldPlaceholders: {
+      password: "a1b2c3d4e5f6",
+      host: "mycompany.odoo.com",
+    },
+    fieldHints: {
+      password: "An API key from Preferences, Account Security. It lasts at most three months.",
+      host: "The key is sent only to a host under odoo.com.",
+    },
+  },
   supabase: {
     label: "Supabase",
     defaultPort: "5432",
@@ -1597,6 +1614,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "odoo",
 ]);
 
 /**
@@ -1610,6 +1628,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "odoo",
 ]);
 
 export interface ConnectionPickerCategory {

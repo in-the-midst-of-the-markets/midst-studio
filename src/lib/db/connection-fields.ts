@@ -465,6 +465,8 @@ const CONNECTION_FIELD_ROWS = {
   googleanalytics: ["host", "password", "database"],
   // An OAuth access token in `password`, and the company id in `database`.
   quickbooks: ["host", "password", "database"],
+  // An API key in `password`. The host must be a name under odoo.com.
+  odoo: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -613,6 +615,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   clarity: null,
   googleanalytics: null,
   quickbooks: null,
+  odoo: null,
   supabase: null,
   mysql: null,
   sqlite: null,

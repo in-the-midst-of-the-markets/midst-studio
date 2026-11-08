@@ -43,6 +43,9 @@ export type DatabaseType =
   // QuickBooks Online. The Accounting query API, read-only. One SELECT is one query
   // for a company. Rows are not copied into another database. This is not QuickBooks Desktop.
   | "quickbooks"
+  // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
+  // Rows are not copied into another database. The host must end in odoo.com.
+  | "odoo"
   | "bigquery"
   | "snowflake"
   | "mysql"

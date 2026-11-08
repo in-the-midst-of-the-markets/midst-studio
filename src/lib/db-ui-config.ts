@@ -49,6 +49,7 @@ import {
   ClarityIcon,
   GoogleAnalyticsIcon,
   QuickBooksIcon,
+  OdooIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -113,6 +114,7 @@ export const DB_UI_CONFIG: {
   clarity: branded(CONNECTION_FORM.clarity, ClarityIcon, "text-hue-cyan bg-hue-cyan/10"),
   googleanalytics: branded(CONNECTION_FORM.googleanalytics, GoogleAnalyticsIcon, "text-hue-amber bg-hue-amber/10"),
   quickbooks: branded(CONNECTION_FORM.quickbooks, QuickBooksIcon, "text-hue-green bg-hue-green/10"),
+  odoo: branded(CONNECTION_FORM.odoo, OdooIcon, "text-hue-purple bg-hue-purple/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

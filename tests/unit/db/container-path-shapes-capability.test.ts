@@ -39,6 +39,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   clarity: "exact",
   googleanalytics: "exact",
   quickbooks: "exact",
+  odoo: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

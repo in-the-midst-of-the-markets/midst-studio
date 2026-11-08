@@ -109,13 +109,17 @@ const ENGINES = [
   "src/lib/db/providers/document/mongodb/index.ts",
   "src/lib/db/providers/embedded/libredb.ts",
   "src/lib/db/providers/keyvalue/redis.ts",
+  "src/lib/db/providers/sql/airtable/index.ts",
   "src/lib/db/providers/sql/bigquery/index.ts",
+  "src/lib/db/providers/sql/clarity/index.ts",
   "src/lib/db/providers/platform/kubernetes/objects.ts",
   "src/lib/db/providers/sql/cassandra/objects.ts",
   "src/lib/db/providers/sql/clickhouse/objects.ts",
   "src/lib/db/providers/sql/databend/index.ts",
   "src/lib/db/providers/sql/db2/objects.ts",
   "src/lib/db/providers/sql/druid/objects.ts",
+  "src/lib/db/providers/sql/googleanalytics/index.ts",
+  "src/lib/db/providers/sql/hubspot/index.ts",
   "src/lib/db/providers/sql/questdb/index.ts",
   "src/lib/db/providers/sql/duckdb/objects.ts",
   "src/lib/db/providers/sql/libsql/objects.ts",
@@ -123,9 +127,12 @@ const ENGINES = [
   "src/lib/db/providers/sql/spark/index.ts",
   "src/lib/db/providers/sql/mssql.ts",
   "src/lib/db/providers/sql/mysql.ts",
+  "src/lib/db/providers/sql/odoo/index.ts",
   "src/lib/db/providers/sql/oracle/index.ts",
   "src/lib/db/providers/sql/postgres.ts",
+  "src/lib/db/providers/sql/quickbooks/index.ts",
   "src/lib/db/providers/sql/sqlite.ts",
+  "src/lib/db/providers/sql/stripe/index.ts",
   "src/lib/db/providers/sql/trino/objects.ts",
   "src/lib/db/providers/stream/rabbitmq/objects.ts",
   "src/lib/db/providers/timeseries/influxdb/influxql-provider.ts",
@@ -158,7 +165,9 @@ describe("the container-path sentence has one producer under providers/", () => 
     expect(callers.map(repoRelative).sort()).toEqual([...ENGINES].sort());
 
     for (const file of callers) {
-      expect(fs.readFileSync(file, "utf8")).toMatch(/\w+_CONTAINER_PATH_ENGINE: ContainerPathShapeEngine = \{/);
+      expect(fs.readFileSync(file, "utf8")).toMatch(
+        /(?:\w+_CONTAINER_PATH_ENGINE|CONTAINER_PATH): ContainerPathShapeEngine = \{/,
+      );
     }
   });
 
