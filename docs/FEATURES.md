@@ -64,6 +64,7 @@
 
 ### 5. AI Query Assistance (Multi-Provider LLM)
 *   **AI SQL Explanation:** One-click "AI Explain" button to translate complex SQL logic into plain English for easier debugging and onboarding.
+*   **Named conversations:** Ask AI keeps separate conversations for seven days. Name one for each purpose. A new conversation starts empty, and the one you leave keeps its questions and charts.
 *   **Schema-Aware Context:** The schema of the connected database is sent as context, so an explanation or a description names your own tables and columns.
 *   **Table notes:** Notes sits beside each connected database. It is where you describe a table, say what a column's values look like, and mark a table for AI to prefer or avoid. The notes are saved with your account and sent with the schema. Upload a schema design as SQL (`CREATE TABLE`, including `COMMENT ON`), DBML, or JSON — a tables list or a schema snapshot — and its tables, columns, and relationships become notes, including tables the live catalog has not loaded.
 *   **Streaming Responses:** Answers are streamed token-by-token from the configured model.
