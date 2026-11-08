@@ -3,6 +3,7 @@
 import { ArrowUp, Calendar, Plus, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
+import type { AssistScheduleEvery } from "@/lib/ai/assist-schedule";
 
 /** One saved query the plus menu can attach. */
 export interface AssistSavedChoice {
@@ -15,8 +16,8 @@ export interface AssistSavedChoice {
 export interface AssistScheduleControl {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  readonly interval: string;
-  readonly onInterval: (value: string) => void;
+  readonly every: AssistScheduleEvery;
+  readonly onEvery: (every: AssistScheduleEvery) => void;
   readonly onSave: () => void;
   readonly note: string | null;
 }
@@ -256,19 +257,23 @@ export function AssistPromptBox({
                       >
                         <label className="flex items-center gap-1 text-xs text-fg-muted">
                           Every
-                          <input
-                            aria-label="Schedule seconds"
-                            inputMode="numeric"
-                            value={schedule.interval}
-                            onChange={(event) => schedule.onInterval(event.target.value)}
+                          <select
+                            aria-label="Schedule interval"
+                            value={schedule.every}
+                            onChange={(event) => {
+                              const next = event.target.value;
+                              if (next === "hourly" || next === "daily") schedule.onEvery(next);
+                            }}
                             onKeyDown={(event) => {
                               if (event.key !== "Enter") return;
                               event.preventDefault();
                               schedule.onSave();
                             }}
-                            className="h-7 w-20 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
-                          />
-                          seconds
+                            className="h-7 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
+                          >
+                            <option value="hourly">Hourly</option>
+                            <option value="daily">Daily</option>
+                          </select>
                         </label>
                         <div className="flex items-center gap-2">
                           <button

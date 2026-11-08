@@ -38,13 +38,17 @@ describe("EmbeddingModelSelect", () => {
     const view = render(<EmbeddingModelSelect connectionId="orders" />);
     const select = view.getByLabelText("Embedding model") as HTMLSelectElement;
     expect(select.value).toBe("voyage-4");
+    expect(view.getByText("Model: Voyage 4")).toBeTruthy();
     fireEvent.change(select, { target: { value: "voyage-4-lite" } });
+    expect(view.getByText("Model: Voyage 4 lite")).toBeTruthy();
     expect(embeddingModelFor("orders")).toBe("voyage-4-lite");
     expect(embeddingModelFor("other")).toBe("voyage-4");
 
     fireEvent.change(select, { target: { value: "__custom__" } });
+    expect(view.getByText("Model: Custom")).toBeTruthy();
     const input = view.getByLabelText("Custom embedding model") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "bad model" } });
+    expect(view.getByText("Model: bad model")).toBeTruthy();
     expect(embeddingModelFor("orders")).toBe("voyage-4-lite");
     fireEvent.blur(input);
     expect(view.getByLabelText("Custom embedding model")).toBeTruthy();
@@ -54,6 +58,7 @@ describe("EmbeddingModelSelect", () => {
     });
     fireEvent.blur(view.getByLabelText("Custom embedding model"));
     expect(embeddingModelFor("orders")).toBe("text-embedding-3-small");
+    expect(view.getByText("Model: text-embedding-3-small")).toBeTruthy();
 
     fireEvent.change(view.getByLabelText("Custom embedding model"), { target: { value: "" } });
     fireEvent.blur(view.getByLabelText("Custom embedding model"));

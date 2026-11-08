@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import {
   CUSTOM_EMBEDDING_CHOICE,
@@ -9,6 +10,16 @@ import {
   normalizeEmbeddingModel,
 } from "@/lib/embeddings/models";
 import { embeddingModelFor, subscribeEmbeddingSettings, writeEmbeddingModel } from "@/lib/embeddings/settings";
+
+/** The words on the closed control: a catalog name, a typed id, or Custom. */
+function embeddingModelFace(model: string, choosingCustom: boolean, draft: string | null): string {
+  const match = EMBEDDING_MODEL_OPTIONS.find((option) => option.id === model);
+  if (match !== undefined && !choosingCustom) return match.name;
+  const typed = (draft ?? "").trim();
+  if (typed !== "") return typed;
+  if (!isListedEmbeddingModel(model)) return model;
+  return "Custom";
+}
 
 /**
  * The model this connection uses when a vector value is written as `{{text}}`.
@@ -32,32 +43,41 @@ export function EmbeddingModelSelect({ connectionId }: { readonly connectionId?:
 
   const showCustom = choosingCustom || !listed;
   const shown = draft ?? (listed ? "" : model);
+  const face = embeddingModelFace(model, choosingCustom, draft);
 
   return (
-    <label className="flex items-center gap-1.5 text-xs text-fg-muted">
-      Model
-      <select
-        aria-label="Embedding model"
-        value={listed && !choosingCustom ? model : CUSTOM_EMBEDDING_CHOICE}
-        onChange={(event) => {
-          const next = event.target.value;
-          if (next === CUSTOM_EMBEDDING_CHOICE) {
-            setChoosingCustom(true);
-            return;
-          }
-          setChoosingCustom(false);
-          setDraft(null);
-          writeEmbeddingModel(connectionId, next);
-        }}
-        className="h-7 max-w-40 rounded border border-hairline bg-canvas px-1 text-xs text-fg"
-      >
-        {EMBEDDING_MODEL_OPTIONS.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
-          </option>
-        ))}
-        <option value={CUSTOM_EMBEDDING_CHOICE}>Custom model</option>
-      </select>
+    <span className="inline-flex items-center gap-1">
+      <span className="relative inline-flex h-7 items-center">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none inline-flex items-center gap-1 text-xs font-medium text-fg-muted"
+        >
+          Model: {face}
+          <ChevronDown strokeWidth={1.5} className="h-3 w-3" />
+        </span>
+        <select
+          aria-label="Embedding model"
+          value={listed && !choosingCustom ? model : CUSTOM_EMBEDDING_CHOICE}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === CUSTOM_EMBEDDING_CHOICE) {
+              setChoosingCustom(true);
+              return;
+            }
+            setChoosingCustom(false);
+            setDraft(null);
+            writeEmbeddingModel(connectionId, next);
+          }}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        >
+          {EMBEDDING_MODEL_OPTIONS.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+          <option value={CUSTOM_EMBEDDING_CHOICE}>Custom model</option>
+        </select>
+      </span>
       {showCustom && (
         <input
           aria-label="Custom embedding model"
@@ -87,6 +107,6 @@ export function EmbeddingModelSelect({ connectionId }: { readonly connectionId?:
           className="h-7 w-36 rounded border border-hairline bg-canvas px-1.5 font-mono text-xs text-fg"
         />
       )}
-    </label>
+    </span>
   );
 }
