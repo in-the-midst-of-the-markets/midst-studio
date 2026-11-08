@@ -223,7 +223,7 @@ POST /v1/search/CompanyProfile/near-vector {"vector": {{a red ceramic mug}}, "ta
 POST /v1/aggregate/TenantNotes {"tenant": "acme"}
 ```
 
-`{{text}}` in the vector value stands in for the number list. `"vector": {{a red ceramic mug}}` and `"vector": "{{a red ceramic mug}}"` are the same request once the server embeds the text. A pasted number list is sent as typed. `{{name}}` anywhere else stays a filter.
+`{{text}}` in the vector value stands in for the number list. `"vector": {{search:car}}` is the labeled form: the filter shows search and car is embedded. `"vector": {{a red ceramic mug}}` and `"vector": "{{a red ceramic mug}}"` are the same request once the server embeds the text. A pasted number list is sent as typed. `{{name}}` anywhere else stays a filter.
 
 ### 5.5 Where the console differs from a REST call
 
@@ -296,7 +296,7 @@ None: Weaviate has no maintenance operation in v1, so no Admin > Operations card
 
 ## 9. Capabilities & labels
 
-`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, `supportsVectorQuery` true so `{{text}}` in the vector value becomes a vector before the request is sent, every other `supports*` false, `defaultPort` 8080.
+`queryLanguage` `json` with `queryDialect` `weaviate`, `containerLevels` empty, `enforcesReadOnly` true, `supportsVectorQuery` true so `{{text}}` in the vector value becomes a vector before the request is sent (`{{search:car}}` shows the label search and embeds car), every other `supports*` false, `defaultPort` 8080.
 `agentCredential` is `"token"` and `metadataOnly` states the agent's nine projections (section 15.5); `queryReadOnly` answers on a handle opened for the agent read-only profile only (section 15).
 The labels name a Collection and an Object, "Read Objects" and "Generate Request", and the statement language plan mode states is generated from the route table.
 

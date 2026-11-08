@@ -157,6 +157,23 @@ describe("parseAssistPlan", () => {
       "SELECT month, revenue FROM orders WHERE region = {{region:east}} AND total >= {{total:10}} LIMIT 200",
     );
   });
+
+  test("keeps an OpenSearch request the editor can run", () => {
+    const search = `POST company_profiles/_search
+{"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10, "note": "WHERE region = 'east'"}}}}`;
+    const plan = parseAssistPlan(
+      JSON.stringify({ explanation: "Nearest profiles.", queries: [{ title: "Similar", sql: search }] }),
+      "opensearch",
+    );
+    expect(plan.queries[0]?.sql).toBe(search);
+    expect(parseAssistPlan(JSON.stringify({ queries: [{ sql: search }] }), "postgres").queries).toEqual([]);
+    expect(
+      parseAssistPlan(
+        JSON.stringify({ queries: [{ sql: 'POST company_profiles/_doc/1\n{"name":"Ada"}' }] }),
+        "opensearch",
+      ).queries,
+    ).toEqual([]);
+  });
 });
 
 describe("acceptAssistPlan", () => {
@@ -317,6 +334,41 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("the studio draws the graph");
     expect(messages[0]?.content).not.toContain("one read-only SELECT");
     expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
+  });
+
+  test("tells OpenSearch to write the request the editor runs", () => {
+    const messages = buildAssistMessages({
+      databaseType: "opensearch",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+    });
+    expect(messages[0]?.content).toContain("The editor runs that request as written.");
+    expect(messages[0]?.content).toContain("POST index/_search then one JSON object");
+    expect(messages[0]?.content).toContain("{{search:car}}");
+    expect(messages[0]?.content).not.toContain("{{region:east|east,west,north}}");
+  });
+
+  test("tells Weaviate to write a near-vector request and drops SQL", () => {
+    const messages = buildAssistMessages({
+      databaseType: "weaviate",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+    });
+    expect(messages[0]?.content).toContain("Do not write SQL");
+    expect(messages[0]?.content).toContain("POST /v1/search/CompanyProfile/near-vector");
+    expect(messages[0]?.content).toContain("$certainty");
+    const sql =
+      "SELECT symbol, (1 - distance) AS similarity_score FROM CompanyProfile NEAR VECTOR ({{dirtbike}}) LIMIT 5";
+    expect(
+      parseAssistPlan(JSON.stringify({ explanation: "Matches.", queries: [{ sql }] }), "weaviate").queries,
+    ).toEqual([]);
+    const near = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"], "returnMetadata": ["certainty"]}`;
+    expect(
+      parseAssistPlan(JSON.stringify({ queries: [{ title: "Names", sql: near }] }), "weaviate").queries[0]?.sql,
+    ).toBe(near);
   });
 
   test("keeps Cypher for the Neo4j connection when other databases are connected", () => {

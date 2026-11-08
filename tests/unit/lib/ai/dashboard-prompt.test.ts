@@ -57,5 +57,15 @@ describe("buildDashboardMessages", () => {
     expect(graph[0]?.content).toContain("The connected engine is neo4j");
     expect(graph[0]?.content).toContain("sql is one read-only Cypher statement for this engine. Do not write SQL.");
     expect(graph[0]?.content).not.toContain("one read-only statement for this engine.");
+
+    const search = buildDashboardMessages({
+      databaseType: "elasticsearch",
+      questionBlock: "question",
+      schemaBlock: "schema",
+      historyBlock: "history",
+      boardBlock: "",
+    });
+    expect(search[0]?.content).toContain("The editor runs that request as written.");
+    expect(search[0]?.content).toContain("{{search:car}}");
   });
 });

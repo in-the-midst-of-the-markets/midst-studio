@@ -33,6 +33,24 @@ describe("isAssistRead", () => {
     expect(isAssistRead(MATCH, "postgres")).toBe(false);
     expect(isAssistRead("DELETE FROM orders", "postgres")).toBe(false);
   });
+
+  test("keeps a search request the editor runs and drops it on SQL engines", () => {
+    const search = `POST company_profiles/_search
+{"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10}}}}`;
+    expect(isAssistRead(search, "opensearch")).toBe(true);
+    expect(isAssistRead(search, "elasticsearch")).toBe(true);
+    expect(isAssistRead("SELECT 1", "opensearch")).toBe(true);
+    expect(isAssistRead(search, "postgres")).toBe(false);
+    expect(isAssistRead('POST company_profiles/_update/1\n{"doc":{"name":"Ada"}}', "opensearch")).toBe(false);
+    expect(isAssistRead("DELETE company_profiles/_doc/1", "opensearch")).toBe(false);
+    const sql = "SELECT symbol FROM CompanyProfile NEAR VECTOR ({{dirtbike}}) ON $vector:name LIMIT 5";
+    const near = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnMetadata": ["certainty"]}`;
+    expect(isAssistRead(sql, "weaviate")).toBe(false);
+    expect(isAssistRead(near, "weaviate")).toBe(true);
+    expect(isAssistRead("SELECT 1", "milvus")).toBe(false);
+    expect(isAssistRead("SELECT 1", "qdrant")).toBe(false);
+  });
 });
 
 describe("assistRunnableStatement", () => {
@@ -45,5 +63,21 @@ describe("assistRunnableStatement", () => {
     expect(assistRunnableStatement(MATCH, "neo4j")).toBe(MATCH);
     expect(assistRunnableStatement("CREATE (n)", "neo4j")).toBeNull();
     expect(assistRunnableStatement("SELECT 1", "neo4j")).toBeNull();
+    const search = `POST company_profiles/_search
+{"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10}}}}`;
+    expect(assistRunnableStatement(search, "opensearch")).toBe(search);
+    expect(assistRunnableStatement(search, "postgres")).toBeNull();
+    expect(assistRunnableStatement("SELECT region FROM t WHERE region = {{region:east}}", "opensearch")).toBe(
+      "SELECT region FROM t WHERE region = 'east'",
+    );
+    const near = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnMetadata": ["certainty"]}`;
+    expect(assistRunnableStatement(near, "weaviate")).toBe(near);
+    expect(
+      assistRunnableStatement(
+        "SELECT symbol FROM CompanyProfile NEAR VECTOR ({{dirtbike}}) ON $vector:name LIMIT 5",
+        "weaviate",
+      ),
+    ).toBeNull();
   });
 });

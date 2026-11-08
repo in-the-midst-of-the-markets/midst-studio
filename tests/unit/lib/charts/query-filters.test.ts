@@ -97,6 +97,23 @@ describe("query filters", () => {
     expect(queryIdentity("SELECT month FROM orders")).not.toBe(queryIdentity("select month FROM orders"));
   });
 
+  test("shows a labeled vector placeholder as a filter and embeds its text", () => {
+    const sql = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{search:car|car,bike}}, "targetVector": "name", "limit": 5}`;
+    expect(readQueryFilters(sql)).toEqual([{ name: "search", value: "car", options: ["car", "bike"], compare: "=" }]);
+    expect(applyQueryFilters(sql)).toBe(sql);
+    expect(applyQueryFilters("SELECT region FROM t WHERE region = {{region:east}}")).toBe(
+      "SELECT region FROM t WHERE region = 'east'",
+    );
+    expect(writeQueryFilter(sql, "search", "truck")).toBe(`POST /v1/search/CompanyProfile/near-vector
+{"vector": {{search:truck|car,bike}}, "targetVector": "name", "limit": 5}`);
+    expect(writeQueryFilter(sql, "search", "")).toBe(`POST /v1/search/CompanyProfile/near-vector
+{"vector": {{search:|car,bike}}, "targetVector": "name", "limit": 5}`);
+    const bare = '{"vector": {{dirtbike}}}';
+    expect(readQueryFilters(bare)).toEqual([]);
+    expect(applyQueryFilters(bare)).toBe(bare);
+  });
+
   test("writes a new value into every placeholder of that name", () => {
     const sql = "SELECT {{region:east|east}} , {{region:east|west,north}} , {{min:1}}";
     expect(writeQueryFilter(sql, "region", " we|st}\n")).toBe(

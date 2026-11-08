@@ -1320,8 +1320,10 @@ export type DashboardFilterControl = "select" | "slider" | "search" | "vector" |
  * A dashboard filter. `query` fills the choices, unless `choiceSource` is `values`
  * and the list is typed in. `name` is the filter's id. A chart query references
  * the selection with `{{name}}`. A new filter is given an id, and the editor does
- * not change it. In the vector value, `{{that id}}` embeds the text typed in the
- * box. Any other words in that value are embedded as written.
+ * not change it. In the vector value, `{{search:car}}` is a labeled filter: the
+ * label is search and car is embedded. `{{that id}}` still embeds the text typed
+ * in a dashboard filter of that id. Any other words in that value are embedded
+ * as written.
  * A custom filter's `script` is JavaScript edited in Monaco.
  * A query used for a dropdown must come back as one column. Several columns
  * wait until the user picks one. A choice longer than 25 characters is cut

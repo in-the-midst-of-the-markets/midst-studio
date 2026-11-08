@@ -362,5 +362,26 @@ describe("buildAssistReadingMessages", () => {
       webSearch: false,
     });
     expect(followSearch[0]?.content).not.toContain("You can search the web.");
+
+    const searchFollow = buildAssistReadingMessages({
+      pass: "follow",
+      databaseType: "opensearch",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+    });
+    expect(searchFollow[0]?.content).toContain("POST index/_search then one JSON object");
+    expect(searchFollow[0]?.content).toContain("The editor runs that request as written.");
+    expect(searchFollow[0]?.content).not.toContain("one read-only SELECT with LIMIT 200");
+    const searchFinal = buildAssistReadingMessages({
+      pass: "final",
+      databaseType: "opensearch",
+      questionBlock: "q",
+      schemaBlock: "s",
+      historyBlock: "h",
+      resultsBlock: "r",
+    });
+    expect(searchFinal[0]?.content).not.toContain("The editor runs that request as written.");
   });
 });

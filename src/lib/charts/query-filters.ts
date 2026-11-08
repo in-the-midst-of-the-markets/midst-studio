@@ -7,6 +7,7 @@ import { embedTokens } from "@/lib/embeddings/placeholder";
  * section edits the default. The statement that runs has a SQL literal in its place,
  * so a value cannot change the statement around it. The same name shares one control.
  * `{{text}}` in a vector value is not one of these: that text becomes a vector.
+ * `{{search:car}}` there is both. The label is the filter, and `car` is embedded.
  */
 
 /** The comparisons a metric filter offers. Anything else in the statement stays until the user picks one of these. */
@@ -85,6 +86,11 @@ function tokensIn(sql: string): FilterToken[] {
     if (current !== "{" || sql[index + 1] !== "{") continue;
     const embedded = vectorEnd.get(index);
     if (embedded !== undefined) {
+      const body = sql.slice(index + 2, embedded - 2);
+      if (body.includes(":")) {
+        const labeled = parseBody(body);
+        if (labeled !== null) tokens.push({ start: index, end: embedded, ...labeled });
+      }
       index = embedded - 1;
       continue;
     }
@@ -155,7 +161,8 @@ export function metricFilterValue(rows: readonly Record<string, unknown>[], colu
 
 /** The statement a run sends. Text with no placeholders is returned unchanged. */
 export function applyQueryFilters(sql: string): string {
-  const tokens = tokensIn(sql);
+  const embedded = new Set(embedTokens(sql).map((token) => token.start));
+  const tokens = tokensIn(sql).filter((token) => !embedded.has(token.start));
   if (tokens.length === 0) return sql;
   let next = "";
   let cursor = 0;
@@ -842,13 +849,15 @@ export function writeQueryFilter(sql: string, name: string, value: string): stri
     .trim()
     .slice(0, VALUE_CAP);
   const tokens = tokensIn(sql);
+  const vectors = new Set(embedTokens(sql).map((token) => token.start));
   let next = sql;
   let wrote = false;
   for (const token of [...tokens].reverse()) {
     if (token.name !== name) continue;
     wrote = true;
     const options = token.options.length > 0 ? `|${token.options.join(",")}` : "";
-    const body = clean === "" && options === "" ? token.name : `${token.name}:${clean}${options}`;
+    const body =
+      clean === "" && options === "" && !vectors.has(token.start) ? token.name : `${token.name}:${clean}${options}`;
     next = `${next.slice(0, token.start)}{{${body}}}${next.slice(token.end)}`;
   }
   return wrote ? next : sql;

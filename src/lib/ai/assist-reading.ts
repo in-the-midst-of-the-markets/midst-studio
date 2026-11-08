@@ -7,6 +7,7 @@
  * answer the person sees.
  */
 
+import { assistDialectNote, assistSampleSql } from "@/lib/ai/assist-dialect";
 import { assistStatementLanguage } from "@/lib/ai/assist-language";
 import {
   ASSIST_TEXT_CAP,
@@ -300,15 +301,17 @@ export function buildAssistReadingMessages(
   const cypher = assistStatementLanguage(prompt.databaseType) === "cypher";
   const task = (prompt.pass === "final" ? FINAL_TASK : FOLLOW_TASK).replace(
     "one read-only SELECT with LIMIT 200",
-    cypher ? "one read-only Cypher statement" : "one read-only SELECT with LIMIT 200",
+    assistSampleSql(prompt.databaseType),
   );
+  const note = prompt.pass === "follow" ? assistDialectNote(prompt.databaseType) : "";
   const graphCells = cypher
     ? prompt.pass === "final"
       ? "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Cite those names."
       : "\n\nA cell may name a node as (:Label name) or a relationship as [:TYPE]. Use those names. Add a query only for a number the rows do not already show."
     : "";
   const search = prompt.webSearch === true ? `\n\n${RESULT_SEARCH}` : "";
-  const system = `You are the analyst inside KnowSQL, a database studio. The connected engine is ${engine}.\n\n${task}${graphCells}${search}`;
+  const dialect = note === "" ? "" : `\n\n${note}`;
+  const system = `You are the analyst inside KnowSQL, a database studio. The connected engine is ${engine}.\n\n${task}${dialect}${graphCells}${search}`;
   const user = `Question:\n${prompt.questionBlock}\n\nResults:\n${prompt.resultsBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
     { role: "system", content: system },
