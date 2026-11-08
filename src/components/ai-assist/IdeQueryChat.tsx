@@ -263,7 +263,7 @@ function IdeQueryChatSession({
       <section
         className={`${anchored} right-4 bottom-32 z-30 flex max-h-[70%] w-80 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16`}
       >
-        <div className="flex items-center justify-between border-b border-hairline px-3 py-2">
+        <div className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
           <p className="text-xs font-medium text-fg">Ask AI</p>
           <div className="flex items-center gap-2">
             {turns.length > 0 && (
@@ -331,39 +331,48 @@ function IdeQueryChatSession({
             ),
           )}
         </div>
+        {/*
+          The panel clips at 70% of the screen. Configuration lives in its
+          own scroller so opening it cannot push the send button past that
+          clip. The prompt stays pinned under the scroller.
+        */}
         <form
-          className="border-t border-hairline px-3 py-2"
+          className="flex min-h-0 shrink flex-col border-t border-hairline"
           onSubmit={(event) => {
             event.preventDefault();
             void send();
           }}
         >
-          <div className="flex flex-col gap-3">
-            <AssistModelFields
-              settings={settings}
-              models={models}
-              gatewayModels={gatewayModels}
-              modelStatus={modelStatus}
-              gatewayStatus={gatewayStatus}
-              rankings={rankings}
-              open={settingsOpen}
-              onToggle={() => {
-                setSettingsOpen((current) => !current);
-                if (!settingsOpen) loadCatalog();
-              }}
-              onChange={updateSettings}
-              accessory={
-                <HistoryLimitButton
-                  value={settings.historyMessages}
-                  onChange={(historyMessages) => updateSettings({ historyMessages })}
-                />
-              }
-            />
-            {notice !== null && (
-              <p role="alert" className="text-xs text-danger">
-                {notice}
-              </p>
-            )}
+          <div data-assist-config="" className="min-h-0 overflow-y-auto px-3 pt-2">
+            <div className="flex flex-col gap-3">
+              <AssistModelFields
+                settings={settings}
+                models={models}
+                gatewayModels={gatewayModels}
+                modelStatus={modelStatus}
+                gatewayStatus={gatewayStatus}
+                rankings={rankings}
+                open={settingsOpen}
+                onToggle={() => {
+                  setSettingsOpen((current) => !current);
+                  if (!settingsOpen) loadCatalog();
+                }}
+                onChange={updateSettings}
+                accessory={
+                  <HistoryLimitButton
+                    value={settings.historyMessages}
+                    onChange={(historyMessages) => updateSettings({ historyMessages })}
+                  />
+                }
+              />
+              {notice !== null && (
+                <p role="alert" className="text-xs text-danger">
+                  {notice}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="shrink-0 px-3 pt-3 pb-2">
             <AssistPromptBox
               label={promptLabel}
               placeholder={promptPlaceholder}

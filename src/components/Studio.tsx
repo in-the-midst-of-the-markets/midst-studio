@@ -16,6 +16,7 @@ import {
 } from "@/components/studio/index";
 import { cancelControlMode } from "@/components/studio/QueryToolbar";
 import { CrossJoinBar } from "@/components/studio/CrossJoinBar";
+import { editorTopMinSize, SIDEBAR_MIN_SIZE_PX } from "@/components/studio/pane-floors";
 import { StudioModals } from "@/components/studio/StudioModals";
 import { StudioOverlays } from "@/components/studio/StudioOverlays";
 import { AgentRail } from "@/components/agent/AgentRail";
@@ -1306,7 +1307,7 @@ export default function Studio() {
         */}
         {!isMobile && (
           <>
-            <ResizablePanel id="studio-sidebar" defaultSize="22" minSize="15" maxSize="35">
+            <ResizablePanel id="studio-sidebar" defaultSize="22" minSize={SIDEBAR_MIN_SIZE_PX} maxSize="35">
               <Sidebar
                 connections={listedConnections}
                 activeConnection={conn.activeConnection}
@@ -1535,8 +1536,21 @@ export default function Studio() {
               <div className={cn("h-full", activeMobileTab !== "editor" && "hidden md:block")}>
                 <div className="h-full">
                   <ResizablePanelGroup id="studio-editor" orientation="vertical">
-                    <ResizablePanel id="studio-editor-top" defaultSize="40" minSize="20">
-                      <div className="h-full flex flex-col">
+                    {/*
+                      Cross DB shares this pane with the join bar. The floor is
+                      pixels there so the bar cannot take the whole pane, and
+                      the editor slot will not shrink away. The pane's own
+                      scrollbar then includes the editor. Other connections
+                      keep the percentage minimum (#94).
+                    */}
+                    <ResizablePanel
+                      id="studio-editor-top"
+                      defaultSize="40"
+                      minSize={editorTopMinSize(isCrossDbJoins(conn.activeConnection))}
+                    >
+                      <div
+                        className={cn("flex flex-col", isCrossDbJoins(conn.activeConnection) ? "min-h-full" : "h-full")}
+                      >
                         {/*
                           One branch around the toolbar AND the editor together, so a Source
                           tab shows no Run button rather than a disabled one: there is nothing
@@ -1574,7 +1588,12 @@ export default function Studio() {
                             {isCrossDbJoins(conn.activeConnection) && (
                               <CrossJoinBar queries={joinQueries} onUse={handleLoadQuery} />
                             )}
-                            <div className="flex-1 relative min-h-0">
+                            <div
+                              className={cn(
+                                "relative flex-1",
+                                isCrossDbJoins(conn.activeConnection) ? "min-h-48 shrink-0" : "min-h-0",
+                              )}
+                            >
                               <QueryEditor
                                 ref={queryEditorRef}
                                 value={tabMgr.currentTab.query}

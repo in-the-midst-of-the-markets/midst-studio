@@ -307,8 +307,16 @@ mock.module("@/components/ui/resizable", () => {
   return {
     ResizablePanelGroup: ({ children }: Record<string, unknown>) =>
       React.createElement("div", { "data-testid": "resizable-group" }, children),
-    ResizablePanel: ({ children }: Record<string, unknown>) =>
-      React.createElement("div", { "data-testid": "resizable-panel" }, children),
+    ResizablePanel: ({ children, id, minSize }: Record<string, unknown>) =>
+      React.createElement(
+        "div",
+        {
+          "data-testid": "resizable-panel",
+          "data-panel-id": id,
+          "data-min-size": minSize === undefined ? undefined : String(minSize),
+        },
+        children,
+      ),
     ResizableHandle: () => React.createElement("div", { "data-testid": "resizable-handle" }),
   };
 });
@@ -467,6 +475,7 @@ describe("StudioWorkspace", () => {
   test("renders shell with sidebar, tab bar, toolbar, editor and bottom panel", () => {
     const { getByTestId, queryByTestId } = renderWorkspace();
     expect(getByTestId("sidebar").textContent).toBe("Sidebar");
+    expect(document.querySelector('[data-panel-id="workspace-sidebar"]')?.getAttribute("data-min-size")).toBe("240");
     expect(getByTestId("tab-bar").textContent).toBe("TabBar");
     expect(capturedTabBarProps.activeTabId).toBe("tab-1");
     expect(getByTestId("query-toolbar").textContent).toBe("QueryToolbar");

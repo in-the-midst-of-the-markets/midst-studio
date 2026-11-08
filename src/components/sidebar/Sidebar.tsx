@@ -417,9 +417,13 @@ export const Sidebar = React.memo(function Sidebar({
 
   return (
     <div className="flex w-full h-full border-r border-border flex-col bg-background select-none">
-      <div className="h-14 px-4 flex items-center justify-between border-b border-border">
-        <MidstLockup markClassName="h-7 w-7" wordClassName="text-sm" />
-        <div className="flex items-center gap-1">
+      <div className="flex h-14 min-w-0 items-center gap-2 overflow-hidden border-b border-border px-4">
+        <MidstLockup
+          className="min-w-0 flex-1"
+          markClassName="h-7 w-7 shrink-0"
+          wordClassName="min-w-0 truncate text-sm"
+        />
+        <div className="flex shrink-0 items-center gap-1">
           {/*
             A table made by another client reaches the tree only through this (#1986): the shell
             re-reads for statements IT ran. In the header because a control pressed this rarely must
