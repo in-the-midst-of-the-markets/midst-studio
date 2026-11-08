@@ -174,6 +174,7 @@ export function ChartWithEditor({
     () => openAssistChart(chart, result, savedView ?? null).projected,
   );
   const [seen, setSeen] = useState({ result, chart });
+  const [seenView, setSeenView] = useState(savedView);
   const [typesOpen, setTypesOpen] = useState(false);
   const [browsingId, setBrowsingId] = useState<string | null>(null);
   const theme = chartTheme(useEffectiveTheme());
@@ -183,12 +184,22 @@ export function ChartWithEditor({
     setFace("chart");
   }
   if (seen.result !== result || seen.chart !== chart) {
-    const previous = sameChartPlan(seen.chart, chart) ? choice : null;
+    const previous = sameChartPlan(seen.chart, chart) ? (choice ?? savedView) : null;
     const opened = openAssistChart(chart, result, previous);
     setSeen({ result, chart });
+    setSeenView(savedView);
     setChoice(opened.choice);
     setProjectedRows(opened.projected);
     setBrowsingId(null);
+  } else if (savedView !== seenView) {
+    setSeenView(savedView);
+    if (choice === null && savedView !== null) {
+      const opened = openAssistChart(chart, result, savedView);
+      if (opened.choice !== null) {
+        setChoice(opened.choice);
+        setProjectedRows(opened.projected);
+      }
+    }
   }
   const source = chartSourceKey(choice?.typeId ?? null, choice?.variationId ?? null, choice?.selection ?? null);
   const [appliedCode, setAppliedCode] = useState(savedCode);

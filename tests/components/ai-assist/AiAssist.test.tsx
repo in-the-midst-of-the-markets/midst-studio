@@ -1110,6 +1110,52 @@ describe("ChartWithEditor", () => {
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
   });
 
+  test("draws a bar that was chosen after the rows were already on screen", () => {
+    const props = {
+      title: "weave_test",
+      sql: "SELECT symbol, distance FROM companies",
+      result: {
+        rows: [
+          { symbol: "CMOT", distance: 0.52 },
+          { symbol: "HOG", distance: 0.55 },
+        ],
+        fields: ["symbol", "distance"],
+        rowCount: 2,
+        executionTime: 4,
+      },
+      error: null,
+      chart: null,
+      running: false,
+      onSqlChange: () => {},
+      onRun: () => {},
+    };
+    const view = render(<ChartWithEditor {...props} />);
+    expect(view.getByRole("button", { name: "Choose a type" })).toBeTruthy();
+    view.rerender(
+      <ChartWithEditor
+        {...props}
+        savedView={{ typeId: "bar", variationId: "basic", selection: { category: ["symbol"], values: ["distance"] } }}
+      />,
+    );
+    expect(view.getByRole("button", { name: "Change type, Bar, Basic" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Choose a type" })).toBeNull();
+    view.unmount();
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const waiting = render(<ChartWithEditor {...props} result={null} running />, { container: host });
+    waiting.rerender(
+      <ChartWithEditor
+        {...props}
+        result={null}
+        running
+        savedView={{ typeId: "bar", variationId: "basic", selection: { category: ["symbol"], values: ["distance"] } }}
+      />,
+    );
+    expect(within(host).queryByRole("button", { name: "Change type, Bar, Basic" })).toBeNull();
+    waiting.unmount();
+    host.remove();
+  });
+
   test("paints a chart in the colour it was given", () => {
     render(
       <ChartWithEditor
@@ -2897,6 +2943,76 @@ describe("AiAssist page", () => {
     expect(await view.findByRole("heading", { name: "weave_test" })).toBeTruthy();
     expect(await view.findByRole("button", { name: "Change type, Bar, Basic" })).toBeTruthy();
     expect(view.queryByRole("button", { name: "Choose a type" })).toBeNull();
+    await waitFor(() => {
+      const colours = charts.flatMap((chart) =>
+        chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
+      );
+      expect(colours).toContain("#9546de");
+    });
+  });
+
+  test("draws the purple bar when the attached query is only explained in text", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        {
+          id: "c1",
+          name: "Profiles",
+          type: "weaviate",
+          host: "localhost",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "q1",
+          name: "weave_test",
+          query:
+            'POST /v1/search/CompanyProfile/near-vector\n{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"], "returnMetadata": ["distance"]}',
+          connectionType: "weaviate",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-03-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) body = JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        return jsonResponse({
+          explanation: "For the requested chart, $distance is the natural measure: one purple bar per company name.",
+          queries: [],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({
+          rows: [
+            { symbol: "CMOT", $distance: "0.5171481" },
+            { symbol: "HOG", $distance: "0.5527351" },
+          ],
+          fields: ["symbol", "$distance"],
+          rowCount: 2,
+          executionTime: 4,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    fireEvent.click(view.getByRole("button", { name: "Add to chat" }));
+    fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
+    fireEvent.click(view.getByRole("menuitemcheckbox", { name: /weave_test/ }));
+    fireEvent.click(view.getByRole("button", { name: "Close add menu" }));
+    await typeAndSend(view, "Create a bar chart for this query colored purple");
+    expect(await view.findByRole("heading", { name: "weave_test" })).toBeTruthy();
+    expect(await view.findByRole("button", { name: "Change type, Bar, Basic" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Choose a type" })).toBeNull();
+    expect(await view.findByText(/one purple bar per company name/)).toBeTruthy();
     await waitFor(() => {
       const colours = charts.flatMap((chart) =>
         chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
