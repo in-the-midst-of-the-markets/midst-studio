@@ -193,6 +193,11 @@ describe("assist saved queries", () => {
     ]);
     expect(listed?.chart.type).toBe("line");
     expect(listed?.sql).toBe("SELECT 1");
+    expect(
+      assistSavedChart("Create a bar chart using the cost column as the values of Orders", [
+        { id: "orders", name: "Orders", sql: "SELECT 1", connectionId: null, connectionType: "postgres" },
+      ])?.chart.y,
+    ).toEqual(["cost"]);
 
     expect(
       assistSavedChart("Create an area chart of revenue", [
@@ -237,6 +242,27 @@ describe("assist saved queries", () => {
         chartPick("weave_test", "POST /v1/search/C/near-vector", "weaviate"),
       ])?.chart,
     ).toEqual({ type: "bar", x: "category", y: ["value"] });
+    expect(
+      assistSavedChart("Create a bar chart for this query colored purple weave_test", [
+        chartPick(
+          "weave_test",
+          near(
+            '{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol", "company_name"], "returnMetadata": ["distance"]}',
+          ),
+          "weaviate",
+        ),
+      ])?.chart,
+    ).toEqual({ type: "bar", x: "symbol", y: ["$distance"] });
+    expect(
+      assistSavedChart("Create a bar chart of weave_test", [
+        chartPick("weave_test", near('{"vector": {{dirtbike}}, "returnMetadata": ["certainty"]}'), "weaviate"),
+      ])?.chart.y,
+    ).toEqual(["$certainty"]);
+    expect(
+      assistSavedChart("Create a bar chart using the symbol column as the values of weave_test", [
+        chartPick("weave_test", near('{"vector": {{dirtbike}}}'), "weaviate"),
+      ])?.chart.y,
+    ).toEqual(["symbol"]);
     expect(
       assistSavedChart("Create a chart and a search box for weave_test", [
         chartPick("weave_test", 'POST /v1/search/C/near-vector\n{"vector": {{', "weaviate"),

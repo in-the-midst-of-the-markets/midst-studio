@@ -276,7 +276,8 @@ export interface AssistFollowUp {
 }
 
 const RECOLOR_PHRASE =
-  /\b(?:recolou?r|colou?r|make (?:it|this|them|these|that|the)|change (?:it|this|them|these|that|the))\b/i;
+  /\b(?:recolou?red?|colou?red?|make (?:it|this|them|these|that|the)|change (?:it|this|them|these|that|the))\b/i;
+const CHART_REQUEST = /\b(?:bar|line|area|scatter|stacked[ -]?bar|pie)\s+charts?\b|\bcharts?\s+of\b/i;
 const NEW_QUERY = /\b(?:select|from|where|group|show|what|how many|compare|break)\b/i;
 
 /** The last named colour or #RRGGBB in a question that is asking to recolor. */
@@ -297,6 +298,7 @@ export function requestedChartColor(question: string): string | null {
 /** A short recolor request should not also add the chart the model invented. */
 export function questionOnlyRecolors(question: string): boolean {
   const trimmed = question.trim();
+  if (CHART_REQUEST.test(trimmed)) return false;
   return requestedChartColor(trimmed) !== null && trimmed.length <= 80 && !NEW_QUERY.test(trimmed);
 }
 
@@ -328,13 +330,13 @@ export function recolorsFromQuestion(
  */
 export function splitAssistFollowUp(
   queries: readonly AssistQueryPlan[],
-  existing: readonly { readonly sql: string; readonly locked: boolean }[],
+  existing: readonly { readonly sql: string; readonly locked: boolean; readonly hasChart?: boolean }[],
 ): AssistFollowUp {
   const recolors: AssistRecolor[] = [];
   const kept: AssistQueryPlan[] = [];
   for (const query of queries) {
     const key = queryIdentity(query.sql);
-    let match: { readonly sql: string; readonly locked: boolean } | undefined;
+    let match: { readonly sql: string; readonly locked: boolean; readonly hasChart?: boolean } | undefined;
     for (let index = existing.length - 1; index >= 0; index -= 1) {
       const card = existing[index];
       if (card !== undefined && queryIdentity(card.sql) === key) {
@@ -343,7 +345,7 @@ export function splitAssistFollowUp(
       }
     }
     const color = query.chart?.color ?? null;
-    if (match !== undefined && color !== null) {
+    if (match !== undefined && color !== null && match.hasChart !== false) {
       recolors.push({ sql: key, color });
       continue;
     }

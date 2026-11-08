@@ -2832,6 +2832,79 @@ describe("AiAssist page", () => {
     expect(view.getByRole("textbox", { name: "search" })).toBeTruthy();
   });
 
+  test("draws the purple bar a saved query was asked for when the model leaves the chart off", async () => {
+    localStorage.setItem(
+      "libredb_connections",
+      JSON.stringify([
+        {
+          id: "c1",
+          name: "Profiles",
+          type: "weaviate",
+          host: "localhost",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    const saved =
+      'POST /v1/search/CompanyProfile/near-vector\n{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol"], "returnMetadata": ["distance"]}';
+    localStorage.setItem(
+      "libredb_saved_queries",
+      JSON.stringify([
+        {
+          id: "q1",
+          name: "weave_test",
+          query: saved,
+          connectionType: "weaviate",
+          connectionId: "c1",
+          createdAt: "2026-01-01T00:00:00.000Z",
+          updatedAt: "2026-03-01T00:00:00.000Z",
+        },
+      ]),
+    );
+    handler = (url, init) => {
+      const method = init?.method ?? "GET";
+      let body: unknown = null;
+      if (init?.body !== undefined) body = JSON.parse(String(init.body));
+      calls.push({ url, method, body });
+      if (url.includes("/api/ai/assist") && method === "POST") {
+        return jsonResponse({
+          explanation: "The saved query weave_test is a Weaviate near-vector search.",
+          queries: [
+            {
+              title: "weave_test",
+              connection: "Profiles",
+              sql: saved,
+              chart: null,
+            },
+          ],
+        });
+      }
+      if (url.includes("/api/db/query")) {
+        return jsonResponse({
+          rows: [
+            { symbol: "CMOT", $distance: "0.5171481" },
+            { symbol: "XTMM", $distance: "0.5466069" },
+          ],
+          fields: ["symbol", "$distance"],
+          rowCount: 2,
+          executionTime: 4,
+        });
+      }
+      return defaultFetch(url, init);
+    };
+    const view = render(<AiAssist />);
+    await typeAndSend(view, "Create a bar chart for this query colored purple weave_test");
+    expect(await view.findByRole("heading", { name: "weave_test" })).toBeTruthy();
+    expect(await view.findByRole("button", { name: "Change type, Bar, Basic" })).toBeTruthy();
+    expect(view.queryByRole("button", { name: "Choose a type" })).toBeNull();
+    await waitFor(() => {
+      const colours = charts.flatMap((chart) =>
+        chart.setOption.mock.calls.map((call) => (call[0] as { color?: string[] }).color?.[0]),
+      );
+      expect(colours).toContain("#9546de");
+    });
+  });
+
   test("says when there is no saved query to add", () => {
     saveConnection();
     const view = render(<AiAssist />);

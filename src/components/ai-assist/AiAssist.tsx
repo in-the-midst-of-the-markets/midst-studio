@@ -35,6 +35,7 @@ import {
   explanationWithEdits,
   questionOnlyRecolors,
   recolorsFromQuestion,
+  requestedChartColor,
   recentAssistHistory,
   reviseAssistCharts,
   splitAssistFollowUp,
@@ -921,9 +922,11 @@ export function AiAssist() {
         return;
       }
       const answered = acceptAssistPlan(body, databaseType, schemaContext);
-      const savedChart = answered.queries.length > 0 ? null : assistSavedChart(question, savedCatalog);
+      const savedChart = assistSavedChart(question, savedCatalog);
+      const modelDrew = answered.queries.some((query) => query.chart !== null);
+      const askedColor = questionOnlyRecolors(question) ? null : requestedChartColor(question);
       const plan =
-        savedChart === null
+        savedChart === null || modelDrew
           ? answered
           : acceptAssistPlan(
               {
@@ -933,7 +936,7 @@ export function AiAssist() {
                     title: savedChart.title,
                     connection: connections.find((item) => item.id === savedChart.connectionId)?.name ?? "",
                     sql: savedChart.sql,
-                    chart: savedChart.chart,
+                    chart: { ...savedChart.chart, color: askedColor },
                   },
                 ],
               },
@@ -941,7 +944,12 @@ export function AiAssist() {
               schemaContext,
             );
       const prior = turnsRef.current.flatMap((turn) =>
-        turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
+        turn.cards.map((card) => ({
+          sql: card.titledSql,
+          title: card.title,
+          locked: card.locked,
+          hasChart: card.chart !== null,
+        })),
       );
       const revised = questionOnlyRecolors(question)
         ? { revisions: [], queries: plan.queries }
