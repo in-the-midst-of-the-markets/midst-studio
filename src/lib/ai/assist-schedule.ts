@@ -3,16 +3,18 @@
  *
  * The prompt and the saved-query sources are copied when the schedule is saved.
  * Each run reads those sources again, so a query that changed, or rows that
- * changed, are what the next answer sees. The shortest gap matches a chart
- * refresh: a stored interval is never below that floor.
+ * changed, are what the next answer sees. A schedule repeats hourly or daily.
  */
 
-import { MIN_CHART_REFRESH_SECONDS, readRefreshText } from "@/lib/charts/chart-refresh";
 import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
 import { ASSIST_SAVED_LIST_CAP } from "@/lib/ai/assist-saved";
 
 export const ASSIST_SCHEDULE_KEY = "libredb_ai_assist_schedules";
 export const ASSIST_SCHEDULE_CAP = 8;
+export const ASSIST_SCHEDULE_HOURLY_SECONDS = 60 * 60;
+export const ASSIST_SCHEDULE_DAILY_SECONDS = 24 * 60 * 60;
+
+export type AssistScheduleEvery = "hourly" | "daily";
 
 export interface AssistSchedule {
   readonly id: string;
@@ -27,12 +29,21 @@ interface ScheduleStore {
 }
 
 export type AssistScheduleDraft =
-  | { readonly ok: true; readonly schedule: AssistSchedule; readonly raised: boolean }
+  | { readonly ok: true; readonly schedule: AssistSchedule }
   | { readonly ok: false; readonly error: string };
 
 type AssistIntervalRead =
-  | { readonly ok: true; readonly seconds: number; readonly raised: boolean }
+  | { readonly ok: true; readonly seconds: number }
   | { readonly ok: false; readonly error: string };
+
+function secondsFor(every: AssistScheduleEvery): number {
+  return every === "daily" ? ASSIST_SCHEDULE_DAILY_SECONDS : ASSIST_SCHEDULE_HOURLY_SECONDS;
+}
+
+/** Hourly, unless the stored gap is at least a day. */
+export function assistScheduleEvery(seconds: number): AssistScheduleEvery {
+  return seconds >= ASSIST_SCHEDULE_DAILY_SECONDS ? "daily" : "hourly";
+}
 
 function clipPrompt(value: string): string {
   const trimmed = value.trim();
@@ -50,12 +61,11 @@ function sourceIdsOf(ids: readonly string[]): string[] {
   return kept;
 }
 
-/** The interval field as a schedule gap. A blank field is not a schedule. */
+/** Hourly or daily. Anything else is not a schedule. */
 export function readAssistInterval(text: string): AssistIntervalRead {
-  const read = readRefreshText(text);
-  if (!read.ok) return { ok: false, error: read.error };
-  if (read.seconds === undefined) return { ok: false, error: "Name how many seconds between runs." };
-  return { ok: true, seconds: read.seconds, raised: read.raised };
+  const every = text.trim().toLowerCase();
+  if (every === "hourly" || every === "daily") return { ok: true, seconds: secondsFor(every) };
+  return { ok: false, error: "Choose hourly or daily." };
 }
 
 /**
@@ -66,13 +76,13 @@ export function draftAssistSchedule(input: {
   readonly id: string;
   readonly prompt: string;
   readonly sourceIds: readonly string[];
-  readonly intervalText: string;
+  readonly every: string;
   readonly existing: number;
 }): AssistScheduleDraft {
   if (input.existing >= ASSIST_SCHEDULE_CAP) {
     return { ok: false, error: `${ASSIST_SCHEDULE_CAP} schedules are the most this page keeps.` };
   }
-  const interval = readAssistInterval(input.intervalText);
+  const interval = readAssistInterval(input.every);
   if (!interval.ok) return interval;
   const prompt = clipPrompt(input.prompt);
   const sourceIds = sourceIdsOf(input.sourceIds);
@@ -81,7 +91,6 @@ export function draftAssistSchedule(input: {
   }
   return {
     ok: true,
-    raised: interval.raised,
     schedule: { id: input.id.trim() || "schedule", prompt, sourceIds, seconds: interval.seconds },
   };
 }
@@ -96,7 +105,7 @@ function scheduleOf(value: unknown): AssistSchedule | null {
   const seconds = "seconds" in value && typeof value.seconds === "number" ? Math.floor(value.seconds) : 0;
   if (prompt === "" && sourceIds.length === 0) return null;
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
-  return { id, prompt, sourceIds, seconds: Math.max(seconds, MIN_CHART_REFRESH_SECONDS) };
+  return { id, prompt, sourceIds, seconds: secondsFor(assistScheduleEvery(seconds)) };
 }
 
 /** Schedules kept in this browser. A broken record is left out. */
@@ -162,5 +171,6 @@ export function assistScheduleLabel(
   const first = schedule.prompt.split("\n")[0]?.trim() ?? "";
   const lead = first === "" ? "Saved sources" : first;
   const extra = names.length === 0 ? "" : ` · ${names.join(", ")}`;
-  return `${lead}${extra} · every ${schedule.seconds}s`;
+  const cadence = assistScheduleEvery(schedule.seconds) === "daily" ? "Daily" : "Hourly";
+  return `${lead}${extra} · ${cadence}`;
 }

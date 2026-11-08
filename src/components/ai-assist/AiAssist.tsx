@@ -64,6 +64,7 @@ import {
   subscribeAssistSchedules,
   writeAssistSchedules,
   type AssistSchedule,
+  type AssistScheduleEvery,
 } from "@/lib/ai/assist-schedule";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
@@ -603,7 +604,7 @@ export function AiAssist() {
   const schedules = useSyncExternalStore(subscribeAssistSchedules, readAssistScheduleSnapshot, () => EMPTY_SCHEDULES);
   const attachedLive = attached.filter((item) => savedCatalog.some((pick) => pick.id === item.id));
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [intervalText, setIntervalText] = useState("");
+  const [scheduleEvery, setScheduleEvery] = useState<AssistScheduleEvery>("hourly");
   const [scheduleNote, setScheduleNote] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -996,7 +997,7 @@ export function AiAssist() {
       id: nextId(),
       prompt: draft,
       sourceIds: attachedLive.map((pick) => pick.id),
-      intervalText,
+      every: scheduleEvery,
       existing: schedules.length,
     });
     if (!made.ok) {
@@ -1004,13 +1005,7 @@ export function AiAssist() {
       return;
     }
     writeAssistSchedules([...schedules, made.schedule]);
-    if (made.raised) {
-      setIntervalText(String(made.schedule.seconds));
-      setScheduleNote(`Raised to ${made.schedule.seconds} seconds, the shortest schedule.`);
-      return;
-    }
     setScheduleOpen(false);
-    setIntervalText("");
     setScheduleNote(null);
   };
 
@@ -1097,7 +1092,10 @@ export function AiAssist() {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden 2xl:flex-row">
-        <main ref={chartsRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 2xl:px-8 2xl:py-6">
+        <main
+          ref={chartsRef}
+          className="min-h-[min(22rem,50dvh)] min-w-0 flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5 2xl:min-h-0 2xl:px-8 2xl:py-6"
+        >
           {(hydrated && connections.length === 0) || schemaNotes.length > 0 ? (
             <div className="mx-auto mb-6 flex w-full max-w-5xl flex-col gap-3">
               {hydrated && connections.length === 0 && (
@@ -1184,7 +1182,7 @@ export function AiAssist() {
           </div>
         </main>
 
-        <aside className="flex w-full shrink-0 flex-col border-t border-hairline bg-surface 2xl:h-full 2xl:w-96 2xl:overflow-hidden 2xl:border-t-0 2xl:border-l">
+        <aside className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto border-t border-hairline bg-surface 2xl:h-full 2xl:w-96 2xl:flex-none 2xl:overflow-hidden 2xl:border-t-0 2xl:border-l">
           <div className="flex shrink-0 flex-col gap-2 border-b border-hairline px-4 py-3">
             <div className="flex items-center gap-2">
               <select
@@ -1403,8 +1401,8 @@ export function AiAssist() {
                     setScheduleNote(null);
                     setScheduleOpen(open);
                   },
-                  interval: intervalText,
-                  onInterval: setIntervalText,
+                  every: scheduleEvery,
+                  onEvery: setScheduleEvery,
                   onSave: saveSchedule,
                   note: scheduleNote,
                 }}
