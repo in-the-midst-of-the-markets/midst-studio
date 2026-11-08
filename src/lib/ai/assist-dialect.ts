@@ -194,6 +194,7 @@ const WEAVIATE_RULE = [
   "Keep a {{token}} the current statement already uses as that vector value.",
   "returnMetadata distance adds $distance, and lower is closer. certainty adds $certainty, from 0 to 1, and higher is closer.",
   "A bar chart uses $certainty for a similarity score, or $distance for distance. Do not write similarity_score or 1 - distance.",
+  "A search box for the vector text writes the vector value as {{search:words}}.",
   EMBEDDING,
 ].join(" ");
 

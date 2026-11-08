@@ -326,6 +326,8 @@ describe("buildAssistMessages", () => {
     expect(messages[0]?.content).toContain("You have not seen the rows yet.");
     expect(messages[0]?.content).toContain("the one statement the question asks for");
     expect(messages[0]?.content).toContain("Read a saved query when the question needs it.");
+    expect(messages[0]?.content).toContain("return that statement in queries with that chart");
+    expect(messages[0]?.content).toContain("Do not answer by only describing the saved query.");
     expect(messages[0]?.content).toContain("only when the person attached that query");
     expect(messages[0]?.content).toContain("The chart is the one the question asks for.");
     expect(messages[0]?.content).toContain("explanation is Markdown");

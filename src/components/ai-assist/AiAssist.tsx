@@ -51,6 +51,7 @@ import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { suggestAssistChart, titleForQuery, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import {
   assistSavedAsk,
+  assistSavedChart,
   assistSavedForPrompt,
   assistSavedPicks,
   toggleAssistSaved,
@@ -879,7 +880,26 @@ export function AiAssist() {
         );
         return;
       }
-      const plan = acceptAssistPlan(body, databaseType, schemaContext);
+      const answered = acceptAssistPlan(body, databaseType, schemaContext);
+      const savedChart = answered.queries.length > 0 ? null : assistSavedChart(question, savedCatalog);
+      const plan =
+        savedChart === null
+          ? answered
+          : acceptAssistPlan(
+              {
+                explanation: answered.explanation,
+                queries: [
+                  {
+                    title: savedChart.title,
+                    connection: connections.find((item) => item.id === savedChart.connectionId)?.name ?? "",
+                    sql: savedChart.sql,
+                    chart: savedChart.chart,
+                  },
+                ],
+              },
+              databaseType,
+              schemaContext,
+            );
       const prior = turnsRef.current.flatMap((turn) =>
         turn.cards.map((card) => ({ sql: card.titledSql, title: card.title, locked: card.locked })),
       );
