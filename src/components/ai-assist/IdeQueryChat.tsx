@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Sparkles, Trash2 } from "lucide-react";
 import { AssistModelFields } from "@/components/ai-assist/AssistModelFields";
 import { AssistPromptBox } from "@/components/ai-assist/AssistPromptBox";
@@ -152,6 +152,14 @@ function IdeQueryChatSession({
   const [gatewayStatus, setGatewayStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [rankings, setRankings] = useState<AssistRankings | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const threadRef = useRef<HTMLElement>(null);
+
+  // A new turn lands at the end of the one chat scroller.
+  useLayoutEffect(() => {
+    const node = threadRef.current;
+    if (!open || node === null || turns.length === 0) return;
+    node.scrollTop = node.scrollHeight - node.clientHeight;
+  }, [open, turns.length]);
 
   const loadCatalog = () => {
     void appFetch("/api/ai/assist")
@@ -261,9 +269,11 @@ function IdeQueryChatSession({
   if (open) {
     panel = (
       <section
-        className={`${anchored} right-4 bottom-32 z-30 flex max-h-[70%] w-80 flex-col overflow-hidden rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16`}
+        ref={threadRef}
+        aria-label={conversationLabel}
+        className={`${anchored} right-4 bottom-32 z-30 max-h-[70%] w-80 overflow-x-hidden overflow-y-auto rounded-xl border border-hairline bg-surface shadow-lg md:bottom-16`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-hairline bg-surface px-3 py-2">
           <p className="text-xs font-medium text-fg">Ask AI</p>
           <div className="flex items-center gap-2">
             {turns.length > 0 && (
@@ -300,7 +310,7 @@ function IdeQueryChatSession({
             </button>
           </div>
         </div>
-        <div aria-label={conversationLabel} className="flex min-h-24 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+        <div className="flex min-h-24 flex-col gap-3 px-3 py-3">
           {turns.map((turn) =>
             turn.role === "user" ? (
               <p key={turn.id} className="text-sm text-fg">
@@ -331,19 +341,14 @@ function IdeQueryChatSession({
             ),
           )}
         </div>
-        {/*
-          The panel clips at 70% of the screen. Configuration lives in its
-          own scroller so opening it cannot push the send button past that
-          clip. The prompt stays pinned under the scroller.
-        */}
         <form
-          className="flex min-h-0 shrink flex-col border-t border-hairline"
+          className="border-t border-hairline"
           onSubmit={(event) => {
             event.preventDefault();
             void send();
           }}
         >
-          <div data-assist-config="" className="min-h-0 overflow-y-auto px-3 pt-2">
+          <div data-assist-config="" className="px-3 pt-2">
             <div className="flex flex-col gap-3">
               <AssistModelFields
                 settings={settings}
@@ -372,7 +377,7 @@ function IdeQueryChatSession({
               )}
             </div>
           </div>
-          <div className="shrink-0 px-3 pt-3 pb-2">
+          <div className="px-3 pt-3 pb-2">
             <AssistPromptBox
               label={promptLabel}
               placeholder={promptPlaceholder}
