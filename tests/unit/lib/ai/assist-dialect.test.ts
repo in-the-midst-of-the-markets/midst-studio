@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  assistAllowsSql,
   assistDialectNote,
   assistNativeRead,
   assistSampleSql,
@@ -18,13 +19,17 @@ describe("assistStatementRule", () => {
       "sql is one read-only Cypher statement for this engine. Do not write SQL.",
     );
     expect(assistStatementRule("opensearch")).toContain("The editor runs that request as written.");
-    expect(assistStatementRule("opensearch")).toContain("{{the words}}");
+    expect(assistStatementRule("opensearch")).toContain("{{search:car}}");
     expect(assistStatementRule("opensearch")).toContain('{{embed "text"}}');
     expect(assistStatementRule("elasticsearch")).toContain("company_profiles/_search");
     expect(assistStatementRule("milvus")).toContain("Ignore the list of numbers");
     expect(assistStatementRule("milvus")).toContain("POST /v2/vectordb/");
     expect(assistStatementRule("qdrant")).toContain("A Qdrant request");
     expect(assistStatementRule("weaviate")).toContain("A Weaviate REST request");
+    expect(assistStatementRule("weaviate")).toContain("Do not write SQL");
+    expect(assistStatementRule("weaviate")).toContain("POST /v1/search/CompanyProfile/near-vector");
+    expect(assistStatementRule("weaviate")).toContain("$certainty");
+    expect(assistStatementRule("milvus")).toContain("Do not write SQL");
     expect(assistStatementRule("airtable")).toContain("one table");
     expect(assistStatementRule("hubspot")).toContain("one CRM object");
     expect(assistStatementRule("stripe")).toContain("Stripe Sigma");
@@ -41,10 +46,10 @@ describe("assistSampleSql", () => {
     expect(assistSampleSql("postgres")).toBe("one read-only SELECT with LIMIT 200");
     expect(assistSampleSql("neo4j")).toBe("one read-only Cypher statement");
     expect(assistSampleSql("opensearch")).toBe(
-      "POST index/_search then one JSON object, and a vector value is {{the words}}",
+      "POST index/_search then one JSON object, and the vector value is {{search:car}}",
     );
     expect(assistSampleSql("milvus")).toBe(
-      "one read request in this engine's language, and a vector value is {{the words}}",
+      "one read request in this engine's language, and the vector value is {{search:car}}",
     );
     expect(assistSampleSql("airtable")).toBe("one read-only SELECT with LIMIT 200");
     expect(assistSampleSql("")).toBe("one read-only SELECT with LIMIT 200");
@@ -58,6 +63,14 @@ describe("assistValueRule", () => {
     expect(assistValueRule("neo4j")).toContain("the studio draws the graph");
     expect(assistValueRule("opensearch")).toContain("Do not add a chart-filter placeholder");
     expect(assistValueRule("qdrant")).not.toContain("{{region:east|east,west,north}}");
+    expect(assistValueRule("weaviate")).toContain("$certainty");
+    expect(assistAllowsSql("postgres")).toBe(true);
+    expect(assistAllowsSql("opensearch")).toBe(true);
+    expect(assistAllowsSql("airtable")).toBe(true);
+    expect(assistAllowsSql("weaviate")).toBe(false);
+    expect(assistAllowsSql("milvus")).toBe(false);
+    expect(assistAllowsSql("qdrant")).toBe(false);
+    expect(assistAllowsSql("")).toBe(true);
     expect(assistValueRule("")).toContain("{{region:east|east,west,north}}");
   });
 });

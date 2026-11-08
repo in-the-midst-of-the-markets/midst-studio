@@ -66,6 +66,6 @@ describe("buildDashboardMessages", () => {
       boardBlock: "",
     });
     expect(search[0]?.content).toContain("The editor runs that request as written.");
-    expect(search[0]?.content).toContain("{{the words}}");
+    expect(search[0]?.content).toContain("{{search:car}}");
   });
 });

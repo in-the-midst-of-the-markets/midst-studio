@@ -25,17 +25,19 @@ const SQL_RULE = "sql is one read-only statement for this engine.";
 const CYPHER_RULE = "sql is one read-only Cypher statement for this engine. Do not write SQL.";
 const SQL_SAMPLE = "one read-only SELECT with LIMIT 200";
 const CYPHER_SAMPLE = "one read-only Cypher statement";
-const VECTOR_SAMPLE = "one read request in this engine's language, and a vector value is {{the words}}";
+const VECTOR_SAMPLE = "one read request in this engine's language, and the vector value is {{search:car}}";
 
 const EMBEDDING = [
   "Dynamic embeddings: the embedding model chosen beside Lines turns words into the vector when the query runs.",
-  "Write those words as the whole vector value, in braces and not in quotes.",
+  "Write the vector value as a labeled filter, the same shape as any other filter: {{search:car}}.",
+  "The word before the colon is the label on the filter. The words after the colon are what gets embedded.",
+  "Do not write {{car}} with no label.",
   "Do not write a list of numbers, a dimension, or a sample vector.",
   "Do not quote the braces.",
   "The same braces in any other field are a chart filter, not an embedding, so do not add them on k, a limit, or a filter.",
-  "When the current statement already has a {{token}} as the vector value, keep it: that token is a filter, and the text typed in the filter is what gets embedded.",
-  "A new search puts the words themselves inside the braces.",
-  'The older {{embed "text"}} form still embeds that quoted text. Prefer {{the words}} as the vector value.',
+  "When the current statement already has a labeled {{name:text}} as the vector value, keep that label.",
+  "Change the text after the colon only when the question changes what to search for.",
+  'The older {{embed "text"}} form still embeds that quoted text. Prefer {{search:car}}.',
 ].join(" ");
 
 const SEARCH_RULE = [
@@ -44,19 +46,20 @@ const SEARCH_RULE = [
   "A count is POST company_profiles/_count.",
   "Do not write a request that inserts, updates, or deletes a document.",
   "The editor runs that request as written.",
-  "A statement that is already SQL stays one read-only SQL statement, and a vector in that SQL is the second argument of knn, written as {{the words}}.",
-  'In the JSON body the vector value is written "vector": {{the words}}.',
+  "A statement that is already SQL stays one read-only SQL statement, and a vector in that SQL is the second argument of knn, written as {{search:car}}.",
+  'In the JSON body the vector value is written "vector": {{search:car}}.',
   EMBEDDING,
 ].join(" ");
 
-const SEARCH_SAMPLE = "POST index/_search then one JSON object, and a vector value is {{the words}}";
+const SEARCH_SAMPLE = "POST index/_search then one JSON object, and the vector value is {{search:car}}";
 
 const VECTOR_EMBEDDING = [
+  "Do not write SQL. The editor refuses SELECT.",
   "Ignore the list of numbers in any example.",
   "Write the dynamic embedding there instead.",
-  'Milvus holds one vector as "data": [{{the words}}].',
-  'Qdrant writes "query": {{the words}} when query is the vector and not an object.',
-  "A value of vector or nearest is {{the words}}.",
+  'Milvus holds one vector as "data": [{{search:car}}].',
+  'Qdrant writes "query": {{search:car}} when query is the vector and not an object.',
+  "A value of vector or nearest is {{search:car}}.",
   EMBEDDING,
 ].join(" ");
 
@@ -84,7 +87,7 @@ const CYPHER_VALUES = [
 ].join(" ");
 
 const EMBEDDING_VALUES = [
-  "A vector value is {{the words}}, as the statement rule describes.",
+  "A vector value is a labeled filter {{search:car}}, as the statement rule describes.",
   "Do not add a chart-filter placeholder in a JSON body.",
   "A connection whose engine is neo4j takes one read-only Cypher statement with its values in place.",
   "Do not write SQL or a placeholder on that connection.",
@@ -94,6 +97,8 @@ interface Dialect {
   readonly rule: string;
   readonly sample: string;
   readonly values: string;
+  /** Whether a SQL read is a statement this editor can run. */
+  readonly sql: boolean;
   readonly read: (sql: string) => boolean | null;
 }
 
@@ -180,10 +185,29 @@ const MILVUS_TEMPLATES = templatesOf(MILVUS_CONSOLE, MILVUS_ROUTES);
 const QDRANT_TEMPLATES = templatesOf(QDRANT_CONSOLE, QDRANT_ROUTES);
 const WEAVIATE_TEMPLATES = templatesOf(WEAVIATE_CONSOLE, WEAVIATE_ROUTES);
 
+const WEAVIATE_RULE = [
+  "Do not write SQL. The editor refuses SELECT.",
+  "A near-vector search is one line POST /v1/search/CompanyProfile/near-vector and then one JSON object:",
+  '{"vector": {{search:car}}, "targetVector": "name", "limit": 5, "returnProperties": ["symbol", "company_name"], "returnMetadata": ["certainty"]}.',
+  "vector is {{search:car}} by itself. The label is search and the embedded text is car. Do not wrap it in a list and do not write a list of numbers.",
+  "targetVector is the vector name when the collection has more than one, such as name.",
+  "Keep a {{token}} the current statement already uses as that vector value.",
+  "returnMetadata distance adds $distance, and lower is closer. certainty adds $certainty, from 0 to 1, and higher is closer.",
+  "A bar chart uses $certainty for a similarity score, or $distance for distance. Do not write similarity_score or 1 - distance.",
+  EMBEDDING,
+].join(" ");
+
+const WEAVIATE_VALUES = [
+  EMBEDDING_VALUES,
+  "A bar chart's number is $certainty for a similarity score, or $distance for distance.",
+  "Do not write similarity_score or 1 - distance.",
+].join(" ");
+
 const SEARCH: Dialect = {
   rule: SEARCH_RULE,
   sample: SEARCH_SAMPLE,
   values: EMBEDDING_VALUES,
+  sql: true,
   read: searchRead,
 };
 
@@ -194,66 +218,77 @@ const DIALECTS: Record<string, Dialect> = {
     rule: `${VECTOR_EMBEDDING} ${milvusStatementLanguage()}`,
     sample: VECTOR_SAMPLE,
     values: EMBEDDING_VALUES,
+    sql: false,
     read: (sql) => consoleRead(sql, MILVUS_TEMPLATES),
   },
   qdrant: {
     rule: `${VECTOR_EMBEDDING} ${qdrantStatementLanguage(QDRANT_CONSOLE, QDRANT_ROUTES, QDRANT_REFUSED_CLASSES)}`,
     sample: VECTOR_SAMPLE,
     values: EMBEDDING_VALUES,
+    sql: false,
     read: (sql) => consoleRead(sql, QDRANT_TEMPLATES),
   },
   weaviate: {
-    rule: `${VECTOR_EMBEDDING} ${weaviateStatementLanguage(WEAVIATE_CONSOLE, WEAVIATE_ROUTES, WEAVIATE_REFUSED_CLASSES)}`,
-    sample: VECTOR_SAMPLE,
-    values: EMBEDDING_VALUES,
+    rule: `${WEAVIATE_RULE} ${weaviateStatementLanguage(WEAVIATE_CONSOLE, WEAVIATE_ROUTES, WEAVIATE_REFUSED_CLASSES)}`,
+    sample: "POST /v1/search/Collection/near-vector with vector {{search:car}}, and a bar uses $certainty",
+    values: WEAVIATE_VALUES,
+    sql: false,
     read: (sql) => consoleRead(sql, WEAVIATE_TEMPLATES),
   },
   airtable: {
     rule: "sql is one read-only SELECT or COUNT(*) from one table. No JOIN and no other aggregate. LIMIT pages the rows.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   hubspot: {
     rule: "sql is one read-only SELECT or COUNT(*) from one CRM object. No JOIN. Do not rename columns.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   stripe: {
     rule: 'sql is one read-only Stripe Sigma SELECT or WITH, or a report preview SELECT * FROM "reports"."name". This connection does not write.',
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   clarity: {
     rule: "sql is one read-only SELECT or COUNT(*). Write WHERE days = 1, 2, or 3. At most three breakdown dimensions.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   googleanalytics: {
     rule: "sql is one read-only SELECT. Dates are YYYY-MM-DD, today, yesterday, or NdaysAgo, written as startDate and endDate. They default to the last seven days.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   quickbooks: {
     rule: "sql is one read-only SELECT or COUNT(*) of one entity. Combine filters with AND. Page with LIMIT.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
   supabase: {
     rule: "sql is one read-only Postgres statement for this engine.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
+    sql: true,
     read: () => null,
   },
 };
@@ -294,4 +329,9 @@ export function assistDialectNote(databaseType: string): string {
  */
 export function assistNativeRead(databaseType: string, sql: string): boolean | null {
   return dialectOf(databaseType)?.read(sql) ?? null;
+}
+
+/** Whether this editor can run a SQL read. A vector console cannot. */
+export function assistAllowsSql(databaseType: string): boolean {
+  return dialectOf(databaseType)?.sql ?? true;
 }

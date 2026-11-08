@@ -43,6 +43,13 @@ describe("isAssistRead", () => {
     expect(isAssistRead(search, "postgres")).toBe(false);
     expect(isAssistRead('POST company_profiles/_update/1\n{"doc":{"name":"Ada"}}', "opensearch")).toBe(false);
     expect(isAssistRead("DELETE company_profiles/_doc/1", "opensearch")).toBe(false);
+    const sql = "SELECT symbol FROM CompanyProfile NEAR VECTOR ({{dirtbike}}) ON $vector:name LIMIT 5";
+    const near = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnMetadata": ["certainty"]}`;
+    expect(isAssistRead(sql, "weaviate")).toBe(false);
+    expect(isAssistRead(near, "weaviate")).toBe(true);
+    expect(isAssistRead("SELECT 1", "milvus")).toBe(false);
+    expect(isAssistRead("SELECT 1", "qdrant")).toBe(false);
   });
 });
 
@@ -63,5 +70,14 @@ describe("assistRunnableStatement", () => {
     expect(assistRunnableStatement("SELECT region FROM t WHERE region = {{region:east}}", "opensearch")).toBe(
       "SELECT region FROM t WHERE region = 'east'",
     );
+    const near = `POST /v1/search/CompanyProfile/near-vector
+{"vector": {{dirtbike}}, "targetVector": "name", "limit": 5, "returnMetadata": ["certainty"]}`;
+    expect(assistRunnableStatement(near, "weaviate")).toBe(near);
+    expect(
+      assistRunnableStatement(
+        "SELECT symbol FROM CompanyProfile NEAR VECTOR ({{dirtbike}}) ON $vector:name LIMIT 5",
+        "weaviate",
+      ),
+    ).toBeNull();
   });
 });

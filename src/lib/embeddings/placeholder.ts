@@ -3,7 +3,8 @@
  *
  * `{{the text}}` is embedded only when it is the vector value: the JSON value of
  * `vector`, `data` or `nearest`, a Qdrant `query` that is that text or a list, or
- * the second argument of `knn`. The same brackets elsewhere stay a chart filter.
+ * the second argument of `knn`. A labeled value `{{search:car}}` embeds `car`
+ * and the filter bar shows the label. The same brackets elsewhere stay a chart filter.
  * `{{embed "text"}}` is what the server embeds. `{{embed name}}` is filled from a
  * dashboard filter first. A space after `embed` keeps that form out of the filter parser.
  */
@@ -100,12 +101,26 @@ function plainValue(body: string): string {
   return trimmed;
 }
 
+/**
+ * `{{search:car}}` and `{{search:car|car,bike}}`. The label is not embedded.
+ * Text with no colon is the words themselves.
+ */
+function labeledEmbed(body: string): string | null {
+  const match = /^\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*:(.*)$/s.exec(body);
+  if (match === null) return null;
+  const rest = match[2] ?? "";
+  const pipe = rest.indexOf("|");
+  return (pipe < 0 ? rest : rest.slice(0, pipe)).trim();
+}
+
 function readPlainToken(sql: string, at: number): EmbedToken | null {
   if (!sql.startsWith("{{", at)) return null;
   let cursor = at + 2;
   while (cursor < sql.length) {
     if (sql.startsWith("}}", cursor)) {
-      return { start: at, end: cursor + 2, kind: "text", value: plainValue(sql.slice(at + 2, cursor)) };
+      const raw = sql.slice(at + 2, cursor);
+      const labeled = labeledEmbed(raw);
+      return { start: at, end: cursor + 2, kind: "text", value: labeled === null ? plainValue(raw) : labeled };
     }
     const char = sql[cursor] ?? "";
     // A bracket here belongs to the JSON around the value, so this is not one token.
@@ -337,7 +352,8 @@ export function bindVectorFilterIds(sql: string, values: readonly EmbedNameValue
   }
   let next = sql;
   for (const token of [...embedTokens(sql)].reverse()) {
-    if (token.kind !== "text" || !ids.has(token.value)) continue;
+    if (token.kind !== "text" || sql.slice(token.start, token.end).includes(":")) continue;
+    if (!ids.has(token.value)) continue;
     const text = byName.get(token.value);
     const body = text === undefined ? `{{embed ${token.value}}}` : `{{embed ${JSON.stringify(text)}}}`;
     next = `${next.slice(0, token.start)}${body}${next.slice(token.end)}`;

@@ -1651,7 +1651,7 @@ refusal are the same value and cannot drift apart.
 | `supportsExternalQueryLimiting` | `true` | `LIMIT n` is correct here; the one form that is not is refused by `prepareQuery()` ([§5.5](#55-the-preparequery-override-there-is-no-second-page)) |
 | `createTable` | **absent** | Not in the grammar ([§5.6](#56-this-grammar-does-not-write)) |
 | `supportsInlineRowEdit` | **`false`** | `UPDATE` is not in the grammar, so the editor's statement could only ever produce an error (#269) |
-| `supportsVectorQuery` | **`true`** | A query can search by a `dense_vector`. `{{text}}` in that vector value becomes a vector when the query runs; a number list is sent as typed. `{{name}}` anywhere else stays a filter. OpenSearch declares the same flag |
+| `supportsVectorQuery` | **`true`** | A query can search by a `dense_vector`. `{{text}}` in that vector value becomes a vector when the query runs. `{{search:car}}` is the labeled form: the filter shows search and car is embedded. A number list is sent as typed. `{{name}}` anywhere else stays a filter. OpenSearch declares the same flag |
 | `supportsTestDataGeneration` | **`false`** | An index takes a bulk document write, but the Generate Test Data dialog writes a SQL `INSERT`, which is not in the grammar either, so the row menus do not offer it (#1468) |
 | `supportsResultPagination` | **`false`** | Elasticsearch SQL has no `OFFSET` clause. `prepareQuery` throws rather than answer page two with page one, and this flag hides the control that would provoke it. OpenSearch, the same implementation, declares `true` (#816) |
 | `supportsTransactions` | **`false`** | `BEGIN` is not in the grammar and the surface is stateless HTTP; the trio and SANDBOX are withheld instead of answering HTTP 400 (#464) |

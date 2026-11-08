@@ -63,7 +63,7 @@ describe("buildEditorMessages", () => {
     });
     expect(search[0]?.content).toContain("The editor runs that request as written.");
     expect(search[0]?.content).toContain("company_profiles/_search");
-    expect(search[0]?.content).toContain("{{the words}}");
+    expect(search[0]?.content).toContain("{{search:car}}");
     expect(search[0]?.content).toContain("Do not write a list of numbers");
     expect(search[0]?.content).not.toContain("NOT the JSON query DSL");
   });

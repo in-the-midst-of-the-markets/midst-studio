@@ -8,7 +8,7 @@
  */
 
 import { AGENT_STATEMENT_LANGUAGE, type AgentStatementLanguageId } from "@/lib/agent/agent-manifest";
-import { assistNativeRead } from "@/lib/ai/assist-dialect";
+import { assistAllowsSql, assistNativeRead } from "@/lib/ai/assist-dialect";
 import { isReadOnlySql } from "@/lib/ai/assist-readonly";
 import { applyQueryFilters } from "@/lib/charts/query-filters";
 import { checkCypherRead } from "@/lib/db/graph/cypher/read-policy";
@@ -31,6 +31,7 @@ export function isAssistRead(sql: string, databaseType: string): boolean {
   }
   const native = assistNativeRead(databaseType, sql);
   if (native !== null) return native;
+  if (!assistAllowsSql(databaseType)) return false;
   return isReadOnlySql(sql);
 }
 
