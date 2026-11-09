@@ -50,6 +50,7 @@ import {
 import { ASSIST_RESULT_CAP, explanationWithResults, readAssistResults } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
 import { suggestAssistChart, titleAfterEdit, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { openAssistChart } from "@/lib/ai/assist-graph-chart";
 import {
   assistSavedAsk,
   assistSavedChart,
@@ -437,11 +438,22 @@ function plannedCards(
 }
 
 /** Cards for the saved queries attached to this question. A query that cannot run says why. */
-function savedCards(picks: readonly AssistSavedPick[], connections: readonly DatabaseConnection[]): AssistCard[] {
+function savedCards(
+  picks: readonly AssistSavedPick[],
+  connections: readonly DatabaseConnection[],
+  question: string,
+): AssistCard[] {
+  const asked = assistSavedChart(question, picks);
+  const color = requestedChartColor(question);
   return picks.map((pick) => {
+    const charted = asked !== null && asked.title === pick.name;
+    const sql = charted ? asked.sql : pick.sql;
+    const chart: AssistChart | null = charted
+      ? { type: asked.chart.type, x: asked.chart.x, y: [...asked.chart.y], caption: "", color }
+      : null;
     const target =
       pick.connectionId === null ? null : (connections.find((item) => item.id === pick.connectionId) ?? null);
-    const runnable = target === null ? null : assistRunnableStatement(pick.sql, target.type);
+    const runnable = target === null ? null : assistRunnableStatement(sql, target.type);
     const error =
       target === null
         ? "This saved query has no connected database."
@@ -451,14 +463,14 @@ function savedCards(picks: readonly AssistSavedPick[], connections: readonly Dat
     return {
       id: nextId(),
       title: pick.name,
-      titledSql: pick.sql,
-      modelSql: pick.sql,
+      titledSql: sql,
+      modelSql: sql,
       locked: true,
-      sql: pick.sql,
+      sql,
       connectionId: target?.id ?? null,
       connectionName: target?.name ?? "",
-      chart: null,
-      color: null,
+      chart,
+      color: chart?.color ?? null,
       result: null,
       error,
       view: null,
@@ -466,6 +478,11 @@ function savedCards(picks: readonly AssistSavedPick[], connections: readonly Dat
       running: error === null,
     };
   });
+}
+
+/** The chart to draw for rows that just arrived. A choice already on the card stays. */
+function viewForRows(card: AssistCard, result: QueryResult): AssistChartChoice | null {
+  return openAssistChart(card.chart, result, null).choice ?? suggestAssistChart(result);
 }
 
 async function groundResults(input: {
@@ -837,7 +854,9 @@ export function AiAssist() {
               card.id,
               {
                 running: false,
-                ...(outcome.ok ? { result: outcome.result, error: null } : { error: outcome.error }),
+                ...(outcome.ok
+                  ? { result: outcome.result, error: null, view: viewForRows(card, outcome.result) }
+                  : { error: outcome.error }),
               },
               true,
             );
@@ -867,7 +886,7 @@ export function AiAssist() {
         );
       };
       if (starting.length > 0) {
-        const seeded = savedCards(starting, connections);
+        const seeded = savedCards(starting, connections, question);
         const researchId = nextId();
         const ids = new Set(seeded.map((card) => card.id));
         commit(
@@ -875,17 +894,6 @@ export function AiAssist() {
           true,
         );
         await executeCards(seeded);
-        commit(
-          turnsRef.current.map((turn) => ({
-            ...turn,
-            cards: turn.cards.map((card) => {
-              if (!ids.has(card.id) || card.result === null || card.view !== null) return card;
-              const view = suggestAssistChart(card.result);
-              return view === null ? card : { ...card, view };
-            }),
-          })),
-          true,
-        );
         await writeAnalysis(researchId, ids, "The saved queries ran.");
         return;
       }
