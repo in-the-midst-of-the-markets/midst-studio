@@ -46,6 +46,9 @@ export type DatabaseType =
   // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
   // Rows are not copied into another database. The host must end in odoo.com.
   | "odoo"
+  // Shopify. The Admin GraphQL API, read-only. One SELECT is one query for a shop.
+  // Rows are not copied into another database. The host must be a myshopify.com host.
+  | "shopify"
   | "bigquery"
   | "snowflake"
   | "mysql"

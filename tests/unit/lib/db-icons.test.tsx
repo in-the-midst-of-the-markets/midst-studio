@@ -35,6 +35,7 @@ import {
   HubSpotIcon,
   StripeIcon,
   SupabaseIcon,
+  ShopifyIcon,
 } from "@/components/icons/db-icons";
 
 describe("db-icons", () => {
@@ -74,6 +75,7 @@ describe("db-icons", () => {
     { name: "HubSpotIcon", Component: HubSpotIcon },
     { name: "StripeIcon", Component: StripeIcon },
     { name: "SupabaseIcon", Component: SupabaseIcon },
+    { name: "ShopifyIcon", Component: ShopifyIcon },
   ];
 
   for (const { name, Component, brandAsset } of icons) {

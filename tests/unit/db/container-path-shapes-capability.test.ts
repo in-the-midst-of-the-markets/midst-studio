@@ -40,6 +40,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   googleanalytics: "exact",
   quickbooks: "exact",
   odoo: "exact",
+  shopify: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

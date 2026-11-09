@@ -37,6 +37,7 @@ describe("assistStatementRule", () => {
     expect(assistStatementRule("googleanalytics")).toContain("NdaysAgo");
     expect(assistStatementRule("quickbooks")).toContain("one entity");
     expect(assistStatementRule("odoo")).toContain("one model");
+    expect(assistStatementRule("shopify")).toContain("one Shopify resource");
     expect(assistStatementRule("supabase")).toContain("Postgres");
   });
 });
@@ -133,6 +134,7 @@ describe("assistNativeRead", () => {
     expect(assistNativeRead("googleanalytics", "SELECT 1")).toBeNull();
     expect(assistNativeRead("quickbooks", "SELECT 1")).toBeNull();
     expect(assistNativeRead("odoo", "SELECT 1")).toBeNull();
+    expect(assistNativeRead("shopify", "SELECT 1")).toBeNull();
     expect(assistNativeRead("supabase", "SELECT 1")).toBeNull();
   });
 });

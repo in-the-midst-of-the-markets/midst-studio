@@ -289,6 +289,23 @@ export const OdooIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A shopping bag, for a Shopify shop. Not the vendor mark. */
+export const ShopifyIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M6 8h12l-1 12H7L6 8z" />
+    <path d="M9 8V7a3 3 0 0 1 6 0v1" />
+  </svg>
+);
+
 /** A ledger page, for a QuickBooks Online company. Not the vendor mark. */
 export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

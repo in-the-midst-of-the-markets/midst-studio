@@ -35,6 +35,7 @@ import { CLARITY_SQL_GRAMMAR } from "@/lib/db/providers/sql/clarity/sql-grammar"
 import { GOOGLEANALYTICS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googleanalytics/sql-grammar";
 import { QUICKBOOKS_SQL_GRAMMAR } from "@/lib/db/providers/sql/quickbooks/sql-grammar";
 import { ODOO_SQL_GRAMMAR } from "@/lib/db/providers/sql/odoo/sql-grammar";
+import { SHOPIFY_SQL_GRAMMAR } from "@/lib/db/providers/sql/shopify/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
 import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
@@ -98,6 +99,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   googleanalytics: GOOGLEANALYTICS_SQL_GRAMMAR,
   quickbooks: QUICKBOOKS_SQL_GRAMMAR,
   odoo: ODOO_SQL_GRAMMAR,
+  shopify: SHOPIFY_SQL_GRAMMAR,
   supabase: SUPABASE_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,

@@ -519,6 +519,23 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to quickbooks.api.intuit.com or sandbox-quickbooks.api.intuit.com.",
     },
   },
+  shopify: {
+    label: "Shopify",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.shopify,
+    fieldLabels: { password: "Access token", host: "Shop host" },
+    fieldPlaceholders: {
+      password: "shpat_…",
+      host: "your-store.myshopify.com",
+    },
+    fieldHints: {
+      password: "An Admin API access token from the Shopify app.",
+      host: "The token is sent only to a host under myshopify.com.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1615,6 +1632,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "googleanalytics",
   "quickbooks",
   "odoo",
+  "shopify",
 ]);
 
 /**
@@ -1629,6 +1647,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "googleanalytics",
   "quickbooks",
   "odoo",
+  "shopify",
 ]);
 
 export interface ConnectionPickerCategory {
