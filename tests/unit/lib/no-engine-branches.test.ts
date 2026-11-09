@@ -154,8 +154,20 @@ export const REGISTRIES: readonly Listed[] = [
   {
     path: "src/lib/db/factory.ts",
     declaration: "createDatabaseProvider",
-    count: 53,
+    count: 54,
     reason: "the composition root, which maps each type id to its provider class",
+  },
+  {
+    path: "src/lib/ai/assist-saved.ts",
+    declaration: "askedMetric",
+    count: 3,
+    reason: "Weaviate names its score column distance or certainty, and a chart request reads that name",
+  },
+  {
+    path: "src/lib/ai/assist-saved.ts",
+    declaration: "assistSavedChart",
+    count: 1,
+    reason: "Weaviate names its score column distance or certainty, and a chart request reads that name",
   },
   {
     path: "src/lib/dbt/profile.ts",

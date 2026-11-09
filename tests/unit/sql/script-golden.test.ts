@@ -82,6 +82,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   quickbooks: "every-code-semicolon",
   odoo: "every-code-semicolon",
   shopify: "every-code-semicolon",
+  notion: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

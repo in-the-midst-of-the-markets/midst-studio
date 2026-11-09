@@ -135,6 +135,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // Two past the registry once Odoo joined it.
   "fifty-three": 53,
   "fifty-four": 54,
+  // Two past the registry once Notion joined it.
+  "fifty-five": 55,
 };
 
 /**

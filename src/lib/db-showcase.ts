@@ -157,6 +157,9 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   quickbooks: 50,
   odoo: 51,
   shopify: 52,
+  // Last (rank 53). A workspace of documents is the least database-shaped name on this page,
+  // so nothing above it moves for it.
+  notion: 53,
 };
 
 /**

@@ -37,6 +37,7 @@ import { GOOGLEANALYTICS_EXECUTION_UI } from "@/lib/db/providers/sql/googleanaly
 import { QUICKBOOKS_EXECUTION_UI } from "@/lib/db/providers/sql/quickbooks/execution-ui";
 import { ODOO_EXECUTION_UI } from "@/lib/db/providers/sql/odoo/execution-ui";
 import { SHOPIFY_EXECUTION_UI } from "@/lib/db/providers/sql/shopify/execution-ui";
+import { NOTION_EXECUTION_UI } from "@/lib/db/providers/sql/notion/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -100,6 +101,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   quickbooks: QUICKBOOKS_EXECUTION_UI,
   odoo: ODOO_EXECUTION_UI,
   shopify: SHOPIFY_EXECUTION_UI,
+  notion: NOTION_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

@@ -16,6 +16,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | QuickBooks Online | `quickbooks` | SQL (accounting) | none (HTTP: the QuickBooks Online query API) | SQL (a read-only subset translated to the API) | [quickbooks.md](./quickbooks.md) |
 | Odoo | `odoo` | SQL (business apps) | none (HTTP: the Odoo JSON-2 API) | SQL (a read-only subset translated to the API) | [odoo.md](./odoo.md) |
 | Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
+| Notion | `notion` | SQL (the data-source query API, read-only) | none (HTTP: the Notion API) | a SELECT subset, sent as a data-source query | [notion.md](./notion.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

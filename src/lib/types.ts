@@ -49,6 +49,10 @@ export type DatabaseType =
   // Shopify. The Admin GraphQL API, read-only. One SELECT is one query for a shop.
   // ShopifyQL through the Admin API. The host must be a myshopify.com host.
   | "shopify"
+  // Notion. Databases the integration was invited to, read through the data-source
+  // query API. The editor runs a read-only SQL subset. The token is sent only to
+  // api.notion.com.
+  | "notion"
   | "bigquery"
   | "snowflake"
   | "mysql"

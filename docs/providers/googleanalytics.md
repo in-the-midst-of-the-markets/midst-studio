@@ -47,7 +47,7 @@ Google Analytics objects are not edited as source from the object tree. No kind 
 
 ## Migration DDL
 
-[`GOOGLE_ANALYTICS_MIGRATION_DDL`](../../src/lib/db/providers/sql/googleanalytics/migration-ddl.ts) declines the whole diff. `refusal` is the one line the migration prints after its header, and `transactionWrapper` is `null`.
+[`GOOGLEANALYTICS_MIGRATION_DDL`](../../src/lib/db/providers/sql/googleanalytics/migration-ddl.ts) declines the whole diff. `refusal` is the one line the migration prints after its header, and `transactionWrapper` is `null`.
 
 The refusal reason it prints, verbatim:
 

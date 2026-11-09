@@ -536,6 +536,23 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to a host under myshopify.com.",
     },
   },
+  notion: {
+    label: "Notion",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.notion,
+    fieldLabels: { password: "Integration token", host: "API host" },
+    fieldPlaceholders: {
+      password: "ntn_…",
+      host: "api.notion.com",
+    },
+    fieldHints: {
+      password: "An internal integration token. Share each database with that integration.",
+      host: "The token is sent only to api.notion.com. Leave this empty to use that host.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1633,6 +1650,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "quickbooks",
   "odoo",
   "shopify",
+  "notion",
 ]);
 
 /**
@@ -1648,6 +1666,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "quickbooks",
   "odoo",
   "shopify",
+  "notion",
 ]);
 
 export interface ConnectionPickerCategory {
