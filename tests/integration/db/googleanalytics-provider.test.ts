@@ -131,6 +131,21 @@ describe("GoogleAnalyticsProvider", () => {
     expect(() => readGaTokenGrant(500, "not-json", 0)).toThrow(/HTTP 500/);
     expect(() => readGaTokenGrant(200, JSON.stringify({ access_token: "" }), 0)).toThrow(/HTTP 200/);
     expect(() => readGaTokenGrant(403, JSON.stringify({ error: { code: 1 } }), 0)).toThrow(/HTTP 403/);
+    const assertion = "eyJhbGciOiJSUzI1NiJ9.payload.signature-value";
+    const pastTheCut = `${"y".repeat(280)}${assertion}`;
+    expect(() => readGaTokenGrant(400, JSON.stringify({ error_description: pastTheCut }), 0, [assertion])).toThrow(
+      /token request failed/,
+    );
+    try {
+      readGaTokenGrant(400, JSON.stringify({ error_description: pastTheCut }), 0, [assertion]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      expect(message).not.toContain("eyJhbGci");
+      expect(message).toContain("••••");
+    }
+    expect(() => readGaTokenGrant(400, JSON.stringify({ error_description: "x".repeat(1000) }), 0)).toThrow(
+      /^Google token request failed: x{300}$/,
+    );
     expect(readGaTokenGrant(200, JSON.stringify({ access_token: TOKEN }), 1_000)).toEqual({
       token: TOKEN,
       expiresAt: 1_000 + 3_600_000,
@@ -309,6 +324,36 @@ describe("GoogleAnalyticsProvider", () => {
     const refused = new GoogleAnalyticsProvider({ ...connection, password: broken }, {}, failing.createTransport);
     await expect(refused.connect()).rejects.toThrow(/private_key could not be read/);
     expect(failing.closed).toBe(1);
+    const password = serviceAccountJson();
+    const key = (JSON.parse(password) as { private_key: string }).private_key;
+    const issued = "ya29.issued-token-value";
+    const tokenError = scripted([{ status: 400, body: { error_description: `bad ${key}` } }]);
+    const leaked = new GoogleAnalyticsProvider({ ...connection, password }, {}, tokenError.createTransport);
+    let tokenMessage = "";
+    try {
+      await leaked.connect();
+    } catch (error) {
+      tokenMessage = error instanceof Error ? error.message : "";
+    }
+    expect(tokenMessage).toContain("token request failed");
+    expect(tokenMessage).not.toContain("PRIVATE KEY");
+    expect(tokenMessage).not.toContain(key.slice(0, 40));
+    const reportError = scripted([
+      { body: { access_token: issued, expires_in: 3600 } },
+      { body: metadata },
+      { status: 400, body: { error: { message: `saw ${issued} and ${key}` } } },
+    ]);
+    const openedAgain = new GoogleAnalyticsProvider({ ...connection, password }, {}, reportError.createTransport);
+    await openedAgain.connect();
+    let reportMessage = "";
+    try {
+      await openedAgain.query("SELECT country, activeUsers FROM report");
+    } catch (error) {
+      reportMessage = error instanceof Error ? error.message : "";
+    }
+    expect(reportMessage).toContain("saw");
+    expect(reportMessage).not.toContain(issued);
+    expect(reportMessage).not.toContain("PRIVATE KEY");
   });
 
   test("refuses a bad answer without repeating the credential", async () => {

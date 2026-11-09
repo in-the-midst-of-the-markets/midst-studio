@@ -41,11 +41,19 @@ export function pinnedApiHost(
   return host;
 }
 
-/** A copy of `message` that does not carry the access token, and that stops after 500 characters. */
-export function redactSecret(message: string, secret: string): string {
-  const capped = message.length > 500 ? `${message.slice(0, 500)}…` : message;
-  if (secret.length < 8 || !capped.includes(secret)) return capped;
-  return capped.split(secret).join("••••");
+/**
+ * A copy of `message` that does not carry any of `secrets`, then stops after 500 characters.
+ * The cut happens after the replacement. A secret that crosses the cut, or one longer than the
+ * cut, would otherwise survive as its own prefix. A secret shorter than 8 characters is left
+ * alone, because that would erase ordinary words. A longer secret is removed before a shorter
+ * one it contains.
+ */
+export function redactSecret(message: string, ...secrets: readonly string[]): string {
+  const hidden = secrets
+    .filter((secret) => secret.length >= 8)
+    .sort((left, right) => right.length - left.length)
+    .reduce((text, secret) => (text.includes(secret) ? text.split(secret).join("••••") : text), message);
+  return hidden.length > 500 ? `${hidden.slice(0, 500)}…` : hidden;
 }
 
 /**

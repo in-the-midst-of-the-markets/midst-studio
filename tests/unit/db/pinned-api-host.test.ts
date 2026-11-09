@@ -23,10 +23,18 @@ describe("redactSecret", () => {
   test("hides a long token and leaves a short one, and stops after 500 characters", () => {
     expect(redactSecret("bad pat", "pat")).toBe("bad pat");
     expect(redactSecret("bad pat-secret", "pat-secret")).toBe("bad ••••");
+    expect(redactSecret("pat-secret and pat-secret", "pat-secret")).toBe("•••• and ••••");
     expect(redactSecret("no token here", "pat-secret")).toBe("no token here");
     const long = `${"x".repeat(600)}pat-secret`;
     expect(redactSecret(long, "pat-secret").endsWith("…")).toBe(true);
     expect(redactSecret(long, "pat-secret")).not.toContain("pat-secret");
+    const across = `${"n".repeat(490)}pat-secret tail`;
+    const cut = redactSecret(across, "pat-secret");
+    expect(cut).not.toContain("pat");
+    expect(cut).toContain("••••");
+    const key = `BEGIN PRIVATE KEY ${"A".repeat(600)} END`;
+    expect(redactSecret(`leak ${key} tail`, key)).toBe("leak •••• tail");
+    expect(redactSecret("pat-secret-tail", "pat-secret", "pat-secret-tail")).toBe("••••");
   });
 });
 
