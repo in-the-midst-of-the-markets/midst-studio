@@ -37,7 +37,7 @@ describe("assistStatementRule", () => {
     expect(assistStatementRule("googleanalytics")).toContain("NdaysAgo");
     expect(assistStatementRule("quickbooks")).toContain("one entity");
     expect(assistStatementRule("odoo")).toContain("one model");
-    expect(assistStatementRule("shopify")).toContain("one Shopify resource");
+    expect(assistStatementRule("shopify")).toContain("ShopifyQL");
     expect(assistStatementRule("supabase")).toContain("Postgres");
   });
 });

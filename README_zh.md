@@ -303,7 +303,7 @@ Studio 最主要的 AI 界面是编辑器旁边的 **Agent 侧栏**，下面列�
 | **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **QuickBooks Online** | none: the QuickBooks Online query API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An access token and a company id |
 | **Odoo** | none: the Odoo JSON-2 API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An API key and a host under odoo.com |
-| **Shopify** | none: the Shopify Admin API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An Admin API access token and a host under myshopify.com |
+| **Shopify** | none: the Shopify Admin API | ShopifyQL (`FROM`, `SHOW`, `WHERE`, `GROUP BY`, `TIMESERIES`, `SINCE`, `UNTIL`, `DURING`, `ORDER BY` and `LIMIT`). Read-only. An Admin API access token and a host under myshopify.com |
 | **PostgreSQL** | `pg` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`pg_cancel_backend`） |
 | **MySQL** | `mysql2` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`KILL QUERY`） |
 | **Oracle** | `oracledb`（Thin 模式） | 完整 SQL IDE、`FETCH FIRST N ROWS` 分页、`V$` 监控视图、`ANALYZE TABLE`、`ALTER INDEX REBUILD`、事务 |

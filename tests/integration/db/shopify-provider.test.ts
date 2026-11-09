@@ -4,7 +4,7 @@ import type { NodeRequest, NodeTransport, NodeTransportOptions } from "@/lib/db/
 import { TransportError } from "@/lib/db/http/node-transport";
 import { API_ANSWER_LIMIT } from "@/lib/db/http/pinned-api-host";
 import { ShopifyProvider, shopifyAccessToken, shopifyApiHost } from "@/lib/db/providers/sql/shopify";
-import { SHOPIFY_TABLES } from "@/lib/db/providers/sql/shopify/translate";
+import { SHOPIFYQL_SCHEMAS } from "@/lib/db/providers/sql/shopify/translate";
 import type { DatabaseConnection } from "@/lib/types";
 
 const TOKEN = "shpat_shopifytoken";
@@ -62,13 +62,17 @@ function scripted(pages: ScriptedPage[]): {
 }
 
 const shop = { data: { shop: { name: "Your Store", myshopifyDomain: "your-store.myshopify.com" } } };
+const QUERY = "FROM sales SHOW total_sales";
 
-function page(nodes: unknown[], hasNextPage = false, endCursor: string | null = hasNextPage ? "cursor-1" : null) {
+function table(
+  rows: unknown[],
+  columns: unknown[] = [{ name: "total_sales", dataType: "MONEY", displayName: "Total sales" }],
+) {
   return {
     data: {
-      products: {
-        edges: nodes.map((node) => ({ node })),
-        pageInfo: { hasNextPage, endCursor },
+      shopifyqlQuery: {
+        tableData: { columns, rows },
+        parseErrors: [],
       },
     },
   };
@@ -134,163 +138,106 @@ describe("ShopifyProvider", () => {
     await provider.disconnect();
   });
 
-  test("projects columns, flattens nested fields, and warns when a page is full", async () => {
+  test("sends the ShopifyQL text and reads the table by column name", async () => {
     const transport = scripted([
       { body: shop },
       {
-        body: page(
+        body: table(
           [
-            {
-              id: "gid://shopify/Product/1",
-              title: "Hat",
-              vendor: "Acme",
-              titleNull: null,
-            },
-            { Title: "Cap" },
+            { month: "2026-01-01", total_sales: "10000.00", orders: "25", extra: { nested: true }, tags: ["wool"] },
+            { Month: "2026-02-01", total_sales: null, orders: 7 },
+            "not-a-row",
           ],
-          true,
-          "cursor-1",
+          [
+            { name: "month", dataType: "MONTH_TIMESTAMP", displayName: "Month" },
+            { name: "total_sales", dataType: "MONEY", displayName: "Total sales" },
+            { name: "orders", dataType: "INTEGER", displayName: "Orders" },
+            { name: "extra", dataType: "STRING", displayName: "Extra" },
+            { name: "tags", dataType: "STRING", displayName: "Tags" },
+            { name: "", dataType: "STRING" },
+            { name: "__proto__", dataType: "STRING" },
+            { dataType: "MONEY" },
+            "nope",
+            { name: "total_sales", dataType: "MONEY" },
+          ],
         ),
       },
       {
-        text: JSON.stringify({
+        body: {
           data: {
-            products: {
-              edges: [{ node: { title: "Hat", tags: ["wool"], extra: { nested: true }, __proto__: "nope" } }],
-              pageInfo: { hasNextPage: false, endCursor: null },
+            shopifyqlQuery: {
+              tableData: { columns: [], rows: [JSON.parse('{"total_sales":"1","__proto__":{"admin":true}}')] },
             },
           },
-        }),
+        },
       },
     ]);
     const provider = new ShopifyProvider(connection, {}, transport.createTransport);
     await provider.connect();
-    const result = await provider.query("SELECT title, vendor FROM products LIMIT 2");
-    expect(result.fields).toEqual(["title", "vendor"]);
-    expect(result.rows[0]).toEqual({ title: "Hat", vendor: "Acme" });
-    expect(result.rows[1]).toEqual({ title: "Cap", vendor: null });
-    expect(result.warnings?.map((warning) => warning.message).join(" ")).toContain("this page only");
-    expect(JSON.stringify(result.rows)).not.toContain("nope");
-    const star = await provider.query("SELECT * FROM products");
-    expect(star.rows[0]?.tags).toBe('["wool"]');
-    expect(star.rows[0]?.extra).toBe('{"nested":true}');
-  });
-
-  test("walks a cursor for OFFSET and stops on an empty page", async () => {
-    const transport = scripted([
-      { body: shop },
-      { body: page([{ id: "1", title: "Skip" }], true, "cursor-1") },
-      { body: page([{ id: "2", title: "Keep" }], false, "cursor-2") },
-      { body: page([{ id: "3", title: "Skip" }], true, "cursor-3") },
-      { body: { data: { products: { edges: [], pageInfo: { hasNextPage: true, endCursor: "cursor-4" } } } } },
-    ]);
-    const provider = new ShopifyProvider(connection, {}, transport.createTransport);
-    await provider.connect();
-    const result = await provider.query("SELECT title FROM products OFFSET 1 LIMIT 1");
-    expect(result.rows).toEqual([{ title: "Keep" }]);
+    const result = await provider.query(`-- note\n${QUERY} WHERE sales_channel = 'Online Store';`);
+    expect(transport.requests[1]?.body).toContain("shopifyqlQuery");
+    expect(transport.requests[1]?.body).toContain("FROM sales SHOW total_sales WHERE sales_channel = 'Online Store'");
+    expect(transport.requests[1]?.body).not.toContain("-- note");
+    expect(result.fields).toEqual(["month", "total_sales", "orders", "extra", "tags", "total_sales (2)"]);
+    expect(result.rows[0]).toEqual({
+      month: "2026-01-01",
+      total_sales: "10000.00",
+      orders: "25",
+      extra: '{"nested":true}',
+      tags: '["wool"]',
+      "total_sales (2)": null,
+    });
+    expect(result.rows[1]).toEqual({
+      month: "2026-02-01",
+      total_sales: null,
+      orders: 7,
+      extra: null,
+      tags: null,
+      "total_sales (2)": null,
+    });
+    expect(result.rows[2]).toEqual({
+      month: null,
+      total_sales: null,
+      orders: null,
+      extra: null,
+      tags: null,
+      "total_sales (2)": null,
+    });
+    expect(JSON.stringify(result.rows)).not.toContain("admin");
     expect(result.warnings).toEqual([]);
-    const emptyPage = await provider.query("SELECT title FROM products OFFSET 1 LIMIT 1");
-    expect(emptyPage.rows).toEqual([]);
-    expect(emptyPage.warnings).toEqual([]);
+    const bare = await provider.query(QUERY);
+    expect(bare.fields).toEqual(["total_sales"]);
+    expect(bare.rows).toEqual([{ total_sales: "1" }]);
   });
 
-  test("warns when a limit is capped and when the scan stops early", async () => {
-    const full = Array.from({ length: 250 }, (_, index) => ({ id: String(index), title: "Row" }));
+  test("refuses parameters, SQL, and a query before connect", async () => {
     const transport = scripted([
       { body: shop },
-      { body: page(full, true, "c1") },
-      { body: page(full, true, "c2") },
-      { body: page(full, true, "c3") },
-      { body: page(full, true, "c4") },
-    ]);
-    const provider = new ShopifyProvider(connection, {}, transport.createTransport);
-    await provider.connect();
-    const capped = await provider.query("SELECT id FROM products LIMIT 1001");
-    expect(capped.rowCount).toBe(1000);
-    expect(capped.warnings?.map((warning) => warning.message).join(" ")).toContain("1000");
-  });
-
-  test("counts, and reads orders, variants and collections into flat columns", async () => {
-    const transport = scripted([
-      { body: shop },
-      { body: { data: { ordersCount: { count: 4 } } } },
       {
         body: {
           data: {
-            orders: {
-              edges: [
-                null,
-                { cursor: "only" },
-                {
-                  node: {
-                    id: "o1",
-                    totalPriceSet: { shopMoney: { amount: "12.00", currencyCode: "USD" } },
-                  },
-                },
-                { node: { id: "o2", totalPriceSet: {} } },
-                { node: { id: "o3", totalPriceSet: "nope" } },
-                { node: "not-a-row" },
-              ],
-              pageInfo: { hasNextPage: false, endCursor: null },
+            shopifyqlQuery: {
+              tableData: null,
+              parseErrors: [`bad ${TOKEN}`, "", 1],
             },
           },
         },
       },
-      {
-        body: {
-          data: {
-            productVariants: {
-              edges: [{ node: { id: "v1", product: { id: "p1", title: "Hat" } } }, { node: { id: "v2", product: {} } }],
-              pageInfo: {},
-            },
-          },
-        },
-      },
-      {
-        body: {
-          data: {
-            collections: {
-              edges: [{ node: { id: "c1", productsCount: { count: 3 } } }, { node: { id: "c2", productsCount: {} } }],
-              pageInfo: { hasNextPage: false },
-            },
-          },
-        },
-      },
-      { body: page([]) },
+      { body: table([{ total_sales: "2" }]) },
     ]);
     const provider = new ShopifyProvider(connection, {}, transport.createTransport);
+    await expect(provider.query(QUERY)).rejects.toThrow(/Not connected/);
+    await expect(provider.query(QUERY, [1])).rejects.toThrow(/does not bind/);
     await provider.connect();
-    const counted = await provider.query("SELECT COUNT(*) AS orders FROM orders");
-    expect(counted.rows).toEqual([{ orders: 4 }]);
-    const orders = await provider.query("SELECT id, totalPrice, currencyCode FROM orders");
-    expect(orders.rows[0]).toEqual({ id: "o1", totalPrice: "12.00", currencyCode: "USD" });
-    expect(orders.rows[1]).toEqual({ id: "o2", totalPrice: null, currencyCode: null });
-    expect(orders.rows[3]).toEqual({ id: null, totalPrice: null, currencyCode: null });
-    const variants = await provider.query("SELECT productId, productTitle FROM variants");
-    expect(variants.rows[0]).toEqual({ productId: "p1", productTitle: "Hat" });
-    expect(variants.rows[1]).toEqual({ productId: null, productTitle: null });
-    const collections = await provider.query("SELECT productsCount FROM collections");
-    expect(collections.rows).toEqual([{ productsCount: 3 }, { productsCount: null }]);
-    const empty = await provider.query("SELECT * FROM products");
-    expect(empty.fields).toEqual(SHOPIFY_TABLES[0]?.columns.map((column) => column.name));
-    expect(empty.rows).toEqual([]);
-  });
-
-  test("refuses parameters, a write, a bad cursor, and a query before connect", async () => {
-    const transport = scripted([
-      { body: shop },
-      { body: page([{ id: "1" }], true, "bad cursor") },
-      { body: page([{ id: "1" }], true, null) },
-      { body: page([{ id: "2", title: "Ok" }]) },
-    ]);
-    const provider = new ShopifyProvider(connection, {}, transport.createTransport);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/Not connected/);
-    await expect(provider.query("SELECT id FROM products", [1])).rejects.toThrow(/does not bind/);
-    await provider.connect();
-    await expect(provider.query("DELETE FROM products")).rejects.toThrow(/read-only/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/cursor/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/cursor/);
-    await expect(provider.query("SELECT id FROM products", [])).resolves.toMatchObject({ rows: [{ id: "2" }] });
+    await expect(provider.query("DELETE FROM sales")).rejects.toThrow(/read-only/);
+    try {
+      await provider.query(QUERY);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      expect(message).not.toContain(TOKEN);
+      expect(message).toContain("Shopify refused the query");
+    }
+    await expect(provider.query(QUERY, [])).resolves.toMatchObject({ rows: [{ total_sales: "2" }] });
   });
 
   test("maps HTTP failures, GraphQL errors and transport failures without leaking the token", async () => {
@@ -309,32 +256,32 @@ describe("ShopifyProvider", () => {
       { throw: new DatabaseConfigError("kept", "shopify") },
       { throw: "offline" },
     ];
-    const transport = scripted([{ body: shop }, ...cases, { body: page([]) }]);
+    const transport = scripted([{ body: shop }, ...cases]);
     const provider = new ShopifyProvider(connection, {}, transport.createTransport);
     await provider.connect();
-    await expect(provider.query("SELECT id FROM products")).rejects.toBeInstanceOf(AuthenticationError);
-    await expect(provider.query("SELECT id FROM products")).rejects.toBeInstanceOf(PermissionDeniedError);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/limiting requests/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/redirect/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/refused the query/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/not JSON/);
+    await expect(provider.query(QUERY)).rejects.toBeInstanceOf(AuthenticationError);
+    await expect(provider.query(QUERY)).rejects.toBeInstanceOf(PermissionDeniedError);
+    await expect(provider.query(QUERY)).rejects.toThrow(/limiting requests/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/redirect/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/refused the query/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/not JSON/);
     try {
-      await provider.query("SELECT id FROM products");
+      await provider.query(QUERY);
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       expect(message).not.toContain(TOKEN);
       expect(message).toContain("Shopify refused the query");
     }
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/larger than 2 MB/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/redirect/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/larger than 2 MB/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/larger than 2 MB/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/redirect/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/larger than 2 MB/);
     try {
-      await provider.query("SELECT id FROM products");
+      await provider.query(QUERY);
     } catch (error) {
       expect(error instanceof Error ? error.message : "").not.toContain(TOKEN);
     }
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/kept/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/could not be reached/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/kept/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/could not be reached/);
   });
 
   test("closes the transport when connect is refused", async () => {
@@ -350,7 +297,7 @@ describe("ShopifyProvider", () => {
     await expect(new ShopifyProvider(connection, {}, broken.createTransport).connect()).rejects.toThrow(/did not name/);
   });
 
-  test("lists the shop, describes tables, and refuses a bad bulk limit", async () => {
+  test("lists the shop, describes schemas, and refuses a bad bulk limit", async () => {
     const transport = scripted([{ body: shop }]);
     const provider = new ShopifyProvider(connection, {}, transport.createTransport);
     await expect(provider.listContainers()).rejects.toThrow(/Not connected/);
@@ -359,14 +306,13 @@ describe("ShopifyProvider", () => {
     expect(await provider.listContainers()).toEqual([{ path: ["shop"], name: "shop", level: 0 }]);
     expect(await provider.listContainers(["shop"])).toEqual([]);
     expect(await provider.listContainers([])).toEqual([{ path: ["shop"], name: "shop", level: 0 }]);
-    expect(await provider.countObjects(["shop"])).toEqual({ table: { count: SHOPIFY_TABLES.length } });
+    expect(await provider.countObjects(["shop"])).toEqual({ table: { count: SHOPIFYQL_SCHEMAS.length } });
     await expect(provider.countObjects([])).rejects.toThrow(QueryError);
     const objects = await provider.listObjects(["shop"], "table");
-    expect(objects.map((object) => object.name)).toEqual(SHOPIFY_TABLES.map((table) => table.name));
+    expect(objects.map((object) => object.name)).toEqual(SHOPIFYQL_SCHEMAS.map((schema) => schema.name));
     await expect(provider.listObjects(["shop"], "view")).rejects.toThrow(/object kind/);
-    const described = await provider.describeObject(["shop", "products"], "table");
-    expect(described.columns[0]).toMatchObject({ name: "id", nullable: false });
-    expect(described.columns[1]?.nullable).toBe(true);
+    const described = await provider.describeObject(["shop", "sales"], "table");
+    expect(described.columns).toEqual([]);
     await expect(provider.describeObject(["shop", "missing"], "table")).rejects.toThrow(/no table/);
     const batch = await provider.describeObjects(["shop"], "table", 1);
     expect(batch.details).toHaveLength(1);
@@ -375,7 +321,10 @@ describe("ShopifyProvider", () => {
     await expect(provider.describeObjects(["shop"], "table", 1.5)).rejects.toThrow(/1\.5/);
     expect(await provider.getHealth()).toMatchObject({ databaseSize: "N/A" });
     await expect(provider.runMaintenance()).rejects.toThrow(/no maintenance/);
-    expect(await provider.getOverview()).toMatchObject({ version: "Shopify Admin API 2025-10", tableCount: 5 });
+    expect(await provider.getOverview()).toMatchObject({
+      version: "ShopifyQL 2025-10",
+      tableCount: SHOPIFYQL_SCHEMAS.length,
+    });
     expect(await provider.getPerformanceMetrics()).toEqual({});
     expect(await provider.getSlowQueries()).toEqual([]);
     expect(await provider.getActiveSessions()).toEqual([]);
@@ -384,19 +333,19 @@ describe("ShopifyProvider", () => {
     expect(await provider.getStorageStats()).toEqual([]);
   });
 
-  test("refuses a count and a page the answer did not shape", async () => {
+  test("refuses a ShopifyQL answer that is not a table", async () => {
     const transport = scripted([
       { body: shop },
       { body: { data: {} } },
-      { body: { data: { productsCount: { count: "4" } } } },
-      { body: { nope: true } },
-      { body: { data: { products: { edges: "nope" } } } },
+      { body: { data: { shopifyqlQuery: { tableData: null, parseErrors: null } } } },
+      { body: { data: { shopifyqlQuery: { tableData: { columns: {}, rows: [] }, parseErrors: [] } } } },
+      { body: { data: { shopifyqlQuery: { tableData: { columns: [], rows: "nope" }, parseErrors: [] } } } },
     ]);
     const provider = new ShopifyProvider(connection, {}, transport.createTransport);
     await provider.connect();
-    await expect(provider.query("SELECT COUNT(*) FROM products")).rejects.toThrow(/did not return a count/);
-    await expect(provider.query("SELECT COUNT(*) FROM products")).rejects.toThrow(/did not return a count/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/did not list rows/);
-    await expect(provider.query("SELECT id FROM products")).rejects.toThrow(/did not list rows/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/did not return a table/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/did not return a table/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/did not return a table/);
+    await expect(provider.query(QUERY)).rejects.toThrow(/did not return a table/);
   });
 });

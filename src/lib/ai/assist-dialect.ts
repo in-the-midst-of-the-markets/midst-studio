@@ -286,7 +286,7 @@ const DIALECTS: Record<string, Dialect> = {
     read: () => null,
   },
   shopify: {
-    rule: "sql is one read-only SELECT or COUNT(*) of one Shopify resource. Combine filters with AND. No JOIN.",
+    rule: "sql is one read-only ShopifyQL query. It starts with FROM and uses SHOW or VISUALIZE. No writes.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
     sql: true,

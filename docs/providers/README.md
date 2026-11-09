@@ -15,7 +15,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Google Analytics | `googleanalytics` | SQL (product analytics) | none (HTTP: the Google Analytics Data API) | SQL (a read-only subset translated to the API) | [googleanalytics.md](./googleanalytics.md) |
 | QuickBooks Online | `quickbooks` | SQL (accounting) | none (HTTP: the QuickBooks Online query API) | SQL (a read-only subset translated to the API) | [quickbooks.md](./quickbooks.md) |
 | Odoo | `odoo` | SQL (business apps) | none (HTTP: the Odoo JSON-2 API) | SQL (a read-only subset translated to the API) | [odoo.md](./odoo.md) |
-| Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | SQL (a read-only subset translated to the API) | [shopify.md](./shopify.md) |
+| Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

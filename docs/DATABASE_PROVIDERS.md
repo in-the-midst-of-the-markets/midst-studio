@@ -328,7 +328,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Google Analytics | `googleanalytics` | SQL (the GA4 Data API, read-only) | [providers/googleanalytics.md](./providers/googleanalytics.md) |
 | QuickBooks Online | `quickbooks` | SQL (the QuickBooks Online query API, read-only) | [providers/quickbooks.md](./providers/quickbooks.md) |
 | Odoo | `odoo` | SQL (the Odoo JSON-2 API, read-only) | [providers/odoo.md](./providers/odoo.md) |
-| Shopify | `shopify` | SQL (the Shopify Admin API, read-only) | [providers/shopify.md](./providers/shopify.md) |
+| Shopify | `shopify` | ShopifyQL (the Admin API shopifyqlQuery field, read-only) | [providers/shopify.md](./providers/shopify.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

@@ -1,10 +1,9 @@
 /**
  * Shopify provider.
  *
- * Shopify Admin is a GraphQL API, not a SQL server. The editor runs a small SQL
- * subset (`translate.ts`): SELECT and COUNT(*) against one resource. Each
- * statement is one GraphQL query. Nothing is copied into another database, and
- * a write is refused before a request.
+ * A statement is ShopifyQL (`FROM sales SHOW total_sales`). Studio sends that
+ * text through the Admin API `shopifyqlQuery` field and reads the table back.
+ * Nothing is copied into another database, and a write is refused before a request.
  *
  * The Admin API access token is sent only to a host under myshopify.com, over
  * TLS, on the shared HTTP transport. That path does not use global fetch, so a
@@ -48,7 +47,6 @@ import type {
   StorageStats,
   TableStats,
 } from "@/lib/db/types";
-import type { QueryWarning } from "@/lib/types";
 import { endpointUrl, httpOrigin } from "@/lib/db/http/endpoint";
 import {
   createNodeTransport,
@@ -58,24 +56,13 @@ import {
 } from "@/lib/db/http/node-transport";
 import { API_ANSWER_LIMIT, assignOwnField, pinnedApiHost, redactSecret } from "@/lib/db/http/pinned-api-host";
 import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
-import {
-  SHOPIFY_PAGE_SIZE,
-  SHOPIFY_SCAN_CAP,
-  SHOPIFY_TABLES,
-  shopifyGraphql,
-  shopifyTable,
-  translateShopifySql,
-  type ShopifyList,
-  type ShopifyStatement,
-  type ShopifyTable,
-} from "./translate";
+import { SHOPIFYQL_SCHEMAS, shopifySchema, translateShopifyql } from "./translate";
 
 const PROVIDER = "shopify" as const;
 const API_VERSION = "2025-10";
 const MAX_SOCKETS = 4;
 const CONTAINER_NAME = "shop";
 const SHOP_HOST = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
-const CURSOR = /^[A-Za-z0-9+/=_-]{1,512}$/;
 const HOST_REQUIRED = "A Shopify shop host is required.";
 const SHOP_HOST_REFUSAL = "The API host must be the shop's myshopify.com host. The access token is sent only there.";
 const TOKEN_REQUIRED = "A Shopify Admin API access token is required.";
@@ -84,13 +71,17 @@ const REDIRECT_REFUSED = "Shopify answered with a redirect, which Studio does no
 const BODY_TOO_LARGE = "Shopify's answer was larger than 2 MB and was not read.";
 const PARAMS_REFUSED = "Write the value in the statement. Shopify does not bind parameters.";
 const NOT_CONNECTED = "Not connected to Shopify.";
-const PAGE_WARNING = "Shopify returned this page only. Raise LIMIT or add OFFSET for the next page.";
-const CAP_WARNING =
-  "Shopify reads at most 1000 rows for one statement. This query asked for more, so the page stops at 1000.";
-const BAD_CURSOR = "Shopify returned a page cursor Studio will not follow.";
-const BAD_ROWS = "Shopify's answer did not list rows.";
-const BAD_COUNT = "Shopify did not return a count.";
+const BAD_TABLE = "Shopify did not return a table.";
 const BAD_SHOP = "Shopify did not name this shop.";
+const SHOPIFYQL_DOCUMENT = `query Shopifyql($query: String!) {
+  shopifyqlQuery(query: $query) {
+    tableData {
+      columns { name dataType displayName }
+      rows
+    }
+    parseErrors
+  }
+}`;
 
 const CONTAINER_LEVELS: ContainerLevels = Object.freeze([
   { id: "schema", label: "Shop", labelPlural: "Shops" },
@@ -132,38 +123,18 @@ export function shopifyAccessToken(config: DatabaseConnection): string {
   return token;
 }
 
-function flattenNode(value: unknown): Record<string, unknown> {
-  const row: Record<string, unknown> = {};
-  if (!isRecord(value)) return row;
-  for (const [key, field] of Object.entries(value)) {
-    if (key === "totalPriceSet" && isRecord(field)) {
-      const money = isRecord(field.shopMoney) ? field.shopMoney : null;
-      assignOwnField(row, "totalPrice", money?.amount ?? null);
-      assignOwnField(row, "currencyCode", money?.currencyCode ?? null);
-      continue;
-    }
-    if (key === "product" && isRecord(field)) {
-      assignOwnField(row, "productId", field.id ?? null);
-      assignOwnField(row, "productTitle", field.title ?? null);
-      continue;
-    }
-    if (key === "productsCount" && isRecord(field)) {
-      assignOwnField(row, "productsCount", field.count ?? null);
-      continue;
-    }
-    if (isRecord(field) || Array.isArray(field)) {
-      assignOwnField(row, key, JSON.stringify(field));
-      continue;
-    }
-    assignOwnField(row, key, field ?? null);
-  }
-  return row;
+const RESERVED_FIELDS = new Set(["__proto__", "prototype", "constructor"]);
+
+function present(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (isRecord(value) || Array.isArray(value)) return JSON.stringify(value);
+  return value;
 }
 
 function cell(row: Record<string, unknown>, column: string): unknown {
-  if (Object.hasOwn(row, column)) return row[column];
+  if (Object.hasOwn(row, column)) return present(row[column]);
   const found = Object.keys(row).find((key) => key.toLowerCase() === column.toLowerCase());
-  return found === undefined ? null : row[found];
+  return found === undefined ? null : present(row[found]);
 }
 
 function project(row: Record<string, unknown>, fields: readonly string[]): Record<string, unknown> {
@@ -177,7 +148,7 @@ function unionNames(rows: readonly Record<string, unknown>[]): string[] {
   const seen = new Set<string>();
   for (const row of rows) {
     for (const key of Object.keys(row)) {
-      if (seen.has(key)) continue;
+      if (seen.has(key) || RESERVED_FIELDS.has(key)) continue;
       seen.add(key);
       names.push(key);
     }
@@ -185,31 +156,40 @@ function unionNames(rows: readonly Record<string, unknown>[]): string[] {
   return names;
 }
 
-interface ShopifyPage {
-  readonly edges: readonly { readonly node: unknown }[];
-  readonly hasNextPage: boolean;
-  readonly endCursor: string | null;
-}
-
-function readPage(body: unknown, field: string): ShopifyPage {
-  if (!isRecord(body) || !isRecord(body.data)) throw new QueryError(BAD_ROWS, PROVIDER);
-  const connection = body.data[field];
-  if (!isRecord(connection) || !Array.isArray(connection.edges)) throw new QueryError(BAD_ROWS, PROVIDER);
-  const edges = connection.edges.flatMap((edge) => {
-    if (!isRecord(edge) || !("node" in edge)) return [];
-    return [{ node: edge.node }];
+function columnNames(columns: unknown): string[] {
+  if (!Array.isArray(columns)) throw new QueryError(BAD_TABLE, PROVIDER);
+  return columns.flatMap((column) => {
+    if (!isRecord(column) || typeof column.name !== "string" || column.name === "") return [];
+    if (RESERVED_FIELDS.has(column.name)) return [];
+    return [column.name];
   });
-  const pageInfo = isRecord(connection.pageInfo) ? connection.pageInfo : {};
-  const hasNextPage = pageInfo.hasNextPage === true;
-  const endCursor = typeof pageInfo.endCursor === "string" ? pageInfo.endCursor : null;
-  return { edges, hasNextPage, endCursor };
 }
 
-function readCount(body: unknown, field: string): number {
-  if (!isRecord(body) || !isRecord(body.data)) throw new QueryError(BAD_COUNT, PROVIDER);
-  const count = isRecord(body.data[field]) ? body.data[field].count : undefined;
-  if (typeof count !== "number" || !Number.isFinite(count)) throw new QueryError(BAD_COUNT, PROVIDER);
-  return count;
+function readShopifyql(
+  body: unknown,
+  token: string,
+  sql: string,
+): Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings"> {
+  if (!isRecord(body) || !isRecord(body.data) || !isRecord(body.data.shopifyqlQuery)) {
+    throw new QueryError(BAD_TABLE, PROVIDER, sql);
+  }
+  const result = body.data.shopifyqlQuery;
+  if (result.parseErrors !== undefined && !Array.isArray(result.parseErrors)) {
+    throw new QueryError(BAD_TABLE, PROVIDER, sql);
+  }
+  if (Array.isArray(result.parseErrors) && result.parseErrors.length > 0) {
+    const message = result.parseErrors
+      .map((error) => (typeof error === "string" && error !== "" ? error : "Shopify refused the query."))
+      .join(" ");
+    throw new QueryError(redactSecret(message, token), PROVIDER, sql);
+  }
+  const table = result.tableData;
+  if (!isRecord(table) || !Array.isArray(table.rows)) throw new QueryError(BAD_TABLE, PROVIDER, sql);
+  const declared = uniqueFieldNames(columnNames(table.columns));
+  const sources = table.rows.flatMap((row) => (isRecord(row) ? [row] : []));
+  const fields = declared.length > 0 ? declared : uniqueFieldNames(unionNames(sources));
+  const rows = table.rows.map((row) => project(isRecord(row) ? row : {}, fields));
+  return { rows, fields, rowCount: rows.length, warnings: [] };
 }
 
 function graphqlMessage(body: unknown): string | null {
@@ -247,8 +227,7 @@ export class ShopifyProvider extends SQLBaseProvider {
       supportsConstantPredicate: false,
       starterColumnLimit: {
         max: 8,
-        starNote:
-          "This table has more fields than a select list can usefully show. Type a field name and completion fills it in.",
+        starNote: "Name the metrics in SHOW. A ShopifyQL schema has more fields than a list can usefully show.",
       },
       supportsInlineRowEdit: false,
       supportsResultPagination: true,
@@ -301,8 +280,10 @@ export class ShopifyProvider extends SQLBaseProvider {
     if (params !== undefined && params.length > 0) throw new QueryError(PARAMS_REFUSED, PROVIDER, sql);
     this.requireReady();
     const started = Date.now();
-    const statement = translateShopifySql(sql);
-    const result = await this.run(statement);
+    const statement = translateShopifyql(sql);
+    const token = shopifyAccessToken(this.config);
+    const body = await this.graphql(SHOPIFYQL_DOCUMENT, { query: statement.text });
+    const result = readShopifyql(body, token, sql);
     return { ...result, executionTime: Date.now() - started };
   }
 
@@ -315,14 +296,14 @@ export class ShopifyProvider extends SQLBaseProvider {
   public async countObjects(container: readonly string[]): Promise<Record<string, KindCount>> {
     this.requireReady();
     assertContainerPathShape(this.getCapabilities(), container, CONTAINER_PATH);
-    return { table: { count: SHOPIFY_TABLES.length } };
+    return { table: { count: SHOPIFYQL_SCHEMAS.length } };
   }
 
   public async listObjects(container: readonly string[], kind: string): Promise<DatabaseObject[]> {
     this.requireKind(kind);
     this.requireReady();
     assertContainerPathShape(this.getCapabilities(), container, CONTAINER_PATH);
-    return SHOPIFY_TABLES.map((table) => ({ path: [...container, table.name], name: table.name, kind }));
+    return SHOPIFYQL_SCHEMAS.map((schema) => ({ path: [...container, schema.name], name: schema.name, kind }));
   }
 
   public async describeObject(path: readonly string[], kind: string): Promise<ObjectDetail> {
@@ -330,16 +311,11 @@ export class ShopifyProvider extends SQLBaseProvider {
     this.requireReady();
     assertObjectPathShape(this.getCapabilities(), spec, kind, path, OBJECT_PATH);
     const name = path[path.length - 1] ?? "";
-    const found = shopifyTable(name);
+    const found = shopifySchema(name);
     if (found === null) throw new QueryError("Shopify has no table with that name.", PROVIDER);
     return {
       path,
-      columns: found.columns.map((column) => ({
-        name: column.name,
-        type: column.type,
-        nullable: column.name !== "id",
-        isPrimary: false,
-      })),
+      columns: [],
       indexes: [],
       foreignKeys: [],
     };
@@ -369,11 +345,11 @@ export class ShopifyProvider extends SQLBaseProvider {
   public async getOverview(): Promise<DatabaseOverview> {
     this.requireReady();
     return {
-      version: `Shopify Admin API ${API_VERSION}`,
+      version: `ShopifyQL ${API_VERSION}`,
       uptime: "N/A",
       maxConnections: 0,
       databaseSize: "N/A",
-      tableCount: SHOPIFY_TABLES.length,
+      tableCount: SHOPIFYQL_SCHEMAS.length,
       indexCount: 0,
     };
   }
@@ -410,61 +386,6 @@ export class ShopifyProvider extends SQLBaseProvider {
     const spec = findKind(this.getCapabilities(), kind);
     if (spec === undefined) throw new QueryError(`Shopify declares no object kind "${kind}"`, PROVIDER);
     return spec;
-  }
-
-  private async run(
-    statement: ShopifyStatement,
-  ): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
-    if (statement.kind === "count") {
-      const document = shopifyGraphql(statement);
-      const body = await this.graphql(document.query, document.variables);
-      const total = readCount(body, statement.table.countField);
-      return { rows: [{ [statement.alias]: total }], fields: [statement.alias], rowCount: 1, warnings: [] };
-    }
-    return this.list(statement);
-  }
-
-  private async list(statement: ShopifyList): Promise<Pick<QueryResult, "rows" | "fields" | "rowCount" | "warnings">> {
-    const collected: Record<string, unknown>[] = [];
-    let after: string | null = null;
-    let skipped = 0;
-    let scanned = 0;
-    let more = false;
-    const target = statement.offset + statement.limit;
-    while (collected.length < statement.limit && scanned < SHOPIFY_SCAN_CAP && scanned < target) {
-      const first = Math.min(SHOPIFY_PAGE_SIZE, target - scanned, SHOPIFY_SCAN_CAP - scanned);
-      const document = shopifyGraphql(statement, { first, after });
-      const body = await this.graphql(document.query, document.variables);
-      const page = readPage(body, statement.table.listField);
-      for (const edge of page.edges) {
-        scanned += 1;
-        if (skipped < statement.offset) {
-          skipped += 1;
-          continue;
-        }
-        if (collected.length < statement.limit) collected.push(flattenNode(edge.node));
-      }
-      if (page.edges.length === 0 || !page.hasNextPage) {
-        more = false;
-        break;
-      }
-      more = true;
-      if (page.endCursor === null || !CURSOR.test(page.endCursor)) throw new QueryError(BAD_CURSOR, PROVIDER);
-      after = page.endCursor;
-    }
-    const warnings: QueryWarning[] = [];
-    if (statement.capped) warnings.push({ message: CAP_WARNING, severity: "WARNING" });
-    if (more && (collected.length === statement.limit || scanned >= SHOPIFY_SCAN_CAP)) {
-      warnings.push({ message: PAGE_WARNING, severity: "WARNING" });
-    }
-    const fields =
-      statement.columns === null
-        ? collected.length === 0
-          ? statement.table.columns.map((column) => column.name)
-          : uniqueFieldNames(unionNames(collected))
-        : uniqueFieldNames([...statement.columns]);
-    const rows = collected.map((row) => project(row, fields));
-    return { rows, fields, rowCount: rows.length, warnings };
   }
 
   private ensureTransport(): NodeTransport {
@@ -538,5 +459,3 @@ export class ShopifyProvider extends SQLBaseProvider {
     return body;
   }
 }
-
-export type { ShopifyTable };

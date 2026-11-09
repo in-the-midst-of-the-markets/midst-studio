@@ -2,9 +2,8 @@ import { DEFAULT_SQL_GRAMMAR, NO_EXTRA_WORDS } from "@/lib/db/sql-grammar/shared
 import type { SqlGrammar, SqlGrammarSpec } from "@/lib/db/sql-grammar/types";
 
 /**
- * The SQL the Shopify editor reads. Shopify itself is a GraphQL API, not this
- * subset; the provider translates it. Completion offers only the words that
- * subset runs.
+ * The ShopifyQL the editor reads. Completion offers the clauses a ShopifyQL
+ * query uses. The provider sends the text through `shopifyqlQuery`.
  */
 const SHOPIFY_GRAMMAR: SqlGrammar = {
   ...DEFAULT_SQL_GRAMMAR,
@@ -16,20 +15,45 @@ const SHOPIFY_GRAMMAR: SqlGrammar = {
   backslashAlwaysEscapes: false,
   formatterLanguage: "mysql",
   completionWords: {
-    keywords: ["SELECT", "FROM", "WHERE", "AND", "ORDER BY", "ASC", "DESC", "LIMIT", "OFFSET", "COUNT", "LIKE"],
+    keywords: [
+      "FROM",
+      "SHOW",
+      "WHERE",
+      "GROUP BY",
+      "TIMESERIES",
+      "WITH",
+      "HAVING",
+      "SINCE",
+      "UNTIL",
+      "DURING",
+      "COMPARE TO",
+      "ORDER BY",
+      "ASC",
+      "DESC",
+      "LIMIT",
+      "OFFSET",
+      "VISUALIZE",
+      "AND",
+      "OR",
+      "AS",
+      "TYPE",
+    ],
     functions: [],
     lists: "only",
     snippets: [
       {
-        label: "SELECT",
-        insertText:
-          "SELECT ${1:title}, ${2:vendor}\nFROM products\nWHERE status = ${3:'active'}\nORDER BY title\nLIMIT ${4:50}",
+        label: "FROM",
+        insertText: "FROM sales\n  SHOW ${1:total_sales}, ${2:orders}\n  TIMESERIES month\n  SINCE -12m UNTIL today",
       },
-      { label: "COUNT", insertText: "SELECT COUNT(*) AS count\nFROM products\nWHERE status = ${1:'active'}" },
+      {
+        label: "SHOW",
+        insertText:
+          "FROM sales\n  SHOW ${1:total_sales}\n  GROUP BY ${2:sales_channel}\n  DURING last_month\n  ORDER BY total_sales DESC\n  LIMIT ${3:10}",
+      },
     ],
   },
   completionClauses: {
-    column: ["SELECT", "WHERE", "ORDER BY"],
+    column: ["SHOW", "WHERE", "GROUP BY", "ORDER BY"],
     table: ["FROM"],
   },
 };
@@ -38,7 +62,7 @@ function formatShopifyIdentifier(segment: string): string {
   return `"${segment.replaceAll('"', '""')}"`;
 }
 
-/** How Shopify statement text is read: grammar, SQL text, redaction, update target and completion. */
+/** How ShopifyQL text is read: grammar, statement text, redaction and completion. */
 export const SHOPIFY_SQL_GRAMMAR: SqlGrammarSpec = {
   grammar: SHOPIFY_GRAMMAR,
   readsSqlText: true,

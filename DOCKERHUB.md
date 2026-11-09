@@ -161,7 +161,7 @@ The fifty-second row is the embedded LibreDB store: it ships inside the image.
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **QuickBooks Online** | none, HTTP | Read-only company query |
 | **Odoo** | none, HTTP | Read-only JSON-2 |
-| **Shopify** | none, HTTP | Read-only Admin API |
+| **Shopify** | none, HTTP | Read-only ShopifyQL |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
