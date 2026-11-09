@@ -17,7 +17,7 @@ import type { SqlWritingSpec } from "@/lib/db/sql-writing/types";
 /**
  * How a generated statement spells a literal, a name and a bind for Shopify.
  * The API does not bind parameters, so `placeholder` is null and `query()`
- * refuses a parameter list. The connection is read-only, so generated text is a SELECT.
+ * refuses a parameter list. The connection is read-only, so a generated statement is ShopifyQL.
  */
 export const SHOPIFY_SQL_WRITING: SqlWritingSpec = {
   escapeLiteral: literalStandard,

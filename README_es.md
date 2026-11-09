@@ -152,7 +152,7 @@ Todos los motores SQL comparten el mismo explorador de esquemas, los diagramas E
 | **Google Analytics** | none: the Google Analytics Data API | SELECT dimensions and metrics, WHERE startDate and endDate, ORDER BY, LIMIT. Read-only |
 | **QuickBooks Online** | none: the QuickBooks Online query API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An access token and a company id |
 | **Odoo** | none: the Odoo JSON-2 API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An API key and a host under odoo.com |
-| **Shopify** | none: the Shopify Admin API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An Admin API access token and a host under myshopify.com |
+| **Shopify** | none: the Shopify Admin API | ShopifyQL (`FROM`, `SHOW`, `WHERE`, `GROUP BY`, `TIMESERIES`, `SINCE`, `UNTIL`, `DURING`, `ORDER BY` and `LIMIT`). Read-only. An Admin API access token and a host under myshopify.com |
 | **PostgreSQL** | `pg` | IDE SQL completo, planes de ejecución EXPLAIN, transacciones, cancelación de consultas (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | IDE SQL completo, EXPLAIN, transacciones, cancelación de consultas (`KILL QUERY`) |
 | **Oracle** | `oracledb` (modo Thin) | IDE SQL completo, paginación con `FETCH FIRST N ROWS`, vistas de monitoreo `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, transacciones |

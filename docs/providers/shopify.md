@@ -1,10 +1,10 @@
 # Shopify Provider
 
-Shopify is its own connection type. Studio reaches a shop over the Admin GraphQL API (`https://{shop}.myshopify.com/admin/api/2025-10/graphql.json`). It is not a SQL server, and the rows are not copied into another database. The editor still runs SQL: one `SELECT` or `COUNT(*)` is one query. A write is refused before a request. The connection is read-only.
+Shopify is its own connection type. A statement is ShopifyQL, such as `FROM sales SHOW total_sales`. Studio sends that text through the Admin API `shopifyqlQuery` field at `https://{shop}.myshopify.com/admin/api/2025-10/graphql.json` and reads the table back. The rows are not copied into another database. A write is refused before a request. The connection is read-only.
 
 The connection is an Admin API access token in the password field and the shop host, such as `your-store.myshopify.com`. The token is sent only to a host under `myshopify.com`, over TLS, as the `X-Shopify-Access-Token` header, on the shared HTTP transport. That path does not use global fetch, so a proxy setting cannot carry the token. Any other host is refused, and the refusal does not repeat the host or the token. A redirect is not followed. The dialog has no TLS panel and no SSH tunnel.
 
-The object tree is one shop and the resources this connection lists: `products`, `variants`, `customers`, `orders` and `collections`. A page of the Admin API is at most 250 rows. Studio walks cursors until the statement's `LIMIT` and `OFFSET` are filled, and stops after 1000 rows. When `LIMIT` is omitted the page is 50.
+The object tree is one shop and the ShopifyQL schemas the 2025-10 reference lists, including `sales`, `sessions`, `customers` and `inventory`. A schema's columns come back with the query, so the tree does not invent metrics.
 
 ## SQL grammar
 
@@ -12,17 +12,9 @@ The object tree is one shop and the resources this connection lists: `products`,
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
-The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT` and `LIKE`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `OR` or the shared function list. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when the table has more fields than that.
+The editor offers the ShopifyQL clauses (`completionWords` with `lists: "only"`): `FROM`, `SHOW`, `WHERE`, `GROUP BY`, `TIMESERIES`, `WITH`, `HAVING`, `SINCE`, `UNTIL`, `DURING`, `COMPARE TO`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `VISUALIZE`, `AND`, `OR`, `AS` and `TYPE`. It does not offer `SELECT`, `INSERT`, `UPDATE`, `DELETE` or the shared function list. `FROM` and `SHOW` are snippets, and each one is a statement this connection can run. Generate Query asks for the metrics in `SHOW`. A schema has more fields than a list can usefully show.
 
-What the provider actually runs is the subset, and a statement outside it fails before a request:
-
-- `SELECT` columns or `*` from one listed table, such as `products` or `orders`.
-- `WHERE` equalities and comparisons (`=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`) and `LIKE`. `AND` only. A filter becomes a Shopify search string.
-- `ORDER BY` one field that the resource can sort.
-- `LIMIT` is capped at 1000. `OFFSET` walks cursors and is 0-based.
-- `COUNT(*)` is the resource's count. It does not take `ORDER BY`, `LIMIT` or `OFFSET`.
-
-`OR`, a join, a second statement, and a parameter list are refused.
+What the provider sends is one ShopifyQL statement. Comments are stripped and one trailing semicolon is dropped. A statement that does not start with `FROM`, a second statement, and a parameter list are refused before a request. Shopify parses the rest and returns `parseErrors` when the text is not ShopifyQL.
 
 ## SQL writing
 
@@ -56,6 +48,6 @@ The refusal reason it prints, verbatim:
 
 ## Query
 
-The query is `POST /admin/api/2025-10/graphql.json`. Nested money, a variant's product and a collection's product count are flattened into columns (`totalPrice`, `currencyCode`, `productId`, `productTitle`, `productsCount`). `SELECT` of named columns returns those columns. `SELECT *` returns the flattened keys. A full page warns that the next page needs a larger `LIMIT` or an `OFFSET`. A `LIMIT` above 1000 warns that the read stops at 1000.
+The query is `POST /admin/api/2025-10/graphql.json`. The body asks for `shopifyqlQuery`, and the statement is the `query` argument. `parseErrors` is read before `tableData`. A parse error becomes the query error. Columns are the returned `name` values, in order, and a cell is kept as Shopify returned it. There is no cursor paging: one request is the table Shopify returns.
 
 Generate Query omits `WHERE 1=1` (`supportsConstantPredicate` is false). `EXPLAIN` is not offered (`supportsExplain` is false). There is no maintenance operation. There is no agent language pack: `AGENT_STATEMENT_LANGUAGE` is null for this type-id, and MCP stays closed.
