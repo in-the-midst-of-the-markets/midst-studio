@@ -7,6 +7,7 @@
  */
 import { importPKCS8, SignJWT } from "jose";
 import { AuthenticationError, DatabaseConfigError } from "@/lib/db/errors";
+import { redactSecret } from "@/lib/db/http/pinned-api-host";
 import type { NodeTransport } from "@/lib/db/http/node-transport";
 
 const PROVIDER = "googleanalytics" as const;
@@ -89,7 +90,12 @@ export interface GaTokenGrant {
 }
 
 /** Reads a token response. The error does not include the assertion or the key. */
-export function readGaTokenGrant(status: number, text: string, now: number): GaTokenGrant {
+export function readGaTokenGrant(
+  status: number,
+  text: string,
+  now: number,
+  secrets: readonly string[] = [],
+): GaTokenGrant {
   let body: unknown = {};
   if (text !== "") {
     try {
@@ -102,8 +108,10 @@ export function readGaTokenGrant(status: number, text: string, now: number): GaT
   const token = record.access_token;
   if (status !== 200 || typeof token !== "string" || token === "") {
     const reason = record.error_description ?? record.error ?? `HTTP ${status}`;
-    const message = typeof reason === "string" ? reason : `HTTP ${status}`;
-    throw new AuthenticationError(`Google token request failed: ${message.slice(0, 300)}`, PROVIDER);
+    const raw = typeof reason === "string" ? reason : `HTTP ${status}`;
+    const hidden = redactSecret(raw, ...secrets);
+    const message = hidden.length > 300 ? hidden.slice(0, 300) : hidden;
+    throw new AuthenticationError(`Google token request failed: ${message}`, PROVIDER);
   }
   const ttl = typeof record.expires_in === "number" && record.expires_in > 0 ? record.expires_in : 3600;
   return { token, expiresAt: now + ttl * 1000 };
@@ -115,12 +123,13 @@ export async function exchangeGaToken(
   transport: NodeTransport,
   now: number,
 ): Promise<GaTokenGrant> {
+  const form = await gaTokenForm(account, now);
   const response = await transport.request({
     method: "POST",
     url: GA_TOKEN_URL,
-    form: await gaTokenForm(account, now),
+    form,
     signal: AbortSignal.timeout(30_000),
     maxResponseBytes: 64 * 1024,
   });
-  return readGaTokenGrant(response.status, response.text, now);
+  return readGaTokenGrant(response.status, response.text, now, [form.assertion, account.privateKey]);
 }

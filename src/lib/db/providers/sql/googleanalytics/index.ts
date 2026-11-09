@@ -371,7 +371,7 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
     try {
       this.grant = await exchangeGaToken(credential, transport, this.now());
     } catch (error) {
-      throw this.wireFailure(error, credential.privateKey, TOKEN_HOST);
+      throw this.wireFailure(error, [credential.privateKey], TOKEN_HOST);
     }
     return this.grant.token;
   }
@@ -420,7 +420,7 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
       await this.openApi(token);
     }
     const host = gaApiHost(this.config);
-    const secret = this.redactSecret();
+    const secrets = this.hiddenSecrets();
     const url = endpointUrl(httpOrigin("https", host, 443), path);
     let response: { status: number; text: string };
     try {
@@ -432,7 +432,7 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
         maxResponseBytes: API_ANSWER_LIMIT,
       });
     } catch (error) {
-      throw this.wireFailure(error, secret, host);
+      throw this.wireFailure(error, secrets, host);
     }
     if (response.status >= 300 && response.status < 400) throw new ConnectionError(REDIRECT_REFUSED, PROVIDER);
     if (response.text.length > API_ANSWER_LIMIT) throw new QueryError(BODY_TOO_LARGE, PROVIDER);
@@ -445,7 +445,7 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
       }
     }
     if (response.status < 200 || response.status >= 300) {
-      const message = redactSecret(gaMessage(body) ?? `Google Analytics answered ${response.status}.`, secret);
+      const message = redactSecret(gaMessage(body) ?? `Google Analytics answered ${response.status}.`, ...secrets);
       if (response.status === 401) throw new AuthenticationError(message, PROVIDER);
       if (response.status === 403) throw new PermissionDeniedError(message, PROVIDER);
       throw new QueryError(message, PROVIDER);
@@ -458,10 +458,11 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
     return this.transport;
   }
 
-  private redactSecret(): string {
+  private hiddenSecrets(): readonly string[] {
     const credential = this.credential;
-    if (credential === null) return this.config.password ?? "";
-    return credential.kind === "access_token" ? credential.token : credential.privateKey;
+    if (credential === null) return [this.config.password ?? ""];
+    if (credential.kind === "access_token") return [credential.token];
+    return [credential.privateKey, this.grant?.token ?? ""];
   }
 
   private closeTransports(): void {
@@ -471,16 +472,16 @@ export class GoogleAnalyticsProvider extends SQLBaseProvider {
     this.tokenTransport = null;
   }
 
-  private wireFailure(error: unknown, secret: string, host: string): Error {
+  private wireFailure(error: unknown, secrets: readonly string[], host: string): Error {
     if (error instanceof AuthenticationError) return error;
     if (error instanceof TransportError) {
       if (error.kind === "redirect") return new ConnectionError(REDIRECT_REFUSED, PROVIDER);
       if (error.kind === "too-large") return new QueryError(BODY_TOO_LARGE, PROVIDER);
-      return new ConnectionError(redactSecret(error.message, secret), PROVIDER, host);
+      return new ConnectionError(redactSecret(error.message, ...secrets), PROVIDER, host);
     }
     if (error instanceof DatabaseConfigError) return error;
     const message = error instanceof Error ? error.message : "Google Analytics could not be reached.";
-    return new ConnectionError(redactSecret(message, secret), PROVIDER, host);
+    return new ConnectionError(redactSecret(message, ...secrets), PROVIDER, host);
   }
 }
 
