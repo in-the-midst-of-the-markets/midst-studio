@@ -38,6 +38,7 @@ import { CLARITY_MIGRATION_DDL } from "@/lib/db/providers/sql/clarity/migration-
 import { GOOGLEANALYTICS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleanalytics/migration-ddl";
 import { QUICKBOOKS_MIGRATION_DDL } from "@/lib/db/providers/sql/quickbooks/migration-ddl";
 import { ODOO_MIGRATION_DDL } from "@/lib/db/providers/sql/odoo/migration-ddl";
+import { SHOPIFY_MIGRATION_DDL } from "@/lib/db/providers/sql/shopify/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -100,6 +101,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   googleanalytics: GOOGLEANALYTICS_MIGRATION_DDL,
   quickbooks: QUICKBOOKS_MIGRATION_DDL,
   odoo: ODOO_MIGRATION_DDL,
+  shopify: SHOPIFY_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

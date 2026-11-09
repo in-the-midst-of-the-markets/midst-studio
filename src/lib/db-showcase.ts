@@ -156,6 +156,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   googleanalytics: 49,
   quickbooks: 50,
   odoo: 51,
+  shopify: 52,
 };
 
 /**

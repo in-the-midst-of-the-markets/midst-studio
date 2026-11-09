@@ -134,6 +134,7 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-two": 52,
   // Two past the registry once Odoo joined it.
   "fifty-three": 53,
+  "fifty-four": 54,
 };
 
 /**

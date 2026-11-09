@@ -50,6 +50,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "googleanalytics",
     "quickbooks",
     "odoo",
+    "shopify",
     "libsql",
     "snowflake",
     "spark",

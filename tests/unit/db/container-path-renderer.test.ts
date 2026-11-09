@@ -128,6 +128,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/mssql.ts",
   "src/lib/db/providers/sql/mysql.ts",
   "src/lib/db/providers/sql/odoo/index.ts",
+  "src/lib/db/providers/sql/shopify/index.ts",
   "src/lib/db/providers/sql/oracle/index.ts",
   "src/lib/db/providers/sql/postgres.ts",
   "src/lib/db/providers/sql/quickbooks/index.ts",

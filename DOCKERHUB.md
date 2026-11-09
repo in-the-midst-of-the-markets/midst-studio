@@ -110,7 +110,7 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Fifty-one external engines share one interface.
+Fifty-two external engines share one interface.
 The fifty-second row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
@@ -161,6 +161,7 @@ The fifty-second row is the embedded LibreDB store: it ships inside the image.
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
 | **QuickBooks Online** | none, HTTP | Read-only company query |
 | **Odoo** | none, HTTP | Read-only JSON-2 |
+| **Shopify** | none, HTTP | Read-only Admin API |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -168,7 +169,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the fifty-one drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the fifty-two drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

@@ -52,6 +52,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   googleanalytics: true,
   quickbooks: true,
   odoo: true,
+  shopify: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -380,6 +381,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "googleanalytics",
       "quickbooks",
       "odoo",
+      "shopify",
     ]);
   });
 
@@ -388,7 +390,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
     expect(categories.map((category) => category.label)).toEqual(["SAAS Connectors", "Databases"]);
     const saas = categories[0]?.types ?? [];
     const databases = categories[1]?.types ?? [];
-    expect(saas).toEqual(["hubspot", "stripe", "clarity", "googleanalytics", "quickbooks", "odoo"]);
+    expect(saas).toEqual(["hubspot", "stripe", "clarity", "googleanalytics", "quickbooks", "odoo", "shopify"]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");
     expect([...databases, ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);

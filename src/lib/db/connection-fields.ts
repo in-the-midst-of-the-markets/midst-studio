@@ -467,6 +467,8 @@ const CONNECTION_FIELD_ROWS = {
   quickbooks: ["host", "password", "database"],
   // An API key in `password`. The host must be a name under odoo.com.
   odoo: ["host", "password"],
+  // An Admin API access token in `password`. The host must be a name under myshopify.com.
+  shopify: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -616,6 +618,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   googleanalytics: null,
   quickbooks: null,
   odoo: null,
+  shopify: null,
   supabase: null,
   mysql: null,
   sqlite: null,

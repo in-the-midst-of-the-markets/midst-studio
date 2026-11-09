@@ -53,6 +53,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   googleanalytics: "analyticsdata.googleapis.com",
   quickbooks: "quickbooks.api.intuit.com",
   odoo: "census.odoo.com",
+  shopify: "census.myshopify.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -74,6 +75,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   googleanalytics: unconnected("googleanalytics"),
   quickbooks: unconnected("quickbooks"),
   odoo: unconnected("odoo"),
+  shopify: unconnected("shopify"),
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),
