@@ -1,3 +1,4 @@
+import { isPublicShareRequest } from "@/lib/dashboards/share-access";
 import { WORKSPACE_OWNER_HEADER, getBasePath, withBasePath } from "@/lib/config/base-path";
 import { ApiErrorCode } from "@/lib/api/error-codes";
 import { NextRequest, NextResponse } from "next/server";
@@ -208,6 +209,12 @@ export async function proxy(request: NextRequest) {
   if (sessionReadingPublicRoute(request.method, pathname)) {
     const bearer = await apiBearer(request, pathname);
     if (bearer !== null) return withSecurityHeaders(bearerAnswer(request, pathname, bearer));
+  }
+
+  // A shared dashboard. The id is the credential: publish, refresh and delete stay on the
+  // session, and a path that is not one snapshot is not public.
+  if (isPublicShareRequest(request.method, pathname)) {
+    return withSecurityHeaders(NextResponse.next());
   }
 
   // Allow public routes

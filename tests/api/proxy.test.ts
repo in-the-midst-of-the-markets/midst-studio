@@ -735,6 +735,30 @@ describe("proxy", () => {
       expect((await proxy(req)).status).toBe(401);
     });
 
+    test("one snapshot is public, and every other share path stays signed in", async () => {
+      const id = "ab".repeat(16);
+      expect((await proxy(createNextRequest(`/share/${id}`))).status).toBe(200);
+      expect((await proxy(createNextRequest(`/api/share/${id}`))).status).toBe(200);
+      const query = new NextRequest(`http://localhost:3000/api/share/${id}/query`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      expect((await proxy(query)).status).toBe(200);
+      await expectSessionRequired(await proxy(createNextRequest("/api/share", undefined)), "Authentication required");
+      const refresh = new NextRequest(`http://localhost:3000/api/share/${id}/refresh`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+      });
+      await expectSessionRequired(await proxy(refresh), "Authentication required");
+      const remove = new NextRequest(`http://localhost:3000/api/share/${id}`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+      });
+      await expectSessionRequired(await proxy(remove), "Authentication required");
+      expect(isRedirect(await proxy(createNextRequest("/share/not-an-id")))).toBe(true);
+      await expectSessionRequired(await proxy(createNextRequest("/api/share/not-an-id")), "Authentication required");
+    });
+
     test("a drive token opens the drive path and nothing else", async () => {
       const token = await mintAgentDriveToken("arun_0123456789abcdef");
       for (const pathname of ["/api/db/query", "/admin", "/api/agent/runs"]) {

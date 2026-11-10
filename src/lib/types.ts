@@ -1399,6 +1399,11 @@ export interface SavedDashboard {
    * to assume. Absent when the charts on the board are enough.
    */
   instructions?: string;
+  /**
+   * The id of the shared snapshot, when this dashboard has a link. Absent until
+   * the owner shares it. The link reads that snapshot, not these connections.
+   */
+  shareId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

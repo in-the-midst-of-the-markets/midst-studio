@@ -1144,6 +1144,23 @@ describe("DashboardStudio", () => {
     expect(view.getByRole("button", { name: "Ask AI" })).toBeTruthy();
   });
 
+  test("stores a share link on the dashboard and clears it", async () => {
+    const id = "ab".repeat(16);
+    mockGlobalFetch({
+      "/api/share": async (request) => {
+        if (request.method === "DELETE") return { json: { ok: true } };
+        return { json: { id, frozen: [] } };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    fireEvent.click(view.getByRole("button", { name: "New dashboard" }));
+    fireEvent.click(view.getByRole("button", { name: "Share" }));
+    fireEvent.click(view.getByRole("button", { name: "Create link" }));
+    await waitFor(() => expect(storage.getSavedDashboards()[0]?.shareId).toBe(id));
+    fireEvent.click(view.getByRole("button", { name: "Stop sharing" }));
+    await waitFor(() => expect(storage.getSavedDashboards()[0]?.shareId).toBeUndefined());
+  });
+
   test("viewer mode on an empty page names the page Dash", () => {
     const view = render(<DashboardStudio />);
     fireEvent.click(view.getByRole("button", { name: "Viewer" }));
