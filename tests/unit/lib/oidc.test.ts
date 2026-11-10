@@ -968,6 +968,17 @@ describe("exchangeCode", () => {
 // ─── getPublicOrigin ────────────────────────────────────────────────────────
 
 describe("getPublicOrigin", () => {
+  const previousTrust = process.env.TRUST_PROXY_HEADERS;
+
+  beforeEach(() => {
+    delete process.env.TRUST_PROXY_HEADERS;
+  });
+
+  afterEach(() => {
+    if (previousTrust === undefined) delete process.env.TRUST_PROXY_HEADERS;
+    else process.env.TRUST_PROXY_HEADERS = previousTrust;
+  });
+
   test("returns origin from request URL when no forwarded headers", () => {
     const req = new Request("http://localhost:3000/api/auth/oidc/login");
     expect(getPublicOrigin(req)).toBe("http://localhost:3000");
@@ -1000,6 +1011,69 @@ describe("getPublicOrigin", () => {
       },
     });
     expect(getPublicOrigin(req)).toBe("https://app.libredb.org");
+  });
+
+  test("ignores forwarded headers when TRUST_PROXY_HEADERS is false", () => {
+    process.env.TRUST_PROXY_HEADERS = "false";
+    const req = new Request("http://localhost:3000/api/auth/logout", {
+      headers: {
+        "x-forwarded-host": "attacker-controlled-domain.com",
+        "x-forwarded-proto": "https",
+      },
+    });
+    expect(getPublicOrigin(req)).toBe("http://localhost:3000");
+  });
+
+  test("uses only the first forwarded host and scheme", () => {
+    const req = new Request("http://0.0.0.0:10000/api/auth/logout", {
+      headers: {
+        "x-forwarded-host": "internal-proxy.com, edge-proxy.com",
+        "x-forwarded-proto": "http, https",
+      },
+    });
+    expect(getPublicOrigin(req)).toBe("http://internal-proxy.com");
+  });
+
+  test("falls back to the request origin when the forwarded host is not a single host", () => {
+    const path = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { "x-forwarded-host": "attacker.com/login" },
+    });
+    const hash = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { "x-forwarded-host": "app.libredb.org#fragment" },
+    });
+    const user = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { "x-forwarded-host": "user:secret@attacker.com" },
+    });
+    expect(getPublicOrigin(path)).toBe("http://localhost:3000");
+    expect(getPublicOrigin(hash)).toBe("http://localhost:3000");
+    expect(getPublicOrigin(user)).toBe("http://localhost:3000");
+  });
+
+  test("ignores a forwarded scheme that is not http or https", () => {
+    const req = new Request("http://0.0.0.0:10000/api/auth/oidc/login", {
+      headers: {
+        "x-forwarded-host": "app.libredb.org",
+        "x-forwarded-proto": "javascript",
+      },
+    });
+    expect(getPublicOrigin(req)).toBe("https://app.libredb.org");
+  });
+
+  test("falls back when the host header is not a single host", () => {
+    const req = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { host: "a b" },
+    });
+    expect(getPublicOrigin(req)).toBe("http://localhost:3000");
+  });
+
+  test("uses the host header when the forwarded host is empty", () => {
+    const req = new Request("http://0.0.0.0:10000/api/auth/oidc/login", {
+      headers: {
+        "x-forwarded-host": " , edge-proxy.com",
+        host: "myapp.onrender.com",
+      },
+    });
+    expect(getPublicOrigin(req)).toBe("https://myapp.onrender.com");
   });
 });
 
