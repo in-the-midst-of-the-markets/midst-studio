@@ -50,5 +50,6 @@ export const INTERCOM_SQL_GRAMMAR: SqlGrammarSpec = {
   completion: {
     formatSegment: formatIntercomIdentifier,
     readQuotedQualifier: (textToDot) => textToDot.match(/"((?:[^"]|"")+)"\.$/)?.[1].replace(/""/g, '"'),
+    nameIsDottedWord: true,
   },
 };

@@ -34,6 +34,11 @@ export interface CompletionQuoting {
   readonly formatSegment: ((segment: string) => string) | null;
   /** Reads the qualifier before the dot when it is quoted; null where the engine has no such reading. */
   readonly readQuotedQualifier: ((textToDot: string) => string | undefined) | null;
+  /**
+   * A dot is part of one name (`res.partner`, `Contact.Name`), so completion writes that name as one word.
+   * Absent means a dot separates two names, and a name that contains one is quoted whole.
+   */
+  readonly nameIsDottedWord?: boolean;
 }
 
 export interface SqlGrammarSpec {

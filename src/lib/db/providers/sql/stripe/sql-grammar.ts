@@ -3,8 +3,9 @@ import type { SqlGrammar, SqlGrammarSpec } from "@/lib/db/sql-grammar/types";
 
 /**
  * The SQL the Stripe editor reads. A query is Sigma SQL and is sent to a query run.
- * Completion keeps the shared SQL words (JOIN, GROUP BY, WITH, and the rest) and adds
- * the report statement. The shared limiter can append `LIMIT`.
+ * Completion offers the read-only words a query run accepts, plus `REPORT`. A write,
+ * `CREATE`, and the shared function list stay out, because this connection refuses them.
+ * The shared limiter can append `LIMIT`.
  */
 const STRIPE_GRAMMAR: SqlGrammar = {
   ...DEFAULT_SQL_GRAMMAR,
@@ -15,12 +16,47 @@ const STRIPE_GRAMMAR: SqlGrammar = {
   doubleSlashComment: false,
   backslashAlwaysEscapes: false,
   completionWords: {
-    keywords: ["REPORT"],
-    functions: ["date_format", "date_trunc"],
+    keywords: [
+      "SELECT",
+      "FROM",
+      "WHERE",
+      "AND",
+      "OR",
+      "NOT",
+      "IN",
+      "BETWEEN",
+      "LIKE",
+      "IS NULL",
+      "IS NOT NULL",
+      "GROUP BY",
+      "HAVING",
+      "ORDER BY",
+      "ASC",
+      "DESC",
+      "LIMIT",
+      "OFFSET",
+      "JOIN",
+      "INNER JOIN",
+      "LEFT JOIN",
+      "ON",
+      "AS",
+      "WITH",
+      "DISTINCT",
+      "UNION",
+      "ALL",
+      "CASE",
+      "WHEN",
+      "THEN",
+      "ELSE",
+      "END",
+      "REPORT",
+    ],
+    functions: ["COUNT", "SUM", "AVG", "MIN", "MAX", "date_format", "date_trunc"],
+    lists: "only",
     snippets: [
       {
         label: "SELECT",
-        insertText: "SELECT ${1:*}\nFROM ${2:balance_transactions}\nLIMIT ${3:100}",
+        insertText: "SELECT ${1:id}\nFROM ${2:balance_transactions}\nLIMIT ${3:100}",
       },
       {
         label: "REPORT",

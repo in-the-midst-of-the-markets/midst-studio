@@ -12,7 +12,7 @@ The object tree is one workspace and the data sources `POST /v1/search` returns 
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
-The editor completes `SELECT`, `FROM`, `WHERE`, `AND`, `OR`, `NOT`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT`, `LIKE`, `IS` and `NULL` (the grammar's `completionWords`, with `lists: "only"`). `SELECT` and `COUNT` are snippets.
+The editor completes `SELECT`, `FROM`, `WHERE`, `AND`, `OR`, `NOT`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT`, `LIKE`, `IS` and `NULL` (the grammar's `completionWords`, with `lists: "only"`). A property whose name has a space is completed in quotes, which is the form the statement runs. `SELECT` and `COUNT` are snippets.
 
 What the provider actually runs is narrower than the highlighter, and a statement outside it fails before a request:
 

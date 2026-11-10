@@ -64,5 +64,6 @@ export const ODOO_SQL_GRAMMAR: SqlGrammarSpec = {
   completion: {
     formatSegment: formatOdooIdentifier,
     readQuotedQualifier: (textToDot) => textToDot.match(/"((?:[^"]|"")+)"\.$/)?.[1].replace(/""/g, '"'),
+    nameIsDottedWord: true,
   },
 };

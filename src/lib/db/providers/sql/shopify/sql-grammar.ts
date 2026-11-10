@@ -55,6 +55,47 @@ const SHOPIFY_GRAMMAR: SqlGrammar = {
   completionClauses: {
     column: ["SHOW", "WHERE", "GROUP BY", "ORDER BY"],
     table: ["FROM"],
+    values: {
+      TIMESERIES: { words: ["hour", "day", "week", "month", "quarter", "year"], when: "first", detail: "Time step" },
+      DURING: {
+        words: [
+          "today",
+          "yesterday",
+          "this_week",
+          "this_month",
+          "this_quarter",
+          "this_year",
+          "last_week",
+          "last_month",
+          "last_quarter",
+          "last_year",
+        ],
+        when: "first",
+        detail: "Date range",
+      },
+      "COMPARE TO": {
+        words: ["previous_period", "previous_week", "previous_month", "previous_quarter", "previous_year"],
+        when: "first",
+        detail: "Comparison",
+      },
+      SINCE: { words: ["today", "yesterday", "-7d", "-30d", "-12m", "-1y"], when: "first", detail: "Date" },
+      UNTIL: { words: ["today", "yesterday", "-7d", "-30d", "-12m"], when: "first", detail: "Date" },
+      VISUALIZE: {
+        words: ["bar", "line", "stacked_bar", "stacked_area", "donut", "single_metric", "list", "horizontal_bar"],
+        when: "first",
+        detail: "Chart",
+      },
+      TYPE: {
+        words: ["bar", "line", "stacked_bar", "stacked_area", "donut", "single_metric", "list", "horizontal_bar"],
+        when: "first",
+        detail: "Chart",
+      },
+      WITH: {
+        words: ["totals", "group_totals", "percent_change", "cumulative_values"],
+        when: "first",
+        detail: "Modifier",
+      },
+    },
   },
 };
 

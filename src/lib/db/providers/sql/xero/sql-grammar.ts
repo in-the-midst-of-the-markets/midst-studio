@@ -50,5 +50,6 @@ export const XERO_SQL_GRAMMAR: SqlGrammarSpec = {
   completion: {
     formatSegment: formatXeroIdentifier,
     readQuotedQualifier: (textToDot) => textToDot.match(/"((?:[^"]|"")+)"\.$/)?.[1].replace(/""/g, '"'),
+    nameIsDottedWord: true,
   },
 };

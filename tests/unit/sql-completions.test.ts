@@ -1496,15 +1496,21 @@ describe("dialect completion words", () => {
     expect(at("SELECT * FROM contacts INNER ").map((item) => item.label)).not.toContain("JOIN");
   });
 
-  test("Stripe offers the read-only SQL it runs", () => {
+  test("Stripe offers the read-only SQL a query run accepts", () => {
     const offered = labels("SELECT ", "stripe");
     expect(offered).toContain("ORDER BY");
+    expect(offered).toContain("JOIN");
+    expect(offered).toContain("WITH");
     expect(offered).toContain("COUNT");
-    expect(offered).not.toContain("JOIN");
+    expect(offered).toContain("SUM");
+    expect(offered).toContain("REPORT");
+    expect(offered).toContain("date_trunc");
     expect(offered).not.toContain("INSERT");
     expect(offered).not.toContain("UPDATE");
     expect(offered).not.toContain("DELETE");
-    expect(offered).not.toContain("SUM");
+    expect(offered).not.toContain("CREATE");
+    expect(offered).not.toContain("TRUNCATE");
+    expect(offered).not.toContain("JSON_AGG");
     const monaco = createMockMonaco();
     registerSQLCompletionProvider(monaco, { tableItems: [], columnMap: new Map(), allColumns: new Map() }, "stripe");
     const items = monaco
@@ -1512,7 +1518,8 @@ describe("dialect completion words", () => {
       .provideCompletionItems(createMockModel("SELECT "), createPosition(1, 8)).suggestions;
     const select = items.filter((item) => item.kind === 27 && item.label === "SELECT");
     expect(select).toHaveLength(1);
-    expect(select[0].insertText).toContain('FROM "${1:customers}"');
+    expect(select[0].insertText).toContain("FROM ${2:balance_transactions}");
+    expect(items.filter((item) => item.kind === 27 && item.label === "REPORT")).toHaveLength(1);
     expect(items.filter((item) => item.kind === 27 && item.label === "INSERT")).toHaveLength(0);
   });
 
@@ -1525,6 +1532,137 @@ describe("dialect completion words", () => {
         expect(offered.length, String(type)).toBe(labels("SELECT ").length);
       }
     }
+  });
+});
+
+describe("SaaS connector suggestions", () => {
+  function items(line: string, dialect: DatabaseType, cache?: SchemaCompletionCache) {
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(
+      monaco,
+      cache ?? { tableItems: [], columnMap: new Map(), allColumns: new Map() },
+      dialect,
+    );
+    return monaco._getProvider()!.provideCompletionItems(createMockModel(line), createPosition(1, line.length + 1))
+      .suggestions;
+  }
+
+  test("ShopifyQL offers the word that clause takes, and the next clause once that word is finished", () => {
+    const step = items("FROM sales SHOW total_sales TIMESERIES ", "shopify");
+    expect(step.map((item) => item.label)).toEqual(["hour", "day", "week", "month", "quarter", "year"]);
+    expect(step.find((item) => item.label === "month")?.detail).toBe("Time step");
+    expect(items("FROM sales SHOW total_sales TIMESERIES m", "shopify").map((item) => item.label)).toEqual(["month"]);
+    expect(items("FROM sales SHOW total_sales TIMESERIES z", "shopify")).toHaveLength(0);
+    const after = items("FROM sales SHOW total_sales TIMESERIES month ", "shopify").map((item) => item.label);
+    expect(after).toContain("SINCE");
+    expect(after).not.toContain("hour");
+    const since = items("FROM sales SINCE ", "shopify");
+    expect(since.map((item) => item.label)).toContain("-7d");
+    expect(since.find((item) => item.label === "-7d")?.filterText).toBe("7d");
+    expect(items("FROM sales SINCE 7", "shopify").map((item) => item.label)).toEqual(["-7d"]);
+    expect(items("FROM sales DURING last", "shopify").map((item) => item.label)).toContain("last_month");
+    expect(items("FROM sales COMPARE TO ", "shopify").map((item) => item.label)).toContain("previous_period");
+    expect(items("FROM sales VISUALIZE ", "shopify").map((item) => item.label)).toContain("bar");
+    expect(items("FROM sales WITH ", "shopify").map((item) => item.label)).toContain("totals");
+    expect(items("s", "shopify").map((item) => item.label)).toContain("FROM");
+  });
+
+  test("Google Analytics offers a quoted date inside WHERE and not in the select list", () => {
+    const where = items("SELECT country FROM report WHERE ", "googleanalytics").map((item) => item.label);
+    expect(where).toContain("'7daysAgo'");
+    expect(where).toContain("AND");
+    expect(items("SELECT ", "googleanalytics").map((item) => item.label)).not.toContain("'7daysAgo'");
+    expect(items("SELECT country FROM report WHERE z", "googleanalytics").map((item) => item.label)).not.toContain(
+      "'7daysAgo'",
+    );
+  });
+
+  test("a dotted model stays one word, and a property with a space is quoted", () => {
+    const partner: SchemaCompletionCache = {
+      tableItems: [
+        {
+          label: "res.partner",
+          labelLower: "res.partner",
+          columnNames: "name",
+          container: ["database"],
+          segment: "res.partner",
+          qualify: true,
+        },
+      ],
+      columnMap: new Map(),
+      allColumns: new Map(),
+    };
+    expect(items("SELECT * FROM ", "odoo", partner).find((item) => item.label === "res.partner")?.insertText).toBe(
+      "res.partner",
+    );
+    const typed = items("SELECT * FROM res.", "odoo", partner).find((item) => item.label === "res.partner");
+    const range = typed?.range as { startColumn: number };
+    expect("SELECT * FROM res.".slice(0, range.startColumn - 1) + typed?.insertText).toBe("SELECT * FROM res.partner");
+
+    const notion: SchemaCompletionCache = {
+      tableItems: [
+        { label: "Tasks", labelLower: "tasks", columnNames: "Due Date" },
+        {
+          label: "Foo.Bar",
+          labelLower: "foo.bar",
+          columnNames: "",
+          container: ["workspace"],
+          segment: "Foo.Bar",
+          qualify: true,
+        },
+      ],
+      columnMap: new Map([
+        ["tasks", [{ label: "Due Date", labelLower: "due date", type: "date", isPrimary: false, tableName: "Tasks" }]],
+      ]),
+      allColumns: new Map([
+        ["due date", { label: "Due Date", labelLower: "due date", type: "date", isPrimary: false, tableName: "Tasks" }],
+      ]),
+    };
+    expect(items("SELECT ", "notion", notion).find((item) => item.label === "Due Date")?.insertText).toBe('"Due Date"');
+    expect(items("SELECT Tasks.", "notion", notion).find((item) => item.label === "Due Date")?.insertText).toBe(
+      '"Due Date"',
+    );
+    expect(items("SELECT * FROM ", "notion", notion).find((item) => item.label === "Foo.Bar")?.insertText).toBe(
+      '"Foo.Bar"',
+    );
+
+    const xero: SchemaCompletionCache = {
+      tableItems: [{ label: "Invoices", labelLower: "invoices", columnNames: "Contact.Name" }],
+      columnMap: new Map([
+        [
+          "invoices",
+          [
+            {
+              label: "Contact.Name",
+              labelLower: "contact.name",
+              type: "varchar",
+              isPrimary: false,
+              tableName: "Invoices",
+            },
+          ],
+        ],
+      ]),
+      allColumns: new Map(),
+    };
+    expect(
+      items("SELECT * FROM Invoices WHERE ", "xero", xero).find((item) => item.label === "Contact.Name")?.insertText,
+    ).toBe("Contact.Name");
+
+    const dotted = (dialect: DatabaseType, table: string, field: string): string | undefined => {
+      const cache: SchemaCompletionCache = {
+        tableItems: [{ label: table, labelLower: table.toLowerCase(), columnNames: field }],
+        columnMap: new Map([
+          [
+            table.toLowerCase(),
+            [{ label: field, labelLower: field.toLowerCase(), type: "varchar", isPrimary: false, tableName: table }],
+          ],
+        ]),
+        allColumns: new Map(),
+      };
+      return items(`SELECT * FROM ${table} WHERE `, dialect, cache).find((item) => item.label === field)?.insertText;
+    };
+    expect(dotted("intercom", "Conversations", "source.type")).toBe("source.type");
+    expect(dotted("quickbooks", "Invoice", "CustomerRef.value")).toBe("CustomerRef.value");
   });
 });
 

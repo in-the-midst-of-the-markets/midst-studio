@@ -12,7 +12,7 @@ The object tree is one workspace and the lists this connection shows: contacts, 
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
-The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT` and `LIKE`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN` or the shared function list. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run.
+The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT` and `LIKE`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN` or the shared function list. A field whose name contains a dot, such as `source.type`, is completed as that one word. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run.
 
 What the provider actually runs is the subset, and a statement outside it fails before a request:
 

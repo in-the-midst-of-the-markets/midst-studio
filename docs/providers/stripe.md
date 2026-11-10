@@ -12,7 +12,7 @@ The object tree has two datasets. `analytical` is the tables from the schema lis
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's PostgreSQL language, the default when a grammar names none.
 
-Completion keeps the shared SQL words, so `JOIN`, `GROUP BY`, `WITH`, `ORDER BY` and the shared functions are offered. It adds `REPORT`, `date_format` and `date_trunc`. `SELECT` and `REPORT` are snippets. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when a table has more fields than that. A click on a table runs `SELECT *` from that table. A click on a report runs that report when it has no required parameter, and otherwise tells you the `REPORT` statement to write.
+Completion offers the read-only words a query run accepts (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `GROUP BY`, `HAVING`, `ORDER BY`, `JOIN`, `INNER JOIN`, `LEFT JOIN`, `WITH`, `UNION` and `REPORT`, and the functions `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `date_format` and `date_trunc`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `CREATE` or the rest of the shared function list. `SELECT` and `REPORT` are snippets. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when a table has more fields than that. A click on a table runs `SELECT *` from that table. A click on a report runs that report when it has no required parameter, and otherwise tells you the `REPORT` statement to write.
 
 What the provider sends:
 
