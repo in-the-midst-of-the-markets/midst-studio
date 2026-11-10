@@ -299,6 +299,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  xero: {
+    rule: "sql is one read-only SELECT of one Xero list, such as Invoices. WHERE, ORDER BY, LIMIT and COUNT(*) are allowed. No writes, no joins.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   supabase: {
     rule: "sql is one read-only Postgres statement for this engine.",
     sample: SQL_SAMPLE,

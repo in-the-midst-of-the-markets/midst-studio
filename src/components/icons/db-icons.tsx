@@ -344,6 +344,29 @@ export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => 
   </svg>
 );
 
+/** Two amount columns, for a Xero organisation. Not the vendor mark. */
+export const XeroIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="3" width="16" height="18" rx="2" />
+    <path d="M12 3v18" />
+    <path d="M7 8h3" />
+    <path d="M7 12h3" />
+    <path d="M7 16h3" />
+    <path d="M14 8h3" />
+    <path d="M14 12h3" />
+    <path d="M14 16h3" />
+  </svg>
+);
+
 /** A sprocket, for a HubSpot account. Not the vendor mark. */
 export const HubSpotIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

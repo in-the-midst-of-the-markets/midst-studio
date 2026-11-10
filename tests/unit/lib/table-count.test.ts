@@ -60,6 +60,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   odoo: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   shopify: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   notion: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  xero: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   supabase: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   mysql: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   sqlite: 'SELECT COUNT(*) AS row_count\nFROM "Order""Items";',

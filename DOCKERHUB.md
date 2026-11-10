@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Fifty-three external engines share one interface.
-The fifty-second row is the embedded LibreDB store: it ships inside the image.
+Fifty-four external engines share one interface.
+The fifty-fifth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -162,6 +162,13 @@ The fifty-second row is the embedded LibreDB store: it ships inside the image.
 | **QuickBooks Online** | none, HTTP | Read-only company query |
 | **Odoo** | none, HTTP | Read-only JSON-2 |
 | **Shopify** | none, HTTP | Read-only ShopifyQL |
+| **Notion** | none, HTTP | Read-only data-source query |
+| **Xero** | none, HTTP | Read-only Accounting list |
+| **MTConnect** | none, HTTP | Read-only agent probe |
+| **Modbus** | none | Read-only device read |
+| **NETCONF** | none | Read-only device read over SSH |
+| **SNMP** | none | Read-only agent read over UDP |
+| **Sparkplug B** | `mqtt-packet` | Read-only broker read |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -169,7 +176,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the fifty-three drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the fifty-four drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

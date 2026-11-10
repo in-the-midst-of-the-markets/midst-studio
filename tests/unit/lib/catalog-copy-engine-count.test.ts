@@ -137,6 +137,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-four": 54,
   // Two past the registry once Notion joined it.
   "fifty-five": 55,
+  // Two past the registry once Xero joined it.
+  "fifty-six": 56,
 };
 
 /**

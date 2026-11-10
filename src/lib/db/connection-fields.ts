@@ -471,6 +471,8 @@ const CONNECTION_FIELD_ROWS = {
   shopify: ["host", "password"],
   // An internal integration token in `password`. The host must be api.notion.com.
   notion: ["host", "password"],
+  // An OAuth access token in `password`, and the organisation id in `database`. The host must be api.xero.com.
+  xero: ["host", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -622,6 +624,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   odoo: null,
   shopify: null,
   notion: null,
+  xero: null,
   supabase: null,
   mysql: null,
   sqlite: null,
