@@ -150,9 +150,10 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
     expect(typeof provider.getCapabilities().supportsConnectionString).toBe("boolean");
   });
 
-  test("accepts a connection string on nine engines and refuses it on the other thirty-five", () => {
+  test("accepts a connection string on ten engines and refuses it on the other forty-seven", () => {
     expect(SHIPPED_DATABASE_TYPES.filter((type) => CONNECTION_STRING_ACCEPTED[type])).toEqual([
       "postgres",
+      "supabase",
       "mysql",
       "sqlite",
       "libsql",
@@ -163,6 +164,18 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "couchbase",
     ]);
     expect(SHIPPED_DATABASE_TYPES.filter((type) => !CONNECTION_STRING_ACCEPTED[type])).toEqual([
+      "airtable",
+      "hubspot",
+      "stripe",
+      "clarity",
+      "googleanalytics",
+      "quickbooks",
+      "odoo",
+      "shopify",
+      "notion",
+      "xero",
+      "intercom",
+      "dynamics",
       "bigquery",
       "snowflake",
       "spark",

@@ -98,6 +98,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   notion: null,
   xero: null,
   intercom: null,
+  dynamics: null,
   supabase: null,
   s3: "s3api",
   kubernetes: "kubectl",

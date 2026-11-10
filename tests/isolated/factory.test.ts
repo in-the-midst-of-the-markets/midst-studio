@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, libredb$/,
     );
   });
 
@@ -1589,6 +1589,7 @@ describe("createDatabaseProvider", () => {
       notion: { host: "api.notion.com" },
       xero: { host: "api.xero.com" },
       intercom: { host: "api.intercom.io" },
+      dynamics: { host: "contoso.crm.dynamics.com", user: "", database: "", password: "census-token" },
     };
 
     const declaringTypes: string[] = [];
@@ -1657,6 +1658,7 @@ describe("createDatabaseProvider", () => {
       notion: { host: "api.notion.com" },
       xero: { host: "api.xero.com" },
       intercom: { host: "api.intercom.io" },
+      dynamics: { host: "contoso.crm.dynamics.com", user: "", database: "", password: "census-token" },
     };
 
     const cannotCancel: string[] = [];
@@ -1674,6 +1676,8 @@ describe("createDatabaseProvider", () => {
       "couchbase",
       "db2",
       "druid",
+      // No cancel: a Dynamics read is one OData request, and the Web API has nothing that stops it.
+      "dynamics",
       "elasticsearch",
       // No cancel: a Google Analytics report is one POST, and the Data API has nothing that stops it.
       "googleanalytics",

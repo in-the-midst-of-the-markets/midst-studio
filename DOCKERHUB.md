@@ -34,9 +34,9 @@ docker run \
   libredb/libredb-studio:latest
 ```
 
-Open <http://localhost:3000>. No password is set above, so the first start generates one and prints it with `docker logs libredb-studio`. To choose your own instead, add `-e ADMIN_PASSWORD=...` and `-e JWT_SECRET=...` - the secret has to be at least 32 characters.
+Open <http://localhost:3000>. To choose the admin password, add `-e ADMIN_PASSWORD=...` and `-e JWT_SECRET=...`. The secret has to be at least 32 characters.
 
-> **None of these auth variables are mandatory.** With the local provider, `ADMIN_PASSWORD` and `JWT_SECRET` are required only when you opt into strict mode (`AUTH_BOOTSTRAP=off`); otherwise both are generated on first start. `USER_EMAIL` / `USER_PASSWORD` are always optional - omit them to run admin-only, since no default user password is ever assumed. None of them are used when `NEXT_PUBLIC_AUTH_PROVIDER=oidc`.
+> **None of these auth variables are mandatory.** With the local provider, `ADMIN_PASSWORD` and `JWT_SECRET` are required only in strict mode (`AUTH_BOOTSTRAP=off`); otherwise both are generated on first start. `USER_EMAIL` and `USER_PASSWORD` are optional.
 
 > **Enable AI:** add `-e LLM_PROVIDER=gemini -e LLM_API_KEY=your_key -e LLM_MODEL=gemini-2.5-flash`. That brings the read-only agent, whose availability is derived from having a model configured; add `-v libredb-data:/app/data` if its run history should survive a container recreate, or `-e LIBREDB_AGENT_ENABLED=false` to keep the AI features and decline the agent.
 
@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Fifty-five external engines share one interface.
-The fifty-sixth row is the embedded LibreDB store: it ships inside the image.
+Fifty-six external engines share one interface.
+The fifty-seventh row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -165,6 +165,7 @@ The fifty-sixth row is the embedded LibreDB store: it ships inside the image.
 | **Notion** | none, HTTP | Read-only data-source query |
 | **Xero** | none, HTTP | Read-only Accounting list |
 | **Intercom** | none, HTTP | Read-only conversation list |
+| **Microsoft Dynamics** | none, HTTP | Read-only Dataverse query |
 | **MTConnect** | none, HTTP | Read-only agent probe |
 | **Modbus** | none | Read-only device read |
 | **NETCONF** | none | Read-only device read over SSH |
@@ -177,7 +178,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the fifty-five drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the fifty-six drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
@@ -220,7 +221,7 @@ Details, probed versions and each caveat: [`docs/providers/README.md`](https://g
 - **Data visualization** - 8 chart types with aggregation and saved-chart dashboards.
 - **Data privacy & masking** - automatic sensitive-column detection, RBAC-enforced masking, export protection.
 - **Auth & SSO** - local email/password or OIDC (Auth0, Keycloak, Okta, Azure AD, Zitadel) with PKCE and role mapping.
-- **DBA toolkit (admin)** - live monitoring dashboard, threshold alerts, full audit trail, and one-click maintenance in each engine's own terms (VACUUM/ANALYZE/REINDEX on PostgreSQL, `OPTIMIZE TABLE` on MySQL, and nothing offered where an engine has no maintenance statement to run).
+- **DBA toolkit (admin)** - live monitoring, threshold alerts, an audit trail, and maintenance in each engine's own terms.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/libredb/libredb-studio/main/public/screenshots/erd-diagram.png" alt="Interactive ER Diagram" width="100%" />
@@ -265,16 +266,15 @@ Health check endpoint: `GET /api/db/health` · Container HTTP port: `3000`.
 
 - **Project website:** <https://libredb.org>
 - **Source & docs:** <https://github.com/libredb/libredb-studio>
-- **Contributing:** [CONTRIBUTING.md](https://github.com/libredb/libredb-studio/blob/main/CONTRIBUTING.md) - how to open an issue, run the test suite and send a pull request, alongside the [Code of Conduct](https://github.com/libredb/libredb-studio/blob/main/CODE_OF_CONDUCT.md)
+- **Contributing:** [CONTRIBUTING.md](https://github.com/libredb/libredb-studio/blob/main/CONTRIBUTING.md) and the [Code of Conduct](https://github.com/libredb/libredb-studio/blob/main/CODE_OF_CONDUCT.md)
 - **Live demo:** <https://app.libredb.org>
-- **DeepWiki docs:** <https://deepwiki.com/libredb/libredb-studio>
 - **License:** MIT
 
 ---
 
 ## Star the project
 
-LibreDB Studio is open source under the MIT license and free to use. If it is useful to you, a star on GitHub is the clearest signal that the work is worth continuing.
+LibreDB Studio is MIT-licensed. A GitHub star is the clearest signal that the work is worth continuing.
 
 <a href="https://github.com/libredb/libredb-studio"><img src="https://img.shields.io/github/stars/libredb/libredb-studio?style=social" alt="GitHub stars"></a>
 

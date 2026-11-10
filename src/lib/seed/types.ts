@@ -144,6 +144,7 @@ const SeedDatabaseType = z.enum([
   "notion",
   "xero",
   "intercom",
+  "dynamics",
 ]);
 
 export const SeedDefaultsSchema = z.object({

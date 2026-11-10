@@ -77,6 +77,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   notion: true,
   xero: true,
   intercom: true,
+  dynamics: true,
   supabase: true,
   mysql: true,
   sqlite: true,

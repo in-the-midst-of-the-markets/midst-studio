@@ -25,6 +25,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   notion: unsupported,
   xero: unsupported,
   intercom: unsupported,
+  dynamics: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,

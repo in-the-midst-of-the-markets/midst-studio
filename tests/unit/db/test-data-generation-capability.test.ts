@@ -30,6 +30,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   notion: false,
   xero: false,
   intercom: false,
+  dynamics: false,
   supabase: false,
   mysql: true,
   sqlite: true,

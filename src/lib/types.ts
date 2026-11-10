@@ -61,6 +61,10 @@ export type DatabaseType =
   // Rows are not copied into another database. The token is sent only to an
   // Intercom API host.
   | "intercom"
+  // Microsoft Dynamics 365. The Dataverse Web API, read-only. One SELECT is one
+  // OData read of a standard table. A client secret is sent only to
+  // login.microsoftonline.com. An access token is sent only to the organization host.
+  | "dynamics"
   | "bigquery"
   | "snowflake"
   | "mysql"

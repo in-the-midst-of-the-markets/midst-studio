@@ -39,6 +39,7 @@ import { SHOPIFY_SQL_WRITING } from "@/lib/db/providers/sql/shopify/sql-writing"
 import { NOTION_SQL_WRITING } from "@/lib/db/providers/sql/notion/sql-writing";
 import { XERO_SQL_WRITING } from "@/lib/db/providers/sql/xero/sql-writing";
 import { INTERCOM_SQL_WRITING } from "@/lib/db/providers/sql/intercom/sql-writing";
+import { DYNAMICS_SQL_WRITING } from "@/lib/db/providers/sql/dynamics/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -110,6 +111,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   notion: NOTION_SQL_WRITING,
   xero: XERO_SQL_WRITING,
   intercom: INTERCOM_SQL_WRITING,
+  dynamics: DYNAMICS_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,
