@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { logger } from "@/lib/logger";
 import { derivedSigningKey } from "@/lib/config/auth-env";
 import { AuthConfigError } from "@/lib/auth-errors";
+import { readTrustProxyHeaders } from "@/lib/security/config";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -376,19 +377,56 @@ export async function decryptState(token: string): Promise<OIDCState> {
 
 // ─── Public Origin (reverse proxy / PaaS) ──────────────────────────────────
 
+/** The first hop of a forwarded header. A proxy that appends another value separates them with a comma. */
+function firstHeaderValue(header: string | null): string | null {
+  const value = header?.split(",")[0]?.trim() ?? "";
+  return value === "" ? null : value;
+}
+
 /**
- * Derive the public-facing origin from request headers.
- * On platforms like Render, Railway, Fly.io the app binds to 0.0.0.0:PORT
- * but the actual public URL comes from x-forwarded-host/x-forwarded-proto.
+ * An origin built from a scheme and one host. A value that carries a user, a path, a query, or a
+ * hash is refused: it would turn a redirect into a different URL than the host the caller named.
+ */
+function originOf(scheme: string, host: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(`${scheme}://${host}`);
+  } catch {
+    return null;
+  }
+  if (
+    parsed.username !== "" ||
+    parsed.password !== "" ||
+    parsed.pathname !== "/" ||
+    parsed.search !== "" ||
+    parsed.hash !== ""
+  ) {
+    return null;
+  }
+  return parsed.origin;
+}
+
+/**
+ * The origin a browser should be sent back to. Behind a reverse proxy the public host arrives in
+ * `X-Forwarded-Host` and the scheme in `X-Forwarded-Proto`. Those headers are read only when
+ * `TRUST_PROXY_HEADERS` is on, the same gate the origin check uses, and only the first value of
+ * each. A host that is not a single host falls back to the request URL, so a comma-separated value
+ * cannot throw while a redirect is built.
  */
 export function getPublicOrigin(request: Request): string {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  const host = forwardedHost || request.headers.get("host");
-  if (host) {
-    return `${forwardedProto}://${host}`;
+  const requestUrl = new URL(request.url);
+  const fallback = requestUrl.origin;
+  let forwardedHost: string | null = null;
+  let forwardedScheme: string | null = null;
+  if (readTrustProxyHeaders()) {
+    forwardedHost = firstHeaderValue(request.headers.get("x-forwarded-host"));
+    const scheme = firstHeaderValue(request.headers.get("x-forwarded-proto"))?.toLowerCase() ?? null;
+    if (scheme === "http" || scheme === "https") forwardedScheme = scheme;
   }
-  return new URL(request.url).origin;
+  const host = forwardedHost ?? (request.headers.get("host")?.trim() || null);
+  if (host === null || host === "") return fallback;
+  const scheme = forwardedScheme ?? "https";
+  return originOf(scheme, host) ?? fallback;
 }
 
 // ─── Logout URL ─────────────────────────────────────────────────────────────

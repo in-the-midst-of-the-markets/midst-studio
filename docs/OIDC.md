@@ -1346,6 +1346,15 @@ If `overflow` is true, the callback halts authentication:
 
 ---
 
+## Public origin
+
+Login, the callback, and logout build redirect URLs with `getPublicOrigin`. Behind a reverse proxy
+that sets `X-Forwarded-Host` and `X-Forwarded-Proto`, those headers are the public origin, and only
+the first value is used when a proxy appends another. `TRUST_PROXY_HEADERS=false` ignores both
+headers, so a caller cannot choose the host a redirect sends the browser to. A host that is not a
+single host falls back to the request URL, which keeps a comma-separated or otherwise unusable
+value from throwing while the redirect is built.
+
 ## Provider Logout Strategy
 
 Different OIDC providers have different logout endpoint conventions. `buildLogoutUrl()` preserves the existing Auth0
