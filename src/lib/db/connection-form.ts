@@ -644,6 +644,33 @@ export const CONNECTION_FORM: {
       database: "The 10-digit Google Ads customer id, with or without hyphens.",
     },
   },
+  microsoftads: {
+    label: "Microsoft Ads",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.microsoftads,
+    fieldLabels: {
+      host: "API host",
+      user: "Customer ID",
+      password: "Access token and developer token",
+      database: "Account ID",
+    },
+    fieldPlaceholders: {
+      host: "campaign.api.bingads.microsoft.com",
+      user: "123456",
+      password: '{"accessToken":"…","developerToken":"…"}',
+      database: "7654321",
+    },
+    fieldHints: {
+      host: "The tokens are sent only to campaign.api.bingads.microsoft.com, or to the sandbox host. Leave this empty to use the production host.",
+      user: "The customer id. It is sent as CustomerId.",
+      password:
+        "One JSON object with accessToken and developerToken. Both are sent only to the Campaign Management host. A pasted access token is not refreshed.",
+      database: "The account id. It is sent as CustomerAccountId.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1746,6 +1773,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "intercom",
   "dynamics",
   "googleads",
+  "microsoftads",
 ]);
 
 /**
@@ -1766,6 +1794,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "intercom",
   "dynamics",
   "googleads",
+  "microsoftads",
 ]);
 
 export interface ConnectionPickerCategory {

@@ -59,6 +59,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   intercom: "api.intercom.io",
   dynamics: "contoso.crm.dynamics.com",
   googleads: "googleads.googleapis.com",
+  microsoftads: "campaign.api.bingads.microsoft.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -92,6 +93,13 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
     user: "",
     database: "1234567890",
     password: "census-token",
+  },
+  // The shared user and database are not numeric ids, and the shared password is not the two-token JSON.
+  microsoftads: {
+    ...unconnected("microsoftads"),
+    user: "123456",
+    database: "7654321",
+    password: '{"accessToken":"census-token","developerToken":"census-dev"}',
   },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),

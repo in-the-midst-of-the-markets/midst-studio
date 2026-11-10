@@ -164,6 +164,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   intercom: 55,
   dynamics: 56,
   googleads: 57,
+  microsoftads: 58,
 };
 
 /**

@@ -56,6 +56,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "intercom",
     "dynamics",
     "googleads",
+    "microsoftads",
     "libsql",
     "snowflake",
     "spark",

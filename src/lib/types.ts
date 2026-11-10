@@ -69,6 +69,10 @@ export type DatabaseType =
   // standard resource. A service-account key is exchanged only at
   // oauth2.googleapis.com. An access token is sent only to googleads.googleapis.com.
   | "googleads"
+  // Microsoft Ads. The Campaign Management REST API, read-only. One SELECT is one
+  // read of a standard resource. The access token and the developer token are sent
+  // only to the Campaign Management host.
+  | "microsoftads"
   | "bigquery"
   | "snowflake"
   | "mysql"

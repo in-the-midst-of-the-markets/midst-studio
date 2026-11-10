@@ -7,7 +7,7 @@ metadata:
     categories: Database, Developer Tools
     console.openshift.io/plugins: '["libredb-studio"]'
     containerImage: ghcr.io/libredb/libredb-studio-operator:0.0.0
-    description: Open-source web-based SQL IDE for fifty-seven engines - PostgreSQL,
+    description: Open-source web-based SQL IDE for fifty-eight engines - PostgreSQL,
       MySQL, Oracle, Db2 LUW, SQL Server, SQLite, DuckDB, MongoDB, Redis, Couchbase,
       Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery,
       Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka,
@@ -15,7 +15,8 @@ metadata:
       Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect,
       Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe,
       Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion,
-      Xero, Intercom, Microsoft Dynamics and Google Ads - with AI-powered query assistance.
+      Xero, Intercom, Microsoft Dynamics, Google Ads and Microsoft Ads - with AI-powered
+      query assistance.
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
     features.operators.openshift.io/proxy-aware: "false"
@@ -52,7 +53,7 @@ spec:
     MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase,
     Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark,
     Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB,
-    InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics and Google Ads from the browser,
+    InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads and Microsoft Ads from the browser,
     with AI-powered query assistance (natural-language-to-SQL, explain, fix),
     an ERD viewer, schema diff and a data profiler. No desktop client required.
 

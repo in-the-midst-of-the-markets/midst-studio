@@ -146,6 +146,7 @@ const SeedDatabaseType = z.enum([
   "intercom",
   "dynamics",
   "googleads",
+  "microsoftads",
 ]);
 
 export const SeedDefaultsSchema = z.object({

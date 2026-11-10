@@ -88,7 +88,7 @@ An mssql seed that carried only a `connectionString`, for example, loaded and op
 The types whose provider reads it are postgres, supabase, mysql, sqlite, libsql, oracle, db2, clickhouse, mongodb and couchbase.
 sqlite reads it as the database file path, with a `file:` prefix removed, although its provider's capability flag says it does not ([docs/providers/sqlite.md](./providers/sqlite.md)).
 mssql does not read it, although its provider's capability flag says it does: the flag covers the connection form, which splits a pasted URI into fields, and the provider builds from those fields only ([docs/providers/mssql.md](./providers/mssql.md#44-connection-string-nuance)).
-The 48 that refuse it are airtable, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, bigquery, snowflake, spark, duckdb, mssql, druid, trino, cassandra, elasticsearch, opensearch, redis, prometheus, kafka, etcd, neo4j, milvus, qdrant, weaviate, influxdb, influxdb3, oxia, databend, questdb, s3, kubernetes, mqtt, firestore, rabbitmq, opcua, mtconnect, modbus, netconf, snmp, sparkplug and libredb.
+The 49 that refuse it are airtable, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, bigquery, snowflake, spark, duckdb, mssql, druid, trino, cassandra, elasticsearch, opensearch, redis, prometheus, kafka, etcd, neo4j, milvus, qdrant, weaviate, influxdb, influxdb3, oxia, databend, questdb, s3, kubernetes, mqtt, firestore, rabbitmq, opcua, mtconnect, modbus, netconf, snmp, sparkplug and libredb.
 To fix a refused file, move the value into `host`, `port`, `user`, `password` and `database`, and remove `connectionString`.
 
 ### A Firestore connection

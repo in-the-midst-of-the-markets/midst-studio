@@ -42,6 +42,7 @@ import { XERO_CONNECTION_STRING } from "@/lib/db/providers/sql/xero/connection-s
 import { INTERCOM_CONNECTION_STRING } from "@/lib/db/providers/sql/intercom/connection-string";
 import { DYNAMICS_CONNECTION_STRING } from "@/lib/db/providers/sql/dynamics/connection-string";
 import { GOOGLEADS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleads/connection-string";
+import { MICROSOFTADS_CONNECTION_STRING } from "@/lib/db/providers/sql/microsoftads/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -110,6 +111,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   intercom: INTERCOM_CONNECTION_STRING,
   dynamics: DYNAMICS_CONNECTION_STRING,
   googleads: GOOGLEADS_CONNECTION_STRING,
+  microsoftads: MICROSOFTADS_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

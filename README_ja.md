@@ -135,9 +135,9 @@ LibreDB Studioは逆向きです。**データをツールのところへ持っ�
 
 ## 主な機能
 
-### 57のエンジン、1つのインターフェース
+### 58のエンジン、1つのインターフェース
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics and Google Ads
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads and Microsoft Ads
 
 スキーマエクスプローラ、ER図、スキーマ差分、モニタリングは全SQLエンジンで共通です。MongoDBとRedisはSQLエンジンではないため、ER図とスキーマ差分はありません。Druid、Elasticsearch、OpenSearch、TrinoはこのビルドがパースできるURI形式を持たないためhostとportで設定する二重の例外で、生成されるマイグレーションもDDLを出力せず制約を明示します（Couchbaseのスキーマレスなコレクションも同様）。検索クラスタのER図は箱だけで線がありません。インデックスは外部キーを宣言せず、エンジンのモデルにも宣言できる外部キーが存在しないためです。
 
@@ -157,6 +157,7 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **Intercom** | none: the Intercom API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An access token sent only to api.intercom.io |
 | **Microsoft Dynamics** | none: the Dataverse Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. A client secret sent only to login.microsoftonline.com, or an access token sent only to the organization host |
 | **Google Ads** | none: the Google Ads API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token sent only to googleads.googleapis.com, or a service-account key exchanged only at oauth2.googleapis.com |
+| **Microsoft Ads** | none: the Microsoft Advertising API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token and a developer token, sent only to campaign.api.bingads.microsoft.com or the sandbox host |
 | **PostgreSQL** | `pg` | フルSQL IDE、EXPLAIN、トランザクション、クエリキャンセル（`pg_cancel_backend`） |
 | **MySQL** | `mysql2` | フルSQL IDE、EXPLAIN、トランザクション、クエリキャンセル（`KILL QUERY`） |
 | **Oracle** | `oracledb`（Thinモード） | フルSQL IDE、`FETCH FIRST N ROWS`、`V$`監視ビュー、`ANALYZE TABLE`、`ALTER INDEX REBUILD`、トランザクション |
