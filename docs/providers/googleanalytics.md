@@ -12,7 +12,7 @@ The object tree is one property and one table, `report`. Dimensions and metrics 
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
-The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT` and `OFFSET`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `COUNT` or the shared function list. The `SELECT` snippet is a statement this connection can run. Generate Query names the columns when there are at most eight.
+The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT` and `OFFSET`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `COUNT` or the shared function list. Inside `WHERE` it also offers the dates the report accepts, quoted so the statement can run: `'today'`, `'yesterday'`, `'7daysAgo'`, `'30daysAgo'` and `'90daysAgo'`. The `SELECT` snippet is a statement this connection can run. Generate Query names the columns when there are at most eight.
 
 What the provider actually runs is the subset, and a statement outside it fails before a request:
 

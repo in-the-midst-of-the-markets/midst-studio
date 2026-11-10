@@ -29,6 +29,13 @@ const GOOGLEANALYTICS_GRAMMAR: SqlGrammar = {
   completionClauses: {
     column: ["SELECT", "WHERE", "ORDER BY"],
     table: ["FROM"],
+    values: {
+      WHERE: {
+        words: ["'today'", "'yesterday'", "'7daysAgo'", "'30daysAgo'", "'90daysAgo'"],
+        when: "any",
+        detail: "Date",
+      },
+    },
   },
 };
 

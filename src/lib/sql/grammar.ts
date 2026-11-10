@@ -388,6 +388,14 @@ export interface SqlGrammar {
   readonly completionClauses?: {
     readonly column?: readonly string[];
     readonly table?: readonly string[];
+    /**
+     * Words this clause offers while the cursor is in it. `when: "first"` is the word right after the
+     * clause (`TIMESERIES month`), and that slot offers these words alone. `when: "any"` adds them beside
+     * the columns (`WHERE startDate = '7daysAgo'`). A key is the clause as `lastClause` spells it.
+     */
+    readonly values?: Readonly<
+      Record<string, { readonly words: readonly string[]; readonly when: "first" | "any"; readonly detail: string }>
+    >;
   };
   /**
    * Session configuration keys whose SET or RESET asks for a confirmation, compared without case; an entry ending in

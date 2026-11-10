@@ -205,6 +205,7 @@ function reservedWords(grammar: SqlGrammar): ReadonlySet<string> | undefined {
     ...(grammar.completionWords?.keywords ?? []),
     ...(grammar.completionClauses?.column ?? []),
     ...(grammar.completionClauses?.table ?? []),
+    ...Object.keys(grammar.completionClauses?.values ?? {}),
   ];
   if (phrases.length === 0) return undefined;
   return new Set(phrases.flatMap((phrase) => phrase.toUpperCase().split(/\s+/)));
@@ -215,7 +216,11 @@ const SHARED_CLAUSE_SOURCE =
 
 /** A fresh clause regex: the shared clauses, with this dialect's own phrases tried first. */
 function clausePattern(grammar: SqlGrammar): RegExp {
-  const phrases = [...(grammar.completionClauses?.column ?? []), ...(grammar.completionClauses?.table ?? [])];
+  const phrases = [
+    ...(grammar.completionClauses?.column ?? []),
+    ...(grammar.completionClauses?.table ?? []),
+    ...Object.keys(grammar.completionClauses?.values ?? {}),
+  ];
   const extra =
     phrases.length === 0
       ? ""
@@ -525,7 +530,11 @@ export function registerSQLCompletionProvider(
       const formatPath = (path: readonly string[]) =>
         spelling === undefined ? path.map(formatSegment).join(".") : spelling.quotePath(path);
       // A statement's own name is read unquoted; one that needed quotes gets them back.
-      const asWritten = (name: string) => (/^[A-Za-z_][\w$]*$/.test(name) ? name : formatSegment(name));
+      // A dialect whose names contain dots (`res.partner`) keeps the dot inside the word.
+      const dottedWord = completion.nameIsDottedWord === true;
+      const bareName = (name: string) =>
+        /^[A-Za-z_][\w$]*$/.test(name) || (dottedWord && /^[A-Za-z_][\w$]*(?:\.[A-Za-z_][\w$]*)+$/.test(name));
+      const asWritten = (name: string) => (bareName(name) ? name : formatSegment(name));
       const tableItem = (table: SchemaTableItem, insertText: string, tableRange: Monaco.IRange) => ({
         // It still filters on the table's own name.
         ...(table.labelQualified && insertText.includes(".") && insertText !== table.label
@@ -582,13 +591,15 @@ export function registerSQLCompletionProvider(
               .map((table) =>
                 tableItem(
                   table,
-                  // Outside the session's default container the address is the name the
-                  // engine resolves; inside it the label is, as it always was.
-                  table.qualify && table.container && table.segment !== undefined
-                    ? formatPath([...table.container, table.segment])
-                    : ownFormat !== null
-                      ? table.label.split(".").map(ownFormat).join(".")
-                      : table.label,
+                  // A segment that contains a dot is one name (`res.partner`), not a container and a table.
+                  // Outside the session's default container the address is the name the engine resolves.
+                  table.segment !== undefined && table.segment.includes(".")
+                    ? asWritten(table.segment)
+                    : table.qualify && table.container && table.segment !== undefined
+                      ? formatPath([...table.container, table.segment])
+                      : ownFormat !== null
+                        ? table.label.split(".").map(ownFormat).join(".")
+                        : table.label,
                   { ...range, startColumn: range.startColumn - qualifier.length },
                 ),
               );
@@ -666,7 +677,7 @@ export function registerSQLCompletionProvider(
               suggestions.push({
                 label: col.label,
                 kind: monaco.languages.CompletionItemKind.Field,
-                insertText: col.label,
+                insertText: asWritten(col.label),
                 range,
                 detail: `${col.type}${col.isPrimary ? " (PK)" : ""}`,
                 documentation: `Column of ${col.tableName}`,
@@ -705,6 +716,29 @@ export function registerSQLCompletionProvider(
         (inList ||
           (clause !== undefined && columnClauses.has(clause.name)) ||
           /\b(SELECT|WHERE|AND|OR|ON|SET|HAVING|ORDER\s+BY|GROUP\s+BY|,)\s*\w*$/i.test(textBeforeCursor));
+
+      // A clause that names its own words (`TIMESERIES month`, `WHERE startDate = '7daysAgo'`).
+      // The first word of such a clause is the only thing that can stand there.
+      const valueClause = clause === undefined ? undefined : grammar.completionClauses?.values?.[clause.name];
+      const inFirstValue = valueClause?.when === "first" && clause !== undefined && /^\s*[\w$-]*$/.test(clause.rest);
+      if (valueClause !== undefined && (valueClause.when === "any" || inFirstValue)) {
+        for (const word of valueClause.words) {
+          const bare = word.startsWith("-") ? word.slice(1) : word;
+          if (prefix.length > 0 && !word.toLowerCase().startsWith(prefix) && !bare.toLowerCase().startsWith(prefix)) {
+            continue;
+          }
+          suggestions.push({
+            label: word,
+            kind: monaco.languages.CompletionItemKind.Keyword,
+            insertText: word,
+            ...(bare === word ? {} : { filterText: bare }),
+            range,
+            detail: valueClause.detail,
+            sortText: "00" + word,
+          });
+        }
+        if (inFirstValue) return { suggestions };
+      }
 
       // Keywords, except where only a name can stand
       keywordItems.forEach((item) => {
@@ -798,7 +832,7 @@ export function registerSQLCompletionProvider(
             suggestions.push({
               label: col.label,
               kind: monaco.languages.CompletionItemKind.Field,
-              insertText: col.label,
+              insertText: asWritten(col.label),
               range,
               detail: owners.length > 1 ? `Column (${col.type}) · ${owners.join(", ")}` : `Column (${col.type})`,
               // In scope, columns rank above keywords; otherwise below everything else.

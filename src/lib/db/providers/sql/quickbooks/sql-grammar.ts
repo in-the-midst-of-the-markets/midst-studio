@@ -51,5 +51,6 @@ export const QUICKBOOKS_SQL_GRAMMAR: SqlGrammarSpec = {
   completion: {
     formatSegment: formatQuickBooksIdentifier,
     readQuotedQualifier: (textToDot) => textToDot.match(/"((?:[^"]|"")+)"\.$/)?.[1].replace(/""/g, '"'),
+    nameIsDottedWord: true,
   },
 };

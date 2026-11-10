@@ -12,7 +12,7 @@ The object tree is one company and the entities this connection lists. The query
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
-The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT`, `LIKE` and `IN`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `OR` or the shared function list. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when the table has more fields than that.
+The editor offers only the words this subset runs (`completionWords` with `lists: "only"`): `SELECT`, `FROM`, `WHERE`, `AND`, `ORDER BY`, `ASC`, `DESC`, `LIMIT`, `OFFSET`, `COUNT`, `LIKE` and `IN`. It does not offer `INSERT`, `UPDATE`, `DELETE`, `JOIN`, `OR` or the shared function list. A field whose name contains a dot is completed as that one word. `SELECT` and `COUNT` are snippets, and each one is a statement this connection can run. Generate Query names the columns when there are at most eight, and writes `SELECT *` under a comment when the table has more fields than that.
 
 What the provider actually runs is the subset, and a statement outside it fails before a request:
 
