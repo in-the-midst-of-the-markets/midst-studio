@@ -97,6 +97,10 @@ export const ROUTES_WITHOUT_A_PROVIDER: Record<string, string> = {
   "storage/[collection]": "same storage backend as above, scoped to the caller's own data (PUT, no POST export)",
   "storage/config": "publicly documents whether server storage is enabled; no session, no provider (GET only)",
   "storage/migrate": "same storage backend as above; its own 401 body differs from guardRoute's on purpose",
+  "share/[id]":
+    "reads and deletes one dashboard snapshot's JSON record on disk; it opens no database and returns no source query (GET is public, DELETE calls guardRoute and answers 404 to anyone but the owner, tests/api/share.test.ts)",
+  "share/[id]/query":
+    "reaches a provider, but only the snapshot DuckDB file named by the unguessable id: the statement has to be one SELECT of that file's tables, and tests/api/share.test.ts proves a missing id, a write, and a table outside the snapshot are refused without a session",
 };
 
 export const PROVIDER_ROUTES = ALL_ROUTES.filter(([key]) => !(key in ROUTES_WITHOUT_A_PROVIDER));
@@ -130,6 +134,8 @@ export const CONNECTION_ROUTES: Readonly<Record<string, Readonly<Record<string, 
   "db/provider-meta": {},
   "db/query": { sql: "SELECT 1" },
   "db/saved-join": { sql: "SELECT 1", saved: [] },
+  share: {},
+  "share/[id]/refresh": {},
   "db/test-connection": {},
   "db/transaction": { action: "begin" },
 };
@@ -152,6 +158,10 @@ export const PROVIDER_ROUTES_WITHOUT_A_CONNECTION_BODY: Readonly<Record<string, 
   "ai/describe-schema": "reaches only an LLM: the schema it describes arrives as text, and no connection is resolved",
   "ai/explain": "reaches only an LLM: the statement and the plan arrive as text, and no connection is resolved",
   "ai/query-safety": "reaches only an LLM: the statement arrives as text, and no connection is resolved",
+  "dbt/compile":
+    "parses a dbt project request and resolves only the connectionId that request names, after the project fields are valid, so a body that is not a project never reaches a connection (tests/api/dbt/routes.test.ts)",
+  "dbt/project":
+    "parses a dbt project request and resolves only the connectionId that request names, and only when one was sent, so a body that is not a project never reaches a connection (tests/api/dbt/routes.test.ts)",
   "db/disconnect":
     "builds none, and under governance resolves no connection: it removes only the caller's own cached providers of the connection id it names, which needs no grant; without governance it resolves a connection of the user's own only to name the cache entries it removes, the editor's and the execution profiles' of that record (tests/api/db/disconnect.test.ts)",
   "mcp/token":

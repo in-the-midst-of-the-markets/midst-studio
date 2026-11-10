@@ -111,6 +111,11 @@ When using LibreDB Studio, please follow these security best practices:
   and return a fixed body), and `GET /api/storage/config` (which returns the storage mode only).
   `GET /api/auth/me` and `POST /api/db/health` each check for a session themselves and return 401
   without one, the same as every other endpoint.
+  A shared dashboard is the other public surface: `GET /share/<id>`, `GET /api/share/<id>` and
+  `POST /api/share/<id>/query`, where `<id>` is 32 hex characters. The id is the credential. The
+  query route reads only that dashboard's snapshot file, one SELECT of its tables, and returns no
+  source connection. `POST /api/share`, `POST /api/share/<id>/refresh` and `DELETE /api/share/<id>`
+  stay on the owner's session.
 - Running arbitrary SQL against your connected database is the product's purpose, not an
   injection surface. Where the application builds SQL of its own — generated starter queries,
   schema browsing, inline cell edits — values are bound as parameters, and identifiers the

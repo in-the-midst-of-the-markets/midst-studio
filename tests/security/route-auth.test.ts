@@ -315,7 +315,7 @@ describe("routes that reach a provider require a session", () => {
   // on ROUTES_WITHOUT_A_PROVIDER). Skipping them is itself verified below - the assertion requires
   // each entry's reason to still say so, so this set cannot quietly grow into a second unchecked
   // allowlist.
-  const ALLOWLISTED_BUT_REACHES_A_PROVIDER = ["agent/drive", "mcp"];
+  const ALLOWLISTED_BUT_REACHES_A_PROVIDER = ["agent/drive", "mcp", "share/[id]/query"];
 
   /** Blanks out comments while preserving line numbering, so a mention in prose is not a hit. */
   function withoutComments(source: string): string {
@@ -405,6 +405,9 @@ describe("routes that reach a provider require a session", () => {
       "the session-required 401 body and the return-path check for sign-in; data and string checks only",
     "@/lib/api/require-session": "guardRoute itself",
     "@/lib/audit": "the in-process audit ring buffer",
+    "@/lib/dashboards/share-http": "maps a snapshot failure to an HTTP response; opens nothing",
+    "@/lib/dashboards/share-limits": "the snapshot row cap and its error types; data only",
+    "@/lib/dashboards/share-record": "reads and writes one snapshot's JSON record on disk; opens no database",
     "@/lib/auth": "session cookie minting and reading",
     "@/lib/auth-compare": "constant-time credential comparison",
     "@/lib/auth-cookies":

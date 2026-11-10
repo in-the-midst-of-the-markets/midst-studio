@@ -30,6 +30,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AssistChartCanvas } from "@/components/ai-assist/AssistChartCanvas";
+import { DashboardShare } from "@/components/dashboards/DashboardShare";
 import { IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
 import { assistDatabaseType, loadAssistCatalog } from "@/lib/ai/assist-catalog";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
@@ -359,33 +360,48 @@ export function DashboardStudio() {
                 {active.name}
               </span>
             )}
-            <fieldset
-              aria-label="Dashboard mode"
-              className="ml-auto m-0 flex min-w-0 items-center rounded-lg border border-hairline bg-control p-0.5"
-            >
-              <button
-                type="button"
-                aria-pressed={editing}
-                onClick={() => setMode("editor")}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium",
-                  editing ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
-                )}
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              {active !== null && (
+                <DashboardShare
+                  dashboard={active}
+                  charts={onDashboard}
+                  connections={connections}
+                  onShareId={(shareId) => {
+                    const next = { ...active };
+                    if (shareId === null) delete next.shareId;
+                    else next.shareId = shareId;
+                    remember(next);
+                  }}
+                />
+              )}
+              <fieldset
+                aria-label="Dashboard mode"
+                className="m-0 flex min-w-0 items-center rounded-lg border border-hairline bg-control p-0.5"
               >
-                Editor
-              </button>
-              <button
-                type="button"
-                aria-pressed={!editing}
-                onClick={() => setMode("viewer")}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium",
-                  editing ? "text-fg-muted hover:text-fg" : "bg-brand-solid text-white",
-                )}
-              >
-                Viewer
-              </button>
-            </fieldset>
+                <button
+                  type="button"
+                  aria-pressed={editing}
+                  onClick={() => setMode("editor")}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium",
+                    editing ? "bg-brand-solid text-white" : "text-fg-muted hover:text-fg",
+                  )}
+                >
+                  Editor
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!editing}
+                  onClick={() => setMode("viewer")}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium",
+                    editing ? "text-fg-muted hover:text-fg" : "bg-brand-solid text-white",
+                  )}
+                >
+                  Viewer
+                </button>
+              </fieldset>
+            </div>
           </div>
           {editing && (
             <p className="mt-1 text-sm text-fg-muted">
