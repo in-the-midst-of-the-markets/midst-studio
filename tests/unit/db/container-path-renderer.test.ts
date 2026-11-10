@@ -119,6 +119,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/db2/objects.ts",
   "src/lib/db/providers/sql/druid/objects.ts",
   "src/lib/db/providers/sql/dynamics/index.ts",
+  "src/lib/db/providers/sql/googleads/index.ts",
   "src/lib/db/providers/sql/googleanalytics/index.ts",
   "src/lib/db/providers/sql/hubspot/index.ts",
   "src/lib/db/providers/sql/intercom/index.ts",

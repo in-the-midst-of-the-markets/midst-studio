@@ -141,6 +141,7 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "intercom",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "dynamics",
+  "googleads",
   // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
   "supabase",
 ] as const);

@@ -20,6 +20,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Xero | `xero` | SQL (accounting) | none (HTTP: the Xero Accounting API) | SQL (a read-only subset translated to the API) | [xero.md](./xero.md) |
 | Intercom | `intercom` | SQL (conversations) | none (HTTP: the Intercom REST API) | SQL (a read-only subset translated to the API) | [intercom.md](./intercom.md) |
 | Microsoft Dynamics | `dynamics` | SQL (Dataverse) | none (HTTP: the Dataverse Web API) | SQL (a read-only subset translated to the API) | [dynamics.md](./dynamics.md) |
+| Google Ads | `googleads` | SQL (advertising) | none (HTTP: the Google Ads API) | SQL (a read-only subset translated to Google Ads Query Language) | [googleads.md](./googleads.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

@@ -145,6 +145,7 @@ const SeedDatabaseType = z.enum([
   "xero",
   "intercom",
   "dynamics",
+  "googleads",
 ]);
 
 export const SeedDefaultsSchema = z.object({

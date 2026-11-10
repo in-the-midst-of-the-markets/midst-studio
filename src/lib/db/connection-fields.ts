@@ -477,6 +477,8 @@ const CONNECTION_FIELD_ROWS = {
   intercom: ["host", "password"],
   // An organization host, a client id in `user`, a client secret or access token in `password`, and a tenant id in `database`.
   dynamics: ["host", "user", "password", "database"],
+  // An API host, an optional manager customer id in `user`, an access token or service-account key in `password`, and a customer id in `database`.
+  googleads: ["host", "user", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -631,6 +633,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   xero: null,
   intercom: null,
   dynamics: null,
+  googleads: null,
   supabase: null,
   mysql: null,
   sqlite: null,

@@ -65,6 +65,10 @@ export type DatabaseType =
   // OData read of a standard table. A client secret is sent only to
   // login.microsoftonline.com. An access token is sent only to the organization host.
   | "dynamics"
+  // Google Ads. The Google Ads API, read-only. One SELECT is one search of a
+  // standard resource. A service-account key is exchanged only at
+  // oauth2.googleapis.com. An access token is sent only to googleads.googleapis.com.
+  | "googleads"
   | "bigquery"
   | "snowflake"
   | "mysql"

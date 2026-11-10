@@ -55,6 +55,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "xero",
     "intercom",
     "dynamics",
+    "googleads",
     "libsql",
     "snowflake",
     "spark",

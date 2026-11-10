@@ -57,6 +57,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   xero: true,
   intercom: true,
   dynamics: true,
+  googleads: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -390,6 +391,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "xero",
       "intercom",
       "dynamics",
+      "googleads",
     ]);
   });
 
@@ -410,6 +412,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "xero",
       "intercom",
       "dynamics",
+      "googleads",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

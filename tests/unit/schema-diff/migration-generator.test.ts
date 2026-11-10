@@ -1100,6 +1100,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     xero: "engine-has-no-foreign-key",
     intercom: "engine-has-no-foreign-key",
     dynamics: "engine-has-no-foreign-key",
+    googleads: "engine-has-no-foreign-key",
     supabase: "key-follows-in-an-alter",
     mysql: "key-follows-in-an-alter",
     oracle: "key-follows-in-an-alter",
@@ -1256,6 +1257,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   dynamics: {
     label: "Dynamics",
     reason: "Dynamics object changes are not generated here; this connection is read-only.",
+  },
+  googleads: {
+    label: "Google Ads",
+    reason: "Google Ads object changes are not generated here; this connection is read-only.",
   },
   supabase: "has-own-branch",
   mysql: "has-own-branch",
@@ -1737,6 +1742,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "xero",
           "intercom",
           "dynamics",
+          "googleads",
         ].includes(dialect)
       ) {
         expect(sql).toContain(`-- ${expected.label}: Cannot generate table DDL.`);
@@ -1778,6 +1784,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   xero: false,
   intercom: false,
   dynamics: false,
+  googleads: false,
   supabase: "BEGIN;",
   mysql: "BEGIN;",
   // Measured live via @duckdb/node-api 1.5.5-r.4 (DuckDB v1.5.5, in-process, no server
@@ -1894,6 +1901,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "xero",
             "intercom",
             "dynamics",
+            "googleads",
           ].includes(dialect)
         ) {
           expect(sql).toMatch(/^CREATE TABLE /m);

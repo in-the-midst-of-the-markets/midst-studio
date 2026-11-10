@@ -78,6 +78,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   xero: true,
   intercom: true,
   dynamics: true,
+  googleads: true,
   supabase: true,
   mysql: true,
   sqlite: true,

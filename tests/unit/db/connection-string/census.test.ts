@@ -51,6 +51,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "xero",
     "intercom",
     "dynamics",
+    "googleads",
     "libsql",
     "snowflake",
     "spark",

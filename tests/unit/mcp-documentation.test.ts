@@ -152,6 +152,7 @@ describe("docs/MCP.md", () => {
         "xero",
         "intercom",
         "dynamics",
+        "googleads",
         "supabase",
         "etcd",
         "oxia",
