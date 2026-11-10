@@ -54,6 +54,7 @@ import {
   NotionIcon,
   XeroIcon,
   IntercomIcon,
+  DynamicsIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -123,6 +124,7 @@ export const DB_UI_CONFIG: {
   notion: branded(CONNECTION_FORM.notion, NotionIcon, "text-hue-neutral bg-hue-neutral/10"),
   xero: branded(CONNECTION_FORM.xero, XeroIcon, "text-hue-sky bg-hue-sky/10"),
   intercom: branded(CONNECTION_FORM.intercom, IntercomIcon, "text-hue-blue bg-hue-blue/15"),
+  dynamics: branded(CONNECTION_FORM.dynamics, DynamicsIcon, "text-hue-indigo bg-hue-indigo/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

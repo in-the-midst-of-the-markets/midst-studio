@@ -589,6 +589,34 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to api.intercom.io, api.eu.intercom.io, or api.au.intercom.io. Leave this empty to use api.intercom.io.",
     },
   },
+  dynamics: {
+    label: "Microsoft Dynamics",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.dynamics,
+    fieldLabels: {
+      host: "Organization host",
+      user: "Client ID",
+      password: "Secret or access token",
+      database: "Tenant ID",
+    },
+    fieldPlaceholders: {
+      host: "contoso.crm.dynamics.com",
+      user: "00000000-0000-0000-0000-000000000000",
+      password: "a client secret, or eyJ…",
+      database: "00000000-0000-0000-0000-000000000000",
+    },
+    fieldHints: {
+      host: "The access token is sent only to this organization's Dynamics 365 host, such as contoso.crm.dynamics.com.",
+      user: "The application (client) id. Leave this empty when the password is an access token.",
+      password:
+        "A client secret, sent only to login.microsoftonline.com, or an access token sent only to the organization host. A pasted access token is not refreshed.",
+      database:
+        "The directory (tenant) id. Required with a client id. Leave this empty when the password is an access token.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1689,6 +1717,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "notion",
   "xero",
   "intercom",
+  "dynamics",
 ]);
 
 /**
@@ -1707,6 +1736,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "notion",
   "xero",
   "intercom",
+  "dynamics",
 ]);
 
 export interface ConnectionPickerCategory {

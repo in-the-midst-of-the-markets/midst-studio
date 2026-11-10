@@ -85,6 +85,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   notion: "every-code-semicolon",
   xero: "every-code-semicolon",
   intercom: "every-code-semicolon",
+  dynamics: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

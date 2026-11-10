@@ -57,6 +57,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   notion: "api.notion.com",
   xero: "api.xero.com",
   intercom: "api.intercom.io",
+  dynamics: "contoso.crm.dynamics.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -82,6 +83,8 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   notion: unconnected("notion"),
   xero: unconnected("xero"),
   intercom: unconnected("intercom"),
+  // The shared user and database are a client id and a tenant id here, and neither is a GUID.
+  dynamics: { ...unconnected("dynamics"), user: "", database: "", password: "census-token" },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

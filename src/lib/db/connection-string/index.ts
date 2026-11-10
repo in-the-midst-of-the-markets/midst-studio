@@ -40,6 +40,7 @@ import { SHOPIFY_CONNECTION_STRING } from "@/lib/db/providers/sql/shopify/connec
 import { NOTION_CONNECTION_STRING } from "@/lib/db/providers/sql/notion/connection-string";
 import { XERO_CONNECTION_STRING } from "@/lib/db/providers/sql/xero/connection-string";
 import { INTERCOM_CONNECTION_STRING } from "@/lib/db/providers/sql/intercom/connection-string";
+import { DYNAMICS_CONNECTION_STRING } from "@/lib/db/providers/sql/dynamics/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -106,6 +107,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   notion: NOTION_CONNECTION_STRING,
   xero: XERO_CONNECTION_STRING,
   intercom: INTERCOM_CONNECTION_STRING,
+  dynamics: DYNAMICS_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

@@ -141,6 +141,9 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-six": 56,
   // Two past the registry once Intercom joined it.
   "fifty-seven": 57,
+  // Two past the registry once Microsoft Dynamics joined it.
+  "fifty-eight": 58,
+  "fifty-nine": 59,
 };
 
 /**

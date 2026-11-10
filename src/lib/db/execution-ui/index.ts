@@ -40,6 +40,7 @@ import { SHOPIFY_EXECUTION_UI } from "@/lib/db/providers/sql/shopify/execution-u
 import { NOTION_EXECUTION_UI } from "@/lib/db/providers/sql/notion/execution-ui";
 import { XERO_EXECUTION_UI } from "@/lib/db/providers/sql/xero/execution-ui";
 import { INTERCOM_EXECUTION_UI } from "@/lib/db/providers/sql/intercom/execution-ui";
+import { DYNAMICS_EXECUTION_UI } from "@/lib/db/providers/sql/dynamics/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -106,6 +107,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   notion: NOTION_EXECUTION_UI,
   xero: XERO_EXECUTION_UI,
   intercom: INTERCOM_EXECUTION_UI,
+  dynamics: DYNAMICS_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

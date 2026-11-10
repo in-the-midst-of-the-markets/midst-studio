@@ -362,6 +362,25 @@ export const IntercomIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Four panes, for a Dynamics organization. Not the vendor mark. */
+export const DynamicsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="4" width="6.5" height="6.5" rx="1" />
+    <rect x="13.5" y="4" width="6.5" height="6.5" rx="1" />
+    <rect x="4" y="13.5" width="6.5" height="6.5" rx="1" />
+    <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1" />
+  </svg>
+);
+
 /** Two amount columns, for a Xero organisation. Not the vendor mark. */
 export const XeroIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

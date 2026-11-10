@@ -58,6 +58,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   notion: "sql/notion/migration-ddl",
   xero: "sql/xero/migration-ddl",
   intercom: "sql/intercom/migration-ddl",
+  dynamics: "sql/dynamics/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -113,6 +114,7 @@ const REFUSED: DatabaseType[] = [
   "notion",
   "xero",
   "intercom",
+  "dynamics",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

@@ -134,13 +134,36 @@ describe("docs/MCP.md", () => {
     const refused = SHIPPED_DATABASE_TYPES.filter((type) => !MCP_EXPOSABLE[type]).map(
       (type) => DB_UI_CONFIG[type].label,
     );
-    // The control that the record answers: etcd, Oxia, S3, MQTT, Firestore, OPC UA, Modbus, NETCONF and Sparkplug B
-    // are the engines it refuses today, with SNMP (#1721) among them: a Get is a read of one numbered object, and the
-    // tools answer schemas rather than objects. Kubernetes left the list with run_kubectl_read, machine-redacted.
+    // The control that the record answers. The SaaS connectors, Supabase and Microsoft Dynamics refuse MCP
+    // because they have no statement path the tools can run. etcd, Oxia, S3, MQTT, Firestore, OPC UA, Modbus,
+    // NETCONF and Sparkplug B refuse it too, with SNMP (#1721) among them: a Get is a read of one numbered object,
+    // and the tools answer schemas rather than objects. Kubernetes left the list with run_kubectl_read.
     expect(refused).toEqual(
-      ["etcd", "oxia", "s3", "mqtt", "firestore", "opcua", "modbus", "netconf", "snmp", "sparkplug"].map(
-        (type) => DB_UI_CONFIG[type as DatabaseType].label,
-      ),
+      [
+        "airtable",
+        "hubspot",
+        "stripe",
+        "clarity",
+        "googleanalytics",
+        "quickbooks",
+        "odoo",
+        "shopify",
+        "notion",
+        "xero",
+        "intercom",
+        "dynamics",
+        "supabase",
+        "etcd",
+        "oxia",
+        "s3",
+        "mqtt",
+        "firestore",
+        "opcua",
+        "modbus",
+        "netconf",
+        "snmp",
+        "sparkplug",
+      ].map((type) => DB_UI_CONFIG[type as DatabaseType].label),
     );
     const names =
       refused.length === 1 ? refused[0] : `${refused.slice(0, -1).join(", ")} and ${refused[refused.length - 1]}`;

@@ -98,6 +98,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   notion: "sql/notion/sql-writing",
   xero: "sql/xero/sql-writing",
   intercom: "sql/intercom/sql-writing",
+  dynamics: "sql/dynamics/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

@@ -136,9 +136,9 @@ LibreDB Studio устроен наоборот: **инструмент прих�
 
 ## Основные возможности
 
-### Пятьдесят пять СУБД, один интерфейс
+### Пятьдесят шесть СУБД, один интерфейс
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero and Intercom
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom and Microsoft Dynamics
 
 Для всех SQL-СУБД доступен одинаковый набор инструментов: дерево объектов базы (схемы, таблицы, столбцы), ER-диаграммы, сравнение схем и панели мониторинга. MongoDB и Redis работают не на SQL, поэтому ER-диаграмм и сравнения схем для них нет.
 
@@ -160,6 +160,7 @@ ER-диаграмма для Elasticsearch и OpenSearch показывает и
 | **Notion** | none: the Notion API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An integration token sent only to api.notion.com |
 | **Xero** | none: the Accounting API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An access token and an organisation id, sent only to api.xero.com |
 | **Intercom** | none: the Intercom API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. An access token sent only to api.intercom.io |
+| **Microsoft Dynamics** | none: the Dataverse Web API | SELECT, WHERE, ORDER BY, LIMIT, OFFSET and COUNT(*). Read-only. A client secret sent only to login.microsoftonline.com, or an access token sent only to the organization host |
 | **PostgreSQL** | `pg` | Полноценная SQL IDE, планы выполнения EXPLAIN, транзакции, отмена запросов (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | Полноценная SQL IDE, EXPLAIN, транзакции, отмена запросов (`KILL QUERY`) |
 | **Oracle** | `oracledb` (тонкий клиент, режим Thin) | Полноценная SQL IDE, постраничный вывод через `FETCH FIRST N ROWS`, представления мониторинга `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, транзакции |

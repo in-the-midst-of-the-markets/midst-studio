@@ -140,6 +140,7 @@ const ALL_TYPES: DatabaseType[] = [
   "notion",
   "xero",
   "intercom",
+  "dynamics",
 ];
 
 describe("db-ui-config", () => {
@@ -386,6 +387,7 @@ describe("db-ui-config", () => {
       expect(refusing.sort()).toEqual([
         "bigquery",
         "clarity",
+        "dynamics",
         "firestore",
         "googleanalytics",
         "hubspot",
@@ -431,6 +433,7 @@ describe("db-ui-config", () => {
         "airtable",
         "bigquery",
         "clarity",
+        "dynamics",
         "firestore",
         "googleanalytics",
         "hubspot",
@@ -1131,6 +1134,7 @@ describe("declared connection-field copy (#1085)", () => {
       "notion",
       "xero",
       "intercom",
+      "dynamics",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1727,6 +1731,7 @@ describe("db-showcase", () => {
         // Behind Notion: a cloud ledger, then a conversation workspace. Both are read-only lists.
         "xero",
         "intercom",
+        "dynamics",
       ]);
     });
   });
@@ -1971,6 +1976,7 @@ describe("the Snowflake entry", () => {
       "notion",
       "xero",
       "intercom",
+      "dynamics",
     ]);
   });
 

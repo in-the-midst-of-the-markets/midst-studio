@@ -475,6 +475,8 @@ const CONNECTION_FIELD_ROWS = {
   xero: ["host", "password", "database"],
   // An access token in `password`. The host must be an Intercom API host; an empty field uses api.intercom.io.
   intercom: ["host", "password"],
+  // An organization host, a client id in `user`, a client secret or access token in `password`, and a tenant id in `database`.
+  dynamics: ["host", "user", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -628,6 +630,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   notion: null,
   xero: null,
   intercom: null,
+  dynamics: null,
   supabase: null,
   mysql: null,
   sqlite: null,
