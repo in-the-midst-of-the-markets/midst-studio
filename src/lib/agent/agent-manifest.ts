@@ -99,6 +99,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   xero: null,
   intercom: null,
   dynamics: null,
+  googleads: null,
   supabase: null,
   s3: "s3api",
   kubernetes: "kubectl",

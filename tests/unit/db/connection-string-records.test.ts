@@ -150,7 +150,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
     expect(typeof provider.getCapabilities().supportsConnectionString).toBe("boolean");
   });
 
-  test("accepts a connection string on ten engines and refuses it on the other forty-seven", () => {
+  test("accepts a connection string on ten engines and refuses it on the other forty-eight", () => {
     expect(SHIPPED_DATABASE_TYPES.filter((type) => CONNECTION_STRING_ACCEPTED[type])).toEqual([
       "postgres",
       "supabase",
@@ -176,6 +176,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "xero",
       "intercom",
       "dynamics",
+      "googleads",
       "bigquery",
       "snowflake",
       "spark",

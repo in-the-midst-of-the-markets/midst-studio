@@ -617,6 +617,33 @@ export const CONNECTION_FORM: {
         "The directory (tenant) id. Required with a client id. Leave this empty when the password is an access token.",
     },
   },
+  googleads: {
+    label: "Google Ads",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.googleads,
+    fieldLabels: {
+      host: "API host",
+      user: "Manager customer ID",
+      password: "Access token or service-account key",
+      database: "Customer ID",
+    },
+    fieldPlaceholders: {
+      host: "googleads.googleapis.com",
+      user: "1234567890",
+      password: "ya29… or one line of service-account JSON",
+      database: "123-456-7890",
+    },
+    fieldHints: {
+      host: "The access token is sent only to googleads.googleapis.com. Leave this empty to use that host.",
+      user: "The manager account's customer id, when the token reaches this customer through one. Leave this empty when the token belongs to the customer itself.",
+      password:
+        "An access token, or one line of service-account JSON. A service-account key is exchanged only at oauth2.googleapis.com. A pasted access token is not refreshed.",
+      database: "The 10-digit Google Ads customer id, with or without hyphens.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1718,6 +1745,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "xero",
   "intercom",
   "dynamics",
+  "googleads",
 ]);
 
 /**
@@ -1737,6 +1765,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "xero",
   "intercom",
   "dynamics",
+  "googleads",
 ]);
 
 export interface ConnectionPickerCategory {

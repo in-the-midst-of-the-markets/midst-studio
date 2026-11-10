@@ -40,6 +40,7 @@ import { NOTION_SQL_GRAMMAR } from "@/lib/db/providers/sql/notion/sql-grammar";
 import { XERO_SQL_GRAMMAR } from "@/lib/db/providers/sql/xero/sql-grammar";
 import { INTERCOM_SQL_GRAMMAR } from "@/lib/db/providers/sql/intercom/sql-grammar";
 import { DYNAMICS_SQL_GRAMMAR } from "@/lib/db/providers/sql/dynamics/sql-grammar";
+import { GOOGLEADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googleads/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
 import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
@@ -108,6 +109,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   xero: XERO_SQL_GRAMMAR,
   intercom: INTERCOM_SQL_GRAMMAR,
   dynamics: DYNAMICS_SQL_GRAMMAR,
+  googleads: GOOGLEADS_SQL_GRAMMAR,
   supabase: SUPABASE_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,

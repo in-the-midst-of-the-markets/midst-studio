@@ -26,6 +26,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   xero: unsupported,
   intercom: unsupported,
   dynamics: unsupported,
+  googleads: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,

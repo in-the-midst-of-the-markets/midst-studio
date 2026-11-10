@@ -163,6 +163,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   xero: 54,
   intercom: 55,
   dynamics: 56,
+  googleads: 57,
 };
 
 /**

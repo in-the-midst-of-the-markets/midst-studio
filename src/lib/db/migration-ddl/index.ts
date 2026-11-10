@@ -43,6 +43,7 @@ import { NOTION_MIGRATION_DDL } from "@/lib/db/providers/sql/notion/migration-dd
 import { XERO_MIGRATION_DDL } from "@/lib/db/providers/sql/xero/migration-ddl";
 import { INTERCOM_MIGRATION_DDL } from "@/lib/db/providers/sql/intercom/migration-ddl";
 import { DYNAMICS_MIGRATION_DDL } from "@/lib/db/providers/sql/dynamics/migration-ddl";
+import { GOOGLEADS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleads/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -110,6 +111,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   xero: XERO_MIGRATION_DDL,
   intercom: INTERCOM_MIGRATION_DDL,
   dynamics: DYNAMICS_MIGRATION_DDL,
+  googleads: GOOGLEADS_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

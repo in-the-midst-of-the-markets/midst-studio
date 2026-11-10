@@ -141,6 +141,7 @@ const ALL_TYPES: DatabaseType[] = [
   "xero",
   "intercom",
   "dynamics",
+  "googleads",
 ];
 
 describe("db-ui-config", () => {
@@ -389,6 +390,7 @@ describe("db-ui-config", () => {
         "clarity",
         "dynamics",
         "firestore",
+        "googleads",
         "googleanalytics",
         "hubspot",
         "intercom",
@@ -435,6 +437,7 @@ describe("db-ui-config", () => {
         "clarity",
         "dynamics",
         "firestore",
+        "googleads",
         "googleanalytics",
         "hubspot",
         "intercom",
@@ -1135,6 +1138,7 @@ describe("declared connection-field copy (#1085)", () => {
       "xero",
       "intercom",
       "dynamics",
+      "googleads",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1732,6 +1736,7 @@ describe("db-showcase", () => {
         "xero",
         "intercom",
         "dynamics",
+        "googleads",
       ]);
     });
   });
@@ -1977,6 +1982,7 @@ describe("the Snowflake entry", () => {
       "xero",
       "intercom",
       "dynamics",
+      "googleads",
     ]);
   });
 

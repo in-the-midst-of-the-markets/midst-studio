@@ -58,6 +58,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   xero: "api.xero.com",
   intercom: "api.intercom.io",
   dynamics: "contoso.crm.dynamics.com",
+  googleads: "googleads.googleapis.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -85,6 +86,13 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   intercom: unconnected("intercom"),
   // The shared user and database are a client id and a tenant id here, and neither is a GUID.
   dynamics: { ...unconnected("dynamics"), user: "", database: "", password: "census-token" },
+  // The shared user is a manager id here, and "census" is not 10 digits. The customer id is.
+  googleads: {
+    ...unconnected("googleads"),
+    user: "",
+    database: "1234567890",
+    password: "census-token",
+  },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),
