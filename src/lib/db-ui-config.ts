@@ -51,6 +51,7 @@ import {
   QuickBooksIcon,
   OdooIcon,
   ShopifyIcon,
+  NotionIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -117,6 +118,7 @@ export const DB_UI_CONFIG: {
   quickbooks: branded(CONNECTION_FORM.quickbooks, QuickBooksIcon, "text-hue-green bg-hue-green/10"),
   odoo: branded(CONNECTION_FORM.odoo, OdooIcon, "text-hue-purple bg-hue-purple/10"),
   shopify: branded(CONNECTION_FORM.shopify, ShopifyIcon, "text-hue-green bg-hue-green/20"),
+  notion: branded(CONNECTION_FORM.notion, NotionIcon, "text-hue-neutral bg-hue-neutral/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

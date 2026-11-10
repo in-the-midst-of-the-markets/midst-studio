@@ -36,6 +36,7 @@ import { GOOGLEANALYTICS_SQL_WRITING } from "@/lib/db/providers/sql/googleanalyt
 import { QUICKBOOKS_SQL_WRITING } from "@/lib/db/providers/sql/quickbooks/sql-writing";
 import { ODOO_SQL_WRITING } from "@/lib/db/providers/sql/odoo/sql-writing";
 import { SHOPIFY_SQL_WRITING } from "@/lib/db/providers/sql/shopify/sql-writing";
+import { NOTION_SQL_WRITING } from "@/lib/db/providers/sql/notion/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -104,6 +105,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   quickbooks: QUICKBOOKS_SQL_WRITING,
   odoo: ODOO_SQL_WRITING,
   shopify: SHOPIFY_SQL_WRITING,
+  notion: NOTION_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,

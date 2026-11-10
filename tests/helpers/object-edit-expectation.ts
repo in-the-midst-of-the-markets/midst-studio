@@ -133,6 +133,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "odoo",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "shopify",
+  // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
+  "notion",
   // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
   "supabase",
 ] as const);

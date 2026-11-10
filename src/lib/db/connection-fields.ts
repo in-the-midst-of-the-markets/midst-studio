@@ -469,6 +469,8 @@ const CONNECTION_FIELD_ROWS = {
   odoo: ["host", "password"],
   // An Admin API access token in `password`. The host must be a name under myshopify.com.
   shopify: ["host", "password"],
+  // An internal integration token in `password`. The host must be api.notion.com.
+  notion: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -619,6 +621,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   quickbooks: null,
   odoo: null,
   shopify: null,
+  notion: null,
   supabase: null,
   mysql: null,
   sqlite: null,

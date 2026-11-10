@@ -137,6 +137,7 @@ const ALL_TYPES: DatabaseType[] = [
   "quickbooks",
   "odoo",
   "shopify",
+  "notion",
 ];
 
 describe("db-ui-config", () => {
@@ -387,6 +388,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "kafka",
+        "notion",
         "odoo",
         "quickbooks",
         "rabbitmq",
@@ -429,6 +431,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "netconf",
+        "notion",
         "odoo",
         "opcua",
         "quickbooks",
@@ -1119,6 +1122,7 @@ describe("declared connection-field copy (#1085)", () => {
       "quickbooks",
       "odoo",
       "shopify",
+      "notion",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1710,6 +1714,8 @@ describe("db-showcase", () => {
         "quickbooks",
         "odoo",
         "shopify",
+        // Last, behind Shopify: a workspace of documents, and the newest name, so nothing above it moves.
+        "notion",
       ]);
     });
   });
@@ -1951,6 +1957,7 @@ describe("the Snowflake entry", () => {
       "quickbooks",
       "odoo",
       "shopify",
+      "notion",
     ]);
   });
 

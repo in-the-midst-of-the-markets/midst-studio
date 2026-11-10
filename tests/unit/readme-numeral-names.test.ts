@@ -51,15 +51,15 @@ const ENGINE_NAMES = EXTERNAL_DATABASE_TYPES.map((type) => DB_UI_CONFIG[type].la
  * digits. Every other file writes it out.
  */
 const READMES: ReadonlyArray<{ file: string; now: string; before: string }> = [
-  { file: "README.md", now: "Fifty-two", before: "Fifty-one" },
-  { file: "README_zh.md", now: "五十二种引擎", before: "五十一种引擎" },
-  { file: "README_ja.md", now: "52のエンジン", before: "51のエンジン" },
-  { file: "README_es.md", now: "Cincuenta y dos", before: "Cincuenta y uno" },
-  { file: "README_pt.md", now: "Cinquenta e dois", before: "Cinquenta e um" },
-  { file: "README_ru.md", now: "Пятьдесят два", before: "Пятьдесят один" },
-  { file: "README_hi.md", now: "बावन engines", before: "इक्यावन engines" },
-  { file: "README_ur.md", now: "باون engines", before: "اکاون engines" },
-  { file: "README_ko.md", now: "52개의 엔진", before: "51개의 엔진" },
+  { file: "README.md", now: "Fifty-three", before: "Fifty-two" },
+  { file: "README_zh.md", now: "五十三种引擎", before: "五十二种引擎" },
+  { file: "README_ja.md", now: "53のエンジン", before: "52のエンジン" },
+  { file: "README_es.md", now: "Cincuenta y tres", before: "Cincuenta y dos" },
+  { file: "README_pt.md", now: "Cinquenta e três", before: "Cinquenta e dois" },
+  { file: "README_ru.md", now: "Пятьдесят три", before: "Пятьдесят два" },
+  { file: "README_hi.md", now: "तिरेपन engines", before: "बावन engines" },
+  { file: "README_ur.md", now: "ترپن engines", before: "باون engines" },
+  { file: "README_ko.md", now: "53개의 엔진", before: "52개의 엔진" },
 ];
 
 /** The engines a line names, which is what a numeral beside a list is claiming. */

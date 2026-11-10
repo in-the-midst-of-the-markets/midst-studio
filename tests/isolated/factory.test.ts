@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, libredb$/,
     );
   });
 
@@ -1586,6 +1586,7 @@ describe("createDatabaseProvider", () => {
       quickbooks: { host: "quickbooks.api.intuit.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
+      notion: { host: "api.notion.com" },
     };
 
     const declaringTypes: string[] = [];
@@ -1651,6 +1652,7 @@ describe("createDatabaseProvider", () => {
       quickbooks: { host: "quickbooks.api.intuit.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
+      notion: { host: "api.notion.com" },
     };
 
     const cannotCancel: string[] = [];
@@ -1692,6 +1694,8 @@ describe("createDatabaseProvider", () => {
       // cancel and nothing to cancel it with. A read is bounded instead, by the session's deadline
       // and the framing's byte cap (#1724).
       "netconf",
+      // No cancel: a Notion read is one data-source query, and the API has nothing that stops it.
+      "notion",
       // No cancel: an Odoo read is one POST, and JSON-2 has nothing that stops it.
       "odoo",
       // No cancel either: a read is bounded instead, at most 200 nodes or 500 values a request, and

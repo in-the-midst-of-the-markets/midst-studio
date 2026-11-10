@@ -132,6 +132,16 @@ const SeedDatabaseType = z.enum([
   "netconf",
   "snmp",
   "sparkplug",
+  "airtable",
+  "supabase",
+  "hubspot",
+  "stripe",
+  "clarity",
+  "googleanalytics",
+  "quickbooks",
+  "odoo",
+  "shopify",
+  "notion",
 ]);
 
 export const SeedDefaultsSchema = z.object({

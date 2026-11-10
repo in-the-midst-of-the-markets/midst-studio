@@ -306,6 +306,25 @@ export const ShopifyIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A page of rows, for a Notion database. Not the vendor mark. */
+export const NotionIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M7 3h7l5 5v13H7V3z" />
+    <path d="M14 3v5h5" />
+    <path d="M9 13h6" />
+    <path d="M9 17h6" />
+  </svg>
+);
+
 /** A ledger page, for a QuickBooks Online company. Not the vendor mark. */
 export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
