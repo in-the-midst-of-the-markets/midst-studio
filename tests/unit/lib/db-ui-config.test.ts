@@ -142,6 +142,7 @@ const ALL_TYPES: DatabaseType[] = [
   "intercom",
   "dynamics",
   "googleads",
+  "microsoftads",
 ];
 
 describe("db-ui-config", () => {
@@ -395,6 +396,7 @@ describe("db-ui-config", () => {
         "hubspot",
         "intercom",
         "kafka",
+        "microsoftads",
         "notion",
         "odoo",
         "quickbooks",
@@ -441,6 +443,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "intercom",
+        "microsoftads",
         "netconf",
         "notion",
         "odoo",
@@ -1139,6 +1142,7 @@ describe("declared connection-field copy (#1085)", () => {
       "intercom",
       "dynamics",
       "googleads",
+      "microsoftads",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1737,6 +1741,7 @@ describe("db-showcase", () => {
         "intercom",
         "dynamics",
         "googleads",
+        "microsoftads",
       ]);
     });
   });
@@ -1983,6 +1988,7 @@ describe("the Snowflake entry", () => {
       "intercom",
       "dynamics",
       "googleads",
+      "microsoftads",
     ]);
   });
 

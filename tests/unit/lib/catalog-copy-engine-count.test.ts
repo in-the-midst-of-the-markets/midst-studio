@@ -144,6 +144,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // Two past the registry once Microsoft Dynamics joined it.
   "fifty-eight": 58,
   "fifty-nine": 59,
+  // Two past the registry once Microsoft Ads joined it.
+  sixty: 60,
 };
 
 /**

@@ -479,6 +479,8 @@ const CONNECTION_FIELD_ROWS = {
   dynamics: ["host", "user", "password", "database"],
   // An API host, an optional manager customer id in `user`, an access token or service-account key in `password`, and a customer id in `database`.
   googleads: ["host", "user", "password", "database"],
+  // An API host, a customer id in `user`, an access token and a developer token in `password`, and an account id in `database`.
+  microsoftads: ["host", "user", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -634,6 +636,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   intercom: null,
   dynamics: null,
   googleads: null,
+  microsoftads: null,
   supabase: null,
   mysql: null,
   sqlite: null,

@@ -362,6 +362,25 @@ export const IntercomIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A click on a campaign card, for a Microsoft Ads account. Not the vendor mark. */
+export const MicrosoftAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="3" y="4" width="18" height="12" rx="2" />
+    <path d="M12 16v4" />
+    <path d="M9 20h6" />
+    <path d="M8 10h8" />
+  </svg>
+);
+
 /** A campaign card, for a Google Ads account. Not the vendor mark. */
 export const GoogleAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

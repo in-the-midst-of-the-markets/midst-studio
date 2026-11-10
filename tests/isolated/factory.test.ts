@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, libredb$/,
     );
   });
 
@@ -1591,6 +1591,12 @@ describe("createDatabaseProvider", () => {
       intercom: { host: "api.intercom.io" },
       dynamics: { host: "contoso.crm.dynamics.com", user: "", database: "", password: "census-token" },
       googleads: { host: "googleads.googleapis.com", user: "", database: "1234567890", password: "census-token" },
+      microsoftads: {
+        host: "campaign.api.bingads.microsoft.com",
+        user: "123456",
+        database: "7654321",
+        password: '{"accessToken":"census-token","developerToken":"census-dev"}',
+      },
     };
 
     const declaringTypes: string[] = [];
@@ -1661,6 +1667,12 @@ describe("createDatabaseProvider", () => {
       intercom: { host: "api.intercom.io" },
       dynamics: { host: "contoso.crm.dynamics.com", user: "", database: "", password: "census-token" },
       googleads: { host: "googleads.googleapis.com", user: "", database: "1234567890", password: "census-token" },
+      microsoftads: {
+        host: "campaign.api.bingads.microsoft.com",
+        user: "123456",
+        database: "7654321",
+        password: '{"accessToken":"census-token","developerToken":"census-dev"}',
+      },
     };
 
     const cannotCancel: string[] = [];
@@ -1692,6 +1704,8 @@ describe("createDatabaseProvider", () => {
       "kafka",
       "libredb",
       "libsql",
+      // No cancel: a Microsoft Ads read is one POST, and the API has nothing that stops it.
+      "microsoftads",
       // No cancel either, and for a reason of its own: a read is one exchange at a time on a
       // connection this provider does not hold open, and Modbus has no request that stops one in
       // flight - the five requests MB-S1 allows are four reads and the identification read (#1723).

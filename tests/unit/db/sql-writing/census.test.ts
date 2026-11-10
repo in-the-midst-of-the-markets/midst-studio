@@ -100,6 +100,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   intercom: "sql/intercom/sql-writing",
   dynamics: "sql/dynamics/sql-writing",
   googleads: "sql/googleads/sql-writing",
+  microsoftads: "sql/microsoftads/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Fifty-eight type-ids are supported by fifty-six provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Fifty-nine type-ids are supported by fifty-seven provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -334,6 +334,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Intercom | `intercom` | SQL (the Intercom REST API, read-only) | [providers/intercom.md](./providers/intercom.md) |
 | Microsoft Dynamics | `dynamics` | SQL (the Dataverse Web API, read-only) | [providers/dynamics.md](./providers/dynamics.md) |
 | Google Ads | `googleads` | SQL (the Google Ads API, read-only) | [providers/googleads.md](./providers/googleads.md) |
+| Microsoft Ads | `microsoftads` | SQL (the Microsoft Advertising API, read-only) | [providers/microsoftads.md](./providers/microsoftads.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

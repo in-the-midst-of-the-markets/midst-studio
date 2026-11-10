@@ -87,6 +87,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   intercom: "every-code-semicolon",
   dynamics: "every-code-semicolon",
   googleads: "every-code-semicolon",
+  microsoftads: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

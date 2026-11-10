@@ -56,7 +56,7 @@ describe("readsSqlText against each provider's queryLanguage", () => {
 
   test("the measured counts: 35 providers read sql, 36 grammar rows read SQL text", async () => {
     const languages = await queryLanguages();
-    expect([...languages.values()].filter((language) => language === "sql").length).toBe(35);
-    expect(Object.values(SQL_GRAMMAR).filter((spec) => spec.readsSqlText).length).toBe(36);
+    expect([...languages.values()].filter((language) => language === "sql").length).toBe(36);
+    expect(Object.values(SQL_GRAMMAR).filter((spec) => spec.readsSqlText).length).toBe(37);
   });
 });
