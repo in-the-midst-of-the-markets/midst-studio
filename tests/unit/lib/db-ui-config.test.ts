@@ -138,6 +138,8 @@ const ALL_TYPES: DatabaseType[] = [
   "odoo",
   "shopify",
   "notion",
+  "xero",
+  "intercom",
 ];
 
 describe("db-ui-config", () => {
@@ -387,6 +389,7 @@ describe("db-ui-config", () => {
         "firestore",
         "googleanalytics",
         "hubspot",
+        "intercom",
         "kafka",
         "notion",
         "odoo",
@@ -396,6 +399,7 @@ describe("db-ui-config", () => {
         "snmp",
         "snowflake",
         "stripe",
+        "xero",
       ]);
       // A file-based engine still answers true: its panel is hidden by isFileBased instead.
       expect(offersSshTunnel("sqlite")).toBe(true);
@@ -430,6 +434,7 @@ describe("db-ui-config", () => {
         "firestore",
         "googleanalytics",
         "hubspot",
+        "intercom",
         "netconf",
         "notion",
         "odoo",
@@ -439,6 +444,7 @@ describe("db-ui-config", () => {
         "snmp",
         "snowflake",
         "stripe",
+        "xero",
       ]);
     });
 
@@ -1123,6 +1129,8 @@ describe("declared connection-field copy (#1085)", () => {
       "odoo",
       "shopify",
       "notion",
+      "xero",
+      "intercom",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1716,6 +1724,9 @@ describe("db-showcase", () => {
         "shopify",
         // Last, behind Shopify: a workspace of documents, and the newest name, so nothing above it moves.
         "notion",
+        // Behind Notion: a cloud ledger, then a conversation workspace. Both are read-only lists.
+        "xero",
+        "intercom",
       ]);
     });
   });
@@ -1958,6 +1969,8 @@ describe("the Snowflake entry", () => {
       "odoo",
       "shopify",
       "notion",
+      "xero",
+      "intercom",
     ]);
   });
 

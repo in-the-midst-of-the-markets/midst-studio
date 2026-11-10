@@ -344,6 +344,24 @@ export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => 
   </svg>
 );
 
+/** Two message lines, for an Intercom workspace. Not the vendor mark. */
+export const IntercomIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M5 6h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H9l-4 3v-3H5a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3z" />
+    <path d="M7 10h6" />
+    <path d="M7 13h4" />
+  </svg>
+);
+
 /** Two amount columns, for a Xero organisation. Not the vendor mark. */
 export const XeroIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

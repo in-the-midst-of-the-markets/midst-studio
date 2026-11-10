@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Fifty-five type-ids are supported by fifty-three provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Fifty-six type-ids are supported by fifty-four provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -331,6 +331,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Shopify | `shopify` | ShopifyQL (the Admin API shopifyqlQuery field, read-only) | [providers/shopify.md](./providers/shopify.md) |
 | Notion | `notion` | SQL (the Notion data-source query API, read-only) | [providers/notion.md](./providers/notion.md) |
 | Xero | `xero` | SQL (the Xero Accounting list API, read-only) | [providers/xero.md](./providers/xero.md) |
+| Intercom | `intercom` | SQL (the Intercom REST API, read-only) | [providers/intercom.md](./providers/intercom.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

@@ -161,6 +161,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   notion: 53,
   // Last (rank 54). A cloud ledger sits with the other accounting connections.
   xero: 54,
+  intercom: 55,
 };
 
 /**

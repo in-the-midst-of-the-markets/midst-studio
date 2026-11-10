@@ -57,6 +57,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   shopify: "sql/shopify/migration-ddl",
   notion: "sql/notion/migration-ddl",
   xero: "sql/xero/migration-ddl",
+  intercom: "sql/intercom/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -111,6 +112,7 @@ const REFUSED: DatabaseType[] = [
   "shopify",
   "notion",
   "xero",
+  "intercom",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

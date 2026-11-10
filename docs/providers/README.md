@@ -18,6 +18,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
 | Notion | `notion` | SQL (the data-source query API, read-only) | none (HTTP: the Notion API) | a SELECT subset, sent as a data-source query | [notion.md](./notion.md) |
 | Xero | `xero` | SQL (accounting) | none (HTTP: the Xero Accounting API) | SQL (a read-only subset translated to the API) | [xero.md](./xero.md) |
+| Intercom | `intercom` | SQL (conversations) | none (HTTP: the Intercom REST API) | SQL (a read-only subset translated to the API) | [intercom.md](./intercom.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

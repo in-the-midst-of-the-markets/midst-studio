@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, libredb$/,
     );
   });
 
@@ -1588,6 +1588,7 @@ describe("createDatabaseProvider", () => {
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
       xero: { host: "api.xero.com" },
+      intercom: { host: "api.intercom.io" },
     };
 
     const declaringTypes: string[] = [];
@@ -1655,6 +1656,7 @@ describe("createDatabaseProvider", () => {
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
       xero: { host: "api.xero.com" },
+      intercom: { host: "api.intercom.io" },
     };
 
     const cannotCancel: string[] = [];
@@ -1677,6 +1679,8 @@ describe("createDatabaseProvider", () => {
       "googleanalytics",
       // No cancel: a HubSpot read is one search request, and the CRM API has nothing that stops it.
       "hubspot",
+      // No cancel: an Intercom read is one list or one search, and the API has nothing that stops it.
+      "intercom",
       "kafka",
       "libredb",
       "libsql",

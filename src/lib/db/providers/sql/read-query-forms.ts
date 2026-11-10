@@ -174,6 +174,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   shopify: null,
   notion: null,
   xero: null,
+  intercom: null,
   supabase: null,
   s3: null,
   kubernetes: null,

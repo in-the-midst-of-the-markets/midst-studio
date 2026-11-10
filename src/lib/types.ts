@@ -57,6 +57,10 @@ export type DatabaseType =
   // organisation. Rows are not copied into another database. The token is sent only
   // to api.xero.com.
   | "xero"
+  // Intercom. The REST API, read-only. One SELECT is one list or one search.
+  // Rows are not copied into another database. The token is sent only to an
+  // Intercom API host.
+  | "intercom"
   | "bigquery"
   | "snowflake"
   | "mysql"

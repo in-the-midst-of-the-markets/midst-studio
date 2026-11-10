@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Fifty-four external engines share one interface.
-The fifty-fifth row is the embedded LibreDB store: it ships inside the image.
+Fifty-five external engines share one interface.
+The fifty-sixth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -164,6 +164,7 @@ The fifty-fifth row is the embedded LibreDB store: it ships inside the image.
 | **Shopify** | none, HTTP | Read-only ShopifyQL |
 | **Notion** | none, HTTP | Read-only data-source query |
 | **Xero** | none, HTTP | Read-only Accounting list |
+| **Intercom** | none, HTTP | Read-only conversation list |
 | **MTConnect** | none, HTTP | Read-only agent probe |
 | **Modbus** | none | Read-only device read |
 | **NETCONF** | none | Read-only device read over SSH |
@@ -176,7 +177,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the fifty-four drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the fifty-five drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

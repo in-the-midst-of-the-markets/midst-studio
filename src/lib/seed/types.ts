@@ -143,6 +143,7 @@ const SeedDatabaseType = z.enum([
   "shopify",
   "notion",
   "xero",
+  "intercom",
 ]);
 
 export const SeedDefaultsSchema = z.object({
