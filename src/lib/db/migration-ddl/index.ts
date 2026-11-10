@@ -40,6 +40,7 @@ import { QUICKBOOKS_MIGRATION_DDL } from "@/lib/db/providers/sql/quickbooks/migr
 import { ODOO_MIGRATION_DDL } from "@/lib/db/providers/sql/odoo/migration-ddl";
 import { SHOPIFY_MIGRATION_DDL } from "@/lib/db/providers/sql/shopify/migration-ddl";
 import { NOTION_MIGRATION_DDL } from "@/lib/db/providers/sql/notion/migration-ddl";
+import { XERO_MIGRATION_DDL } from "@/lib/db/providers/sql/xero/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -104,6 +105,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   odoo: ODOO_MIGRATION_DDL,
   shopify: SHOPIFY_MIGRATION_DDL,
   notion: NOTION_MIGRATION_DDL,
+  xero: XERO_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

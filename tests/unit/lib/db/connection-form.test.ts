@@ -54,6 +54,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   odoo: true,
   shopify: true,
   notion: true,
+  xero: true,
   supabase: true,
   mysql: true,
   sqlite: true,

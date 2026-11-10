@@ -53,6 +53,10 @@ export type DatabaseType =
   // query API. The editor runs a read-only SQL subset. The token is sent only to
   // api.notion.com.
   | "notion"
+  // Xero. The Accounting API, read-only. One SELECT is one list request for an
+  // organisation. Rows are not copied into another database. The token is sent only
+  // to api.xero.com.
+  | "xero"
   | "bigquery"
   | "snowflake"
   | "mysql"

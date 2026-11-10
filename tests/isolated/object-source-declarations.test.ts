@@ -106,6 +106,7 @@ const SOURCE_DECLARATIONS: Readonly<Record<DatabaseType, readonly string[]>> = O
   odoo: [],
   shopify: [],
   notion: [],
+  xero: [],
   // The Postgres kinds, shown on a Supabase connection. Object edit is not declared on this type-id.
   supabase: ["view/pgsql", "materialized_view/pgsql", "function/pgsql", "procedure/pgsql", "trigger/pgsql"],
   // The MySQL branch only. MariaDB's two extra kinds are asserted separately, because an
@@ -306,6 +307,8 @@ const CENSUS_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "shopify",
   // A Notion database is pages behind the data-source query API, and no kind carries a definition text.
   "notion",
+  // A Xero list is records behind the Accounting API, and no kind carries a definition text.
+  "xero",
 ]);
 
 /** MariaDB's two extra kinds, which arrive only once the flavour has been measured. */
@@ -378,7 +381,7 @@ describe("the fleet census of object source declarations", () => {
     // EXTERNAL_DATABASE_TYPES.length (38 with db2, neo4j, milvus, qdrant, influxdb, influxdb3, oxia, databend,
     // bigquery, snowflake, s3, kubernetes, mqtt, firestore, rabbitmq, opcua, mtconnect and sparkplug) plus the
     // embedded store.
-    expect(CENSUS_TYPES).toHaveLength(54);
+    expect(CENSUS_TYPES).toHaveLength(55);
     expect(Object.keys(SOURCE_DECLARATIONS).sort()).toEqual([...SHIPPED_DATABASE_TYPES].sort());
   });
 
@@ -408,8 +411,8 @@ describe("the fleet census of object source declarations", () => {
     // object is a value at a numbered place, with no text behind it to show), netconf two kinds,
     // BOTH source-bearing, sparkplug two kinds, BOTH source-bearing, weaviate one kind, source-bearing (#1566),
     // and clarity, googleanalytics, quickbooks and odoo one kind each, neither source-bearing.
-    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(61);
-    expect(rows).toHaveLength(213);
+    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(62);
+    expect(rows).toHaveLength(214);
   });
 
   test("the MariaDB branch declares two more, which an unconnected provider cannot show", async () => {
@@ -527,7 +530,7 @@ describe("the fleet census of object source declarations", () => {
     // 181 unconnected kinds plus the MariaDB branch's eight, and the kinds each new provider
     // brought: MTConnect's three (#1722), NETCONF's and Modbus's, SNMP's two (#1721) and
     // Sparkplug B's two (#1720), and Weaviate's one (#1566).
-    expect(rows).toHaveLength(221);
+    expect(rows).toHaveLength(222);
 
     const halfDeclared = rows
       .filter((row) => row.kind.sourceLanguage !== undefined && row.kind.hasSource !== true)

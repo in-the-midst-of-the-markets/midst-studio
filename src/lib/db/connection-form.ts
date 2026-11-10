@@ -553,6 +553,25 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to api.notion.com. Leave this empty to use that host.",
     },
   },
+  xero: {
+    label: "Xero",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.xero,
+    fieldLabels: { password: "Access token", database: "Organisation ID", host: "API host" },
+    fieldPlaceholders: {
+      password: "eyJ…",
+      database: "00000000-0000-0000-0000-000000000000",
+      host: "api.xero.com",
+    },
+    fieldHints: {
+      password: "An OAuth access token from the Xero app. It lasts about 30 minutes.",
+      database: "The organisation id sent as Xero-Tenant-Id. It is a UUID.",
+      host: "The token is sent only to api.xero.com. Leave this empty to use that host.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1651,6 +1670,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "odoo",
   "shopify",
   "notion",
+  "xero",
 ]);
 
 /**
@@ -1667,6 +1687,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "odoo",
   "shopify",
   "notion",
+  "xero",
 ]);
 
 export interface ConnectionPickerCategory {

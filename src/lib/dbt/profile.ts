@@ -23,6 +23,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   odoo: unsupported,
   shopify: unsupported,
   notion: unsupported,
+  xero: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,
