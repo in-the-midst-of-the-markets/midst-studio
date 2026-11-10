@@ -1,0 +1,8 @@
+-- fixture: full
+-- Migration generated at 2026-10-19T12:00:00.000Z
+-- Dialect: intercom
+-- Changes: 1 added, 1 removed, 2 modified
+
+-- Intercom: Cannot generate table DDL. Intercom object changes are not generated here; this connection is read-only.
+-- fixture: none
+-- No schema changes detected.

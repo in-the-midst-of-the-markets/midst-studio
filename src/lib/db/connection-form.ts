@@ -572,6 +572,23 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to api.xero.com. Leave this empty to use that host.",
     },
   },
+  intercom: {
+    label: "Intercom",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.intercom,
+    fieldLabels: { password: "Access token", host: "API host" },
+    fieldPlaceholders: {
+      password: "dG9r…",
+      host: "api.intercom.io",
+    },
+    fieldHints: {
+      password: "An access token from the Intercom app. It lasts until it is revoked.",
+      host: "The token is sent only to api.intercom.io, api.eu.intercom.io, or api.au.intercom.io. Leave this empty to use api.intercom.io.",
+    },
+  },
   odoo: {
     label: "Odoo",
     defaultPort: "",
@@ -1671,6 +1688,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "shopify",
   "notion",
   "xero",
+  "intercom",
 ]);
 
 /**
@@ -1688,6 +1706,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "shopify",
   "notion",
   "xero",
+  "intercom",
 ]);
 
 export interface ConnectionPickerCategory {

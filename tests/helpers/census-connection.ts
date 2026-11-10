@@ -56,6 +56,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   shopify: "census.myshopify.com",
   notion: "api.notion.com",
   xero: "api.xero.com",
+  intercom: "api.intercom.io",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -80,6 +81,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   shopify: unconnected("shopify"),
   notion: unconnected("notion"),
   xero: unconnected("xero"),
+  intercom: unconnected("intercom"),
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

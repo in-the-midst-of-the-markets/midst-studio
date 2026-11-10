@@ -97,6 +97,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   shopify: "sql/shopify/sql-writing",
   notion: "sql/notion/sql-writing",
   xero: "sql/xero/sql-writing",
+  intercom: "sql/intercom/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

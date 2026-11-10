@@ -55,6 +55,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   shopify: true,
   notion: true,
   xero: true,
+  intercom: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -385,6 +386,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "odoo",
       "shopify",
       "notion",
+      "xero",
+      "intercom",
     ]);
   });
 
@@ -402,6 +405,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "odoo",
       "shopify",
       "notion",
+      "xero",
+      "intercom",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

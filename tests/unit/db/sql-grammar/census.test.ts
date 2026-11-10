@@ -53,6 +53,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "shopify",
     "notion",
     "xero",
+    "intercom",
     "libsql",
     "snowflake",
     "spark",

@@ -139,6 +139,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-five": 55,
   // Two past the registry once Xero joined it.
   "fifty-six": 56,
+  // Two past the registry once Intercom joined it.
+  "fifty-seven": 57,
 };
 
 /**

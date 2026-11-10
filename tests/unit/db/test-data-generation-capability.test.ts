@@ -29,6 +29,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   shopify: false,
   notion: false,
   xero: false,
+  intercom: false,
   supabase: false,
   mysql: true,
   sqlite: true,
