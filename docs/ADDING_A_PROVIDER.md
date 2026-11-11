@@ -290,6 +290,7 @@ is kept in sync with its per-provider doc). Don't copy a skeleton from this guid
 | Embedded / file SQL | `SQLBaseProvider` | `sqlite.ts` | [sqlite.md](./providers/sqlite.md) |
 | SQL database reached over HTTP (no driver) | `SQLBaseProvider` | `sql/clickhouse/`, `sql/druid/` or `sql/trino/` | [clickhouse.md](./providers/clickhouse.md) · [druid.md](./providers/druid.md) · [trino.md](./providers/trino.md) |
 | SQL over HTTP where a **second product** speaks the same protocol | `SQLBaseProvider` | `sql/search/` (two ids, one module) or `sql/trino/` (one id, a dialect descriptor ready for the second) | [elasticsearch.md](./providers/elasticsearch.md) · [trino.md](./providers/trino.md) |
+| One named list from an HTTP API, with WHERE, ORDER BY and LIMIT applied here | `SQLBaseProvider` | `sql/pipedrive/` for the catalog. The statement reader is `sql/listed-select.ts`; pass a `ListedProduct` instead of copying the parser | [pipedrive.md](./providers/pipedrive.md) |
 | Document store | `BaseDatabaseProvider` | `document/mongodb/` | [mongodb.md](./providers/mongodb.md) |
 | Document store reached over HTTP/REST (no driver) | `BaseDatabaseProvider` | `document/couchbase/` | [couchbase.md](./providers/couchbase.md) |
 | Key-value store | `BaseDatabaseProvider` | `redis.ts` | [redis.md](./providers/redis.md) |
