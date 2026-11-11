@@ -86,6 +86,7 @@ import {
 } from "../../object-kinds";
 import { comparePaths } from "../../object-path";
 import { formatBytes } from "../../utils/pool-manager";
+import { formatRunningTime, formatUptimeToTheHour } from "../../utils/reading-time";
 import { measuredNullableAggregate } from "../../utils/measured-aggregate";
 import { CACHE_HIT_RATIO_UNAVAILABLE, formatCacheHitRatio, measuredNumber } from "@/lib/monitoring-cache-ratio";
 import { logger } from "@/lib/logger";
@@ -4919,7 +4920,7 @@ export class MySQLProvider extends SQLBaseProvider {
         // "N/A" is what a provider that cannot measure uptime sends (sqlite, duckdb,
         // libsql, mongodb), and no `startTime` is derived from an uptime nobody
         // published: `Date.now()` would have been reported as the server's start.
-        uptime: uptimeSeconds === undefined ? "N/A" : this.formatUptimeString(uptimeSeconds),
+        uptime: uptimeSeconds === undefined ? "N/A" : formatUptimeToTheHour(uptimeSeconds),
         ...(uptimeSeconds === undefined ? {} : { startTime: new Date(Date.now() - uptimeSeconds * 1000) }),
         ...(activeConnections === undefined ? {} : { activeConnections }),
         maxConnections,
@@ -5045,7 +5046,7 @@ export class MySQLProvider extends SQLBaseProvider {
           state: r.state || "unknown",
           activity: mysqlSessionActivity(String(r.state || "unknown")),
           query: r.query || "",
-          duration: this.formatDurationString(durationSeconds * 1000),
+          duration: formatRunningTime(durationSeconds * 1000),
           durationMs: durationSeconds * 1000,
         };
       });
@@ -5195,22 +5196,5 @@ export class MySQLProvider extends SQLBaseProvider {
     } finally {
       conn.release();
     }
-  }
-
-  private formatUptimeString(seconds: number): string {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  }
-
-  private formatDurationString(ms: number): string {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-    if (ms < 3600000) return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
-    return `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
   }
 }

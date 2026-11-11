@@ -97,6 +97,7 @@ import { type PgFieldMetadata, postgresColumnTypes } from "./column-types";
 import { uniqueFieldNames } from "../../utils/result-fields";
 import { keyRowsByPosition } from "../../utils/positional-rows";
 import { formatBytes } from "../../utils/pool-manager";
+import { formatUptime } from "../../utils/reading-time";
 import { measuredNullableAggregate } from "../../utils/measured-aggregate";
 import { CatalogSessions } from "../../utils/catalog-sessions";
 import { CACHE_HIT_RATIO_UNAVAILABLE, formatCacheHitRatio, measuredNumber } from "@/lib/monitoring-cache-ratio";
@@ -5671,10 +5672,7 @@ export class PostgresProvider extends SQLBaseProvider {
       try {
         const uptimeRes = await client.query(OVERVIEW_UPTIME_SQL);
         const uptimeSeconds = parseInt(uptimeRes.rows[0].uptime_seconds || "0");
-        const days = Math.floor(uptimeSeconds / 86400);
-        const hours = Math.floor((uptimeSeconds % 86400) / 3600);
-        const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-        uptime = days > 0 ? `${days}d ${hours}h ${minutes}m` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        uptime = formatUptime(uptimeSeconds);
         startTime = uptimeRes.rows[0].start_time ? new Date(uptimeRes.rows[0].start_time) : undefined;
       } catch {
         uptime = "N/A";

@@ -66,6 +66,7 @@ import { mapDatabaseError } from "../../map-database-error";
 import { assertReadOnlyBudget, byteBudgetSentence, measureResultBytes, rowBudgetSentence } from "./read-only-budget";
 import { MSSQL_CUT_VALUE_PREFIX, MSSQL_SERIALISED_PREFIX, MSSQL_TIME_BUDGET_PREFIX } from "./mssql-read-only-refusals";
 import { formatBytes } from "../../utils/pool-manager";
+import { formatUptime } from "../../utils/reading-time";
 import { analyzeQuery, assertRowBounds, DEFAULT_QUERY_LIMIT, MAX_UNLIMITED_ROWS } from "../../utils/query-limiter";
 import { measuredNullableAggregate } from "../../utils/measured-aggregate";
 import { uniqueFieldNames } from "../../utils/result-fields";
@@ -3644,10 +3645,7 @@ export class MSSQLProvider extends SQLBaseProvider {
       const upRes = await this.pool!.request().query(OVERVIEW_UPTIME_SQL);
       if (upRes.recordset[0]) {
         const secs = Number(upRes.recordset[0].uptime_seconds || 0);
-        const days = Math.floor(secs / 86400);
-        const hours = Math.floor((secs % 86400) / 3600);
-        const minutes = Math.floor((secs % 3600) / 60);
-        uptime = days > 0 ? `${days}d ${hours}h ${minutes}m` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        uptime = formatUptime(secs);
         startTime = new Date(upRes.recordset[0].sqlserver_start_time);
       }
     } catch {
