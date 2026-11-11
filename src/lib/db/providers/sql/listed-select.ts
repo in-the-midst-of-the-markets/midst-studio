@@ -59,6 +59,12 @@ export interface ListedProduct {
   readonly example: string;
   /** A column the COUNT refusal can suggest. */
   readonly exampleColumn: string;
+  /**
+   * A FROM name that is not in `resources` is still a table, and a field that is
+   * not on that table is still a text field. The caller checks both against the
+   * live catalog after the statement is read.
+   */
+  readonly acceptAnyName?: boolean;
 }
 
 type Token =
@@ -287,16 +293,22 @@ class Parser {
     if (this.word("FROM") === null) {
       fail(this.product, `Write FROM and one resource, such as ${this.product.example}.`, this.sql);
     }
-    const found = listedResource(this.product, this.name());
-    if (found === undefined) fail(this.product, `${this.product.product} has no resource with that name.`, this.sql);
-    return found;
+    const written = this.name();
+    const found = listedResource(this.product, written);
+    if (found !== undefined) return found;
+    if (this.product.acceptAnyName === true) {
+      const name = written.toLowerCase();
+      return { name, primary: name, path: "", columns: [] };
+    }
+    fail(this.product, `${this.product.product} has no resource with that name.`, this.sql);
   }
 
   private field(table: ListedResource): ListedColumn {
     const written = this.name();
     const found = listedColumn(table, written);
-    if (found === undefined) fail(this.product, missingField(this.product, written, table.name), this.sql);
-    return found;
+    if (found !== undefined) return found;
+    if (this.product.acceptAnyName === true) return openColumn(written);
+    fail(this.product, missingField(this.product, written, table.name), this.sql);
   }
 
   private select(): ListedSelect {
@@ -317,8 +329,9 @@ class Parser {
 
   private known(table: ListedResource, written: string): string {
     const found = listedColumn(table, written);
-    if (found === undefined) fail(this.product, missingField(this.product, written, table.name), this.sql);
-    return found.name;
+    if (found !== undefined) return found.name;
+    if (this.product.acceptAnyName === true) return openColumn(written).name;
+    fail(this.product, missingField(this.product, written, table.name), this.sql);
   }
 
   private filters(table: ListedResource): ListedFilter[] {
@@ -412,6 +425,11 @@ class Parser {
   private end(): void {
     if (this.peek().t !== "eof") fail(this.product, readOnly(this.product), this.sql);
   }
+}
+
+function openColumn(written: string): ListedColumn {
+  const name = written.toLowerCase();
+  return { name, type: "text", json: name };
 }
 
 function missingField(product: ListedProduct, field: string, table: string): string {

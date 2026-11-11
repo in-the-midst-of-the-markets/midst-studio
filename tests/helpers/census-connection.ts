@@ -113,6 +113,13 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   metaads: { ...unconnected("metaads"), database: "100539998049706", password: "census-token" },
   // The shared user is shorter than a client id, and the shared password is shorter than a secret.
   paypal: { ...unconnected("paypal"), user: "client-id", password: "census-secret" },
+  excel: {
+    ...unconnected("excel"),
+    user: "11111111-1111-4111-8111-111111111111",
+    database: "22222222-2222-4222-8222-222222222222",
+    password: "census-secret",
+    schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
+  },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

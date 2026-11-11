@@ -51,6 +51,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   tiktokads: "exact",
   metaads: "exact",
   paypal: "exact",
+  excel: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",
@@ -209,7 +210,7 @@ describe("the declaration follows the check (#1147)", () => {
     const declaring = TYPES.filter((type) => EXPECTED_CONTAINER_PATH_SHAPES[type] !== "absent").sort();
     // Supabase is Postgres. The check runs in PostgresProvider, so the subclass file does not repeat it.
     const inherited = declaring.filter((type) => type !== "supabase");
-    expect(callers).toHaveLength(45);
+    expect(callers).toHaveLength(46);
     expect(callers).toEqual(inherited);
   });
 });

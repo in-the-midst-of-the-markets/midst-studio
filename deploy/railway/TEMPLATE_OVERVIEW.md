@@ -16,7 +16,7 @@ Hosting KnowSQL means running a single stateless Next.js container that serves t
 
 ## Dependencies for libredb-studio Hosting
 
-- A database to connect to: any of the sixty-two engines above (bring your own, or add a Railway database to the project).
+- A database to connect to: any of the sixty-three engines above (bring your own, or add a Railway database to the project).
 - A persistent volume mounted at `/app/data` for the SQLite-backed store of saved connections and settings (included in this template).
 
 ### Deployment Dependencies

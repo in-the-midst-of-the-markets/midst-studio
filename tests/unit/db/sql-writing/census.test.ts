@@ -105,6 +105,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   tiktokads: "sql/tiktokads/sql-writing",
   metaads: "sql/metaads/sql-writing",
   paypal: "sql/paypal/sql-writing",
+  excel: "sql/excel/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

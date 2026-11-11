@@ -154,6 +154,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-three": 63,
   // Two past the registry once PayPal joined it.
   "sixty-four": 64,
+  // Two past the registry once Microsoft Excel joined it.
+  "sixty-five": 65,
 };
 
 /**

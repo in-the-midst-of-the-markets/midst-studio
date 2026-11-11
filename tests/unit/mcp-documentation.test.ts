@@ -158,6 +158,7 @@ describe("docs/MCP.md", () => {
         "tiktokads",
         "metaads",
         "paypal",
+        "excel",
         "supabase",
         "etcd",
         "oxia",

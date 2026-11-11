@@ -47,6 +47,7 @@ import { PIPEDRIVE_EXECUTION_UI } from "@/lib/db/providers/sql/pipedrive/executi
 import { TIKTOKADS_EXECUTION_UI } from "@/lib/db/providers/sql/tiktokads/execution-ui";
 import { METAADS_EXECUTION_UI } from "@/lib/db/providers/sql/metaads/execution-ui";
 import { PAYPAL_EXECUTION_UI } from "@/lib/db/providers/sql/paypal/execution-ui";
+import { EXCEL_EXECUTION_UI } from "@/lib/db/providers/sql/excel/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -120,6 +121,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   tiktokads: TIKTOKADS_EXECUTION_UI,
   metaads: METAADS_EXECUTION_UI,
   paypal: PAYPAL_EXECUTION_UI,
+  excel: EXCEL_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

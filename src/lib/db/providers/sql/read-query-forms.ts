@@ -182,6 +182,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   tiktokads: null,
   metaads: null,
   paypal: null,
+  excel: null,
   supabase: null,
   s3: null,
   kubernetes: null,

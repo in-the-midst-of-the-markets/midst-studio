@@ -1106,6 +1106,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     tiktokads: "engine-has-no-foreign-key",
     metaads: "engine-has-no-foreign-key",
     paypal: "engine-has-no-foreign-key",
+    excel: "engine-has-no-foreign-key",
     supabase: "key-follows-in-an-alter",
     mysql: "key-follows-in-an-alter",
     oracle: "key-follows-in-an-alter",
@@ -1286,6 +1287,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   paypal: {
     label: "PayPal",
     reason: "PayPal object changes are not generated here; this connection is read-only.",
+  },
+  excel: {
+    label: "Microsoft Excel",
+    reason: "Microsoft Excel object changes are not generated here; this connection is read-only.",
   },
   supabase: "has-own-branch",
   mysql: "has-own-branch",
@@ -1773,6 +1778,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "tiktokads",
           "metaads",
           "paypal",
+          "excel",
         ].includes(dialect)
       ) {
         expect(sql).toContain(`-- ${expected.label}: Cannot generate table DDL.`);
@@ -1820,6 +1826,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   tiktokads: false,
   metaads: false,
   paypal: false,
+  excel: false,
   supabase: "BEGIN;",
   mysql: "BEGIN;",
   // Measured live via @duckdb/node-api 1.5.5-r.4 (DuckDB v1.5.5, in-process, no server
@@ -1942,6 +1949,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "tiktokads",
             "metaads",
             "paypal",
+            "excel",
           ].includes(dialect)
         ) {
           expect(sql).toMatch(/^CREATE TABLE /m);

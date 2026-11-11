@@ -151,6 +151,7 @@ const SeedDatabaseType = z.enum([
   "tiktokads",
   "metaads",
   "paypal",
+  "excel",
 ]);
 
 export const SeedDefaultsSchema = z.object({
