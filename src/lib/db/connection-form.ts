@@ -659,6 +659,21 @@ export const CONNECTION_FORM: {
         "The API token from Settings, Personal preferences, API. It is sent as x-api-token and is not refreshed.",
     },
   },
+  tiktokads: {
+    label: "TikTok Ads",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.tiktokads,
+    fieldLabels: { host: "API host", password: "Access token", database: "Advertiser ID" },
+    fieldPlaceholders: { host: "business-api.tiktok.com", password: "access-token", database: "7123456789" },
+    fieldHints: {
+      host: "The access token is sent only to business-api.tiktok.com. Leave this empty to use that host.",
+      password: "A Marketing API access token. It is sent as Access-Token and is not refreshed.",
+      database: "The advertiser id, sent as advertiser_id. It is not a secret.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1790,6 +1805,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "googleads",
   "microsoftads",
   "pipedrive",
+  "tiktokads",
 ]);
 
 /**
@@ -1812,6 +1828,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "googleads",
   "microsoftads",
   "pipedrive",
+  "tiktokads",
 ]);
 
 export interface ConnectionPickerCategory {

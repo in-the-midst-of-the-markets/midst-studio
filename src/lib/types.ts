@@ -76,6 +76,9 @@ export type DatabaseType =
   // Pipedrive. The API v2, read-only. One SELECT is one list of a standard
   // resource. The API token is sent only to the Pipedrive host.
   | "pipedrive"
+  // TikTok Ads. The Marketing API v1.3, read-only. One SELECT is one list of a
+  // standard resource. The access token is sent only to business-api.tiktok.com.
+  | "tiktokads"
   | "bigquery"
   | "snowflake"
   | "mysql"

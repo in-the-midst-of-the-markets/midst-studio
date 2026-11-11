@@ -61,6 +61,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   googleads: "googleads.googleapis.com",
   microsoftads: "campaign.api.bingads.microsoft.com",
   pipedrive: "api.pipedrive.com",
+  tiktokads: "business-api.tiktok.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -104,6 +105,8 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   },
   // The shared password is six characters, shorter than an API token this provider accepts.
   pipedrive: { ...unconnected("pipedrive"), password: "census-token" },
+  // The shared database is not an advertiser id, and the shared password is shorter than an access token.
+  tiktokads: { ...unconnected("tiktokads"), database: "7123456789", password: "census-token" },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

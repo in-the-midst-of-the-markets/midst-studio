@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, libredb$/,
     );
   });
 
@@ -1599,6 +1599,8 @@ describe("createDatabaseProvider", () => {
       },
       // The shared password is six characters, shorter than an API token this provider accepts.
       pipedrive: { host: "api.pipedrive.com", password: "census-token" },
+      // The shared database is not an advertiser id, and the shared password is shorter than an access token.
+      tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
     };
 
     const declaringTypes: string[] = [];
@@ -1677,6 +1679,8 @@ describe("createDatabaseProvider", () => {
       },
       // The shared password is six characters, shorter than an API token this provider accepts.
       pipedrive: { host: "api.pipedrive.com", password: "census-token" },
+      // The shared database is not an advertiser id, and the shared password is shorter than an access token.
+      tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
     };
 
     const cannotCancel: string[] = [];
@@ -1751,6 +1755,8 @@ describe("createDatabaseProvider", () => {
       "sparkplug",
       // No cancel: a Stripe read is one API request, and the API has nothing that stops it.
       "stripe",
+      // No cancel: a TikTok Ads read is one GET, and the Marketing API has nothing that stops it.
+      "tiktokads",
       // No cancel: a Xero read is one list request, and the Accounting API has nothing that stops it.
       "xero",
     ]);

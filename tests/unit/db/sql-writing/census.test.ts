@@ -102,6 +102,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   googleads: "sql/googleads/sql-writing",
   microsoftads: "sql/microsoftads/sql-writing",
   pipedrive: "sql/pipedrive/sql-writing",
+  tiktokads: "sql/tiktokads/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

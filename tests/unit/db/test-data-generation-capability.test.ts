@@ -34,6 +34,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   googleads: false,
   microsoftads: false,
   pipedrive: false,
+  tiktokads: false,
   supabase: false,
   mysql: true,
   sqlite: true,

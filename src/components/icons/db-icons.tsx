@@ -362,6 +362,23 @@ export const IntercomIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A short video frame, for a TikTok Ads advertiser. Not the vendor mark. */
+export const TikTokAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="5" width="16" height="14" rx="2" />
+    <path d="M11 9.5v5l4-2.5-4-2.5z" />
+  </svg>
+);
+
 /** A deal moving through a pipeline, for a Pipedrive company. Not the vendor mark. */
 export const PipedriveIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
