@@ -397,6 +397,26 @@ export const MetaAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A sheet of cells with a tab, for a Google Sheets spreadsheet. Not the vendor mark. */
+export const GoogleSheetsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M8 3h7l5 5v13a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+    <path d="M15 3v5h5" />
+    <path d="M8 12h12" />
+    <path d="M8 16h12" />
+    <path d="M12 9v11" />
+  </svg>
+);
+
 /** A sheet of cells, for a Microsoft Excel workbook. Not the vendor mark. */
 export const ExcelIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

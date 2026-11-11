@@ -126,6 +126,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/metaads/index.ts",
   "src/lib/db/providers/sql/paypal/index.ts",
   "src/lib/db/providers/sql/excel/index.ts",
+  "src/lib/db/providers/sql/googlesheets/index.ts",
   "src/lib/db/providers/sql/googleanalytics/index.ts",
   "src/lib/db/providers/sql/hubspot/index.ts",
   "src/lib/db/providers/sql/intercom/index.ts",

@@ -93,6 +93,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   metaads: "every-code-semicolon",
   paypal: "every-code-semicolon",
   excel: "every-code-semicolon",
+  googlesheets: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

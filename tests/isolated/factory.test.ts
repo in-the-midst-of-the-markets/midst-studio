@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, libredb$/,
     );
   });
 
@@ -1608,6 +1608,10 @@ describe("createDatabaseProvider", () => {
         database: "22222222-2222-4222-8222-222222222222",
         password: "census-secret",
         schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
+      },
+      googlesheets: {
+        password: "census-secret",
+        schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
     };
 
@@ -1697,6 +1701,10 @@ describe("createDatabaseProvider", () => {
         password: "census-secret",
         schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
       },
+      googlesheets: {
+        password: "census-secret",
+        schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
     };
 
     const cannotCancel: string[] = [];
@@ -1723,6 +1731,8 @@ describe("createDatabaseProvider", () => {
       "googleads",
       // No cancel: a Google Analytics report is one POST, and the Data API has nothing that stops it.
       "googleanalytics",
+      // No cancel: a Google Sheets read is one range request, and the Sheets API has nothing that stops it.
+      "googlesheets",
       // No cancel: a HubSpot read is one search request, and the CRM API has nothing that stops it.
       "hubspot",
       // No cancel: an Intercom read is one list or one search, and the API has nothing that stops it.

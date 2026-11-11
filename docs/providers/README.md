@@ -27,6 +27,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Meta Ads | `metaads` | SQL (Marketing API) | none (HTTP: the Marketing API) | SQL (a read-only subset translated to one Graph API v27.0 list) | [metaads.md](./metaads.md) |
 | PayPal | `paypal` | SQL (payments) | none (HTTP: the PayPal REST API) | SQL (a read-only subset translated to one REST list) | [paypal.md](./paypal.md) |
 | Microsoft Excel | `excel` | SQL (workbook) | none (HTTP: Microsoft Graph) | SQL (a read-only subset translated to one worksheet) | [excel.md](./excel.md) |
+| Google Sheets | `googlesheets` | SQL (spreadsheet) | none (HTTP: Sheets API) | SQL (a read-only subset translated to one worksheet) | [googlesheets.md](./googlesheets.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

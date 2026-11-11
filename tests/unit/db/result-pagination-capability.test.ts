@@ -85,6 +85,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   metaads: true,
   paypal: true,
   excel: true,
+  googlesheets: true,
   supabase: true,
   mysql: true,
   sqlite: true,

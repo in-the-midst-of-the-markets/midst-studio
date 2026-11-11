@@ -57,6 +57,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "metaads",
     "paypal",
     "excel",
+    "googlesheets",
     "libsql",
     "snowflake",
     "spark",

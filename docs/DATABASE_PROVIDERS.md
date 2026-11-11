@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Sixty-four type-ids are supported by sixty-two provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Sixty-five type-ids are supported by sixty-three provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -340,6 +340,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Meta Ads | `metaads` | SQL (the Marketing API, read-only) | [providers/metaads.md](./providers/metaads.md) |
 | PayPal | `paypal` | SQL (the PayPal REST API, read-only) | [providers/paypal.md](./providers/paypal.md) |
 | Microsoft Excel | `excel` | SQL (Microsoft Graph, one workbook, read-only) | [providers/excel.md](./providers/excel.md) |
+| Google Sheets | `googlesheets` | SQL (Sheets API, one spreadsheet, read-only) | [providers/googlesheets.md](./providers/googlesheets.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface
