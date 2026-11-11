@@ -845,7 +845,8 @@ that SQLite is in-process and a round trip here costs a function call rather tha
 The five detail statements each join a pragma table-valued function against the same target set, which
 is what makes the count constant rather than per-object: SQLite accepts a TVF argument that references
 a column of the row being joined, so `JOIN pragma_table_xinfo(d.object_name, ?)` runs the pragma once
-per target object inside ONE statement. Measured on `bun:sqlite` 3.53.2.
+per target object inside ONE statement. Measured on `bun:sqlite` 3.53.2. libSQL runs this same text,
+from `src/lib/db/providers/sql/sqlite-pragma-bulk.ts`.
 
 The five decisions this engine had to make for itself, each measured rather than reasoned:
 

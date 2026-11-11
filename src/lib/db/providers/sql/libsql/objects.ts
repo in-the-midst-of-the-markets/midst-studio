@@ -54,6 +54,7 @@ import {
 } from "@/lib/db/object-kinds";
 import { comparePaths } from "@/lib/db/object-path";
 import { unquoteLiteral } from "@/lib/sql/values";
+import { sqliteBulkDetailStatements, type SqliteBulkDetailStatements } from "../sqlite-pragma-bulk";
 import { readNumber, readText } from "./introspect";
 import type { LibSQLBatchOutcome, LibSQLRow, LibSQLStatement, LibSQLTransport } from "./transport";
 
@@ -246,102 +247,15 @@ const BULK_RELATION_TYPES: Readonly<Record<string, readonly string[]>> = {
 };
 
 /**
- * The target set of one bulk read: every object of one kind in `main`, in the engine's own
- * order, optionally cut.
- *
- * `ORDER BY t.name` is load-bearing. Measured on sqld 0.24.33, `pragma_table_list` answers
- * in no useful order of its own, so a bounded read would otherwise keep an arbitrary
- * subset. That sort runs under BINARY, the UTF-8 BYTE order, which is not the order
- * `comparePaths` produces - so the MEMBERSHIP of a bounded cut is the server's and the
- * ORDER of the answer is ours.
- *
- * `LIMIT ?` carries `limit + 1`, so a saturated read is distinguishable from an exact one
- * without a second count. Measured accepted with a BOUND parameter inside a CTE, which the
- * flat surface in `introspect.ts` does not rely on: it embeds object names as literals.
+ * Both forms of all five statements, per kind, built once at module load. The text is
+ * the SQLite provider's; here the five go in one batch, so the folder is one request.
  */
-function describedCte(types: readonly string[], bounded: boolean): string {
-  return `WITH described AS (
-        SELECT t.name AS object_name
-          FROM pragma_table_list AS t
-         WHERE t.schema = ?
-           AND t.type IN (${types.map((type) => `'${type}'`).join(", ")})
-           AND t.name NOT LIKE 'sqlite\\_%' ESCAPE '\\'
-         ORDER BY t.name${bounded ? "\n         LIMIT ?" : ""}
-      )`;
-}
-
-/**
- * The five statements of one bulk read, which go in ONE batch and therefore ONE round trip.
- *
- * This is where the file stops being the SQLite provider again. There each of the five is a
- * call into a file handle and they are issued one after another; here they are independent
- * of each other - each carries its own copy of the target CTE - so the whole folder costs a
- * single HTTP request whatever it holds.
- *
- * Each detail statement joins a pragma table-valued function against the target, which sqld
- * accepts: measured on 0.24.33, a TVF argument that references a column of the row being
- * joined runs the pragma once per target object inside one statement.
- *
- * The target read is separate and is what decides MEMBERSHIP. Taking it from the column
- * read instead would drop an object whose every column is hidden, and the folder's listing
- * would then name an object the batch does not carry.
- */
-interface BulkDetailStatements {
-  readonly target: string;
-  readonly columns: string;
-  readonly indexes: string;
-  readonly indexColumns: string;
-  readonly foreignKeys: string;
-  /** How many trailing `MAIN_SCHEMA` binds each statement above takes, in that order. */
-  readonly schemaBinds: readonly [number, number, number, number, number];
-}
-
-function bulkDetailStatements(types: readonly string[], bounded: boolean): BulkDetailStatements {
-  const described = describedCte(types, bounded);
-  return {
-    target: `${described}
-      SELECT d.object_name AS object_name FROM described AS d`,
-    columns: `${described}
-      SELECT d.object_name AS object_name, x.name AS name, x.type AS type,
-             x."notnull" AS "notnull", x.dflt_value AS dflt_value, x.pk AS pk
-        FROM described AS d
-        JOIN pragma_table_xinfo(d.object_name, ?) AS x
-       WHERE x.hidden <> 1
-       ORDER BY d.object_name, x.cid`,
-    indexes: `${described}
-      SELECT d.object_name AS object_name, i.name AS name, i."unique" AS "unique"
-        FROM described AS d
-        JOIN pragma_index_list(d.object_name, ?) AS i
-       WHERE i.name NOT LIKE 'sqlite\\_%' ESCAPE '\\'
-       ORDER BY d.object_name, i.name`,
-    indexColumns: `${described}, listed AS (
-        SELECT d.object_name AS object_name, i.name AS index_name
-          FROM described AS d
-          JOIN pragma_index_list(d.object_name, ?) AS i
-         WHERE i.name NOT LIKE 'sqlite\\_%' ESCAPE '\\'
-      )
-      SELECT l.object_name AS object_name, l.index_name AS index_name, c.name AS name
-        FROM listed AS l
-        JOIN pragma_index_info(l.index_name, ?) AS c
-       ORDER BY l.object_name, l.index_name, c.seqno`,
-    foreignKeys: `${described}
-      SELECT d.object_name AS object_name, f.id AS id, f.seq AS seq, f."table" AS "table",
-             f."from" AS "from", f."to" AS "to",
-             (SELECT p.name FROM pragma_table_info(f."table", ?) AS p WHERE p.pk = f.seq + 1) AS parent_key
-        FROM described AS d
-        JOIN pragma_foreign_key_list(d.object_name, ?) AS f
-       ORDER BY d.object_name, f.id, f.seq`,
-    schemaBinds: [0, 1, 1, 2, 2],
-  };
-}
-
-/** Both forms of all five statements, per kind, built once at module load. */
-const BULK_DETAIL_SQL: Readonly<Record<string, BulkDetailStatements>> = Object.fromEntries(
-  Object.entries(BULK_RELATION_TYPES).map(([kind, types]) => [kind, bulkDetailStatements(types, false)]),
+const BULK_DETAIL_SQL: Readonly<Record<string, SqliteBulkDetailStatements>> = Object.fromEntries(
+  Object.entries(BULK_RELATION_TYPES).map(([kind, types]) => [kind, sqliteBulkDetailStatements(types, false)]),
 );
 
-const BULK_DETAIL_SQL_BOUNDED: Readonly<Record<string, BulkDetailStatements>> = Object.fromEntries(
-  Object.entries(BULK_RELATION_TYPES).map(([kind, types]) => [kind, bulkDetailStatements(types, true)]),
+const BULK_DETAIL_SQL_BOUNDED: Readonly<Record<string, SqliteBulkDetailStatements>> = Object.fromEntries(
+  Object.entries(BULK_RELATION_TYPES).map(([kind, types]) => [kind, sqliteBulkDetailStatements(types, true)]),
 );
 
 // ============================================================================

@@ -824,7 +824,8 @@ folder against 12 for ten `describeObject()` calls**, and 1 ms against 8 ms over
 round trip costs almost nothing. On a Turso Cloud database that ratio is the whole story.
 
 That is the engine-specific half of the decision. The SQLite provider issues the same five statements
-as five separate calls into a file handle, because there a round trip is a function call.
+as five separate calls into a file handle, because there a round trip is a function call. The text of
+the five lives in `src/lib/db/providers/sql/sqlite-pragma-bulk.ts`.
 
 Each detail statement joins a pragma table-valued function against the target set, which sqld accepts:
 measured, a TVF argument that references a column of the row being joined runs the pragma once per
