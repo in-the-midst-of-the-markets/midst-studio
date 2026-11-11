@@ -128,7 +128,7 @@ describe("GoogleSheetsProvider", () => {
     expect(wire.options[0]?.headers.Authorization).toBe("Bearer ya29.pasted-token-value");
     expect(wire.options[0]?.refusesLinkLocal).toBe(true);
     expect(wire.options[0]?.refusesUpgrade).toBe(true);
-    expect(wire.requests.some((request) => request.url.includes("oauth2.googleapis.com"))).toBe(false);
+    expect(wire.requests.some((request) => new URL(request.url).host === "oauth2.googleapis.com")).toBe(false);
     expect(await opened.listContainers()).toEqual([{ path: ["spreadsheet"], name: "spreadsheet", level: 0 }]);
     expect(await opened.listContainers([])).toEqual([{ path: ["spreadsheet"], name: "spreadsheet", level: 0 }]);
     expect(await opened.listContainers(["spreadsheet"])).toEqual([]);
