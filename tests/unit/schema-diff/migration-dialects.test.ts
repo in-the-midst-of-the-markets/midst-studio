@@ -32,6 +32,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   pipedrive: null,
   tiktokads: null,
   metaads: null,
+  paypal: null,
   supabase: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   mysql: ["ADD COLUMN `extra` integer;", "DROP COLUMN `old`;"],
   mssql: ["ADD [extra] integer;", "DROP COLUMN [old];"],

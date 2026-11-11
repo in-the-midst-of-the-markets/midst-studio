@@ -689,6 +689,21 @@ export const CONNECTION_FORM: {
       database: "The ad account id. An act_ prefix is optional. It is not a secret.",
     },
   },
+  paypal: {
+    label: "PayPal",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.paypal,
+    fieldLabels: { host: "API host", user: "Client ID", password: "Client secret" },
+    fieldPlaceholders: { host: "api-m.paypal.com", user: "client-id", password: "client-secret" },
+    fieldHints: {
+      host: "The client secret is sent only to api-m.paypal.com or api-m.sandbox.paypal.com. Leave this empty to use the live host.",
+      user: "The REST app client id. It is sent only to that PayPal host.",
+      password: "The REST app secret. Studio exchanges it for an access token and does not put it in a URL.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1822,6 +1837,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "pipedrive",
   "tiktokads",
   "metaads",
+  "paypal",
 ]);
 
 /**
@@ -1846,6 +1862,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "pipedrive",
   "tiktokads",
   "metaads",
+  "paypal",
 ]);
 
 export interface ConnectionPickerCategory {

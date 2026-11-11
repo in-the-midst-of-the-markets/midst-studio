@@ -68,6 +68,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   pipedrive: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   tiktokads: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   metaads: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  paypal: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   supabase: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   mysql: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   sqlite: 'SELECT COUNT(*) AS row_count\nFROM "Order""Items";',

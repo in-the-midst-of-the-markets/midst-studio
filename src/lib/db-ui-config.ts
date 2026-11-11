@@ -60,6 +60,7 @@ import {
   PipedriveIcon,
   TikTokAdsIcon,
   MetaAdsIcon,
+  PayPalIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -135,6 +136,7 @@ export const DB_UI_CONFIG: {
   pipedrive: branded(CONNECTION_FORM.pipedrive, PipedriveIcon, "text-hue-lime bg-hue-lime/15"),
   tiktokads: branded(CONNECTION_FORM.tiktokads, TikTokAdsIcon, "text-hue-fuchsia bg-hue-fuchsia/15"),
   metaads: branded(CONNECTION_FORM.metaads, MetaAdsIcon, "text-hue-rose bg-hue-rose/15"),
+  paypal: branded(CONNECTION_FORM.paypal, PayPalIcon, "text-hue-blue bg-hue-blue/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

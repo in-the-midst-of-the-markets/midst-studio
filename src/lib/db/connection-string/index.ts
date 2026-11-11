@@ -46,6 +46,7 @@ import { MICROSOFTADS_CONNECTION_STRING } from "@/lib/db/providers/sql/microsoft
 import { PIPEDRIVE_CONNECTION_STRING } from "@/lib/db/providers/sql/pipedrive/connection-string";
 import { TIKTOKADS_CONNECTION_STRING } from "@/lib/db/providers/sql/tiktokads/connection-string";
 import { METAADS_CONNECTION_STRING } from "@/lib/db/providers/sql/metaads/connection-string";
+import { PAYPAL_CONNECTION_STRING } from "@/lib/db/providers/sql/paypal/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -118,6 +119,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   pipedrive: PIPEDRIVE_CONNECTION_STRING,
   tiktokads: TIKTOKADS_CONNECTION_STRING,
   metaads: METAADS_CONNECTION_STRING,
+  paypal: PAYPAL_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

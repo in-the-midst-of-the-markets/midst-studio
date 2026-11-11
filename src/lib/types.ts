@@ -82,6 +82,9 @@ export type DatabaseType =
   // Meta Ads. The Marketing API Graph API v27.0, read-only. One SELECT is one list
   // of a standard resource. The access token is sent only to graph.facebook.com.
   | "metaads"
+  // PayPal. The REST API, read-only. One SELECT is one list. The client id and
+  // secret are sent only to api-m.paypal.com or api-m.sandbox.paypal.com.
+  | "paypal"
   | "bigquery"
   | "snowflake"
   | "mysql"

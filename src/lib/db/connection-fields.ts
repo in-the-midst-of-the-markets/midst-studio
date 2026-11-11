@@ -485,6 +485,8 @@ const CONNECTION_FIELD_ROWS = {
   // An access token in `password`, and the advertiser id in `database`. The host must be business-api.tiktok.com.
   tiktokads: ["host", "password", "database"],
   metaads: ["host", "password", "database"],
+  // A client id in `user` and a client secret in `password`. The host must be a PayPal API host.
+  paypal: ["host", "user", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -644,6 +646,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   pipedrive: null,
   tiktokads: null,
   metaads: null,
+  paypal: null,
   supabase: null,
   mysql: null,
   sqlite: null,

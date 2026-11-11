@@ -168,6 +168,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   pipedrive: 59,
   tiktokads: 60,
   metaads: 61,
+  paypal: 62,
 };
 
 /**

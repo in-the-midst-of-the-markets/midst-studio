@@ -31,6 +31,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   pipedrive: unsupported,
   tiktokads: unsupported,
   metaads: unsupported,
+  paypal: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,
