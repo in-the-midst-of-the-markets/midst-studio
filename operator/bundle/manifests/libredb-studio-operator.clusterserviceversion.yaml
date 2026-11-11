@@ -24,7 +24,7 @@ metadata:
     console.openshift.io/plugins: '["libredb-studio"]'
     containerImage: ghcr.io/libredb/libredb-studio-operator:1.2.0
     createdAt: "2026-11-11T18:51:30Z"
-    description: Open-source web-based SQL IDE for sixty-four engines - PostgreSQL,
+    description: Open-source web-based SQL IDE for sixty-five engines - PostgreSQL, Amazon Redshift,
       MySQL, Oracle, Db2 LUW, SQL Server, SQLite, DuckDB, MongoDB, Redis, Couchbase,
       Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery,
       Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka,
@@ -68,7 +68,7 @@ spec:
       name: libredbstudios.studio.libredb.org
       version: v1alpha1
   description: |
-    KnowSQL is an open-source, web-based SQL IDE. Query PostgreSQL,
+    KnowSQL is an open-source, web-based SQL IDE. Query PostgreSQL, Amazon Redshift,
     MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase,
     Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark,
     Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB,

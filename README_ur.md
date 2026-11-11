@@ -149,7 +149,7 @@ npx @libredb/studio
 
 </div>
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets and Amazon Redshift
 
 <div dir="rtl" align="right">
 
@@ -222,6 +222,7 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **SNMP** | <span dir="rtl">کوئی نہیں: مشترکہ ایگریس اصول سے ہوتے ہوئے UDP پر اس ریپازٹری کا اپنا کلائنٹ (پورٹ 161)</span> | <span dir="rtl">بناوٹ سے ہی صرف پڑھنے کے لیے: باہر جانے والا والو Get، GetNext یا GetBulk کے علاوہ ہر PDU کو رد کرتا ہے، اس لیے کوئی Set ساکٹ تک پہنچتا ہی نہیں۔ آبجیکٹ گروپ ایک کنٹینر ہے، ذیلی شاخ کا walk ہی پڑھنا ہے، اور ٹیبل GetBulk کے جوابوں سے بنتی ہے</span> |
 | **Sparkplug B** | کوئی نہیں: مشترکہ `node:net` اور `node:tls` ٹرانسپورٹ پر اس ریپازٹری کا اپنا محدود MQTT سیشن (پورٹ 1883، یا SSL / TLS پینل سے 8883) | ساخت کے لحاظ سے صرف پڑھنے کے لیے: اینکوڈر میں PUBLISH لکھنے والا کوئی فنکشن نہیں، اور CONNECT کوئی will نہیں بھیجتا، کیونکہ 5.4 ایج نوڈ کے سرٹیفکیٹِ موت کو اس کا will قرار دیتا ہے اور will مقرر کرنے والا قاری اپنا ساکٹ ٹوٹنے پر موت کا پیغام شائع کر دیتا۔ ایک group اور ایک edge node کنٹینر ہیں، اور ہر metric ایک قطار ہے جس کی قیمت، وقت کی مہر اور تعریف اسے قرار دینے والے سرٹیفکیٹِ پیدائش سے آتی ہے |
 | **QuestDB** | `pg` (PostgreSQL wire protocol, port 8812) | QuestDB SQL. Not a PostgreSQL connection: that provider asks for `pg_backend_pid()` on every run, which QuestDB has no function for. Tables come from `tables()` and columns from `table_columns()` |
+| **Amazon Redshift** | `pg` (PostgreSQL wire protocol, port 5439) | Redshift SQL. Not a PostgreSQL connection: that provider asks for `pg_backend_pid()` on every run, which this provider never sends. Tables and columns come from `information_schema` |
 | **Redis** | `ioredis` | <span dir="rtl">command editor، keys explorer، INFO پر مبنی monitoring</span> |
 
 <div dir="rtl" align="right">

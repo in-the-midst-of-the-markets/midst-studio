@@ -26,6 +26,7 @@ import { DATABEND_MIGRATION_DDL } from "@/lib/db/providers/sql/databend/migratio
 import { DB2_MIGRATION_DDL } from "@/lib/db/providers/sql/db2/migration-ddl";
 import { DRUID_MIGRATION_DDL } from "@/lib/db/providers/sql/druid/migration-ddl";
 import { QUESTDB_MIGRATION_DDL } from "@/lib/db/providers/sql/questdb/migration-ddl";
+import { REDSHIFT_MIGRATION_DDL } from "@/lib/db/providers/sql/redshift/migration-ddl";
 import { DUCKDB_MIGRATION_DDL } from "@/lib/db/providers/sql/duckdb/migration-ddl";
 import { LIBSQL_MIGRATION_DDL } from "@/lib/db/providers/sql/libsql/migration-ddl";
 import { MSSQL_MIGRATION_DDL } from "@/lib/db/providers/sql/mssql-migration-ddl";
@@ -82,6 +83,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   db2: DB2_MIGRATION_DDL,
   druid: DRUID_MIGRATION_DDL,
   questdb: QUESTDB_MIGRATION_DDL,
+  redshift: REDSHIFT_MIGRATION_DDL,
   duckdb: DUCKDB_MIGRATION_DDL,
   elasticsearch: ELASTICSEARCH_MIGRATION_DDL,
   etcd: ETCD_MIGRATION_DDL,

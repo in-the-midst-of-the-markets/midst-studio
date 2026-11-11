@@ -88,6 +88,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   // this provider has no code that can publish one (#1720).
   sparkplug: null,
   questdb: null,
+  redshift: null,
 };
 
 describe("migration dialect regressions (#284)", () => {

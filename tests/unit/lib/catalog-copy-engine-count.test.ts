@@ -156,7 +156,11 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-four": 64,
   // Two past the registry once Microsoft Excel joined it.
   "sixty-five": 65,
+  // Two past the registry once Google Sheets joined it.
+  // Two past the registry once Amazon Redshift joined it.
   "sixty-six": 66,
+  // Two past the registry once Amazon Redshift joined it.
+  "sixty-seven": 67,
 };
 
 /**

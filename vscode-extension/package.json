@@ -26,6 +26,7 @@
     "Airtable",
     "Supabase",
     "PostgreSQL",
+    "Amazon Redshift",
     "MySQL",
     "SQLite",
     "SQL Server",
@@ -51,7 +52,6 @@
     "Databend",
     "BigQuery",
     "S3-compatible object storage",
-    "Kubernetes",
     "SQL"
   ],
   "capabilities": {

@@ -62,6 +62,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   clickhouse: "exact",
   druid: "exact",
   questdb: "exact",
+  redshift: "exact",
   cassandra: "exact",
   mongodb: "exact",
   redis: "exact",
@@ -211,7 +212,7 @@ describe("the declaration follows the check (#1147)", () => {
     const declaring = TYPES.filter((type) => EXPECTED_CONTAINER_PATH_SHAPES[type] !== "absent").sort();
     // Supabase is Postgres. The check runs in PostgresProvider, so the subclass file does not repeat it.
     const inherited = declaring.filter((type) => type !== "supabase");
-    expect(callers).toHaveLength(47);
+    expect(callers).toHaveLength(48);
     expect(callers).toEqual(inherited);
   });
 });

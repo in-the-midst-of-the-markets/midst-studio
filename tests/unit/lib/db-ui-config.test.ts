@@ -128,6 +128,7 @@ const ALL_TYPES: DatabaseType[] = [
   "snmp",
   "sparkplug",
   "questdb",
+  "redshift",
   "airtable",
   "supabase",
   "hubspot",
@@ -1146,6 +1147,7 @@ describe("declared connection-field copy (#1085)", () => {
       .filter(([, config]) => config.fieldLabels !== undefined || config.fieldHints !== undefined)
       .map(([type]) => type);
     expect(declared).toEqual([
+      "redshift",
       "airtable",
       "supabase",
       "hubspot",
@@ -1772,6 +1774,8 @@ describe("db-showcase", () => {
         "paypal",
         "excel",
         "googlesheets",
+        // Last, behind Google Sheets: a warehouse on the PostgreSQL wire, in the Databases group.
+        "redshift",
       ]);
     });
   });

@@ -131,6 +131,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/hubspot/index.ts",
   "src/lib/db/providers/sql/intercom/index.ts",
   "src/lib/db/providers/sql/questdb/index.ts",
+  "src/lib/db/providers/sql/redshift/index.ts",
   "src/lib/db/providers/sql/duckdb/objects.ts",
   "src/lib/db/providers/sql/libsql/objects.ts",
   "src/lib/db/providers/sql/snowflake/index.ts",

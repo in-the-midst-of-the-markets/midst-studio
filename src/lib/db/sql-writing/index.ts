@@ -23,6 +23,7 @@ import { DATABEND_SQL_WRITING } from "@/lib/db/providers/sql/databend/sql-writin
 import { DB2_SQL_WRITING } from "@/lib/db/providers/sql/db2/sql-writing";
 import { DRUID_SQL_WRITING } from "@/lib/db/providers/sql/druid/sql-writing";
 import { QUESTDB_SQL_WRITING } from "@/lib/db/providers/sql/questdb/sql-writing";
+import { REDSHIFT_SQL_WRITING } from "@/lib/db/providers/sql/redshift/sql-writing";
 import { DUCKDB_SQL_WRITING } from "@/lib/db/providers/sql/duckdb/sql-writing";
 import { LIBSQL_SQL_WRITING } from "@/lib/db/providers/sql/libsql/sql-writing";
 import { MSSQL_SQL_WRITING } from "@/lib/db/providers/sql/mssql-sql-writing";
@@ -132,6 +133,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,
   questdb: QUESTDB_SQL_WRITING,
+  redshift: REDSHIFT_SQL_WRITING,
   rabbitmq: RABBITMQ_SQL_WRITING,
   redis: REDIS_SQL_WRITING,
   s3: S3_SQL_WRITING,

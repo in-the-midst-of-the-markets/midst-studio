@@ -1226,7 +1226,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists databend after trino, in the SQL block", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bdruid, questdb, trino, databend, bigquery, snowflake, spark, cassandra\b/,
+      /Supported types: .*\bdruid, questdb, redshift, trino, databend, bigquery, snowflake, spark, cassandra\b/,
     );
   });
 
@@ -1778,6 +1778,8 @@ describe("createDatabaseProvider", () => {
       // No cancel: a QuickBooks Online read is one GET, and the query API has nothing that stops it.
       "quickbooks",
       "redis",
+      // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
+      "redshift",
       // No cancel either, and the reason is UDP's: a Get is one datagram out and one back, with
       // nothing in RFC 3416 that stops one in flight. A read is bounded instead, by the walk's
       // budget and by what one datagram can carry (#1721).

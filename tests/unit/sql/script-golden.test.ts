@@ -66,6 +66,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   clickhouse: "every-code-semicolon",
   druid: "pair-dollar-plain-quote",
   questdb: "every-code-semicolon",
+  redshift: "every-code-semicolon",
   trino: "every-code-semicolon",
   cassandra: "every-code-semicolon",
   elasticsearch: "plain-backslash",

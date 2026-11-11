@@ -171,6 +171,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   paypal: 62,
   excel: 63,
   googlesheets: 64,
+  redshift: 65,
 };
 
 /**

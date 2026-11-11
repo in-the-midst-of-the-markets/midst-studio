@@ -112,6 +112,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   snmp: true,
   sparkplug: true,
   questdb: true,
+  redshift: true,
 };
 
 /**
@@ -344,6 +345,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "airtable",
       "supabase",
       "postgres",
+      "redshift",
       "mysql",
       "sqlite",
       "oracle",
