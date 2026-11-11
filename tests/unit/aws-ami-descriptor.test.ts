@@ -124,7 +124,7 @@ describe("AWS AMI Packer template", () => {
       .trim()
       .split(". ")[0];
     const amiDescription = /ami_description\s*=\s*"([^"]+)"/.exec(template)?.[1] ?? "";
-    expect(amiDescription).toContain("LibreDB Studio");
+    expect(amiDescription).toContain("KnowSQL");
     expect(amiDescription).toContain(firstSentence);
     expect(amiDescription.replace("${var.version}", "0.14.0").length).toBeLessThanOrEqual(255);
   });
@@ -279,7 +279,7 @@ describe("AWS AMI banner and MOTD", () => {
     fs.writeFileSync(
       infoPath,
       [
-        "LibreDB Studio is running.",
+        "KnowSQL is running.",
         "",
         "  URL:       http://203.0.113.10:3000",
         "  Sign in:   admin@libredb.org",

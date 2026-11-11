@@ -1,5 +1,5 @@
 // The e2e leg's seam to what the editors and the Results view publish: activate exports nothing by design, so a test
-// reads the context keys, the LibreDB log, the status bar item and the Results view by wrapping
+// reads the context keys, the KnowSQL log, the status bar item and the Results view by wrapping
 // window.createStatusBarItem, window.createOutputChannel, window.registerWebviewViewProvider and
 // commands.executeCommand on the vscode API object the extension host hands both the extension and the test files,
 // before the extension activates. Each test file is bundled on its own, so the capture lives on that shared object and
@@ -10,7 +10,7 @@ import { RESULTS_VIEW, STATUS_ITEM } from "../../src/host/names";
 export interface HostCapture {
   /** Every setContext call since the install, in order. */
   readonly contexts: ReadonlyArray<{ readonly key: string; readonly value: unknown }>;
-  /** The LibreDB log's lines, info, warn and error, in order. */
+  /** The KnowSQL log's lines, info, warn and error, in order. */
   readonly logLines: readonly string[];
   /** The libredb.connection status bar item, once created, and whether it is shown. */
   statusItem(): { readonly item: vscode.StatusBarItem; readonly shown: boolean };
@@ -34,7 +34,7 @@ export interface ResultsCapture {
 }
 
 /** The log channel whose lines are kept: the extension's own. */
-const LOG_NAME = "LibreDB";
+const LOG_NAME = "KnowSQL";
 
 const MARK = Symbol.for("libredb.e2e.hostCapture");
 

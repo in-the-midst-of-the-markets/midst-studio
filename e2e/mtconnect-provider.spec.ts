@@ -57,7 +57,7 @@ const signIn = async (page: Page): Promise<void> => {
 };
 
 const openDialog = async (page: Page): Promise<void> => {
-  const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+  const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
   await sidebarButtons.last().click();
   await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5_000 });
 };

@@ -21,7 +21,7 @@ const CONNECTIONS_SCHEMA = {
   scope: "application",
   default: [],
   markdownDescription:
-    "Database connections, without passwords or connection strings: LibreDB keeps those in VS Code's secret storage on each machine. Add one with **LibreDB: Add Connection**.",
+    "Database connections, without passwords or connection strings: KnowSQL keeps those in VS Code's secret storage on each machine. Add one with **KnowSQL: Add Connection**.",
   items: {
     type: "object",
     required: ["id", "name", "type", "createdAt"],
@@ -113,17 +113,17 @@ describe("the manifest", () => {
     assert.deepEqual(manifest.dependencies, { "vscode-jsonrpc": "10.0.0" });
   });
 
-  it("contributes the nine commands in category LibreDB", () => {
+  it("contributes the nine commands in category KnowSQL", () => {
     assert.deepEqual(manifest.contributes.commands, [
-      { command: "libredb.showLog", title: "Show Log", category: "LibreDB" },
-      { command: "libredb.addConnection", title: "Add Connection", category: "LibreDB", icon: "$(add)" },
-      { command: "libredb.removeConnection", title: "Remove Connection", category: "LibreDB" },
-      { command: "libredb.refresh", title: "Refresh", category: "LibreDB", icon: "$(refresh)" },
-      { command: "libredb.newQuery", title: "New Query", category: "LibreDB", icon: "$(file-code)" },
-      { command: "libredb.selectRows", title: "Select Rows", category: "LibreDB", icon: "$(play)" },
-      { command: "libredb.runQuery", title: "Run Query", category: "LibreDB", icon: "$(play)" },
-      { command: "libredb.cancelQuery", title: "Cancel Query", category: "LibreDB", icon: "$(debug-stop)" },
-      { command: "libredb.changeConnection", title: "Change Connection", category: "LibreDB" },
+      { command: "libredb.showLog", title: "Show Log", category: "KnowSQL" },
+      { command: "libredb.addConnection", title: "Add Connection", category: "KnowSQL", icon: "$(add)" },
+      { command: "libredb.removeConnection", title: "Remove Connection", category: "KnowSQL" },
+      { command: "libredb.refresh", title: "Refresh", category: "KnowSQL", icon: "$(refresh)" },
+      { command: "libredb.newQuery", title: "New Query", category: "KnowSQL", icon: "$(file-code)" },
+      { command: "libredb.selectRows", title: "Select Rows", category: "KnowSQL", icon: "$(play)" },
+      { command: "libredb.runQuery", title: "Run Query", category: "KnowSQL", icon: "$(play)" },
+      { command: "libredb.cancelQuery", title: "Cancel Query", category: "KnowSQL", icon: "$(debug-stop)" },
+      { command: "libredb.changeConnection", title: "Change Connection", category: "KnowSQL" },
     ]);
     assert.deepEqual(Object.keys(manifest.contributes), [
       "commands",
@@ -135,10 +135,10 @@ describe("the manifest", () => {
     ]);
   });
 
-  it("contributes the LibreDB view container, the Connections view, the LibreDB Results panel and its one Results view", () => {
+  it("contributes the KnowSQL view container, the Connections view, the KnowSQL Results panel and its one Results view", () => {
     assert.deepEqual(manifest.contributes.viewsContainers, {
-      activitybar: [{ id: VIEW_CONTAINER, title: "LibreDB", icon: "media/libredb.svg" }],
-      panel: [{ id: RESULTS_CONTAINER, title: "LibreDB Results", icon: "media/libredb.svg" }],
+      activitybar: [{ id: VIEW_CONTAINER, title: "KnowSQL", icon: "media/libredb.svg" }],
+      panel: [{ id: RESULTS_CONTAINER, title: "KnowSQL Results", icon: "media/libredb.svg" }],
     });
     assert.deepEqual(manifest.contributes.views, {
       [VIEW_CONTAINER]: [{ id: CONNECTIONS_VIEW, name: "Connections" }],
@@ -153,7 +153,7 @@ describe("the manifest", () => {
   it("describes itself on the Marketplace card by engines it ships and no engine it holds back, in category Other", () => {
     assert.equal(
       manifest.description,
-      "Browse and query PostgreSQL, MySQL, SQL Server, MongoDB, Redis, ClickHouse, Elasticsearch, Kafka and many more databases with LibreDB Studio.",
+      "Browse and query PostgreSQL, MySQL, SQL Server, MongoDB, Redis, ClickHouse, Elasticsearch, Kafka and many more databases with KnowSQL.",
     );
     for (const type of Object.keys(HELD_BACK)) {
       const label = CONNECTION_FORM[type as keyof typeof HELD_BACK].label;
@@ -189,7 +189,7 @@ describe("the manifest", () => {
 
   it("declares libredb.connections as part 2 writes it, synced and never read from a workspace", () => {
     assert.deepEqual(manifest.contributes.configuration, {
-      title: "LibreDB",
+      title: "KnowSQL",
       properties: { "libredb.connections": CONNECTIONS_SCHEMA, "libredb.query.rowLimit": ROW_LIMIT_SCHEMA },
     });
     assert.equal("ignoreSync" in manifest.contributes.configuration.properties["libredb.connections"], false);
@@ -207,7 +207,7 @@ describe("the manifest", () => {
     });
     assert.deepEqual(nls, {
       "untrustedWorkspaces.description":
-        "In Restricted Mode, LibreDB opens every connection with external file access denied.",
+        "In Restricted Mode, KnowSQL opens every connection with external file access denied.",
     });
   });
 

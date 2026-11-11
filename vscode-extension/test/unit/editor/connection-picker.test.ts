@@ -94,9 +94,9 @@ describe("pickConnection", () => {
     await settle();
     assert.deepEqual(shownQuickPicks, []);
     assert.deepEqual(shownMessages, [
-      { level: "info", message: "Add a LibreDB connection first.", items: ["Add Connection"] },
+      { level: "info", message: "Add a KnowSQL connection first.", items: ["Add Connection"] },
     ]);
-    assert.equal(NO_CONNECTIONS, "Add a LibreDB connection first.");
+    assert.equal(NO_CONNECTIONS, "Add a KnowSQL connection first.");
     assert.equal(ADD_CONNECTION, "Add Connection");
     assert.equal(added(), 1);
   });

@@ -13,7 +13,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         <div className="mb-4 text-5xl">!</div>
         <h1 className="text-xl font-semibold mb-2">Something went wrong</h1>
         <p className="text-fg-tertiary mb-6 text-sm">
-          LibreDB Studio encountered an unexpected error. You can try again or report this issue.
+          KnowSQL encountered an unexpected error. You can try again or report this issue.
         </p>
         {error.digest && <p className="text-fg-subtle text-xs mb-4">Error ID: {error.digest}</p>}
         <div className="flex gap-3 justify-center">

@@ -304,7 +304,7 @@ What to assert, in order, stopping at the first failure:
 | Check | What passing looks like |
 |---|---|
 | Container state | `status=running restarts=0 oom=false`. A restart count above 0 is a crash loop that a later `curl` would still answer |
-| Startup banner | `LibreDB Studio <version>` in `docker logs`. This is the only place the running code states its own version; the tag can lie, the banner cannot |
+| Startup banner | `KnowSQL <version>` in `docker logs`. This is the only place the running code states its own version; the tag can lie, the banner cannot |
 | `/health`, `/api/health`, `/api/db/health` | all 200. Three paths since 0.16.1, and a platform with a fixed probe path depends on the first two |
 | Login through the browser | lands on `/admin/overview`, and the login page footer shows `v<version>` |
 | PostgreSQL connection | Test Connection reports connected; the object tree counts the tables and views you seeded, exactly |

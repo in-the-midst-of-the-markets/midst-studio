@@ -108,7 +108,7 @@ describe("the results webview's entry", () => {
       assert.deepEqual(posted, []);
       assert.equal(acquired, 0);
     }
-    assert.equal(start.NO_NONCE, "The LibreDB Results script has no nonce.");
+    assert.equal(start.NO_NONCE, "The KnowSQL Results script has no nonce.");
   });
 
   it("refuses to start without its root element", () => {

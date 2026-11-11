@@ -1,4 +1,4 @@
-// The theme kind on <html> (part 4 "The theming bridge"): the dark class drives LibreDB's tokens and dark: utilities,
+// The theme kind on <html> (part 4 "The theming bridge"): the dark class drives KnowSQL's tokens and dark: utilities,
 // and data-libredb-contrast="high" lets vscode-bridge.css map the hairlines and the ring to the contrast borders.
 import type { ThemeKind } from "../results-protocol";
 

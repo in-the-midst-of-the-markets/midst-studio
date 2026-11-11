@@ -1,6 +1,6 @@
 # Query Optimization & Performance Features
 
-LibreDB Studio includes enterprise-grade query optimization features to prevent system freezes and provide performance insights for DBAs, data engineers, and developers.
+KnowSQL includes enterprise-grade query optimization features to prevent system freezes and provide performance insights for DBAs, data engineers, and developers.
 
 ## Table of Contents
 
@@ -43,7 +43,7 @@ All SELECT queries are automatically paginated to prevent browser freezes when d
 
 ### Philosophy
 
-Instead of showing warning popups for large datasets, LibreDB Studio silently limits results to 500 rows. This provides:
+Instead of showing warning popups for large datasets, KnowSQL silently limits results to 500 rows. This provides:
 
 - **Uninterrupted workflow** - No confirmation dialogs
 - **Safe defaults** - System never freezes

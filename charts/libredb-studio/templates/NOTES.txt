@@ -1,8 +1,8 @@
-LibreDB Studio has been deployed successfully!
+KnowSQL has been deployed successfully!
 
 {{- if .Values.ingress.enabled }}
 
-Access LibreDB Studio via Ingress:
+Access KnowSQL via Ingress:
 {{- range $host := .Values.ingress.hosts }}
   {{- range .paths }}
   http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
@@ -11,14 +11,14 @@ Access LibreDB Studio via Ingress:
 
 {{- else if contains "NodePort" .Values.service.type }}
 
-Access LibreDB Studio via NodePort:
+Access KnowSQL via NodePort:
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "libredb-studio.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo "http://${NODE_IP}:${NODE_PORT}"
 
 {{- else if contains "LoadBalancer" .Values.service.type }}
 
-Access LibreDB Studio via LoadBalancer:
+Access KnowSQL via LoadBalancer:
   NOTE: It may take a few minutes for the LoadBalancer IP to be available.
   Watch status with: kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "libredb-studio.fullname" . }}
 
@@ -27,7 +27,7 @@ Access LibreDB Studio via LoadBalancer:
 
 {{- else }}
 
-Access LibreDB Studio via port-forward:
+Access KnowSQL via port-forward:
   kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "libredb-studio.fullname" . }} {{ .Values.service.targetPort }}:{{ .Values.service.port }}
   Open http://localhost:{{ .Values.service.targetPort }}
 
@@ -36,7 +36,7 @@ Access LibreDB Studio via port-forward:
 {{- $openshiftRoute := .Values.openshiftRoute | default dict }}
 {{- if $openshiftRoute.enabled }}
 
-Access LibreDB Studio via the OpenShift Route:
+Access KnowSQL via the OpenShift Route:
 {{- with $openshiftRoute.host }}
   https://{{ . }}{{ $.Values.config.basePath | default "" }}
 {{- else }}
@@ -179,7 +179,7 @@ Replicas" section):
 {{- if and (not (include "libredb-studio.authStrict" .)) (eq .Values.authProvider "local") (not .Values.secrets.adminPassword) (not .Values.secrets.existingSecret) }}
 
 First-run credentials (zero-config bootstrap):
-  secrets.adminPassword was not set, so LibreDB Studio generates admin
+  secrets.adminPassword was not set, so KnowSQL generates admin
   credentials on first start and prints them once to the pod log. Retrieve them:
 
     kubectl --namespace {{ .Release.Namespace }} logs deployment/{{ include "libredb-studio.fullname" . }} | grep -A 4 "generated admin credentials"

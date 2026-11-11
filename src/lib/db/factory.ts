@@ -223,7 +223,7 @@ function assertProviderEnabled(connection: DatabaseConnection): void {
   const enabled = enabledProviderTypes();
   if (enabled === null || enabled.includes(connection.type)) return;
   throw new DatabaseConfigError(
-    `The ${sanitize(connection.type)} provider is not available in this distribution of LibreDB Studio.`,
+    `The ${sanitize(connection.type)} provider is not available in this distribution of KnowSQL.`,
     connection.type,
   );
 }

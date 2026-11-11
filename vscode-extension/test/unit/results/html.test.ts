@@ -47,7 +47,7 @@ describe("the results view's HTML", () => {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-0123456789abcdef0123456789abcdef'; style-src 'self' https://*.vscode-cdn.net 'nonce-0123456789abcdef0123456789abcdef' '${RADIX_SCROLL_AREA_STYLE_HASH}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://file+.vscode-resource.vscode-cdn.net/x/dist/webview/results.css">
-  <title>LibreDB Results</title>
+  <title>KnowSQL Results</title>
 </head>
 <body>
   <div id="root"></div>

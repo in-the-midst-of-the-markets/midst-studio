@@ -255,7 +255,7 @@ describe("BackendClient", () => {
       assert.ok(error instanceof BackendExitedError);
       assert.equal(error.exitCode, null);
       assert.equal(error.signal, "SIGKILL");
-      assert.equal(error.message, "The LibreDB backend stopped (exit code none, signal SIGKILL).");
+      assert.equal(error.message, "The KnowSQL backend stopped (exit code none, signal SIGKILL).");
     });
 
     it("rejects a request sent on a disposed connection the same way", async () => {
@@ -265,7 +265,7 @@ describe("BackendClient", () => {
       host.dispose();
       const error = await rejection(client.listContainers({ connectionId: "c1" }));
       assert.ok(error instanceof BackendExitedError);
-      assert.equal(error.message, "The LibreDB backend stopped (exit code 1, signal none).");
+      assert.equal(error.message, "The KnowSQL backend stopped (exit code 1, signal none).");
     });
 
     it("says so when a request was rejected while the backend had not exited", async () => {
@@ -277,7 +277,7 @@ describe("BackendClient", () => {
       host.dispose();
       const error = await running;
       assert.ok(error instanceof Error && !(error instanceof BackendExitedError));
-      assert.equal(error.message, "A pending request was rejected while the LibreDB backend had not exited.");
+      assert.equal(error.message, "A pending request was rejected while the KnowSQL backend had not exited.");
     });
   });
 

@@ -249,7 +249,7 @@ const TRINO_APPLY_VERDICT: Readonly<Record<string, ObjectEditRefusalClass | "int
 });
 
 /** What `kill_query` records against the statement it terminates. */
-const KILL_MESSAGE = "Terminated from LibreDB Studio";
+const KILL_MESSAGE = "Terminated from KnowSQL";
 
 /**
  * The statements that change what the schema tree would show.
@@ -1831,7 +1831,7 @@ export class TrinoProvider extends SQLBaseProvider {
       const firstToken = request.text.trim().split(/\s/)[0];
       return refuse(
         "identity",
-        `this text does not begin with CREATE, it begins with "${firstToken}", and LibreDB applies a ` +
+        `this text does not begin with CREATE, it begins with "${firstToken}", and KnowSQL applies a ` +
           "definition by sending the CREATE statement the server itself printed with OR REPLACE spliced " +
           "into it. Run the statement you want in the SQL editor instead",
       );
@@ -1883,10 +1883,10 @@ export class TrinoProvider extends SQLBaseProvider {
     if (submitted === null) {
       return refuse(
         "identity",
-        `LibreDB could not read a CREATE ${statement.object} header out of this text, so it cannot tell ` +
+        `KnowSQL could not read a CREATE ${statement.object} header out of this text, so it cannot tell ` +
           `whether the text still names ${address}. A definition this product applies opens with ` +
           `CREATE ${statement.object}, the qualified name and the parameter list in parentheses, exactly ` +
-          "as the server printed it, and LibreDB adds the OR REPLACE itself. Run the statement you want " +
+          "as the server printed it, and KnowSQL adds the OR REPLACE itself. Run the statement you want " +
           "in the SQL editor instead",
       );
     }
@@ -1895,7 +1895,7 @@ export class TrinoProvider extends SQLBaseProvider {
       return refuse(
         "identity",
         `this text names "${functionSegment(submitted.name, submitted.argumentTypes.join(", "))}" and the ` +
-          `object being edited is "${address}", and LibreDB refuses an edited identity rather than sending ` +
+          `object being edited is "${address}", and KnowSQL refuses an edited identity rather than sending ` +
           "it. MEASURED on Trino 476, a changed ARGUMENT TYPE LIST or a changed NAME creates a SECOND " +
           "function and leaves this one untouched, while a changed return type and a renamed parameter " +
           "are replaced in place: make the change you want with a CREATE OR REPLACE FUNCTION of your own " +

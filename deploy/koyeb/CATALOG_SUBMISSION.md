@@ -1,6 +1,6 @@
 # Koyeb One-Click Apps Catalog — Submission
 
-Getting LibreDB Studio listed in the public catalog at
+Getting KnowSQL listed in the public catalog at
 [koyeb.com/deploy](https://www.koyeb.com/deploy).
 
 ## How the catalog works
@@ -31,7 +31,7 @@ a backup.
 
 | Field | Value |
 |-------|-------|
-| App name | LibreDB Studio |
+| App name | KnowSQL |
 | Category | Database / Developer Tools |
 | Description | Open-source web-based SQL IDE for cloud-native teams |
 | License | Open source (free) |
@@ -46,11 +46,11 @@ a backup.
 
 ## Outreach message (paste into the Partner Hub form / email)
 
-> **Subject:** One-Click App listing request — LibreDB Studio (open-source SQL IDE)
+> **Subject:** One-Click App listing request — KnowSQL (open-source SQL IDE)
 >
 > Hi Koyeb team,
 >
-> We maintain **LibreDB Studio**, an open-source, web-based SQL IDE for
+> We maintain **KnowSQL**, an open-source, web-based SQL IDE for
 > cloud-native teams (PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle, Db2 LUW, SQL Server,
 > MongoDB, Redis, Couchbase, ClickHouse, Apache Druid, Elasticsearch, OpenSearch,
 > Trino, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, with AI-assisted querying). It's free and MIT licensed:
@@ -70,7 +70,7 @@ a backup.
 > create the catalog entry?
 >
 > Thanks!
-> — The LibreDB team
+> — The KnowSQL team
 
 ## Assets to attach
 

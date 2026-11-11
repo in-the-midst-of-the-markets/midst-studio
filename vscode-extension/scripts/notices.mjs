@@ -38,7 +38,7 @@ export const LICENSE_OVERRIDES = {
 };
 
 const HEADER =
-  "Third-party notices for LibreDB Studio for VS Code\n\n" +
+  "Third-party notices for KnowSQL for VS Code\n\n" +
   "Each entry below names a package whose code the extension's bundles in dist/ include, its version and its licence,\n" +
   "followed by the text of the package's licence and notice files.\n";
 

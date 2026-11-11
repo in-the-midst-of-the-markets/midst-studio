@@ -194,7 +194,7 @@ export function verifyGovernanceEnvAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: the environment contradicts governance mode",
+      " KnowSQL cannot start: the environment contradicts governance mode",
       " GOVERNANCE_SOURCE switches governance on, and these variables have to change:",
       ...problems.map((problem) => `   - ${problem}`),
       " docs/GOVERNANCE.md lists every check under Studio configuration.",

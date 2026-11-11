@@ -1,6 +1,6 @@
 {
   "type": 1,
-  "title": "LibreDB Studio",
+  "title": "KnowSQL",
   "name": "libredb-studio",
 "description": "Self-hosted database IDE you use from a browser, covering sixty-one engines - PostgreSQL, MySQL, Oracle, SQL Server, MongoDB, Redis, ClickHouse, Cassandra, Elasticsearch and more - with a schema browser and query history on all of them, and ER diagrams and EXPLAIN plans wherever the engine declares keys or returns a plan. Source: https://github.com/libredb/libredb-studio",
   "categories": [
@@ -42,5 +42,5 @@
       "preset": true
     }
   ],
-  "note": "Open <code>http://&lt;your-host&gt;:3006</code>. On the first start the app creates the admin account <code>admin@libredb.org</code>, generates its password and its signing secret, and prints the password to the container log, so read the log before signing in. Both are kept in <code>/app/data</code> and reused on later starts, which is why setting <code>ADMIN_PASSWORD</code> on its own afterwards does not change the stored one: to replace it, set <code>ADMIN_PASSWORD</code> to the new value and <code>ADMIN_PASSWORD_RESET=true</code> together for one start, then remove the flag. Saved connections, query history and the app's SQLite file all live under <code>/app/data</code>, which the volume covers. The databases you connect to are not part of this template, which runs LibreDB Studio alone. MIT licensed, no paid tier. Docs: <a href=\"https://libredb.org\">libredb.org</a>"
+  "note": "Open <code>http://&lt;your-host&gt;:3006</code>. On the first start the app creates the admin account <code>admin@libredb.org</code>, generates its password and its signing secret, and prints the password to the container log, so read the log before signing in. Both are kept in <code>/app/data</code> and reused on later starts, which is why setting <code>ADMIN_PASSWORD</code> on its own afterwards does not change the stored one: to replace it, set <code>ADMIN_PASSWORD</code> to the new value and <code>ADMIN_PASSWORD_RESET=true</code> together for one start, then remove the flag. Saved connections, query history and the app's SQLite file all live under <code>/app/data</code>, which the volume covers. The databases you connect to are not part of this template, which runs KnowSQL alone. MIT licensed, no paid tier. Docs: <a href=\"https://libredb.org\">libredb.org</a>"
 }

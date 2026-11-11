@@ -256,8 +256,8 @@ describe("the connection commands in a real extension host", () => {
 
   it("writes the password to no log line, and hands it to the child neither in argv nor in its environment", async function () {
     this.timeout(60_000);
-    const logs = filesNamed(join(extensionPath, ".vscode-test", "user-data", "logs"), "LibreDB.log");
-    assert.ok(logs.length > 0, "no LibreDB.log under .vscode-test/user-data/logs");
+    const logs = filesNamed(join(extensionPath, ".vscode-test", "user-data", "logs"), "KnowSQL.log");
+    assert.ok(logs.length > 0, "no KnowSQL.log under .vscode-test/user-data/logs");
     const log = readFileSync(logs[0], "utf8");
     console.log(`${logs[0]}: ${log.length} characters`);
     assert.ok(!log.includes(sentinel), `${logs[0]} holds the password`);

@@ -1,5 +1,5 @@
 # ==============================================================================
-# Snapcraft recipe for the LibreDB Studio server snap (issue #113).
+# Snapcraft recipe for the KnowSQL server snap (issue #113).
 #
 # Packs the prebuilt standalone Next.js server payload plus the pinned
 # Node.js runtime and runs it as a strictly confined daemon on port 3000.
@@ -27,7 +27,7 @@
 # arbitrary host sockets. Server-side SQLite storage lives under $SNAP_DATA.
 # ==============================================================================
 name: libredb-studio
-title: LibreDB Studio
+title: KnowSQL
 base: core24
 # Version is adopted from the payload part, which reads package.json at
 # build time (craftctl set version=...).

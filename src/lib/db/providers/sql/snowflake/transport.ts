@@ -42,8 +42,8 @@ export const SNOWFLAKE_RETRY_ATTEMPTS = 5;
 export const SNOWFLAKE_CONTROL_ANSWER_MAX_BYTES = 1_048_576;
 
 const appVersion = getAppVersion();
-/** `LibreDB-Studio/<version>`, or the bare name in the library build, which injects no version. */
-export const SNOWFLAKE_USER_AGENT = appVersion === null ? "LibreDB-Studio" : `LibreDB-Studio/${appVersion}`;
+/** `KnowSQL/<version>`, or the bare name in the library build, which injects no version. */
+export const SNOWFLAKE_USER_AGENT = appVersion === null ? "KnowSQL" : `KnowSQL/${appVersion}`;
 
 const CLOSED = "The Snowflake connection is closed";
 const SUBMIT_RETRIED: ReadonlySet<number> = new Set([429, 500, 502, 503, 504]);

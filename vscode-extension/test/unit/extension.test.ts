@@ -163,12 +163,12 @@ describe("activate", () => {
     assert.deepEqual(fired, []);
   });
 
-  it("creates the LibreDB log channel, registers the nine commands and reads the setting once", () => {
+  it("creates the KnowSQL log channel, registers the nine commands and reads the setting once", () => {
     const context = fakeExtensionContext();
     activate(context as vscode.ExtensionContext);
     assert.deepEqual(
       outputChannels.map((channel) => [channel.name, channel.options]),
-      [["LibreDB", { log: true }]],
+      [["KnowSQL", { log: true }]],
     );
     assert.deepEqual([...registeredCommands.keys()], COMMANDS);
     assert.deepEqual(configurationReads, ["libredb.connections"]);

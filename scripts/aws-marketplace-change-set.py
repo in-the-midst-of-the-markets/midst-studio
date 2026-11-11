@@ -44,7 +44,7 @@ def change_set(entity, version, ami, access_role, notes=None):
         "DetailsDocument": {
             "Version": {
                 "VersionTitle": version,
-                "ReleaseNotes": notes or ("LibreDB Studio %s. Release notes: "
+                "ReleaseNotes": notes or ("KnowSQL %s. Release notes: "
                                           "https://github.com/libredb/libredb-studio/releases/tag/%s" % (version, version)),
             },
             "DeliveryOptions": [{

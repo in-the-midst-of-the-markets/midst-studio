@@ -9,7 +9,7 @@ packer {
 
 variable "version" {
   type        = string
-  description = "LibreDB Studio release tag (e.g. 0.14.0) — AMI name and version title."
+  description = "KnowSQL release tag (e.g. 0.14.0) — AMI name and version title."
 }
 
 variable "image_ref" {
@@ -71,7 +71,7 @@ source "amazon-ebs" "ubuntu" {
   # ASCII only, like every buyer-visible string. The tail is the listing
   # description's first sentence verbatim, because the AMI product checklist
   # asks the two to match.
-  ami_description = "LibreDB Studio ${var.version} - Open-source SQL IDE for cloud-native teams."
+  ami_description = "KnowSQL ${var.version} - Open-source SQL IDE for cloud-native teams."
 
   # Instances launched from this AMI require IMDSv2.
   imds_support = "v2.0"

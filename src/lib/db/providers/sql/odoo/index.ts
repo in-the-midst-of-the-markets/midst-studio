@@ -424,7 +424,7 @@ export class OdooProvider extends SQLBaseProvider {
       origin: httpOrigin("https", host, 443),
       tls: { rejectUnauthorized: true, identity: host },
       maxSockets: MAX_SOCKETS,
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "User-Agent": "LibreDB-Studio" },
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "User-Agent": "KnowSQL" },
       refusesLinkLocal: true,
       refusesUpgrade: true,
     });

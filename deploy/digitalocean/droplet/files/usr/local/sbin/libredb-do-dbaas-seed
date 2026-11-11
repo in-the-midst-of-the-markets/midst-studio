@@ -1,6 +1,6 @@
 #!/bin/bash
 # Turns the credentials file DigitalOcean writes when a customer adds a Managed
-# Database while creating this Droplet into a LibreDB Studio seed file, so the
+# Database while creating this Droplet into a KnowSQL seed file, so the
 # database is already in Studio's sidebar at first login.
 #
 # Usage: libredb-do-dbaas-seed CREDENTIALS SEED_FILE STATUS_FILE

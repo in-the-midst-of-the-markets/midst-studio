@@ -31,7 +31,7 @@ Closes #
 - [ ] All existing tests pass
 
 ### Test Environment
-- **LibreDB Studio Version**: 
+- **KnowSQL Version**: 
 - **Browser**: 
 - **OS**: 
 - **Node.js/Bun Version**: 

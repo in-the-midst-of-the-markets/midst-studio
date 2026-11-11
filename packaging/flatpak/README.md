@@ -1,6 +1,6 @@
 # Flathub packaging (org.libredb.Studio)
 
-> **Status: dormant. LibreDB Studio is not on Flathub, and this is not being pursued.**
+> **Status: dormant. KnowSQL is not on Flathub, and this is not being pursued.**
 > The submission ([flathub/flathub#9538](https://github.com/flathub/flathub/pull/9538)) was
 > declined on 2026-07-30 under Flathub's [generative AI
 > policy](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy): the
@@ -15,7 +15,7 @@
 > desktop artifact. Read the checklist below as a record of how the submission was made, not as a
 > to-do - a resubmission would have to clear the from-source requirement as well.
 
-The manifest and metadata for publishing the LibreDB Studio desktop app on
+The manifest and metadata for publishing the KnowSQL desktop app on
 [Flathub](https://flathub.org). Issue
 [#232](https://github.com/libredb/libredb-studio/issues/232).
 

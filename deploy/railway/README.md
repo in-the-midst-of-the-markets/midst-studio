@@ -1,6 +1,6 @@
-# LibreDB Studio — Railway One-Click Template
+# KnowSQL — Railway One-Click Template
 
-This folder is the **source of truth** for deploying LibreDB Studio on
+This folder is the **source of truth** for deploying KnowSQL on
 [Railway](https://railway.com) as a one-click marketplace template.
 
 > Tracking issue: [libredb-studio#174](https://github.com/libredb/libredb-studio/issues/174)
@@ -26,7 +26,7 @@ Click the button to deploy from the Railway template marketplace:
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/libredb-studio?referralCode=libredb&utm_medium=integration&utm_source=template&utm_campaign=generic)
 
-Or browse the Railway template marketplace and search **LibreDB Studio**.
+Or browse the Railway template marketplace and search **KnowSQL**.
 
 ## Deploy (manual — works today, before publishing)
 
@@ -73,7 +73,7 @@ on Railway:
 2. Railway provisions it and exposes `DATABASE_URL`, `PGHOST`, `PGPORT`,
    `PGUSER`, `PGPASSWORD`, `PGDATABASE` (find them on the database service's
    **Variables** tab).
-3. In LibreDB Studio, add a connection using those values
+3. In KnowSQL, add a connection using those values
    (host / port / database / user / password). You can now query it.
 
 ## Changing the passwords later

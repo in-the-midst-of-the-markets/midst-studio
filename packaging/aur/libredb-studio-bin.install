@@ -1,7 +1,7 @@
 post_install() {
   cat <<'EOF'
 
-==> LibreDB Studio is installed but not running.
+==> KnowSQL is installed but not running.
     Start it:               systemctl enable --now libredb-studio
     First-run admin login:  journalctl -u libredb-studio
                             (the generated admin password is printed once)

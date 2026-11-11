@@ -863,9 +863,9 @@ describe("launcher startup URL", () => {
     // not have.
     expect(run.exitCode, `launcher stderr: ${run.stderr.toString()}`).toBe(0);
     const output = run.stdout.toString();
-    expect(output).toContain(`Starting LibreDB Studio ${version} on ${url}\n`);
+    expect(output).toContain(`Starting KnowSQL ${version} on ${url}\n`);
     expect(output).toContain(`BIND=${host}\n`);
-    expect(output.match(/^Starting LibreDB Studio ([0-9][0-9.]*) /m)?.[1]).toBe(version);
+    expect(output.match(/^Starting KnowSQL ([0-9][0-9.]*) /m)?.[1]).toBe(version);
   });
 });
 

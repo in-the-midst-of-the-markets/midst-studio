@@ -1,6 +1,6 @@
 # Redis Provider
 
-> Key-value store support for LibreDB Studio, built on [`ioredis`](https://github.com/redis/ioredis).
+> Key-value store support for KnowSQL, built on [`ioredis`](https://github.com/redis/ioredis).
 > This document is the single reference point for the Redis provider: design, architecture,
 > usage, and tests. If you are reading the code, extending Redis support, or authoring a new
 > provider, start here.
@@ -24,7 +24,7 @@
 ## 1. Overview
 
 Redis is an in-memory key-value store. It has no tables, no rows, no SQL, and no relational
-schema. LibreDB Studio is a SQL-oriented IDE, so the central design problem is:
+schema. KnowSQL is a SQL-oriented IDE, so the central design problem is:
 
 > **How do you present a key-value store through the same `DatabaseProvider` interface that
 > PostgreSQL, MySQL, and the rest implement — without emulating SQL and without leaking

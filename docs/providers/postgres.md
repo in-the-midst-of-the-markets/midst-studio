@@ -1,6 +1,6 @@
 # PostgreSQL Provider
 
-> Full PostgreSQL support for LibreDB Studio, built on the [`pg`](https://github.com/brianc/node-postgres) driver.
+> Full PostgreSQL support for KnowSQL, built on the [`pg`](https://github.com/brianc/node-postgres) driver.
 > This document is the single reference point for the PostgreSQL provider: design, architecture,
 > usage, and tests. PostgreSQL is the **reference implementation** for the SQL provider family — if
 > you are authoring or maintaining another SQL provider, read this alongside the source.
@@ -896,7 +896,7 @@ The refusal is raised before the round trip, so it costs no query.
 | `privilege` | This connection does not own the routine | "this connection's database account does not own \"app.order_total(integer)\", which is owned by \"postgres\", and PostgreSQL checks ownership rather than privilege for CREATE OR REPLACE" |
 | `guard` | `check_function_bodies` is not `on` | "this connection's session has check_function_bodies = off, and PostgreSQL then accepts a body it would otherwise reject, so an apply would report success and store a definition that cannot run" |
 | `definition` | The text is byte-identical to the server's | "this text is identical to the definition on the server" |
-| `identity` | The header changed | "this text declares \"...\" and the object being edited is \"...\", and LibreDB refuses an edited header rather than sending it. CREATE OR REPLACE with a different name or a different argument list creates a SECOND routine and leaves this one untouched, after which every call site fails 42725 is not unique. A changed parameter DEFAULT is rendered inside this same header and PostgreSQL replaces that one in place, so it is refused here as well: make it with a CREATE OR REPLACE of your own in the SQL editor" |
+| `identity` | The header changed | "this text declares \"...\" and the object being edited is \"...\", and KnowSQL refuses an edited header rather than sending it. CREATE OR REPLACE with a different name or a different argument list creates a SECOND routine and leaves this one untouched, after which every call site fails 42725 is not unique. A changed parameter DEFAULT is rendered inside this same header and PostgreSQL replaces that one in place, so it is refused here as well: make it with a CREATE OR REPLACE of your own in the SQL editor" |
 
 The identity comparison is everything up to and including the parenthesis that CLOSES THE PARAMETER LIST, found by a left-to-right scan that counts nesting and skips single-quoted and double-quoted text, and the comparison itself needs no parser, because both sides are `pg_get_functiondef` output: the reader started from it and the build re-read it, so the question is whether they are the same bytes the engine wrote.
 It read the FIRST `)` until #789 task 31, and that ended the header early for every routine whose header carries a parenthesis before the parameter list closes, after which a change to a LATER parameter was never compared at all.

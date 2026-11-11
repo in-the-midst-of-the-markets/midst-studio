@@ -1,6 +1,6 @@
 # Prometheus Provider
 
-> Prometheus support for LibreDB Studio, over the Prometheus HTTP API (`/api/v1/*`, port `9090`) with **no driver dependency of any kind**.
+> Prometheus support for KnowSQL, over the Prometheus HTTP API (`/api/v1/*`, port `9090`) with **no driver dependency of any kind**.
 > Every call is one HTTP request through the runtime's own `fetch`, or through `node:https` when TLS material is configured.
 > This is the first provider to declare a `queryLanguage` of its own, `promql` beside `sql` and `json`: the editor sends PromQL to the server unchanged.
 > This document is the single reference for the Prometheus provider: design, architecture, usage and tests.

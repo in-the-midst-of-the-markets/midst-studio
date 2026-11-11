@@ -1,6 +1,6 @@
-# LibreDB Studio — CapRover One-Click App
+# KnowSQL — CapRover One-Click App
 
-This folder is the **source of truth** for deploying LibreDB Studio on
+This folder is the **source of truth** for deploying KnowSQL on
 [CapRover](https://caprover.com) as a one-click app.
 
 > Tracking issue: [libredb-studio#56](https://github.com/libredb/libredb-studio/issues/56)
@@ -21,11 +21,11 @@ The auto-connect variant went upstream the same way, as `public/v4/apps/libredb-
 
 ## Install (official one-click apps catalog)
 
-CapRover dashboard → **Apps → One-Click Apps/Databases** → search **LibreDB Studio**.
-The search lists two LibreDB entries: **LibreDB Studio**, and **LibreDB Studio (auto-connect)**, which also connects Studio to the databases on the server.
+CapRover dashboard → **Apps → One-Click Apps/Databases** → search **KnowSQL**.
+The search lists two KnowSQL entries: **KnowSQL**, and **KnowSQL (auto-connect)**, which also connects Studio to the databases on the server.
 No third-party repo to add.
 
-The LibreDB 3rd-party repo that served this app while the official submission was in review is retired.
+The KnowSQL 3rd-party repo that served this app while the official submission was in review is retired.
 Its address, `https://libredb.org/caprover-one-click-apps`, no longer serves a list, so a CapRover that still has it under 3rd party repositories gets no app from it.
 The repo is archived as [`libredb/caprover-one-click-apps-legacy`](https://github.com/libredb/caprover-one-click-apps-legacy), and its old name now belongs to the catalog fork in [Releasing to the official catalog](#releasing-to-the-official-catalog).
 
@@ -53,7 +53,7 @@ CapRover dashboard → **Apps → One-Click Apps/Databases** → select
 ## Auto-connect variant
 
 `libredb-studio-autoconnect.yml` deploys the same Studio app plus a second app, `<app>-discovery`, so that Studio connects itself to the databases this CapRover runs.
-It needs LibreDB Studio 0.18.0 or later, the first release that ships the exporter (`docker/discover.mjs`) and reads `SEED_DISCOVERY_PATH`.
+It needs KnowSQL 0.18.0 or later, the first release that ships the exporter (`docker/discover.mjs`) and reads `SEED_DISCOVERY_PATH`.
 With an older tag the `-discovery` app cannot start, because its command names a file that image does not have.
 CapRover upgrades each app on its own, so when you upgrade, deploy the same version to both apps, the Studio app first: a Studio older than the exporter can refuse its export file, and then it withdraws every discovered connection.
 

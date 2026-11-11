@@ -44,7 +44,7 @@ describe("checkLocalFile", () => {
     for (const database of ["/home/you/app.db", ":memory:"]) {
       assert.equal(
         refusalOf(sqlite(database), restricted)?.message,
-        "Restricted Mode: LibreDB opens no SQLite database until you trust this workspace.",
+        "Restricted Mode: KnowSQL opens no SQLite database until you trust this workspace.",
       );
     }
   });

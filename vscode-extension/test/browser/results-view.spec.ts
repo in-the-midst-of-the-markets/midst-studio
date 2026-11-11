@@ -499,7 +499,7 @@ test("the saved state holds the masking switch and the scroll only, and a reload
 
   const reloaded = await view.reload();
   await reloaded.post(init());
-  await expect(page.getByText("No results yet. Run a query in a LibreDB editor to see its rows here.")).toBeVisible();
+  await expect(page.getByText("No results yet. Run a query in a KnowSQL editor to see its rows here.")).toBeVisible();
   await expect(desktopGrid(page)).toHaveCount(0);
   await postAll(reloaded, LOAD_MORE_ON_POSTGRES.slice(0, 2));
   await expect(page.getByTitle("Show sensitive data")).toBeVisible();

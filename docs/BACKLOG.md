@@ -6103,7 +6103,7 @@ Found 2026-10-14 in the final review of the Apache Spark provider (#1759).
 
 ### U145. E2E specs open the connection dialog by clicking the sidebar header's first button, which is the ERD button once metadata has loaded
 
-The `beforeEach` of 27 specs under `e2e/` opens the connection dialog with `page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button").first()`.
+The `beforeEach` of 27 specs under `e2e/` opens the connection dialog with `page.locator("text=KnowSQL").locator("..").locator("..").locator("button").first()`.
 `Sidebar.tsx` renders `Show ERD Diagram` before `New connection` in that header whenever the active connection offers a schema diagram, and the Sample (LibreDB) connection is active at sign-in, so which button is first depends on whether its metadata arrived before the click.
 When it has, the click opens the ERD visualizer instead, the dialog never opens, and the test times out waiting for an engine button inside it.
 Measured 2026-10-17 on `main` at 674683b19 with `e2e/opcua-provider.spec.ts`, one worker and four repeats while a second run loaded the machine: 3 of 28 tests failed this way, and 0 of 14 without the load.

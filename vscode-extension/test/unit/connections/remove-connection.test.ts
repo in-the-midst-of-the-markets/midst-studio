@@ -63,7 +63,7 @@ function setup(more: { removal?: Removal | Error; closing?: Error } = {}) {
       calls.push(["cancelEditorRuns", id]);
     },
   };
-  const log = window.createOutputChannel("LibreDB", { log: true });
+  const log = window.createOutputChannel("KnowSQL", { log: true });
   const ran = { openUserSettings: 0 };
   const deps: RemoveDeps = {
     store,
@@ -219,7 +219,7 @@ describe("removeConnection", () => {
     assert.deepEqual(shownMessages.at(-1), {
       level: "warning",
       message:
-        "LibreDB removed shop, but could not delete 1 of its secrets from VS Code's secret storage. The LibreDB log names them.",
+        "KnowSQL removed shop, but could not delete 1 of its secrets from VS Code's secret storage. The KnowSQL log names them.",
       items: [],
     });
   });

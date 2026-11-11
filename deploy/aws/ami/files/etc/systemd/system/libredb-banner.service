@@ -1,5 +1,5 @@
 [Unit]
-Description=LibreDB Studio first-boot banner
+Description=KnowSQL first-boot banner
 # Written once; a failed attempt retries on the next boot because the file is
 # still absent.
 ConditionPathExists=!/etc/libredb-studio.info

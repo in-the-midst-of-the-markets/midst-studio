@@ -320,7 +320,7 @@ jobs:
             # interpolated by the shell.
             notes="${RUNNER_TEMP}/chart-release-notes.md"
             cat > "$notes" <<'NOTES'
-          LibreDB Studio Helm chart `__CHART_VERSION__`, deploying application version `__APP_VERSION__` by default.
+          KnowSQL Helm chart `__CHART_VERSION__`, deploying application version `__APP_VERSION__` by default.
 
           ## Install
 
@@ -346,7 +346,7 @@ jobs:
 
           | Tag | What it releases |
           | --- | --- |
-          | `__APP_VERSION__` | the LibreDB Studio application - npm, Docker, desktop and OS packages |
+          | `__APP_VERSION__` | the KnowSQL application - npm, Docker, desktop and OS packages |
           | `libredb-studio-__CHART_VERSION__` | this Helm chart - `helm package` names its artifact `<chart-name>-<chart-version>.tgz`, and the release tag follows it |
 
           The chart version moves on its own so a chart-only fix ships without forcing an application release. The application version a given chart deploys is its `appVersion` - shown in the `APP VERSION` column of `helm search repo` and on ArtifactHub. The full rationale is in [docs/HELM_CHART.md](https://github.com/libredb/libredb-studio/blob/main/docs/HELM_CHART.md#versioning-policy-version-and-appversion-stay-independent-researched-2026-07).

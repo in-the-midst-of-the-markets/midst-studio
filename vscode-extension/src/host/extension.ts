@@ -32,7 +32,7 @@ import { refreshTarget } from "./tree/nodes";
 let supervisor: BackendSupervisor | undefined;
 
 /**
- * Reads the engine index the build wrote, creates the LibreDB log channel, registers the command that shows it, creates
+ * Reads the engine index the build wrote, creates the KnowSQL log channel, registers the command that shows it, creates
  * the backend supervisor, reads the libredb.connections setting into the connection store, creates the Connections view
  * on its tree, registers Add Connection, Remove Connection and Refresh, the editor commands, and the Results view, whose
  * presenter the run service presents to beside the log.
@@ -43,7 +43,7 @@ let supervisor: BackendSupervisor | undefined;
  */
 export function activate(context: vscode.ExtensionContext): void {
   const index = readEngineIndex(readFileSync(join(context.extensionPath, "media", "engines", "index.json"), "utf8"));
-  const log = vscode.window.createOutputChannel("LibreDB", { log: true });
+  const log = vscode.window.createOutputChannel("KnowSQL", { log: true });
   context.subscriptions.push(
     log,
     vscode.commands.registerCommand(COMMANDS.showLog, () => log.show()),

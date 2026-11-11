@@ -94,7 +94,7 @@ describe("api-versions and version", () => {
     });
     const { context } = consoleContext(answer);
     expect((await version(context)).rows).toEqual([
-      { FIELD: "Client Version", VALUE: "LibreDB Studio 0.18.2, which runs no kubectl" },
+      { FIELD: "Client Version", VALUE: "KnowSQL 0.18.2, which runs no kubectl" },
       { FIELD: "Server Version", VALUE: "v1.35.5+k3s1" },
       { FIELD: "Server Git Commit", VALUE: "abc" },
       { FIELD: "Server Build Date", VALUE: "2026-09-01" },
@@ -103,7 +103,7 @@ describe("api-versions and version", () => {
     ]);
     const unnamed = consoleContext(routes({ "GET /version": jsonAnswer({}) }));
     const built = { ...unnamed.context, appVersion: null };
-    expect((await version(built)).rows[0].VALUE).toBe("LibreDB Studio (version not recorded), which runs no kubectl");
+    expect((await version(built)).rows[0].VALUE).toBe("KnowSQL (version not recorded), which runs no kubectl");
   });
 });
 

@@ -1433,7 +1433,7 @@ describe("TrinoProvider maintenance", () => {
     expect(result.success).toBe(true);
     expect(sqlWith("kill_query")).toBe(
       "CALL system.runtime.kill_query(query_id => '20260820_001943_00041_chvb7', " +
-        "message => 'Terminated from LibreDB Studio')",
+        "message => 'Terminated from KnowSQL')",
     );
   });
 
@@ -4639,7 +4639,7 @@ describe("Trino object edit: the apply", () => {
     // `plus_one(x bigint)` SUCCEEDS and `SHOW CREATE FUNCTION` comes back byte-identical to the
     // pre-image. A post-apply check that compared the two renderings answered `applied-elsewhere`
     // for it, so the dialog printed "This text does not name `plus_one(bigint)`, so that object
-    // was not changed" and "A different object was created and LibreDB did not remove it" over a
+    // was not changed" and "A different object was created and KnowSQL did not remove it" over a
     // change that had landed, the audit recorded `object_edit_applied_elsewhere`, and the draft
     // and its dirty mark stayed. It is the same defect `6fdcc8bb` repaired on PostgreSQL.
     const outcome = await applyAgainst({ before: READ_TEXT, after: CANONICALIZED, then: READ_TEXT });

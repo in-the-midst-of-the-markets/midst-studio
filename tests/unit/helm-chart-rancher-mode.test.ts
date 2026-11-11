@@ -290,7 +290,7 @@ describe("rancher.navLink", () => {
     expect(link?.metadata.labels?.["app.kubernetes.io/name"]).toBe("libredb-studio");
     expect(link?.metadata.labels?.["app.kubernetes.io/instance"]).toBe(RELEASE);
     expect(link?.spec).toEqual({
-      label: "LibreDB Studio",
+      label: "KnowSQL",
       group: "Databases",
       target: "_blank",
       toURL: "https://studio.example.com",

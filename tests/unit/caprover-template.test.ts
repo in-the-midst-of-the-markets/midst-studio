@@ -417,7 +417,7 @@ describe("what only the auto-connect variant carries", () => {
    *  because the block is wrapped by hand). It is the disclosure a reader sees before the
    *  install form, so a softer rewording is a change to what the operator agreed to. */
   const DISCLOSURE =
-    "This variant adds a second app, named after this one with -discovery appended, that reads the settings of the other apps on this server through the Docker socket so Studio can connect to your databases without you typing their passwords. Access to the Docker socket is equivalent to root access on this server. The discovery app has no port and is not exposed to the internet. It records the name and image of every app on this server and the database password settings of your database apps, in a file that only the Studio app and its admin login can read. Connected databases are listed for the Studio admin login only, and the standard login cannot read that file through a DuckDB connection. Still give the standard login only to someone you trust, because a connection that names a database file on this server is not limited to a directory (https://github.com/libredb/libredb-studio/blob/main/docs/providers/duckdb.md#143-the-file-path-is-a-trust-boundary-for-every-role-and-statement-reach-is-the-admins). Enable HTTPS for Studio before you sign in for the first time. If you do not want the Docker socket on this server, install the plain LibreDB Studio entry instead.";
+    "This variant adds a second app, named after this one with -discovery appended, that reads the settings of the other apps on this server through the Docker socket so Studio can connect to your databases without you typing their passwords. Access to the Docker socket is equivalent to root access on this server. The discovery app has no port and is not exposed to the internet. It records the name and image of every app on this server and the database password settings of your database apps, in a file that only the Studio app and its admin login can read. Connected databases are listed for the Studio admin login only, and the standard login cannot read that file through a DuckDB connection. Still give the standard login only to someone you trust, because a connection that names a database file on this server is not limited to a directory (https://github.com/libredb/libredb-studio/blob/main/docs/providers/duckdb.md#143-the-file-path-is-a-trust-boundary-for-every-role-and-statement-reach-is-the-admins). Enable HTTPS for Studio before you sign in for the first time. If you do not want the Docker socket on this server, install the plain KnowSQL entry instead.";
 
   const flat = (text: string) => text.replace(/\s+/g, " ").trim();
   const paragraphs = (text: string) => text.split(/\n\s*\n/);
@@ -431,7 +431,7 @@ describe("what only the auto-connect variant carries", () => {
 
   test("it deploys exactly two services, Studio and its discovery companion", () => {
     expect(Object.keys(template.services ?? {}).sort()).toEqual(["$$cap_appname", "$$cap_appname-discovery"]);
-    expect(template.caproverOneClickApp?.displayName).toBe("LibreDB Studio (auto-connect)");
+    expect(template.caproverOneClickApp?.displayName).toBe("KnowSQL (auto-connect)");
   });
 
   test("registrationOrder follows depends_on over the key order, and refuses what CapRover refuses", () => {

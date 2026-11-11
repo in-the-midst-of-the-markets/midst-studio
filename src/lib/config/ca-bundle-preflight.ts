@@ -27,7 +27,7 @@ function refuse(path: string, reason: string): false {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: NODE_EXTRA_CA_CERTS names no certificate bundle",
+      " KnowSQL cannot start: NODE_EXTRA_CA_CERTS names no certificate bundle",
       ` Path: ${path}`,
       ` Reason: ${reason}`,
       " Node would only warn and trust no extra CA, so every TLS connection",

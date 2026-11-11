@@ -1,20 +1,20 @@
-# LibreDB Studio on Rancher
+# KnowSQL on Rancher
 
-LibreDB Studio ships a Helm chart that installs with **default values** on
+KnowSQL ships a Helm chart that installs with **default values** on
 Rancher-managed Kubernetes clusters: no values are required for a working
 instance, and first-run admin credentials are generated automatically. This
 document describes the supported Rancher, Kubernetes, and distribution
 versions, how to install through Rancher, and the combinations we validate.
 
-LibreDB Studio is listed in the SUSE Partner Certification & Solutions
-Catalog: [LibreDB Studio](https://www.suse.com/pcsc/viewVersionPage?versionID=26969),
+KnowSQL is listed in the SUSE Partner Certification & Solutions
+Catalog: [KnowSQL](https://www.suse.com/pcsc/viewVersionPage?versionID=26969),
 where the listing records the platform as SUSE Rancher and the certification
 as SUSE Ready.
 
 ## Supported versions
 
 These are the SUSE Rancher and Rancher Kubernetes distribution versions
-LibreDB Studio is supported on, and the versions Sekoya provides
+KnowSQL is supported on, and the versions Sekoya provides
 [commercial support](#commercial-support) for.
 
 | Component | Supported | Validated |
@@ -40,12 +40,12 @@ That range is the chart's. Rancher mode and the LibreDB Rancher extension are va
 
 ## Commercial support
 
-LibreDB Studio is developed and maintained by
+KnowSQL is developed and maintained by
 **SEKOYA GRUP BİLİŞİM VE TEKNOLOJİ LİMİTED ŞİRKETİ** (Istanbul, Türkiye),
 trading publicly as **LibreDB**.
 Sekoya is the primary developer and maintainer of the software.
 
-**Sekoya provides commercial support for LibreDB Studio on every Rancher,
+**Sekoya provides commercial support for KnowSQL on every Rancher,
 K3s, RKE2 and Kubernetes version declared in the table above**, covering Helm
 chart installation and upgrades, configuration, defect triage and fixes, and
 security patches.
@@ -56,14 +56,14 @@ security patches.
 | Security vulnerabilities | [`SECURITY.md`](../SECURITY.md) — do not open a public issue |
 | Community questions and bug reports | <https://github.com/libredb/libredb-studio/issues> |
 
-LibreDB Studio is released under the [MIT license](../LICENSE) and follows a
+KnowSQL is released under the [MIT license](../LICENSE) and follows a
 regular tagged release cadence; critical vulnerabilities are patched promptly
 and serious defects are disclosed in the release notes.
 
 ## Installing via Rancher Apps
 
 1. In the Rancher UI, choose your cluster and open **Apps → Charts**.
-2. Select the **Partners** repository and search for **LibreDB Studio**.
+2. Select the **Partners** repository and search for **KnowSQL**.
 3. Click **Install**. The default values deploy a working instance — no
    values are required.
 4. Retrieve the generated admin credentials from the pod log (also shown in
@@ -174,7 +174,7 @@ It needs the first Studio release after 1.1.0, because the 1.1.0 image has neith
 - **Access.** For every discovered database, Studio asks the cluster through a SubjectAccessReview whether the signed-in Rancher user may `get` its credential Secret, on every list and every open; a denied database answers exactly like an unknown one ([SEED_CONNECTIONS.md, Kubernetes access review](SEED_CONNECTIONS.md#kubernetes-access-review)).
 - **Admin.** A Studio admin is whoever may `update` Studio's own Deployment, which in a default Rancher install is the administrator and the cluster's owners; no group claim and no password makes an admin ([SEED_CONNECTIONS.md, Admin](SEED_CONNECTIONS.md#admin)).
 - **Sign-in.** Only a member of the cluster signs in, by default whoever may list its `NavLink`s, so a Rancher user with no role in the cluster is refused ([SEED_CONNECTIONS.md, Sign-in](SEED_CONNECTIONS.md#sign-in)).
-- **Navigation.** A `NavLink` puts LibreDB Studio in the cluster's menu, and Studio opens in a new browser tab on its own HTTPS host; it is never framed into Rancher.
+- **Navigation.** A `NavLink` puts KnowSQL in the cluster's menu, and Studio opens in a new browser tab on its own HTTPS host; it is never framed into Rancher.
 - **Containment.** Set `config.allowCustomConnections: false`, as the chart README's Rancher-mode values do and the extension's setup wizard will; Studio does not force it.
   The review gates only discovered databases: with custom connections on, which is the default when the value is unset, a signed-in user can point Studio at any Service its pod reaches.
   MCP and the agent stay off while the review is on, and so does the built-in LibreDB sample connection, unless `LIBREDB_EMBEDDED_SAMPLE` is set to `true` through `extraEnv` ([SEED_CONNECTIONS.md, What the review switches off](SEED_CONNECTIONS.md#what-the-review-switches-off)).
@@ -187,7 +187,7 @@ It needs the first Studio release after 1.1.0, because the 1.1.0 image has neith
 4. Install the chart into that namespace with the Rancher-mode values, through Helm or Rancher's Apps page, whose form covers them and takes the ingress host in its YAML view ([chart README, Rancher mode values](../charts/libredb-studio/README.md#rancher-mode-values); the reasons behind each value are in [HELM_CHART.md, Rancher mode](HELM_CHART.md#12-rancher-mode)).
    Keep `config.allowCustomConnections: false` from those values, so users reach only the databases the review allows.
    The discovered namespaces must exist first, and the access review's ClusterRole and the `NavLink` need a cluster owner.
-5. Open LibreDB Studio from the cluster's menu.
+5. Open KnowSQL from the cluster's menu.
 
 ### What we measured
 
@@ -216,5 +216,5 @@ On community Rancher v2.15.2 with an imported K3s v1.35.5 cluster, CloudNativePG
 
 ### The LibreDB Rancher extension
 
-A Rancher UI extension that adds a Databases page, an "Open in LibreDB Studio" action and a setup wizard is in development in [libredb/libredb-studio-rancher-extension](https://github.com/libredb/libredb-studio-rancher-extension).
+A Rancher UI extension that adds a Databases page, an "Open in KnowSQL" action and a setup wizard is in development in [libredb/libredb-studio-rancher-extension](https://github.com/libredb/libredb-studio-rancher-extension).
 It is not released or listed yet, so set Rancher mode up with the steps above.

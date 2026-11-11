@@ -115,7 +115,7 @@ describe("the manifest's menus", () => {
     assert.equal(commandIds.size, 9);
   });
 
-  it("names only the Connections view in a view menu's when clause, which is the first view of the LibreDB container", () => {
+  it("names only the Connections view in a view menu's when clause, which is the first view of the KnowSQL container", () => {
     const views = viewEntries.flatMap((entry) =>
       [...(entry.when ?? "").matchAll(/view == ([\w.]+)/g)].map((m) => m[1]),
     );

@@ -82,7 +82,7 @@ describe("LogResultsPresenter", () => {
     assert.deepEqual(lines, [
       [
         "warn",
-        "Run q1: The LibreDB backend stopped while this query ran (exit code none, signal SIGKILL). The statement may already have run on the server.",
+        "Run q1: The KnowSQL backend stopped while this query ran (exit code none, signal SIGKILL). The statement may already have run on the server.",
       ],
     ]);
   });
@@ -92,7 +92,7 @@ describe("LogResultsPresenter", () => {
     assert.deepEqual(lines, [
       [
         "warn",
-        "Run q1: The LibreDB backend stopped while this query ran (exit code 1, signal none). The statement may already have run on the server.",
+        "Run q1: The KnowSQL backend stopped while this query ran (exit code 1, signal none). The statement may already have run on the server.",
       ],
     ]);
   });

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>The database editor that deploys next to your data, not onto your laptop.</strong>
@@ -117,7 +117,7 @@ Then open **http://localhost:3000**. On first run, the admin password is printed
 
 ## Live Test
 
-> **Try LibreDB Studio instantly without installation!**
+> **Try KnowSQL instantly without installation!**
 
 | Test | URL | Credentials |
 |------|-----|-------------|
@@ -132,7 +132,7 @@ The test instance comes with a pre-configured PostgreSQL database via [Seed Conn
 
 You create a Postgres on a managed platform. It is ready in forty seconds. Then you want to look inside it — so you open a port to the internet, dig an SSH tunnel, or install a desktop client on every machine that needs one.
 
-LibreDB Studio goes the other way. It deploys next to the data: a container, a Helm chart, an operator, a one-click template on your PaaS, or `npm i @libredb/studio` inside your own product. Nothing has to face outward.
+KnowSQL goes the other way. It deploys next to the data: a container, a Helm chart, an operator, a one-click template on your PaaS, or `npm i @libredb/studio` inside your own product. Nothing has to face outward.
 
 Sixty-one engines share one interface: PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads, with the same explorer everywhere, and ER diagrams, schema diff and monitoring wherever the engine has something to report. Three of the sixty-one are read-only because their own SQL is: Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` in the grammar at all, so those controls are reported as unsupported instead of failing when used. Cassandra is the one that reports the least on purpose: it publishes no row count and no size that is true, so the object browser shows neither rather than showing a number that is wrong; the estimate it does publish counts partitions from flushed files, and it read 143 for a 500-row table. Trino is the other odd one: it is a query engine rather than a database, so it declares no keys and no indexes and reports the bytes as belonging to the systems behind its connectors.
 QuestDB is the newest: QuestDB SQL typed in the editor runs over the PostgreSQL wire protocol on port 8812, and it is not a PostgreSQL connection. The postgres provider asks for `pg_backend_pid()` on every run, and QuestDB has no such function, so this connection sends the statement it was given. Tables come from `tables()` and columns from `table_columns()`.
@@ -167,7 +167,7 @@ None of OPC UA, Kubernetes, S3-compatible object storage, Oxia, InfluxDB (Influx
 
 And nothing is held back. Single sign-on, ER diagrams, the AI features and the NoSQL engines all ship in the MIT build. MIT is not generosity here, it is a requirement of the architecture: you cannot place a per-seat licensed, feature-gated tool into every environment you own.
 
-### Why LibreDB Studio?
+### Why KnowSQL?
 - **Deploys next to the data**: container, Helm chart, Rancher, OpenShift operator, one-click PaaS template, or embedded via npm.
 - **Sixty-one engines, one interface**: PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Databend, Snowflake, Apache Spark, Cassandra, Prometheus, Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads.
 - **Runs where you are**: browser, phone, Windows, MacOS, Linux desktop.
@@ -451,7 +451,7 @@ Standalone application only: the embedded `@libredb/studio` package carries no a
 
   ### Quick Start (Docker)
 
-  Run LibreDB Studio with a single command — no clone, no install, no build:
+  Run KnowSQL with a single command — no clone, no install, no build:
 
 ```bash
 docker run \
@@ -684,7 +684,7 @@ Sample tables: `app.customers`, `app.products`, `app.orders`, `app.order_items`,
 
 ## Testing
 
-LibreDB Studio has a comprehensive test suite: 549 test files and 17,692 tests across seven layers, plus 93 browser tests, with **100% line coverage** enforced by CI (`bun run coverage:check`).
+KnowSQL has a comprehensive test suite: 549 test files and 17,692 tests across seven layers, plus 93 browser tests, with **100% line coverage** enforced by CI (`bun run coverage:check`).
 
 ### Quick Commands
 
@@ -745,7 +745,7 @@ The twenty-first spec in `e2e/`, `base-path.spec.ts`, is not in that 20: it need
 
 ## One-Click Deploy
 
-Deploy your own instance of LibreDB Studio with a single click on DigitalOcean, Koyeb, Render, Railway, Sealos, CapRover, Dokploy, ZopDay, or Pethost:
+Deploy your own instance of KnowSQL with a single click on DigitalOcean, Koyeb, Render, Railway, Sealos, CapRover, Dokploy, ZopDay, or Pethost:
 
  [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?name=libredb-studio&type=docker&image=ghcr.io%2Flibredb%2Flibredb-studio%3Alatest&instance_type=free&regions=fra&instances_min=0&autoscaling_sleep_idle_delay=3900&env%5BADMIN_EMAIL%5D=admin%40libredb.org&env%5BJWT_SECRET%5D=set_a_real_secret&env%5BLLM_API_KEY%5D=your_GEMINI_API_KEY&env%5BLLM_MODEL%5D=gemini-2.5-flash&env%5BLLM_PROVIDER%5D=gemini&env%5BNEXT_PUBLIC_AUTH_PROVIDER%5D=local&env%5BSTORAGE_PROVIDER%5D=local&ports=3000%3Bhttp%3B%2F&hc_protocol%5B3000%5D=tcp&hc_grace_period%5B3000%5D=5&hc_interval%5B3000%5D=30&hc_restart_limit%5B3000%5D=3&hc_timeout%5B3000%5D=5&hc_path%5B3000%5D=%2F&hc_method%5B3000%5D=get)  
  [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/libredb/libredb-studio)  
@@ -760,19 +760,19 @@ Deploy your own instance of LibreDB Studio with a single click on DigitalOcean, 
 
 > **DigitalOcean:** the [Marketplace listing](https://marketplace.digitalocean.com/apps/libredb-studio) creates a preconfigured Droplet. Unique admin credentials are generated on first boot; the welcome message (MOTD) tells you where to find them.
 >
-> **CapRover:** open your CapRover dashboard → **Apps → One-Click Apps/Databases**, search for **LibreDB Studio**, and deploy.
+> **CapRover:** open your CapRover dashboard → **Apps → One-Click Apps/Databases**, search for **KnowSQL**, and deploy.
 >
 > **Koyeb:** set a strong `JWT_SECRET` (at least 32 characters — `openssl rand -base64 32`) and credentials before deploying (Koyeb cannot auto-generate secrets). The prefilled values are deliberately unusable: the secret is shorter than the 32-character minimum, so the app stops at boot and says so rather than running on a secret printed in this file. The button uses `STORAGE_PROVIDER=local` — connection metadata lives in the browser, which suits Koyeb's ephemeral filesystem. For persistence across redeploys, switch to `STORAGE_PROVIDER=postgres` and point `STORAGE_POSTGRES_URL` at a Koyeb managed Postgres or Neon database. The button also fills in `LLM_PROVIDER`/`LLM_MODEL`/`LLM_API_KEY`, but an agent run starts only on a seed connection the server lists itself, so Start stays disabled on a connection created in the UI whatever `STORAGE_PROVIDER` is (see [docs/AGENT.md](docs/AGENT.md#turning-it-on)). See [`deploy/koyeb/`](deploy/koyeb/).
 >
 > **Fly.io:** the repo ships a ready [`fly.toml`](fly.toml) — full steps (app name, volume, secrets) in [`docs/FLY.md`](docs/FLY.md).
 >
-> **Cosmos:** install in one click from the [Cosmos](https://cosmos-cloud.io) Marketplace — search for **LibreDB Studio**. Cosmos auto-generates secrets, provisions a persistent SQLite volume, and serves the app behind its SmartShield reverse proxy. See [`deploy/cosmos/`](deploy/cosmos/).
+> **Cosmos:** install in one click from the [Cosmos](https://cosmos-cloud.io) Marketplace — search for **KnowSQL**. Cosmos auto-generates secrets, provisions a persistent SQLite volume, and serves the app behind its SmartShield reverse proxy. See [`deploy/cosmos/`](deploy/cosmos/).
 >
-> **Dokploy:** install in one click from the [Dokploy template catalog](https://templates.dokploy.com) — in your Dokploy dashboard, **Create Service → Template**, search for **LibreDB Studio**, and deploy. Dokploy auto-generates `ADMIN_PASSWORD`, `USER_PASSWORD`, and `JWT_SECRET`, and persists connections on a SQLite volume behind Traefik. See [`deploy/dokploy/`](deploy/dokploy/).
+> **Dokploy:** install in one click from the [Dokploy template catalog](https://templates.dokploy.com) — in your Dokploy dashboard, **Create Service → Template**, search for **KnowSQL**, and deploy. Dokploy auto-generates `ADMIN_PASSWORD`, `USER_PASSWORD`, and `JWT_SECRET`, and persists connections on a SQLite volume behind Traefik. See [`deploy/dokploy/`](deploy/dokploy/).
 >
 > **ZopDay:** the button opens a deploy screen preloaded with the `ghcr.io/libredb/libredb-studio:latest` image on port 3000. Nothing is prefilled, so set `JWT_SECRET` (at least 32 characters — `openssl rand -base64 32`) before launching, or the app stops at boot and says why. Deploy to ZopCloud to have it run managed, or connect an AWS or GCP account you already own so the instance and its connection metadata stay on your own billing and inside your own IAM and VPC rules; Azure (AKS) is in preview. As with Koyeb, the default storage keeps connection metadata in the browser — set `STORAGE_PROVIDER=postgres` and `STORAGE_POSTGRES_URL` for connections that survive redeploys.
 >
-> **Pethost:** the button opens the Pethost console with the [LibreDB Studio template](https://pethost.dev/templates/libredb-studio/) selected, and deploys it on a Pethost machine of your own. It runs with `STORAGE_PROVIDER=sqlite` on a volume, so connections and saved queries survive redeploys. It asks for `ADMIN_EMAIL` and `ADMIN_PASSWORD` and generates `JWT_SECRET`. The template pins a release, so a new version reaches it when the template in [`pethost-dev/templates`](https://github.com/pethost-dev/templates/tree/main/libredb-studio) is bumped.
+> **Pethost:** the button opens the Pethost console with the [KnowSQL template](https://pethost.dev/templates/libredb-studio/) selected, and deploys it on a Pethost machine of your own. It runs with `STORAGE_PROVIDER=sqlite` on a volume, so connections and saved queries survive redeploys. It asks for `ADMIN_EMAIL` and `ADMIN_PASSWORD` and generates `JWT_SECRET`. The template pins a release, so a new version reaches it when the template in [`pethost-dev/templates`](https://github.com/pethost-dev/templates/tree/main/libredb-studio) is bumped.
 
 
 ### Environment Variables
@@ -828,7 +828,7 @@ See [`deploy/koyeb/`](deploy/koyeb/) for the complete setup and storage options.
 
 ### Railway
 
-LibreDB Studio is available as a one-click [Railway](https://railway.com) template.
+KnowSQL is available as a one-click [Railway](https://railway.com) template.
 See [`deploy/railway/`](deploy/railway/) for the template definition, install
 instructions, and the publish checklist. The template runs the prebuilt
 `ghcr.io/libredb/libredb-studio` image with SQLite persistence on a Railway
@@ -837,24 +837,24 @@ release (same as CapRover).
 
 ### CapRover
 
-LibreDB Studio is published in the official [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) catalog:
+KnowSQL is published in the official [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) catalog:
 
 1. **Open your CapRover dashboard** → **Apps → One-Click Apps/Databases**
-2. **Search** for **LibreDB Studio**
+2. **Search** for **KnowSQL**
 3. **Fill in the variables** (admin/user credentials, optional AI settings)
 4. **Deploy!**
 
 The app runs the prebuilt `ghcr.io/libredb/libredb-studio` image. As with Railway, Docker-image templates require a manual version bump on each release.
 
-The same search also lists **LibreDB Studio (auto-connect)**, from a second template, [`deploy/caprover/libredb-studio-autoconnect.yml`](deploy/caprover/libredb-studio-autoconnect.yml).
+The same search also lists **KnowSQL (auto-connect)**, from a second template, [`deploy/caprover/libredb-studio-autoconnect.yml`](deploy/caprover/libredb-studio-autoconnect.yml).
 It adds a discovery app that reads the Docker socket so Studio connects itself to the PostgreSQL, MySQL, MariaDB, Percona, MongoDB, Redis, Valkey, KeyDB and Dragonfly databases CapRover runs; read [Platform discovery (CapRover)](docs/SEED_CONNECTIONS.md#platform-discovery-caprover) before choosing it.
 
 ### Kubero
 
-LibreDB Studio is listed in the official
+KnowSQL is listed in the official
 [Kubero template catalog](https://www.kubero.dev/templates) (a self-hosted
 "Heroku alternative for Kubernetes"). From your Kubero dashboard, browse
-**Templates**, search **LibreDB Studio**, fill in the credentials / `JWT_SECRET`,
+**Templates**, search **KnowSQL**, fill in the credentials / `JWT_SECRET`,
 and deploy. The template runs the prebuilt `ghcr.io/libredb/libredb-studio` image
 with SQLite persistence on a 5Gi volume at `/app/data`. See
 [`deploy/kubero/`](deploy/kubero/) for install and post-install details. As with
@@ -863,11 +863,11 @@ each release.
 
 ### Cosmos
 
-LibreDB Studio is listed in the official
+KnowSQL is listed in the official
 [Cosmos servapp marketplace](https://github.com/azukaar/cosmos-servapps-official)
 ([Cosmos](https://cosmos-cloud.io) is a self-hosted server manager and secure
 reverse proxy). From your Cosmos dashboard, open **Marketplace**, search
-**LibreDB Studio**, and install. Cosmos auto-generates the credentials and
+**KnowSQL**, and install. Cosmos auto-generates the credentials and
 `JWT_SECRET`, provisions a persistent SQLite volume at `/app/data`, and serves
 the app behind a SmartShield-protected route. See
 [`deploy/cosmos/`](deploy/cosmos/) for install and post-install details. As with
@@ -876,7 +876,7 @@ bump on each release.
 
 ### Render (Recommended for cloud deployment)
 
-LibreDB Studio includes a `render.yaml` Blueprint for one-click deployment:
+KnowSQL includes a `render.yaml` Blueprint for one-click deployment:
 
 1. **Fork this repository**
 2. **Connect to Render**: [dashboard.render.com](https://dashboard.render.com) → New → Blueprint
@@ -1187,7 +1187,7 @@ states what "done" looks like as a command you can run yourself.
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information. One direct dependency,
+Distributed under the MIT License. The upstream LibreDB terms stay in `LICENSE`. KnowSQL's own terms, the same license with the copyright held by In the Midst of the Markets, are in `LICENSE-KNOWSQL`. One direct dependency,
 `elkjs`, is under the reciprocal EPL-2.0; see [`docs/THIRD_PARTY_LICENSES.md`](docs/THIRD_PARTY_LICENSES.md).
 
 ## Trademarks
@@ -1197,12 +1197,12 @@ Cassandra, [Apache Druid](https://druid.apache.org/), Druid, [Apache Doris](http
 Doris, [Apache Cloudberry](https://cloudberry.apache.org/), Cloudberry, [Apache Spark](https://spark.apache.org/),
 Spark and the Apache feather logo are either registered trademarks or trademarks of
 [The Apache Software Foundation](https://www.apache.org/) in the United States and/or other countries.
-LibreDB Studio has no affiliation with and is not endorsed by The Apache Software Foundation. All other
+KnowSQL has no affiliation with and is not endorsed by The Apache Software Foundation. All other
 product names are trademarks of their respective owners and are used here only to name the systems
-LibreDB Studio connects to.
+KnowSQL connects to.
 
 RabbitMQ is a trademark of Broadcom, Inc. in the U.S. and other countries.
-LibreDB Studio has no affiliation with and is not endorsed by Broadcom.
+KnowSQL has no affiliation with and is not endorsed by Broadcom.
 
 ---
 

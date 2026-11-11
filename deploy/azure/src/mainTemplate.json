@@ -12,7 +12,7 @@
       "defaultValue": "libredb-studio",
       "minLength": 3,
       "maxLength": 40,
-      "metadata": { "description": "Name of the virtual machine that hosts LibreDB Studio." }
+      "metadata": { "description": "Name of the virtual machine that hosts KnowSQL." }
     },
     "vmSize": {
       "type": "string",
@@ -24,7 +24,7 @@
       "defaultValue": 64,
       "minValue": 32,
       "maxValue": 1024,
-      "metadata": { "description": "OS disk size in GB. LibreDB Studio stores its SQLite data on this disk." }
+      "metadata": { "description": "OS disk size in GB. KnowSQL stores its SQLite data on this disk." }
     },
     "adminUsername": {
       "type": "string",
@@ -47,12 +47,12 @@
     },
     "appAdminEmail": {
       "type": "string",
-      "metadata": { "description": "Email address of the LibreDB Studio administrator account." }
+      "metadata": { "description": "Email address of the KnowSQL administrator account." }
     },
     "appAdminPassword": {
       "type": "securestring",
       "minLength": 12,
-      "metadata": { "description": "Password for the LibreDB Studio administrator account. Minimum 12 characters." }
+      "metadata": { "description": "Password for the KnowSQL administrator account. Minimum 12 characters." }
     },
     "enableHttps": {
       "type": "bool",

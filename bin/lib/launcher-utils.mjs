@@ -462,7 +462,7 @@ export function assessNodeRuntime(version) {
   if (!match) {
     return {
       action: "fail",
-      message: `LibreDB Studio launcher could not parse the Node.js version ${JSON.stringify(version)}. Node.js ${MINIMUM_NODE.major}.${MINIMUM_NODE.minor}+ is required (Node 24 LTS recommended).`,
+      message: `KnowSQL launcher could not parse the Node.js version ${JSON.stringify(version)}. Node.js ${MINIMUM_NODE.major}.${MINIMUM_NODE.minor}+ is required (Node 24 LTS recommended).`,
     };
   }
   const [major, minor] = [Number(match[1]), Number(match[2])];
@@ -471,7 +471,7 @@ export function assessNodeRuntime(version) {
     return {
       action: "fail",
       message: [
-        `LibreDB Studio requires Node.js ${MINIMUM_NODE.major}.${MINIMUM_NODE.minor} or newer; this is Node ${version}.`,
+        `KnowSQL requires Node.js ${MINIMUM_NODE.major}.${MINIMUM_NODE.minor} or newer; this is Node ${version}.`,
         "Install Node 24 LTS (https://nodejs.org) or run Studio with Docker:",
         "  docker run -p 3000:3000 ghcr.io/libredb/libredb-studio:latest",
       ].join("\n"),

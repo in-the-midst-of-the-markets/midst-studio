@@ -90,7 +90,7 @@ describe("registration options", () => {
       email: EMAIL,
       exclude: [{ credentialId: excluded, transports: ["usb", "nfc"] }],
     });
-    expect(options.rp).toEqual({ id: "localhost", name: "LibreDB Studio" });
+    expect(options.rp).toEqual({ id: "localhost", name: "KnowSQL" });
     expect(options.user).toEqual({ id: HANDLE, name: EMAIL, displayName: EMAIL });
     expect(options.challenge).toBe(challenge);
     expect(options.pubKeyCredParams.map((param) => param.alg)).toEqual([-8, -7, -257]);

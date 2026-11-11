@@ -1,6 +1,6 @@
 # RabbitMQ Provider
 
-> RabbitMQ® support for LibreDB Studio, read-only: the management HTTP API for the tree, the details and the health panel, and Studio's own AMQP 0-9-1 read client for stream messages.
+> RabbitMQ® support for KnowSQL, read-only: the management HTTP API for the tree, the details and the health panel, and Studio's own AMQP 0-9-1 read client for stream messages.
 > The editor text is a JSON read request, declared `queryLanguage: "json"` with `queryDialect: "rabbitmq"`: one object that names a virtual host, a stream and where to start reading.
 > Studio browses virtual hosts, streams, queues and exchanges, and reads stream messages; it never takes a message from a queue, publishes, declares, binds or deletes anything.
 > This document is the single reference for the RabbitMQ provider: design, connection, the read request, errors, limits and tests.
@@ -527,7 +527,7 @@ The seed table, one row per queue and stream; a stream's offsets are the order o
 ### 14.3 The live read-only check
 
 [`tests/live/rabbitmq-read-only.ts`](../../tests/live/rabbitmq-read-only.ts) runs every provider surface, reads included, as `studio-wide-read`, which may read every queue, and asks the broker's own counters whether anything was taken: the whole `queue_delivery_metrics` row of every classic and quorum queue is compared before and after, absent rows included; one control take of the canary's message must move `queue_get_total` by exactly 1, else the check fails as broken.
-It also checks a cancel after the read started, the 403 for a stream outside `studio-reader`'s pattern, Test Connection's caution as each user, and that no connection named "LibreDB Studio" is left 6 s after the run, with a positive control.
+It also checks a cancel after the read started, the 403 for a stream outside `studio-reader`'s pattern, Test Connection's caution as each user, and that no connection named "KnowSQL" is left 6 s after the run, with a positive control.
 CI runs it in the Functional Smoke job against a fresh 4.3.6 broker; 4.2.9 is run by hand against the `rabbitmq-42` profile.
 
 ### 14.4 Record of live runs
@@ -569,7 +569,7 @@ The refusal reason it prints, verbatim:
 
 ## 16. References
 
-- RabbitMQ is a trademark of Broadcom, Inc. in the U.S. and other countries; LibreDB Studio is not affiliated with or endorsed by Broadcom.
+- RabbitMQ is a trademark of Broadcom, Inc. in the U.S. and other countries; KnowSQL is not affiliated with or endorsed by Broadcom.
 - [RabbitMQ documentation](https://www.rabbitmq.com/docs), [Streams](https://www.rabbitmq.com/docs/streams), [Management Plugin](https://www.rabbitmq.com/docs/management).
 
 ## 17. Agent mode

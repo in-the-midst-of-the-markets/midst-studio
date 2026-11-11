@@ -1,4 +1,4 @@
--- Sample data for LibreDB Studio testing
+-- Sample data for KnowSQL testing
 -- This runs on libredb_dev database
 
 \c libredb_dev

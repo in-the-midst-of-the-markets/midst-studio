@@ -1,14 +1,14 @@
-# LibreDB Studio on Dokploy
+# KnowSQL on Dokploy
 
 [Dokploy](https://dokploy.com) ([Dokploy/dokploy](https://github.com/Dokploy/dokploy))
 is a self-hosted, open-source deployment platform (an alternative to Heroku,
 Vercel, and Netlify) that runs Docker Compose services behind Traefik and
 installs apps from a built-in template catalog with one click.
 
-LibreDB Studio is listed in the official
+KnowSQL is listed in the official
 
 [Dokploy template catalog](https://templates.dokploy.com)
-[LibreDB Studio Dokploy Template](https://templates.dokploy.com/?q=libredb+studio)
+[KnowSQL Dokploy Template](https://templates.dokploy.com/?q=libredb+studio)
 
 (merged in [Dokploy/templates#931](https://github.com/Dokploy/templates/pull/931)).
 
@@ -27,7 +27,7 @@ one up):
 
 1. **Open your Dokploy dashboard** → create or pick a project → **Create
    Service → Template**.
-2. **Search** for **LibreDB Studio**.
+2. **Search** for **KnowSQL**.
 3. **Deploy.** Dokploy auto-generates `ADMIN_PASSWORD`, `USER_PASSWORD`, and
    `JWT_SECRET` from the template's variable definitions (`${password:32}` /
    `${password:64}`) — no manual secret entry is needed.

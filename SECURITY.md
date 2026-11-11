@@ -16,7 +16,7 @@ The releases page is the authority on what that currently is:
 
 ## Reporting a Vulnerability
 
-We take the security of LibreDB Studio seriously. If you believe you have found a security vulnerability, please report it to us as described below.
+We take the security of KnowSQL seriously. If you believe you have found a security vulnerability, please report it to us as described below.
 
 ### How to Report
 
@@ -27,7 +27,7 @@ Instead, please report them via email to:
 **Email:** info@sekoya.tech
 
 Reports are handled by SEKOYA GRUP BİLİŞİM VE TEKNOLOJİ LİMİTED ŞİRKETİ, the
-maintainer of LibreDB Studio.
+maintainer of KnowSQL.
 
 ### What to Include
 
@@ -62,9 +62,9 @@ This information will help us triage your report more quickly.
 
 ### Security Best Practices
 
-When using LibreDB Studio, please follow these security best practices:
+When using KnowSQL, please follow these security best practices:
 
-1. **Keep Updated**: Always use the latest version of LibreDB Studio
+1. **Keep Updated**: Always use the latest version of KnowSQL
 2. **Secure Credentials**: Use strong passwords for `ADMIN_PASSWORD` and `USER_PASSWORD`
 3. **JWT Secret**: Generate a secure `JWT_SECRET` using `openssl rand -base64 32`
 4. **Environment Variables**: Never commit `.env.local` or `.env` files to version control
@@ -76,7 +76,7 @@ When using LibreDB Studio, please follow these security best practices:
 ### Known Security Considerations
 
 #### Authentication
-- LibreDB Studio uses JWT-based authentication
+- KnowSQL uses JWT-based authentication
 - Credentials for the built-in local login are supplied through the `ADMIN_PASSWORD` and
   `USER_PASSWORD` environment variables and are compared directly; they are not stored in a
   database and are not hashed. Protect them the way you protect any other server environment
@@ -289,5 +289,5 @@ If you are conducting a security audit or penetration test, please contact us in
 
 ---
 
-**Thank you for helping keep LibreDB Studio and our users safe!**
+**Thank you for helping keep KnowSQL and our users safe!**
 

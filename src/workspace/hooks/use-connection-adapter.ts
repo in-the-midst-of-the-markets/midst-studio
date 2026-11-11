@@ -60,7 +60,7 @@ const EMBEDDED_ANSWER_CHARACTER_LIMIT = EDIT_PLAN_EXECUTABLE_LIMIT * 2 + SOURCE_
 
 /** OURS, and it says nothing was sent, because a build refusal happens before any apply. */
 const UNREADABLE_BUILD_ANSWER =
-  "The host answered the apply preview with more text than LibreDB can read, so nothing was previewed and nothing was sent.";
+  "The host answered the apply preview with more text than KnowSQL can read, so nothing was previewed and nothing was sent.";
 
 /**
  * OURS, and it deliberately does NOT say the apply failed. The apply was sent, the host answered,
@@ -69,7 +69,7 @@ const UNREADABLE_BUILD_ANSWER =
  * same fact in the outcome vocabulary.
  */
 const UNREADABLE_APPLY_ANSWER =
-  "The apply was sent and the host answered with more text than LibreDB can read, so LibreDB cannot say whether this change landed. Re-read this definition before trying again.";
+  "The apply was sent and the host answered with more text than KnowSQL can read, so KnowSQL cannot say whether this change landed. Re-read this definition before trying again.";
 
 /**
  * The host's answer, COPIED as it is counted, and the copy is what everything downstream reads.

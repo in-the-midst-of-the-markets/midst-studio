@@ -1,10 +1,10 @@
-# LibreDB Studio for VS Code
+# KnowSQL for VS Code
 
-LibreDB Studio for VS Code browses and queries databases, search engines, message brokers, object stores and industrial devices from the editor.
+KnowSQL for VS Code browses and queries databases, search engines, message brokers, object stores and industrial devices from the editor.
 It needs no account and no login.
 It requires VS Code 1.123 or later.
 
-![The Connections view with PostgreSQL, MySQL, SQL Server and MongoDB connections, and a MongoDB find with its rows in LibreDB Results, in a dark theme](https://raw.githubusercontent.com/libredb/libredb-studio/main/vscode-extension/media/screenshots/connections-and-results-dark.png)
+![The Connections view with PostgreSQL, MySQL, SQL Server and MongoDB connections, and a MongoDB find with its rows in KnowSQL Results, in a dark theme](https://raw.githubusercontent.com/libredb/libredb-studio/main/vscode-extension/media/screenshots/connections-and-results-dark.png)
 
 ![The same window in a light theme](https://raw.githubusercontent.com/libredb/libredb-studio/main/vscode-extension/media/screenshots/connections-and-results-light.png)
 
@@ -23,12 +23,12 @@ It requires VS Code 1.123 or later.
 
 ## Getting started
 
-1. Select the LibreDB icon in the Activity Bar.
+1. Select the KnowSQL icon in the Activity Bar.
 2. In the empty **Connections** view, select **Add Connection**.
 3. Choose the database engine, then paste a connection string or enter the connection details one at a time (the gear button titled SSL and optional fields opens a review of every field), test the connection and give it a name.
 4. Expand the connection to its objects, such as databases, schemas and tables, and a table to its columns.
 5. Select **Select Rows** on a table or a view, or **New Query** on a connection, and run the editor's statement with **Run Query** in the editor title.
-6. The results open in the **LibreDB Results** view in the Panel, with the row count and the time the statement took.
+6. The results open in the **KnowSQL Results** view in the Panel, with the row count and the time the statement took.
 
 ## Results
 
@@ -46,7 +46,7 @@ A MongoDB command cannot be cancelled once it is sent.
 
 ## Keyboard shortcut
 
-LibreDB binds no key to **Run Query**.
+KnowSQL binds no key to **Run Query**.
 To add one, put an entry like this in your `keybindings.json`:
 
 ```json
@@ -70,7 +70,7 @@ A SQLite database opens only in a trusted workspace, and its file is named by an
 
 ## Not in this version
 
-- Editing a saved connection: when a sign-in fails, LibreDB offers Enter Credentials instead.
+- Editing a saved connection: when a sign-in fails, KnowSQL offers Enter Credentials instead.
 - Exporting results.
 - Cancelling a MongoDB command, and loading more rows of a MongoDB result.
 - Editor bindings that survive a window reload: after a reload, **Change Connection** binds the editor again.
@@ -79,7 +79,7 @@ A SQLite database opens only in a trusted workspace, and its file is named by an
 
 ## How it works
 
-The extension runs LibreDB Studio's database providers in a child process of VS Code and shows results in Studio's own grid.
+The extension runs KnowSQL's database providers in a child process of VS Code and shows results in Studio's own grid.
 https://github.com/libredb/libredb-studio/blob/main/docs/VSCODE_EXTENSION.md describes the architecture, and which parts are the extension's own and which come from Studio.
 
 ## Feedback

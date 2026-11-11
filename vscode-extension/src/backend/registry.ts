@@ -34,5 +34,5 @@ export class ConnectionRegistry {
 
 /** The sentence for an id no record is stored under, which the host side reopens on (CONNECTION_NOT_OPEN). */
 export function notOpenSentence(connectionId: string): string {
-  return `No connection with id "${connectionId}" is open in this LibreDB backend.`;
+  return `No connection with id "${connectionId}" is open in this KnowSQL backend.`;
 }

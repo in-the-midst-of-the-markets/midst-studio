@@ -20,10 +20,10 @@ export const CONTEXT_KEYS = {
   cancellableQueries: "libredb.cancellableQueries",
 } as const;
 
-/** The LibreDB view container in the activity bar. */
+/** The KnowSQL view container in the activity bar. */
 export const VIEW_CONTAINER = "libredb";
 
-/** The Connections view, in the LibreDB view container. */
+/** The Connections view, in the KnowSQL view container. */
 export const CONNECTIONS_VIEW = "libredb.connections";
 
 /** The Panel container that holds the Results view. */

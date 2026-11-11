@@ -252,7 +252,7 @@ describe("the Results view against PostgreSQL, SQL Server, MySQL and MongoDB", (
       bindings,
       runs: on.runs,
       service: on.service,
-      log: window.createOutputChannel("LibreDB results test", { log: true }),
+      log: window.createOutputChannel("KnowSQL results test", { log: true }),
       timers: { setTimeout },
       showLog: () => Promise.resolve(),
       openUserSettings: () => Promise.resolve(),
@@ -322,7 +322,7 @@ describe("the Results view against PostgreSQL, SQL Server, MySQL and MongoDB", (
     store = new ConnectionStore({
       setting: new FakeSetting([]),
       secrets: new MemorySecretStorage(),
-      log: window.createOutputChannel("LibreDB results test store", { log: true }),
+      log: window.createOutputChannel("KnowSQL results test store", { log: true }),
     });
     bindings = new BindingStore();
     host = hostOver(link);
@@ -495,7 +495,7 @@ describe("the Results view against PostgreSQL, SQL Server, MySQL and MongoDB", (
       const supervisor = new BackendSupervisor({
         fork: (modulePath, args, options) => fork(modulePath, args, { ...options, execPath: runtime.execPath }),
         extensionPath: EXTENSION_ROOT,
-        log: window.createOutputChannel("LibreDB results test supervisor", { log: true }),
+        log: window.createOutputChannel("KnowSQL results test supervisor", { log: true }),
         window,
         showLog: () => Promise.resolve(),
       });

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>把数据库编辑器部署在数据旁边，而不是装在你的笔记本上。</strong>
@@ -123,7 +123,7 @@ npx @libredb/studio
 
 **数据库已经搬走了。** 它们搬进了 Kubernetes，搬进了托管云，搬进了要穿过跳板机才能到达的客户 VPC。**但读它们的工具没有跟着搬。** 它们仍然是桌面应用：笨重、按席位收费、必须先安装，并且假设你只有一个数据库、一台笔记本，以及一个永远不换设备的人。
 
-LibreDB Studio 走另一条路：**工具去找数据，而不是把数据搬来找工具。**
+KnowSQL 走另一条路：**工具去找数据，而不是把数据搬来找工具。**
 
 认真对待这句话，它就不再是一种偏好，而是一份规格说明。
 
@@ -137,7 +137,7 @@ LibreDB Studio 走另一条路：**工具去找数据，而不是把数据搬来
 
 ## 在线试用
 
-> **不用安装，立刻试用 LibreDB Studio！**
+> **不用安装，立刻试用 KnowSQL！**
 
 | 试用方式 | URL | 凭据 |
 |------|-----|-------------|
@@ -148,7 +148,7 @@ LibreDB Studio 走另一条路：**工具去找数据，而不是把数据搬来
 
 ## 概览
 
-LibreDB Studio 走的是另一条路。它部署在数据旁边：一个容器、一个 Helm chart、一个 operator、一份 PaaS 一键模板，或者用 `npm i @libredb/studio` 嵌进你自己的产品。没有任何东西需要朝外暴露。
+KnowSQL 走的是另一条路。它部署在数据旁边：一个容器、一个 Helm chart、一个 operator、一份 PaaS 一键模板，或者用 `npm i @libredb/studio` 嵌进你自己的产品。没有任何东西需要朝外暴露。
 
 六十种引擎共用一个界面，PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ 和 OPC UA、MTConnect、Modbus、NETCONF、SNMP 和 QuestDB, Sparkplug B，处处是同一套浏览器，凡是引擎有东西可报的地方都有 ER 图、schema 对比和监控。四十种里有三种是只读的，因为它们自己的 SQL 就是只读的：Druid、Elasticsearch 和 OpenSearch 的文法里根本没有 `UPDATE`，也没有 `CREATE TABLE`，所以那些控件被如实报告为不支持，而不是等到用的时候才失败。Cassandra 是其中刻意报告得最少的一个：它给出的任何行数和容量都不真实，所以对象浏览器索性两者都不显示，而不是显示一个错的数字；它确实会发布的分区估算来自已刷盘的文件，实测一张 500 行的表被读作 143。Trino 是另一个异类：它是查询引擎而不是数据库，所以不声明任何主键和索引，报告的字节数属于它背后那些连接器所在的系统, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads。
 
@@ -177,7 +177,7 @@ Oxia、InfluxDB (InfluxQL)、Milvus、Qdrant、Weaviate、Neo4j、etcd、Apache 
 
 而且没有任何东西被留在门后。单点登录、ER 图、AI 功能和全部 NoSQL 引擎都在 MIT 构建里。MIT 在这里不是慷慨，而是这套架构的要求：你没法把一个按席位授权、功能分级的工具，放进你拥有的每一个环境。
 
-### 为什么选择 LibreDB Studio？
+### 为什么选择 KnowSQL？
 
 - **部署在数据旁边**：容器、Helm chart、Rancher、OpenShift operator、PaaS 一键模板，或用 npm 嵌入。
 - **六十种引擎，一个界面**：PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads。
@@ -407,7 +407,7 @@ Studio 最主要的 AI 界面是编辑器旁边的 **Agent 侧栏**，下面列�
 
 ### 快速开始（Docker）
 
-一条命令跑起 LibreDB Studio，不用克隆，不用安装，不用构建：
+一条命令跑起 KnowSQL，不用克隆，不用安装，不用构建：
 
 ```bash
 docker run \
@@ -631,7 +631,7 @@ docker compose -f database-compose.yml --profile druid down -v
 
 ## 测试
 
-LibreDB Studio 有一套完整的测试：549 个测试文件、17,692 个测试，覆盖七个层次，另有 93 个浏览器测试，并由 CI 强制要求 **100% 行覆盖率**（`bun run coverage:check`）。
+KnowSQL 有一套完整的测试：549 个测试文件、17,692 个测试，覆盖七个层次，另有 93 个浏览器测试，并由 CI 强制要求 **100% 行覆盖率**（`bun run coverage:check`）。
 
 ### 常用命令
 
@@ -690,7 +690,7 @@ bun run test:coverage
 
 ## 一键部署
 
-在 DigitalOcean、Koyeb、Render、Railway、Sealos、CapRover 或 Dokploy 上单击一下，即可部署你自己的 LibreDB Studio 实例：
+在 DigitalOcean、Koyeb、Render、Railway、Sealos、CapRover 或 Dokploy 上单击一下，即可部署你自己的 KnowSQL 实例：
 
  [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?name=libredb-studio&type=docker&image=ghcr.io%2Flibredb%2Flibredb-studio%3Alatest&instance_type=free&regions=fra&instances_min=0&autoscaling_sleep_idle_delay=3900&env%5BADMIN_EMAIL%5D=admin%40libredb.org&env%5BJWT_SECRET%5D=set_a_real_secret&env%5BLLM_API_KEY%5D=your_GEMINI_API_KEY&env%5BLLM_MODEL%5D=gemini-2.5-flash&env%5BLLM_PROVIDER%5D=gemini&env%5BNEXT_PUBLIC_AUTH_PROVIDER%5D=local&env%5BSTORAGE_PROVIDER%5D=local&ports=3000%3Bhttp%3B%2F&hc_protocol%5B3000%5D=tcp&hc_grace_period%5B3000%5D=5&hc_interval%5B3000%5D=30&hc_restart_limit%5B3000%5D=3&hc_timeout%5B3000%5D=5&hc_path%5B3000%5D=%2F&hc_method%5B3000%5D=get)  
  [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/libredb/libredb-studio)  
@@ -703,15 +703,15 @@ bun run test:coverage
 
 > **DigitalOcean：** [Marketplace 收录页](https://marketplace.digitalocean.com/apps/libredb-studio)会创建一台预配置好的 Droplet。首次启动时会生成专属的管理员凭据；欢迎信息（MOTD）会说明在哪里能找到它们。
 >
-> **CapRover：** 打开你的 CapRover 面板 → **Apps → One-Click Apps/Databases**，搜索 **LibreDB Studio**，然后部署。
+> **CapRover：** 打开你的 CapRover 面板 → **Apps → One-Click Apps/Databases**，搜索 **KnowSQL**，然后部署。
 >
 > **Koyeb：** 部署前先设置一个强 `JWT_SECRET`（至少 32 个字符，用 `openssl rand -base64 32` 生成）和各项凭据（Koyeb 无法自动生成密钥）。预填的值是刻意不可用的：那个密钥比 32 字符下限还短，所以应用会在启动时停下并说明原因，而不是用一个印在本文件里的密钥运行。按钮用的是 `STORAGE_PROVIDER=local`，连接元数据留在浏览器里，这适合 Koyeb 的临时文件系统。要让连接在重新部署后仍然存在，改成 `STORAGE_PROVIDER=postgres`，并把 `STORAGE_POSTGRES_URL` 指向 Koyeb 托管 Postgres 或 Neon 数据库。按钮也会填好 `LLM_PROVIDER`/`LLM_MODEL`/`LLM_API_KEY`，但 Agent 运行只能在服务端自己列出的种子连接（seed connection）上启动，所以在界面中创建的连接上，无论 `STORAGE_PROVIDER` 是什么，Start 按钮都是禁用的（见 [docs/AGENT.md](docs/AGENT.md#turning-it-on)）。详见 [`deploy/koyeb/`](deploy/koyeb/)。
 >
 > **Fly.io：** 仓库里已经带了一份可用的 [`fly.toml`](fly.toml)，完整步骤（应用名、volume、secrets）见 [`docs/FLY.md`](docs/FLY.md)。
 >
-> **Cosmos：** 在 [Cosmos](https://cosmos-cloud.io) Marketplace 里一键安装，搜索 **LibreDB Studio**。Cosmos 会自动生成密钥、准备一个持久化的 SQLite volume，并在它的 SmartShield 反向代理后面提供服务。详见 [`deploy/cosmos/`](deploy/cosmos/)。
+> **Cosmos：** 在 [Cosmos](https://cosmos-cloud.io) Marketplace 里一键安装，搜索 **KnowSQL**。Cosmos 会自动生成密钥、准备一个持久化的 SQLite volume，并在它的 SmartShield 反向代理后面提供服务。详见 [`deploy/cosmos/`](deploy/cosmos/)。
 >
-> **Dokploy：** 从 [Dokploy 模板目录](https://templates.dokploy.com)一键安装，在你的 Dokploy 面板里 **Create Service → Template**，搜索 **LibreDB Studio**，然后部署。Dokploy 会自动生成 `ADMIN_PASSWORD`、`USER_PASSWORD` 和 `JWT_SECRET`，并把连接持久化在 Traefik 后面的 SQLite volume 上。详见 [`deploy/dokploy/`](deploy/dokploy/)。
+> **Dokploy：** 从 [Dokploy 模板目录](https://templates.dokploy.com)一键安装，在你的 Dokploy 面板里 **Create Service → Template**，搜索 **KnowSQL**，然后部署。Dokploy 会自动生成 `ADMIN_PASSWORD`、`USER_PASSWORD` 和 `JWT_SECRET`，并把连接持久化在 Traefik 后面的 SQLite volume 上。详见 [`deploy/dokploy/`](deploy/dokploy/)。
 
 ### 环境变量
 
@@ -764,7 +764,7 @@ bun run test:coverage
 
 ### Railway
 
-LibreDB Studio 提供了可一键使用的 [Railway](https://railway.com) 模板。
+KnowSQL 提供了可一键使用的 [Railway](https://railway.com) 模板。
 模板定义、安装说明和发布清单见 [`deploy/railway/`](deploy/railway/)。
 该模板运行预构建的 `ghcr.io/libredb/libredb-studio` 镜像，并把 SQLite
 持久化在 Railway volume 上。注意：Docker 镜像模板每次发版都需要手动升版本号
@@ -772,10 +772,10 @@ LibreDB Studio 提供了可一键使用的 [Railway](https://railway.com) 模板
 
 ### CapRover
 
-LibreDB Studio 已发布在官方 [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) 目录中：
+KnowSQL 已发布在官方 [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) 目录中：
 
 1. **打开你的 CapRover 面板** → **Apps → One-Click Apps/Databases**
-2. **搜索** **LibreDB Studio**
+2. **搜索** **KnowSQL**
 3. **填写变量**（管理员/用户凭据，以及可选的 AI 设置）
 4. **部署！**
 
@@ -783,10 +783,10 @@ LibreDB Studio 已发布在官方 [CapRover One-Click Apps](https://github.com/c
 
 ### Kubero
 
-LibreDB Studio 已列入官方
+KnowSQL 已列入官方
 [Kubero 模板目录](https://www.kubero.dev/templates)（一个自托管的
 "Kubernetes 版 Heroku 替代品"）。在你的 Kubero 面板里浏览
-**Templates**，搜索 **LibreDB Studio**，填写凭据 / `JWT_SECRET`，
+**Templates**，搜索 **KnowSQL**，填写凭据 / `JWT_SECRET`，
 然后部署。该模板运行预构建的 `ghcr.io/libredb/libredb-studio` 镜像，
 并把 SQLite 持久化在 `/app/data` 上的 5Gi volume 里。安装与安装后说明见
 [`deploy/kubero/`](deploy/kubero/)。与 Railway 和 CapRover 一样，Docker 镜像模板
@@ -794,11 +794,11 @@ LibreDB Studio 已列入官方
 
 ### Cosmos
 
-LibreDB Studio 已列入官方
+KnowSQL 已列入官方
 [Cosmos servapp 市场](https://github.com/azukaar/cosmos-servapps-official)
 （[Cosmos](https://cosmos-cloud.io) 是一个自托管的服务器管理器与安全
 反向代理）。在你的 Cosmos 面板里打开 **Marketplace**，搜索
-**LibreDB Studio**，然后安装。Cosmos 会自动生成凭据和
+**KnowSQL**，然后安装。Cosmos 会自动生成凭据和
 `JWT_SECRET`，准备一个位于 `/app/data` 的持久化 SQLite volume，并在
 SmartShield 保护的路径后面提供服务。安装与安装后说明见
 [`deploy/cosmos/`](deploy/cosmos/)。与 Railway、CapRover 和 Kubero 一样，
@@ -806,7 +806,7 @@ Docker 镜像模板每次发版都需要手动升版本号。
 
 ### Render（云端部署推荐）
 
-LibreDB Studio 带了一份用于一键部署的 `render.yaml` Blueprint：
+KnowSQL 带了一份用于一键部署的 `render.yaml` Blueprint：
 
 1. **Fork 本仓库**
 2. **连接到 Render**：[dashboard.render.com](https://dashboard.render.com) → New → Blueprint

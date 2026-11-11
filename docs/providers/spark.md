@@ -1,9 +1,9 @@
 # Apache Spark Provider
 
 Apache, Apache Spark and Spark are either registered trademarks or trademarks of The Apache Software Foundation in the United States and/or other countries.
-LibreDB Studio has no affiliation with and is not endorsed by The Apache Software Foundation.
+KnowSQL has no affiliation with and is not endorsed by The Apache Software Foundation.
 
-> Apache Spark support for LibreDB Studio: Spark SQL over Spark Connect to a self-hosted Spark 4.1 or later, tested on 4.1.3 and 4.2.0.
+> Apache Spark support for KnowSQL: Spark SQL over Spark Connect to a self-hosted Spark 4.1 or later, tested on 4.1.3 and 4.2.0.
 > Studio speaks Spark Connect's gRPC protocol through its shared gRPC transport and reads results as Arrow batches, with no Spark client library.
 > This document is the reference for the Apache Spark provider: connecting, the recommended Spark-side setup, sessions, how a statement runs, results, the tree, features, the confirmation gate, security, errors, the embedded package and the evidence.
 

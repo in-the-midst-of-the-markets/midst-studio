@@ -25,7 +25,7 @@ test("a launch link signs a new person in and opens the connection it names", as
   await page.goto(`/launch#token=${token}`);
 
   // With no Studio session the page names the account and signs in only on a click.
-  await expect(page.getByText(`This launch link signs you in to LibreDB Studio as ${email}.`)).toBeVisible();
+  await expect(page.getByText(`This launch link signs you in to KnowSQL as ${email}.`)).toBeVisible();
   expect(page.url()).not.toContain(token);
   expect((await page.request.get("/api/auth/me")).status()).toBe(401);
   await page.getByRole("button", { name: `Continue as ${email}` }).click();

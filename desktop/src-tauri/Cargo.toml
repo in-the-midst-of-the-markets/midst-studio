@@ -4,7 +4,7 @@ name = "libredb-studio-desktop"
 # tauri.conf.json "version", which points at the repo-root package.json - this
 # crate version is never user-visible and stays fixed.
 version = "0.1.0"
-description = "LibreDB Studio desktop shell"
+description = "KnowSQL desktop shell"
 authors = ["LibreDB"]
 license = "MIT"
 repository = "https://github.com/libredb/libredb-studio"

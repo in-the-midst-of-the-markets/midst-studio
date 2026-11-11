@@ -1,5 +1,5 @@
 [Unit]
-Description=LibreDB Studio first-boot credential generation
+Description=KnowSQL first-boot credential generation
 # Runs once per instance: the condition is the state, not a semaphore file
 ConditionPathExists=!/etc/libredb-studio.env
 # Ordering only - this unit never starts anything itself

@@ -16,7 +16,7 @@ code by the repo-wide catalog gate, not by a number kept here.
 
 <!-- limit:72 -->
 
-LibreDB Studio
+KnowSQL
 
 ## Product description
 

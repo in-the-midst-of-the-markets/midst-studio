@@ -20,7 +20,7 @@ export function checkLocalFile(connection: DatabaseConnection, posture: Posture)
   const { label } = CONNECTION_FORM[connection.type];
   if (!posture.allowExternalFileAccess) {
     throw new DatabaseConfigError(
-      `Restricted Mode: LibreDB opens no ${label} database until you trust this workspace.`,
+      `Restricted Mode: KnowSQL opens no ${label} database until you trust this workspace.`,
       connection.type,
     );
   }

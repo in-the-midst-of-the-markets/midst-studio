@@ -1,10 +1,10 @@
 # Theming Guide
 
-This document provides a comprehensive guide for understanding and customizing the theming system in LibreDB Studio.
+This document provides a comprehensive guide for understanding and customizing the theming system in KnowSQL.
 
 ## Overview
 
-LibreDB Studio uses a modern theming architecture built on:
+KnowSQL uses a modern theming architecture built on:
 
 - **Tailwind CSS v4** - CSS-first configuration with `@theme` directive
 - **shadcn/ui** - Accessible component library with CSS variable theming
@@ -158,7 +158,7 @@ guards it.
 
 ### Current Configuration
 
-LibreDB Studio uses a dark-first design with the following color palette (based on Tailwind Zinc):
+KnowSQL uses a dark-first design with the following color palette (based on Tailwind Zinc):
 
 ```css
 .dark {

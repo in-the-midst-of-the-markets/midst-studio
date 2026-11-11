@@ -275,7 +275,7 @@ export function describePinnedPathRefusal(plan: ObjectEditPlan, refusal: ObjectE
   if (pinned === undefined) return undefined;
   if (refusal.code === undefined || !NAME_RESOLUTION_CODES.includes(refusal.code)) return undefined;
   return (
-    `LibreDB ran this apply with search_path set to ${pinned}, because this engine resolves a body's ` +
+    `KnowSQL ran this apply with search_path set to ${pinned}, because this engine resolves a body's ` +
     `unqualified names when it is created and the session path on a shared connection is not yours to ` +
     `rely on. Qualify the name, or give this definition its own SET search_path clause.`
   );

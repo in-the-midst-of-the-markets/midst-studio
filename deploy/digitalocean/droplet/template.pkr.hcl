@@ -9,7 +9,7 @@ packer {
 
 variable "version" {
   type        = string
-  description = "LibreDB Studio release tag — image pin + snapshot name (e.g. 0.14.1). Must exist on ghcr.io/libredb/libredb-studio."
+  description = "KnowSQL release tag — image pin + snapshot name (e.g. 0.14.1). Must exist on ghcr.io/libredb/libredb-studio."
 }
 
 # Region and size are variables, not literals, because the pair can stop being

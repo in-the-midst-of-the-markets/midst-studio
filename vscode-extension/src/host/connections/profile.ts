@@ -35,7 +35,7 @@ export function readProfiles(raw: unknown): ProfileItem[] {
     return [
       {
         kind: "invalid",
-        reason: "libredb.connections in your user settings is not an array, so LibreDB lists no connection from it.",
+        reason: "libredb.connections in your user settings is not an array, so KnowSQL lists no connection from it.",
       },
     ];
   }
@@ -74,7 +74,7 @@ function refusalOf(entry: Record<string, unknown>, name: string): string | undef
   const { type, createdAt, port, ssl, secretFields } = entry;
   // A type the channel does not enable passes: its open answers the factory gate's sentence.
   if (typeof type !== "string" || !EXTERNAL.has(type)) {
-    return `The connection ${name} has the type ${String(type)}, which is not a database LibreDB Studio connects to.`;
+    return `The connection ${name} has the type ${String(type)}, which is not a database KnowSQL connects to.`;
   }
   if (typeof createdAt !== "string" || Number.isNaN(Date.parse(createdAt))) {
     return `The connection ${name} has no createdAt date.`;
@@ -88,7 +88,7 @@ function refusalOf(entry: Record<string, unknown>, name: string): string | undef
   // Refused rather than moved: a value in user settings has already travelled with Settings Sync.
   const secret = secretPathsIn(entry)[0];
   if (secret !== undefined) {
-    return `Remove ${secret} from this connection in your user settings: LibreDB keeps secrets in VS Code's secret storage and asks for them when it connects.`;
+    return `Remove ${secret} from this connection in your user settings: KnowSQL keeps secrets in VS Code's secret storage and asks for them when it connects.`;
   }
   if (secretFields !== undefined && !holdsSecretFields(entry, secretFields)) {
     return `The connection ${name} lists in secretFields a path that is not a distinct secret field it can hold.`;

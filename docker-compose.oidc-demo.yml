@@ -1,5 +1,5 @@
 # =============================================================================
-# LibreDB Studio — OIDC demo stack (Keycloak single sign-on)
+# KnowSQL — OIDC demo stack (Keycloak single sign-on)
 # =============================================================================
 # NOT A PRODUCTION CONFIGURATION. This file exists so SSO login and role mapping
 # can be tried with one command:
@@ -155,14 +155,14 @@ configs:
         "sslRequired": "external",
         "roles": {
           "realm": [
-            { "name": "admin", "description": "LibreDB Studio admin" },
-            { "name": "user", "description": "LibreDB Studio user" }
+            { "name": "admin", "description": "KnowSQL admin" },
+            { "name": "user", "description": "KnowSQL user" }
           ]
         },
         "clients": [
           {
             "clientId": "libredb-studio",
-            "name": "LibreDB Studio",
+            "name": "KnowSQL",
             "enabled": true,
             "protocol": "openid-connect",
             "publicClient": false,

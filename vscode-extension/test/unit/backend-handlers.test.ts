@@ -171,7 +171,7 @@ describe("initialize", () => {
     refusedNow(
       () => backend().handlers.initialize({ protocolVersion: 2 }),
       500,
-      "The LibreDB backend speaks protocol version 1, but the extension sent version 2. Reinstall the LibreDB extension.",
+      "The KnowSQL backend speaks protocol version 1, but the extension sent version 2. Reinstall the KnowSQL extension.",
       { code: "PROTOCOL_MISMATCH" },
     );
   });
@@ -182,7 +182,7 @@ describe("initialize", () => {
     refusedNow(
       () => handlers.initialize({ protocolVersion: 1 }),
       500,
-      "The LibreDB backend needs Node 24.0.0 or later and was started on Node 22.11.0.",
+      "The KnowSQL backend needs Node 24.0.0 or later and was started on Node 22.11.0.",
       { code: "RUNTIME_UNSUPPORTED" },
     );
   });
@@ -578,7 +578,7 @@ describe("object reads", () => {
     await refused(
       handlers.listContainers({ connectionId: "c9" }),
       404,
-      'No connection with id "c9" is open in this LibreDB backend.',
+      'No connection with id "c9" is open in this KnowSQL backend.',
       { code: "CONNECTION_NOT_OPEN" },
     );
     assert.equal(calls.length, before);
@@ -722,7 +722,7 @@ describe("query/run", () => {
     await refused(
       handlers.runQuery({ ...RUN, connectionId: "c9" }, idle),
       404,
-      'No connection with id "c9" is open in this LibreDB backend.',
+      'No connection with id "c9" is open in this KnowSQL backend.',
       { code: "CONNECTION_NOT_OPEN" },
     );
   });
@@ -891,7 +891,7 @@ describe("objects/selectStatement", () => {
     await refused(
       handlers.selectStatement({ connectionId: "c9", object: ORDERS }),
       404,
-      'No connection with id "c9" is open in this LibreDB backend.',
+      'No connection with id "c9" is open in this KnowSQL backend.',
       { code: "CONNECTION_NOT_OPEN" },
     );
   });
@@ -999,7 +999,7 @@ describe("query/target", () => {
     await refused(
       handlers.runTarget({ connectionId: "c9", text: TEXT, selection: NONE, cursor: 0 }),
       404,
-      'No connection with id "c9" is open in this LibreDB backend.',
+      'No connection with id "c9" is open in this KnowSQL backend.',
       { code: "CONNECTION_NOT_OPEN" },
     );
   });
@@ -1052,7 +1052,7 @@ describe("query/cancel", () => {
     await refused(
       handlers.cancelQuery({ connectionId: "c9", queryId: "q-7" }),
       404,
-      'No connection with id "c9" is open in this LibreDB backend.',
+      'No connection with id "c9" is open in this KnowSQL backend.',
       { code: "CONNECTION_NOT_OPEN" },
     );
     await refused(handlers.cancelQuery({ connectionId: "c1" }), -32602, "queryId must be a non-empty string");
@@ -1172,7 +1172,7 @@ describe("registerHandlers", () => {
     const { host } = served();
     assert.deepEqual(await answeredError(host, METHODS.runQuery, RUN), {
       code: -32002,
-      message: "The LibreDB backend has not been initialized.",
+      message: "The KnowSQL backend has not been initialized.",
     });
     assert.equal((await answeredError(host, METHODS.initialize, { protocolVersion: 2 })).code, 500);
     assert.equal((await answeredError(host, METHODS.closeConnection, { connectionId: "c1" })).code, -32002);
@@ -1182,7 +1182,7 @@ describe("registerHandlers", () => {
 
   it("refuses engines/list and connection/parse before initialize, and serves both after it", async () => {
     const { host, calls } = served();
-    const notInitialized = { code: -32002, message: "The LibreDB backend has not been initialized." };
+    const notInitialized = { code: -32002, message: "The KnowSQL backend has not been initialized." };
     assert.deepEqual(await answeredError(host, METHODS.listEngines, {}), notInitialized);
     assert.deepEqual(await answeredError(host, METHODS.parsePastedConnection, { text: "hello" }), notInitialized);
     await host.sendRequest(METHODS.initialize, { protocolVersion: 1 });
@@ -1218,11 +1218,11 @@ describe("registerHandlers", () => {
       [new QueryError("syntax error", "postgres"), 400, "syntax error", { code: "QUERY_ERROR" }],
       [
         new DatabaseConfigError(
-          "The sqlite provider is not available in this distribution of LibreDB Studio.",
+          "The sqlite provider is not available in this distribution of KnowSQL.",
           "sqlite",
         ),
         400,
-        "The sqlite provider is not available in this distribution of LibreDB Studio.",
+        "The sqlite provider is not available in this distribution of KnowSQL.",
         { code: "CONFIG_ERROR" },
       ],
       [
@@ -1298,7 +1298,7 @@ describe("registerHandlers", () => {
     });
     assert.deepEqual(await answeredError(host, METHODS.listContainers, { connectionId: "c9" }), {
       code: 404,
-      message: 'No connection with id "c9" is open in this LibreDB backend.',
+      message: 'No connection with id "c9" is open in this KnowSQL backend.',
       data: { code: "CONNECTION_NOT_OPEN" },
     });
     assert.deepEqual(await answeredError(host, METHODS.closeConnection, { connectionId: 3 }), {
@@ -1323,7 +1323,7 @@ describe("registerHandlers", () => {
     assert.deepEqual(calls, [["clearProviderCache"]]);
     const shuttingDown = {
       code: 503,
-      message: "The LibreDB backend is shutting down.",
+      message: "The KnowSQL backend is shutting down.",
       data: { code: "SHUTTING_DOWN" },
     };
     assert.deepEqual(await answeredError(host, METHODS.runQuery, RUN), shuttingDown);

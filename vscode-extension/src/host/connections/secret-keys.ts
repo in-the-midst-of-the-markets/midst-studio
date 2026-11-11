@@ -1,7 +1,7 @@
 // Where a connection's secrets live in SecretStorage (part 2, "Secrets"): one entry per connection id and secret path,
 // keyed "connection/<id>/<path>".
 // Which paths are secret comes only from P7's classification maps, at the three levels walkSecretFields covers, so the
-// host side names no secret field and a field LibreDB classifies secret later joins with no change here.
+// host side names no secret field and a field KnowSQL classifies secret later joins with no change here.
 import {
   type FieldClass,
   CONNECTION_FIELDS as SECRET_CLASS,

@@ -29,9 +29,9 @@ const INITIALIZED = {
   enabledProviders: ["postgres", "mssql", "mysql", "mongodb"],
 };
 const READY_LINE =
-  "The LibreDB backend is ready: Node 24.21.0, Electron 43.7.7, modules 148, linux/x64; enabled providers: postgres, mssql, mysql, mongodb.";
-const DEADLINE = "The LibreDB backend did not answer its handshake within 10 s.";
-const STOPPING = "The LibreDB backend is stopping.";
+  "The KnowSQL backend is ready: Node 24.21.0, Electron 43.7.7, modules 148, linux/x64; enabled providers: postgres, mssql, mysql, mongodb.";
+const DEADLINE = "The KnowSQL backend did not answer its handshake within 10 s.";
+const STOPPING = "The KnowSQL backend is stopping.";
 
 /** A child that answers initialize and shutdown, and leaves every other request unanswered. */
 const healthy: Serve = (request) => {
@@ -63,7 +63,7 @@ function outcome<T>(promise: Promise<T>): Promise<{ value: T } | { error: unknow
 function harness(prepare: (child: FakeChild, generation: number) => void = (child) => (child.serve = healthy)) {
   const children: FakeChild[] = [];
   const forks: [string, readonly string[], ForkOptions][] = [];
-  const log = window.createOutputChannel("LibreDB", { log: true });
+  const log = window.createOutputChannel("KnowSQL", { log: true });
   let showLogs = 0;
   const supervisor = new BackendSupervisor({
     fork(modulePath, args, options) {
@@ -158,7 +158,7 @@ describe("BackendSupervisor", () => {
     assert.deepEqual(log.lines, [
       [
         "info",
-        `Starting the LibreDB backend (generation 1) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`,
+        `Starting the KnowSQL backend (generation 1) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`,
       ],
       ["info", READY_LINE],
     ]);
@@ -172,7 +172,7 @@ describe("BackendSupervisor", () => {
     await supervisor.connection();
     assert.deepEqual(log.lines.at(-1), [
       "info",
-      "The LibreDB backend is ready: Node 24.21.0, Electron none, modules 148, linux/x64; enabled providers: all.",
+      "The KnowSQL backend is ready: Node 24.21.0, Electron none, modules 148, linux/x64; enabled providers: all.",
     ]);
   });
 
@@ -192,7 +192,7 @@ describe("BackendSupervisor", () => {
     const { supervisor, children, log } = harness();
     await supervisor.connection();
     children[0].emit("error", new Error("kill EPERM"));
-    assert.deepEqual(log.lines.at(-1), ["error", "The LibreDB backend reported an error: kill EPERM"]);
+    assert.deepEqual(log.lines.at(-1), ["error", "The KnowSQL backend reported an error: kill EPERM"]);
     assert.equal(supervisor.state, "ready");
     assert.deepEqual(shownMessages, []);
   });
@@ -233,8 +233,8 @@ describe("BackendSupervisor", () => {
       children[0].emit("error", new Error("spawn /x ENOENT"));
       const result = await waiting;
       assert.ok("error" in result && result.error instanceof BackendUnavailableError);
-      assert.equal(result.error.message, "The LibreDB backend could not start: spawn /x ENOENT");
-      assert.deepEqual(log.lines.at(-1), ["error", "The LibreDB backend could not start: spawn /x ENOENT"]);
+      assert.equal(result.error.message, "The KnowSQL backend could not start: spawn /x ENOENT");
+      assert.deepEqual(log.lines.at(-1), ["error", "The KnowSQL backend could not start: spawn /x ENOENT"]);
       assert.deepEqual(warnings(), [{ level: "warning", message: CRASH_WARNING, items: ["Show Log"] }]);
       children[0].exit(-2);
       assert.equal(warnings().length, 1);
@@ -250,9 +250,9 @@ describe("BackendSupervisor", () => {
       });
       const result = await outcome(Promise.resolve().then(() => supervisor.connection()));
       assert.ok("error" in result && result.error instanceof BackendUnavailableError);
-      assert.equal(result.error.message, "The LibreDB backend could not start: spawn E2BIG");
+      assert.equal(result.error.message, "The KnowSQL backend could not start: spawn E2BIG");
       assert.equal(result.error.state, "restarting");
-      assert.deepEqual(log.lines.at(-1), ["error", "The LibreDB backend could not start: spawn E2BIG"]);
+      assert.deepEqual(log.lines.at(-1), ["error", "The KnowSQL backend could not start: spawn E2BIG"]);
       assert.deepEqual(warnings(), [{ level: "warning", message: CRASH_WARNING, items: ["Show Log"] }]);
       assert.equal(supervisor.state, "restarting");
       await advance(1_000);
@@ -271,8 +271,8 @@ describe("BackendSupervisor", () => {
       await advance(1_000);
       const result = await waiting;
       assert.ok("error" in result && result.error instanceof BackendUnavailableError);
-      assert.equal(result.error.message, "The LibreDB backend could not start: spawn EPERM");
-      assert.deepEqual(log.lines.at(-1), ["error", "The LibreDB backend could not start: spawn EPERM"]);
+      assert.equal(result.error.message, "The KnowSQL backend could not start: spawn EPERM");
+      assert.deepEqual(log.lines.at(-1), ["error", "The KnowSQL backend could not start: spawn EPERM"]);
       assert.equal(supervisor.state, "restarting");
       assert.equal(warnings().length, 2);
       await advance(5_000);
@@ -288,7 +288,7 @@ describe("BackendSupervisor", () => {
       children[0].exit(1);
       const result = await waiting;
       assert.ok("error" in result && result.error instanceof BackendUnavailableError);
-      assert.equal(result.error.message, "The LibreDB backend exited (exit code 1, signal none).");
+      assert.equal(result.error.message, "The KnowSQL backend exited (exit code 1, signal none).");
       assert.deepEqual(supervisor.lastExit, { exitCode: 1, signal: null });
       await advance(1_000);
       assert.equal(forks.length, 2);
@@ -306,7 +306,7 @@ describe("BackendSupervisor", () => {
 
   for (const code of ["RUNTIME_UNSUPPORTED", "PROTOCOL_MISMATCH"]) {
     it(`goes straight to failed when the child refuses initialize with ${code} (criterion 3)`, async () => {
-      const sentence = "The LibreDB backend needs Node 24.0.0 or later and was started on Node 22.11.0.";
+      const sentence = "The KnowSQL backend needs Node 24.0.0 or later and was started on Node 22.11.0.";
       const { supervisor, children, forks } = harness((child) => {
         child.serve = () => ({ error: { code: 500, message: sentence, data: { code } } });
       });
@@ -388,7 +388,7 @@ describe("BackendSupervisor", () => {
         [
           [
             "error",
-            ["The LibreDB backend exited (exit code 1, signal none). Its last 50 stderr lines:", ...tail].join("\n"),
+            ["The KnowSQL backend exited (exit code 1, signal none). Its last 50 stderr lines:", ...tail].join("\n"),
           ],
         ],
       );
@@ -400,7 +400,7 @@ describe("BackendSupervisor", () => {
       children[0].exit(1);
       assert.deepEqual(log.lines.at(-1), [
         "error",
-        "The LibreDB backend exited (exit code 1, signal none). It wrote nothing to stderr.",
+        "The KnowSQL backend exited (exit code 1, signal none). It wrote nothing to stderr.",
       ]);
     });
 

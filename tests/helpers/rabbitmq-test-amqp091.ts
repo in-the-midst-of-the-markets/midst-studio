@@ -327,7 +327,7 @@ export class TestAmqpConnection {
   /**
    * Opens the socket, runs the handshake to `channel.open-ok` on channel 1, and returns the connection.
    * `connectionName` sets the `connection_name` client property, which the management API lists; the live check's
-   * positive control names one "LibreDB Studio" to prove its connection listing would see the provider's.
+   * positive control names one "KnowSQL" to prove its connection listing would see the provider's.
    */
   static async open(
     target: TestAmqpTarget,

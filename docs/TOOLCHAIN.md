@@ -1,4 +1,4 @@
-# LibreDB Studio Toolchain - 2026 Adoption Record
+# KnowSQL Toolchain - 2026 Adoption Record
 
 > Status: IMPLEMENTED (PR #98, phased; each phase green through CI before the next). A per-tool adoption
 > record for five tools, ported from the researched-then-adversarially-verified decision record in

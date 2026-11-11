@@ -10,7 +10,7 @@ import type { EngineField } from "../../protocol";
 export type FieldInput = "text" | "port" | "none";
 
 /**
- * How v0 asks each field: the extension's word for it and its input kind. Exhaustive, so a field LibreDB adds fails
+ * How v0 asks each field: the extension's word for it and its input kind. Exhaustive, so a field KnowSQL adds fails
  * the typecheck until someone decides how v0 asks it; keyed by field names, which the engine-branch guard does not read
  * as type ids.
  */

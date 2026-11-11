@@ -1,6 +1,6 @@
 # DuckDB Provider
 
-> DuckDB support for LibreDB Studio, built on the official native binding `@duckdb/node-api`. DuckDB
+> DuckDB support for KnowSQL, built on the official native binding `@duckdb/node-api`. DuckDB
 > is an **embedded, file-based analytical engine**: there is no server, no port and no credential —
 > a connection is a path to a database file on Studio's own filesystem, or `:memory:`. This document
 > is the single reference point for the DuckDB provider: design, architecture, usage, and tests.

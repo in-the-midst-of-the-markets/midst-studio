@@ -58,7 +58,7 @@ export class EngineIcons {
   }
 }
 
-/** Each role's codicon (builder's call in part 3): exhaustive, so a role LibreDB adds fails the typecheck. */
+/** Each role's codicon (builder's call in part 3): exhaustive, so a role KnowSQL adds fails the typecheck. */
 export const ROLE_ICONS: Readonly<Record<ObjectRole, string>> = {
   relation: "table",
   routine: "symbol-method",

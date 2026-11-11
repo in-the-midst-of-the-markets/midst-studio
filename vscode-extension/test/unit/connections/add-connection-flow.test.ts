@@ -426,18 +426,18 @@ describe("AddConnectionFlow", () => {
         [
           "Add PostgreSQL Connection: Connection string",
           text,
-          "Oracle is not available in LibreDB Studio for VS Code.",
+          "Oracle is not available in KnowSQL for VS Code.",
         ],
       );
     });
 
-    it("keeps the box with its text for a string LibreDB cannot read", () => {
+    it("keeps the box with its text for a string KnowSQL cannot read", () => {
       const box = pasteAgain("nonsense", { parsed: null, label: null });
       assert.deepEqual([box.value, box.validationMessage], ["nonsense", UNREADABLE_PASTE]);
       // The formats are the catalogue's, which the child takes from the web box's list.
       assert.equal(
         UNREADABLE_PASTE,
-        "LibreDB could not read this connection string. Supported formats: fixture://, postgres://",
+        "KnowSQL could not read this connection string. Supported formats: fixture://, postgres://",
       );
     });
 
@@ -458,7 +458,7 @@ describe("AddConnectionFlow", () => {
     });
 
     it("says why an engine is not offered and a name is taken", () => {
-      assert.equal(notOffered("Oracle"), "Oracle is not available in LibreDB Studio for VS Code.");
+      assert.equal(notOffered("Oracle"), "Oracle is not available in KnowSQL for VS Code.");
       assert.equal(nameTaken("shop"), "A connection named shop already exists.");
     });
   });

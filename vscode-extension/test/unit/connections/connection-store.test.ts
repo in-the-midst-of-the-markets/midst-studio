@@ -86,7 +86,7 @@ describe("ConnectionStore", () => {
     it("lists one invalid item for a setting that is not an array", () => {
       const { store, warnings } = setup({ broken: true });
       const reason =
-        "libredb.connections in your user settings is not an array, so LibreDB lists no connection from it.";
+        "libredb.connections in your user settings is not an array, so KnowSQL lists no connection from it.";
       assert.deepEqual(store.list(), [{ kind: "invalid", reason }]);
       assert.deepEqual(warnings, [`Ignoring a libredb.connections entry: ${reason}`]);
     });
@@ -142,7 +142,7 @@ describe("ConnectionStore", () => {
     it("says how a secret store failed, and where VS Code documents the keyring", () => {
       assert.equal(
         secretStoreFailed("keyring locked"),
-        `LibreDB could not store a secret in VS Code's secret storage, so it saved nothing: keyring locked. On Linux, VS Code's secret storage needs a keyring; see "Configure a keyring backend" in VS Code's Settings Sync documentation.`,
+        `KnowSQL could not store a secret in VS Code's secret storage, so it saved nothing: keyring locked. On Linux, VS Code's secret storage needs a keyring; see "Configure a keyring backend" in VS Code's Settings Sync documentation.`,
       );
     });
 
@@ -167,7 +167,7 @@ describe("ConnectionStore", () => {
       assert.equal(error.name, "SettingWriteError");
       assert.equal(
         error.message,
-        `LibreDB could not write libredb.connections in your user settings: ${VSCODE_REFUSAL}`,
+        `KnowSQL could not write libredb.connections in your user settings: ${VSCODE_REFUSAL}`,
       );
       assert.deepEqual(
         (await secrets.keys()).filter((key) => key.startsWith("connection/9zq0k1m2n3p4/")),
@@ -420,7 +420,7 @@ describe("ConnectionStore", () => {
       setting.failNextWrite("x");
       const error = await rejection(store.remove(PG.id));
       assert.ok(error instanceof SettingWriteError);
-      assert.equal(error.message, "LibreDB could not write libredb.connections in your user settings: x");
+      assert.equal(error.message, "KnowSQL could not write libredb.connections in your user settings: x");
       assert.deepEqual(ops, [["write"]]);
     });
 

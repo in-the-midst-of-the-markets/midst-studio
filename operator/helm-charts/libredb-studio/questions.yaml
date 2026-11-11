@@ -111,7 +111,7 @@ questions:
         label: Link text
         description: The text of the link.
         type: string
-        default: "LibreDB Studio"
+        default: "KnowSQL"
         group: Rancher mode
       - variable: rancher.navLink.group
         label: Link group

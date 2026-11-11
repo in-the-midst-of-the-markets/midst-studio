@@ -1,6 +1,6 @@
 # Distribution channel inventory (the "visibility matrix").
 #
-# One entry per place users can obtain LibreDB Studio. Human-maintained:
+# One entry per place users can obtain KnowSQL. Human-maintained:
 # scripts/distribution-check.mjs READS this file and reports drift against
 # package.json - it never writes version numbers into it. Schema, tier and
 # SLA definitions, and maintenance rules (including when to update

@@ -95,7 +95,7 @@ describe("hostViolations", () => {
     assert.deepEqual(hostViolations(clean, wd), []);
   });
 
-  it("keeps a host of its own sources, LibreDB types, vscode-jsonrpc and an external vscode", () => {
+  it("keeps a host of its own sources, KnowSQL types, vscode-jsonrpc and an external vscode", () => {
     const clean = metafile(
       ["src/host/extension.ts", "../src/lib/types.ts", "../node_modules/vscode-jsonrpc/lib/node/main.js"],
       ["vscode"],

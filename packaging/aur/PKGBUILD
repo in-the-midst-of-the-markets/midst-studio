@@ -1,7 +1,7 @@
 # Maintainer: LibreDB <channels@libredb.org>
 # Contributor: NormanSMA <normanma8@gmail.com>
 #
-# Repackages the prebuilt standalone server that every LibreDB Studio release
+# Repackages the prebuilt standalone server that every KnowSQL release
 # publishes, so the AUR rules call for the -bin suffix. Nothing is compiled.
 #
 # The launcher, the systemd unit and the env file come from the tagged source

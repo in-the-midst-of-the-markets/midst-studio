@@ -10,7 +10,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "LibreDB Studio",
+        "title": "KnowSQL",
         "url": "index.html",
         "width": 1440,
         "height": 900,
@@ -30,11 +30,11 @@
     "targets": ["appimage", "deb"],
     "category": "DeveloperTool",
     "shortDescription": "The open-source SQL IDE for cloud-native teams",
-    "longDescription": "LibreDB Studio is an open-source SQL IDE for PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, Sparkplug B and QuestDB, with AI query assistance. The desktop build runs the same server LibreDB Studio ships everywhere else as a local sidecar and keeps all data on this machine.",
+    "longDescription": "KnowSQL is an open-source SQL IDE for PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, Sparkplug B and QuestDB, with AI query assistance. The desktop build runs the same server KnowSQL ships everywhere else as a local sidecar and keeps all data on this machine.",
     "homepage": "https://libredb.org",
-    "publisher": "LibreDB",
+    "publisher": "KnowSQL",
     "license": "MIT",
-    "copyright": "Copyright (c) SEKOYA GRUP BİLİŞİM VE TEKNOLOJİ LİMİTED ŞİRKETİ",
+    "copyright": "Copyright (c) 2025 SEKOYA GRUP BİLİŞİM VE TEKNOLOJİ LİMİTED ŞİRKETİ. Copyright (c) 2026 In the Midst of the Markets.",
     "icon": ["icons/32x32.png", "icons/64x64.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.png"],
     "externalBin": ["bin/libredb-studio-node"],
     "resources": ["payload"],

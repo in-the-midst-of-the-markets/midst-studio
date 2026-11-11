@@ -1,5 +1,5 @@
 [Unit]
-Description=LibreDB Studio
+Description=KnowSQL
 After=docker.service network-online.target libredb-firstboot.service
 # Wants=, not Requires=/BindsTo=: a docker daemon restart must not leave the app
 # down permanently - the container dies and Restart= brings it back.

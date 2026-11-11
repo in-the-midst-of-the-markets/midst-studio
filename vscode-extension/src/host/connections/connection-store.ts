@@ -44,7 +44,7 @@ export interface ConnectionsChange {
 
 /**
  * A change of the setting that did not happen, which the person fixes in their user settings: VS Code refused the
- * write ("LibreDB could not write libredb.connections in your user settings: <VS Code's message>"), or the setting is
+ * write ("KnowSQL could not write libredb.connections in your user settings: <VS Code's message>"), or the setting is
  * not an array (SETTING_NOT_AN_ARRAY).
  */
 export class SettingWriteError extends Error {
@@ -71,11 +71,11 @@ export class UnknownConnectionError extends Error {
 }
 
 export const SETTING_NOT_AN_ARRAY =
-  "libredb.connections in your user settings is not an array, so LibreDB cannot change it. Fix it in your user settings first.";
+  "libredb.connections in your user settings is not an array, so KnowSQL cannot change it. Fix it in your user settings first.";
 
 /** <message> is the storage's own error message. */
 export function secretStoreFailed(message: string): string {
-  return `LibreDB could not store a secret in VS Code's secret storage, so it saved nothing: ${message}. On Linux, VS Code's secret storage needs a keyring; see "Configure a keyring backend" in VS Code's Settings Sync documentation.`;
+  return `KnowSQL could not store a secret in VS Code's secret storage, so it saved nothing: ${message}. On Linux, VS Code's secret storage needs a keyring; see "Configure a keyring backend" in VS Code's Settings Sync documentation.`;
 }
 
 export interface StoreDeps {
@@ -279,7 +279,7 @@ export class ConnectionStore implements vscode.Disposable {
       await this.deps.setting.write(value);
     } catch (error) {
       throw new SettingWriteError(
-        `LibreDB could not write libredb.connections in your user settings: ${messageOf(error)}`,
+        `KnowSQL could not write libredb.connections in your user settings: ${messageOf(error)}`,
       );
     }
   }

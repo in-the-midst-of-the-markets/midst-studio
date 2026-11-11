@@ -35,7 +35,7 @@ export interface TreeDeps {
   readonly window: Pick<typeof vscode.window, "withProgress">;
 }
 
-export const BACKEND_STOPPED_DURING_READ = "The LibreDB backend stopped while this was read.";
+export const BACKEND_STOPPED_DURING_READ = "The KnowSQL backend stopped while this was read.";
 const NO_COLUMNS_REPORTED = "No columns reported";
 
 type Node<T extends TreeNode["node"]> = Extract<TreeNode, { node: T }>;

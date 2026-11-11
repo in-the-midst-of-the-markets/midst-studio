@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/libredb/libredb-studio/main/deploy/caprover/libredb-studio.png" width="160" alt="LibreDB Studio" />
+  <img src="https://raw.githubusercontent.com/libredb/libredb-studio/main/deploy/caprover/libredb-studio.png" width="160" alt="KnowSQL" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>The modern, AI-powered, open-source web-based SQL IDE for cloud-native teams.</strong>
@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/libredb/libredb-studio/main/public/screenshots/hero-editor.png" alt="LibreDB Studio - Professional SQL IDE" width="100%" />
+  <img src="https://raw.githubusercontent.com/libredb/libredb-studio/main/public/screenshots/hero-editor.png" alt="KnowSQL - Professional SQL IDE" width="100%" />
 </p>
 
 > 📖 **Full documentation, source, and issues:** <https://github.com/libredb/libredb-studio>
@@ -257,7 +257,7 @@ Health check endpoint: `GET /api/db/health` · Container HTTP port: `3000`.
 ## Deploy
 
 - **Kubernetes (Helm)** - `oci://ghcr.io/libredb/charts/libredb-studio` · [Artifact Hub](https://artifacthub.io/packages/search?repo=libredb-studio)
-- **CapRover** - built into the official One-Click Apps catalog: **Apps → One-Click Apps/Databases** → search **LibreDB Studio**. No third-party repo to add.
+- **CapRover** - built into the official One-Click Apps catalog: **Apps → One-Click Apps/Databases** → search **KnowSQL**. No third-party repo to add.
 - **PaaS** - one-click buttons for Koyeb & Render in the [GitHub README](https://github.com/libredb/libredb-studio#one-click-deploy).
 
 ---
@@ -274,7 +274,7 @@ Health check endpoint: `GET /api/db/health` · Container HTTP port: `3000`.
 
 ## Star the project
 
-LibreDB Studio is MIT-licensed. A GitHub star is the clearest signal that the work is worth continuing.
+KnowSQL is MIT-licensed. A GitHub star is the clearest signal that the work is worth continuing.
 
 <a href="https://github.com/libredb/libredb-studio"><img src="https://img.shields.io/github/stars/libredb/libredb-studio?style=social" alt="GitHub stars"></a>
 

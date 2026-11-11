@@ -247,7 +247,7 @@ export function createHandlers(
         throw refusal(
           500,
           "PROTOCOL_MISMATCH",
-          `The LibreDB backend speaks protocol version ${PROTOCOL_VERSION}, but the extension sent version ${protocolVersion}. Reinstall the LibreDB extension.`,
+          `The KnowSQL backend speaks protocol version ${PROTOCOL_VERSION}, but the extension sent version ${protocolVersion}. Reinstall the KnowSQL extension.`,
         );
       }
       const { versions, platform, arch, nodeFloor } = runtime;
@@ -255,7 +255,7 @@ export function createHandlers(
         throw refusal(
           500,
           "RUNTIME_UNSUPPORTED",
-          `The LibreDB backend needs Node ${nodeFloor.slice(2)} or later and was started on Node ${versions.node}.`,
+          `The KnowSQL backend needs Node ${nodeFloor.slice(2)} or later and was started on Node ${versions.node}.`,
         );
       }
       return {
@@ -520,9 +520,9 @@ export function registerHandlers(
       const token = args.at(-1) as CancellationToken;
       const params = args.length > 1 ? args[0] : undefined;
       try {
-        if (shuttingDown) throw refusal(503, "SHUTTING_DOWN", "The LibreDB backend is shutting down.");
+        if (shuttingDown) throw refusal(503, "SHUTTING_DOWN", "The KnowSQL backend is shutting down.");
         if (!initialized && name !== "initialize") {
-          throw new ResponseError(ErrorCodes.ServerNotInitialized, "The LibreDB backend has not been initialized.");
+          throw new ResponseError(ErrorCodes.ServerNotInitialized, "The KnowSQL backend has not been initialized.");
         }
         if (name === "shutdown") shuttingDown = true;
         const answer = await handler.call(handlers, params, token);

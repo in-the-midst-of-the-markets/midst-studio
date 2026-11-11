@@ -1,6 +1,6 @@
-# LibreDB Studio
+# KnowSQL
 
-LibreDB Studio is an MIT-licensed, AI-assisted open source SQL IDE that connects to sixty-one database engines directly from the browser.
+KnowSQL is an MIT-licensed, AI-assisted open source SQL IDE that connects to sixty-one database engines directly from the browser.
 
 Use cases:
 

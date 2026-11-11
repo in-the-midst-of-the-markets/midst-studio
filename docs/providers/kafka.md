@@ -1,6 +1,6 @@
 # Apache Kafka Provider
 
-> Apache Kafka support for LibreDB Studio, read-only over the Kafka protocol through `@platformatic/kafka`.
+> Apache Kafka support for KnowSQL, read-only over the Kafka protocol through `@platformatic/kafka`.
 > The editor text is a JSON read request, declared `queryLanguage: "json"` with `queryDialect: "kafka"`: one object that names a topic and where to start reading.
 > Studio browses topics, partitions, consumer groups with their lag, brokers and configs, and reads messages by partition, offset or timestamp; it never produces, commits, joins a group or creates a topic.
 > This document is the single reference for the Kafka provider: design, architecture, usage and tests.

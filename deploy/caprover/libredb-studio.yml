@@ -37,7 +37,7 @@ services:
 caproverOneClickApp:
     variables:
         - id: $$cap_version
-          label: LibreDB Studio Version
+          label: KnowSQL Version
           defaultValue: '1.2.0'
           description: Image tag to deploy. Always pin a fixed version, never "latest". Example - 1.2.0. Browse all valid tags at https://github.com/libredb/libredb-studio/pkgs/container/libredb-studio
           validRegex: '/^([^\s^\/])+$/'
@@ -83,7 +83,7 @@ caproverOneClickApp:
           description: OPTIONAL - reasoning effort, for the openai provider only. One of - none | minimal | low | medium | high | xhigh | max. Which values a model takes is the model's own (gpt-6.1-sol has no none). Leave blank for the model's default. Example - low
     instructions:
         start: |-
-            LibreDB Studio is a modern, open-source, web-based SQL IDE for the cloud era.
+            KnowSQL is a modern, open-source, web-based SQL IDE for the cloud era.
             Query sixty-one engines - PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle,
             Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid,
             Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Prometheus,
@@ -105,7 +105,7 @@ caproverOneClickApp:
 
             More details and docs: https://github.com/libredb/libredb-studio
         end: |-
-            LibreDB Studio has been deployed.
+            KnowSQL has been deployed.
 
             Open it at: http://$$cap_appname.$$cap_root_domain
 
@@ -171,7 +171,7 @@ caproverOneClickApp:
             To change AI settings later, add or edit the LLM_* variables in the
             same tab.
             See https://github.com/libredb/libredb-studio
-    displayName: LibreDB Studio
+    displayName: KnowSQL
     isOfficial: false
     description: Open-source SQL IDE. Query sixty-one engines - PostgreSQL, MySQL, Oracle, SQL Server, MongoDB, Redis and more - from your browser, with an ERD viewer, schema diff and optional read-only AI.
     documentation: Image and docs - https://github.com/libredb/libredb-studio . Uses ghcr.io/libredb/libredb-studio. Deploys with SQLite persistence; supports OIDC SSO and multiple AI providers via extra env vars.

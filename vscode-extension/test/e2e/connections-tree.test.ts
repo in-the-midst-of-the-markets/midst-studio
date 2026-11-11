@@ -295,8 +295,8 @@ describe("the Connections tree over PostgreSQL in a real extension host", () => 
   it("leaves the secret in neither the log nor the child's command line or environment (part 2 criterion 21's open half)", async function () {
     this.timeout(120_000);
     if (process.platform !== "linux") this.skip();
-    const logs = filesNamed(join(__dirname, "..", "..", "..", ".vscode-test", "user-data", "logs"), "LibreDB.log");
-    assert.ok(logs.length > 0, "no LibreDB.log under the run's user data directory");
+    const logs = filesNamed(join(__dirname, "..", "..", "..", ".vscode-test", "user-data", "logs"), "KnowSQL.log");
+    assert.ok(logs.length > 0, "no KnowSQL.log under the run's user data directory");
     const newest = logs.reduce((a, b) => (statSync(a).mtimeMs >= statSync(b).mtimeMs ? a : b));
     const log = readFileSync(newest, "utf8");
     console.log(`${newest}: ${log.length} characters`);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Build the LibreDB Studio desktop Linux artifacts (issues #232, #241).
+# Build the KnowSQL desktop Linux artifacts (issues #232, #241).
 #
 # The desktop shell (desktop/src-tauri, Tauri v2) is a thin native window that
 # runs the SAME standalone server payload every other channel ships as a sidecar

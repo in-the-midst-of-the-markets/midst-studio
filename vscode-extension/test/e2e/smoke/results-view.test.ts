@@ -15,7 +15,7 @@ const execFileAsync = promisify(execFile);
 installHostCapture();
 
 /** The supervisor's line for every child it forks. */
-const STARTING = /^Starting the LibreDB backend /;
+const STARTING = /^Starting the KnowSQL backend /;
 
 /**
  * The command lines of this extension host's children that run dist/backend.js, from ps, which answers --ppid on
@@ -39,7 +39,7 @@ const isReady = (raw: unknown): boolean =>
   typeof raw === "object" && raw !== null && (raw as { type?: unknown }).type === "ready";
 const typeOf = (raw: unknown): unknown => (raw as { type?: unknown }).type;
 
-describe("the LibreDB Results view in a real extension host", () => {
+describe("the KnowSQL Results view in a real extension host", () => {
   it("resolves with init and clear for the real webview's ready, and forks no backend (criterion 2)", async function () {
     this.timeout(60_000);
     const extension = vscode.extensions.getExtension(EXTENSION_ID);

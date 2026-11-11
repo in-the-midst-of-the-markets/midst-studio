@@ -26,7 +26,7 @@ export async function createPackedAttestationChain(): Promise<PackedAttestationC
   const rootKeys = await webcrypto.subtle.generateKey(ALGORITHM, true, ["sign", "verify"]);
   const root = await x509.X509CertificateGenerator.createSelfSigned({
     serialNumber: "01",
-    name: "CN=Passkey Test Root, O=LibreDB Studio Tests, C=US",
+    name: "CN=Passkey Test Root, O=KnowSQL Tests, C=US",
     notBefore,
     notAfter,
     signingAlgorithm: ALGORITHM,
@@ -36,7 +36,7 @@ export async function createPackedAttestationChain(): Promise<PackedAttestationC
   const leafKeys = await webcrypto.subtle.generateKey(ALGORITHM, true, ["sign", "verify"]);
   const leaf = await x509.X509CertificateGenerator.create({
     serialNumber: "02",
-    subject: "CN=Passkey Test Leaf, OU=Authenticator Attestation, O=LibreDB Studio Tests, C=US",
+    subject: "CN=Passkey Test Leaf, OU=Authenticator Attestation, O=KnowSQL Tests, C=US",
     issuer: root.subject,
     notBefore,
     notAfter,

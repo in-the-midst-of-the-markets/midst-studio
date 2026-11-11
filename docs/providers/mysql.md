@@ -1,6 +1,6 @@
 # MySQL Provider
 
-> MySQL support for LibreDB Studio, built on the [`mysql2`](https://github.com/sidorares/node-mysql2) driver.
+> MySQL support for KnowSQL, built on the [`mysql2`](https://github.com/sidorares/node-mysql2) driver.
 > This document is the single reference point for the MySQL provider: design, architecture, usage,
 > and tests. MySQL is a SQL-family provider; it shares `SQLBaseProvider` with PostgreSQL — read the
 > [PostgreSQL doc](./postgres.md) first if you want the canonical SQL walkthrough, then this doc for

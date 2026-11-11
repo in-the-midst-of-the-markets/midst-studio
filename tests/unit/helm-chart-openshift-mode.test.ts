@@ -176,8 +176,8 @@ describe("authProvider openshift and the openshift sign-in values", () => {
     expect(values.openshift.consoleLink).toEqual({
       enabled: false,
       location: "ApplicationMenu",
-      section: "LibreDB",
-      text: "LibreDB Studio",
+      section: "KnowSQL",
+      text: "KnowSQL",
       imageUrl: "",
       namespaces: [],
       namespaceSelector: {},
@@ -1175,9 +1175,9 @@ describe("the Tier 0 ConsoleLink", () => {
     expect(link.metadata.labels?.["app.kubernetes.io/name"]).toBe("libredb-studio");
     expect(link.spec).toEqual({
       href: `https://${HOST}`,
-      text: "LibreDB Studio",
+      text: "KnowSQL",
       location: "ApplicationMenu",
-      applicationMenu: { section: "LibreDB" },
+      applicationMenu: { section: "KnowSQL" },
     });
   });
 
@@ -1221,7 +1221,7 @@ describe("the Tier 0 ConsoleLink", () => {
     expect(link.metadata.labels).not.toHaveProperty(["app.kubernetes.io/name"]);
     expect(link.spec).toEqual({
       href: `https://${HOST}`,
-      text: "LibreDB Studio",
+      text: "KnowSQL",
       location: "NamespaceDashboard",
       namespaceDashboard: { namespaces: ["team-a", "team-b"] },
     });
@@ -1415,7 +1415,7 @@ describe("install notes in openshift mode", () => {
     const text = notes(OPENSHIFT);
     expect(text).toContain("Auth Provider:    openshift");
     expect(text).toContain(
-      "Access LibreDB Studio via the OpenShift Route:\n  https://v1os-os-lab-v1.apps-crc.testing\n",
+      "Access KnowSQL via the OpenShift Route:\n  https://v1os-os-lab-v1.apps-crc.testing\n",
     );
     expect(text).toContain("OpenShift sign-in:");
     expect(text).toContain(`whoever may update the Deployment ${NAMESPACE}/${RELEASE}`);

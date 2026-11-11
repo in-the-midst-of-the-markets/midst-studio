@@ -1,4 +1,4 @@
-# Historical secret-scanning suppressions for LibreDB Studio (security
+# Historical secret-scanning suppressions for KnowSQL (security
 # programme control 2.1).
 #
 # The full-history sweep found 24 matches across 753 commits (grown to 774 as

@@ -1,6 +1,6 @@
 {
   "provenance": "libredb-studio",
-  "note": "The Kubernetes discovery contract's golden cases, owned by LibreDB Studio: each resource maps to its credential Secret, its connection id, the connection Studio builds and the link that opens it. Studio's exporter, its mapping and the Rancher extension must all agree with it; the extension copies this file byte for byte from a released Studio tag.",
+  "note": "The Kubernetes discovery contract's golden cases, owned by KnowSQL: each resource maps to its credential Secret, its connection id, the connection Studio builds and the link that opens it. Studio's exporter, its mapping and the Rancher extension must all agree with it; the extension copies this file byte for byte from a released Studio tag.",
   "cases": [
     {
       "resource": {

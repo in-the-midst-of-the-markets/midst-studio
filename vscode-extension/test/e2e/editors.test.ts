@@ -1,5 +1,5 @@
 // Editors, Run and Cancel in a real extension host (part 3 criteria 14 and 16 to 20, the unbound half of 21, and part
-// 2 criterion 19's run half): the context keys, the status bar item and the LibreDB log are read through
+// 2 criterion 19's run half): the context keys, the status bar item and the KnowSQL log are read through
 // host-capture.ts, the pickers and notifications through replaced window functions. It needs Docker, so it stays out
 // of the smoke subset.
 import assert from "node:assert/strict";
@@ -502,7 +502,7 @@ describe("editors, Run and Cancel in a real extension host", () => {
     );
   });
 
-  it("puts an unbound sql document in no LibreDB key, and Run on it asks for a connection and runs nothing (criterion 21)", async function () {
+  it("puts an unbound sql document in no KnowSQL key, and Run on it asks for a connection and runs nothing (criterion 21)", async function () {
     this.timeout(120_000);
     const document = await vscode.workspace.openTextDocument({ language: "sql", content: "select 1" });
     await vscode.window.showTextDocument(document);

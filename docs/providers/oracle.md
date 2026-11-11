@@ -1,6 +1,6 @@
 # Oracle Provider
 
-> Oracle Database support for LibreDB Studio, built on the [`oracledb`](https://github.com/oracle/node-oracledb)
+> Oracle Database support for KnowSQL, built on the [`oracledb`](https://github.com/oracle/node-oracledb)
 > driver in **Thin mode** (pure JavaScript — no Oracle Instant Client required).
 > This document is the single reference point for the Oracle provider: design, architecture, usage,
 > and tests. Oracle is a SQL-family provider sharing `SQLBaseProvider`; read the

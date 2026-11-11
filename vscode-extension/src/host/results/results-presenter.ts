@@ -327,7 +327,7 @@ export function gridContextOf(connectionType: DatabaseType, description: Provide
   };
 }
 
-/** One presenter that hands every call to each of `presenters` in order: the view, then the LibreDB log. */
+/** One presenter that hands every call to each of `presenters` in order: the view, then the KnowSQL log. */
 export function fanOut(...presenters: ResultsPresenter[]): ResultsPresenter {
   return {
     runStarted: (run) => {

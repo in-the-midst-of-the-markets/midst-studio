@@ -36,4 +36,4 @@ export const PASSKEY_DEFAULT_NAME = "Passkey";
 export const PASSKEY_BODY_MAX_BYTES = 65536;
 
 /** The relying party name authenticators show next to the account. */
-export const PASSKEY_RP_NAME = "LibreDB Studio";
+export const PASSKEY_RP_NAME = "KnowSQL";

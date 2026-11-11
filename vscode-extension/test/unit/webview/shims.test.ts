@@ -101,18 +101,18 @@ describe("the webview's module shims", () => {
 
   it("refuses every read of browser storage", () => {
     assert.throws(() => (storage as Record<string, unknown>).getItem, {
-      message: "The LibreDB Results view keeps no browser storage.",
+      message: "The KnowSQL Results view keeps no browser storage.",
     });
     assert.throws(() => (storage as Record<string, unknown>).anything, {
-      message: "The LibreDB Results view keeps no browser storage.",
+      message: "The KnowSQL Results view keeps no browser storage.",
     });
   });
 
   it("throws while no host is connected", () => {
     connectHost(undefined);
     assert.throws(() => postToHost({ v: 1, type: "ready" }), {
-      message: "The LibreDB Results view is not connected to its host.",
+      message: "The KnowSQL Results view is not connected to its host.",
     });
-    assert.throws(() => writeToClipboard("x"), { message: "The LibreDB Results view is not connected to its host." });
+    assert.throws(() => writeToClipboard("x"), { message: "The KnowSQL Results view is not connected to its host." });
   });
 });

@@ -19,12 +19,12 @@ const MESSAGES: Record<string, string> = {
     "This cluster signs in through an external identity provider, so OpenShift sign-in cannot run here. Ask your administrator to use OIDC sign-in instead.",
   openshift_state_missing: "Your sign-in expired or was started in another browser. Sign in again.",
   openshift_state_invalid: "Your sign-in expired or was started in another browser. Sign in again.",
-  openshift_denied: "You declined the permissions LibreDB Studio asked for. Sign in again and allow them to continue.",
+  openshift_denied: "You declined the permissions KnowSQL asked for. Sign in again and allow them to continue.",
   openshift_scope:
-    "Sign-in needs both permissions on the OpenShift Authorize Access page. Sign in again and keep user:info and user:check-access checked; if the page no longer appears, ask your administrator to delete your oauthclientauthorization for LibreDB Studio.",
+    "Sign-in needs both permissions on the OpenShift Authorize Access page. Sign in again and keep user:info and user:check-access checked; if the page no longer appears, ask your administrator to delete your oauthclientauthorization for KnowSQL.",
   openshift_no_uid:
-    "This OpenShift account cannot sign in to LibreDB Studio because the cluster gives it no user id, as for a virtual account such as kube:admin. Sign in with a regular user.",
-  openshift_no_access: "Your OpenShift account has no access to this LibreDB Studio. Ask your administrator.",
+    "This OpenShift account cannot sign in to KnowSQL because the cluster gives it no user id, as for a virtual account such as kube:admin. Sign in with a regular user.",
+  openshift_no_access: "Your OpenShift account has no access to this KnowSQL. Ask your administrator.",
   openshift_failed: "OpenShift sign-in failed. Please try again.",
   openshift_session_lost:
     "This server could not keep your sign-in. Sign in again, and ask your administrator if this repeats; Studio must run as one replica.",

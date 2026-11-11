@@ -202,7 +202,7 @@ function refusedWhileRunning(deps: EditorCommandDeps, uri: string): boolean {
 function windowProgress(deps: EditorCommandDeps, connectionId: string): vscode.ProgressOptions {
   const entry = deps.store.get(connectionId);
   if (entry === undefined) throw new UnknownConnectionError(connectionId);
-  return { location: vscode.ProgressLocation.Window, title: `LibreDB: opening ${entry.name}` };
+  return { location: vscode.ProgressLocation.Window, title: `KnowSQL: opening ${entry.name}` };
 }
 
 /** Opens an untitled document in the description's editor language, shows it outside preview and binds it. */

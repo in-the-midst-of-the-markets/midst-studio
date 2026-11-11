@@ -209,7 +209,7 @@ async function login(page: Page): Promise<void> {
  * on the first poll, and a refusal that is not the rate limiter's still costs one bounded wait.
  */
 async function connectToTheFixture(page: Page): Promise<void> {
-  const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+  const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
   await sidebarButtons.last().click();
   const dialog = page.locator('[role="dialog"]');
   await expect(dialog).toBeVisible({ timeout: 10_000 });

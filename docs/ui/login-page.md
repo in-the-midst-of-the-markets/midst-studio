@@ -30,7 +30,7 @@ The page reads it per request, like the auth provider, so nothing about passkeys
 
 ```
 ┌─────────────────────────────┬──────────────────────┐
-│  LibreDB Studio             │   Right Panel (45%)  │
+│  KnowSQL             │   Right Panel (45%)  │
 │                             │                      │
 │  The open-source SQL IDE    │   ┌──────────────┐   │
 │  that deploys next to       │   │ Welcome back │   │
@@ -84,7 +84,7 @@ to undo from the outside:
 
 ```
 ┌──────────────────────┐
-│    LibreDB Studio    │  <- Compact branding
+│    KnowSQL    │  <- Compact branding
 │  Open-source SQL IDE │
 │                      │
 │   ┌──────────────┐   │

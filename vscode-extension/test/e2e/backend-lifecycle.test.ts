@@ -135,12 +135,12 @@ describe("the backend's lifecycle in a real extension host", () => {
     const { deps, recording } = recordingDeps((await installedExtension()).extensionPath);
     supervisor = new BackendSupervisor(deps);
     await supervisor.connection();
-    const starting = `Starting the LibreDB backend (generation 1) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`;
-    const ready = recording.info.find((line) => line.startsWith("The LibreDB backend is ready: "));
+    const starting = `Starting the KnowSQL backend (generation 1) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`;
+    const ready = recording.info.find((line) => line.startsWith("The KnowSQL backend is ready: "));
     console.log(`VS Code ${vscode.version}: ${starting}`);
     console.log(`VS Code ${vscode.version}: ${ready}`);
     assert.ok(recording.info.includes(starting), JSON.stringify(recording.info));
-    assert.match(ready ?? "", /^The LibreDB backend is ready: Node \d+\.\d+\.\d+, Electron \d+\.\d+\.\d+, /);
+    assert.match(ready ?? "", /^The KnowSQL backend is ready: Node \d+\.\d+\.\d+, Electron \d+\.\d+\.\d+, /);
   });
 
   it("rejects a run in a killed child, warns once, restarts after 1 s and reopens from the source", async function () {

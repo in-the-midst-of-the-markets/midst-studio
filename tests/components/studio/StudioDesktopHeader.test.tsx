@@ -390,7 +390,7 @@ describe("StudioDesktopHeader", () => {
     process.env.NEXT_PUBLIC_APP_VERSION = "2.5.0";
     const { container, getAllByRole } = render(<StudioDesktopHeader {...defaultProps} />);
     expect(container.textContent).not.toContain("v2.5.0");
-    expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
+    expect(container.querySelector('a[aria-label="KnowSQL on GitHub"]')).toBeNull();
     expect(container.querySelector('nav[aria-label="Editor mode"]')).toBeNull();
     const ai = getAllByRole("link", { name: "AI" });
     expect(ai).toHaveLength(1);

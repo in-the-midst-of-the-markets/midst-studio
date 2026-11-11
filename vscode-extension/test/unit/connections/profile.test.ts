@@ -26,7 +26,7 @@ describe("readProfiles", () => {
       assert.deepEqual(readProfiles(raw), [
         {
           kind: "invalid",
-          reason: "libredb.connections in your user settings is not an array, so LibreDB lists no connection from it.",
+          reason: "libredb.connections in your user settings is not an array, so KnowSQL lists no connection from it.",
         },
       ]);
     }
@@ -70,15 +70,15 @@ describe("readProfiles", () => {
   it("refuses a type that is not an external database, and keeps one the channel does not enable (rule 5)", () => {
     assert.deepEqual(
       invalid({ ...PG, type: "postgresql" }),
-      refusedShop("The connection shop has the type postgresql, which is not a database LibreDB Studio connects to."),
+      refusedShop("The connection shop has the type postgresql, which is not a database KnowSQL connects to."),
     );
     assert.deepEqual(
       invalid({ ...PG, type: "libredb" }),
-      refusedShop("The connection shop has the type libredb, which is not a database LibreDB Studio connects to."),
+      refusedShop("The connection shop has the type libredb, which is not a database KnowSQL connects to."),
     );
     assert.deepEqual(
       invalid({ ...PG, type: undefined }),
-      refusedShop("The connection shop has the type undefined, which is not a database LibreDB Studio connects to."),
+      refusedShop("The connection shop has the type undefined, which is not a database KnowSQL connects to."),
     );
     assert.deepEqual(invalid({ ...PG, type: "sqlite" }), valid({ ...PG, type: "sqlite" }));
   });
@@ -112,7 +112,7 @@ describe("readProfiles", () => {
 
   it("refuses a secret field in the setting by its path, never by its value (rule 9)", () => {
     const sentence = (path: string) =>
-      `Remove ${path} from this connection in your user settings: LibreDB keeps secrets in VS Code's secret storage and asks for them when it connects.`;
+      `Remove ${path} from this connection in your user settings: KnowSQL keeps secrets in VS Code's secret storage and asks for them when it connects.`;
     const leaked = invalid({ ...PG, password: TEST_PASSWORD });
     assert.deepEqual(leaked, refusedShop(sentence("password")));
     assert.equal(JSON.stringify(leaked).includes(TEST_PASSWORD), false);

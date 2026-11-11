@@ -105,7 +105,7 @@ describe("the /launch page in a browser with no Studio session", () => {
     const fetchMock = serve(async () => answer(200, { success: true, redirect: "/" }));
     const view = render(<LaunchPage />);
 
-    expect(await view.findByText(`This launch link signs you in to LibreDB Studio as ${EMAIL}.`)).not.toBeNull();
+    expect(await view.findByText(`This launch link signs you in to KnowSQL as ${EMAIL}.`)).not.toBeNull();
     expect(view.getByRole("button", { name: `Continue as ${EMAIL}` })).not.toBeNull();
     expect(order).toEqual(["replaceState", "me"]);
     expect(launchCalls(fetchMock)).toEqual([]);
@@ -253,13 +253,13 @@ describe("the /launch page in a browser with no Studio session", () => {
       () => new Promise<Response>(() => {}),
     );
     const checking = render(<LaunchPage />);
-    expect(checking.getByText("Signing you in to LibreDB Studio...")).not.toBeNull();
+    expect(checking.getByText("Signing you in to KnowSQL...")).not.toBeNull();
     cleanup();
 
     serve(() => new Promise<Response>(() => {}));
     const exchanging = render(<LaunchPage />);
     await clickContinue(exchanging);
-    expect(exchanging.getByText("Signing you in to LibreDB Studio...")).not.toBeNull();
+    expect(exchanging.getByText("Signing you in to KnowSQL...")).not.toBeNull();
     expect(exchanging.queryByRole("button")).toBeNull();
   });
 });

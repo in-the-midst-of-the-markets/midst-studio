@@ -69,7 +69,7 @@ test.describe("OPC UA, end to end, with pictures", () => {
     // `.last()` is the add-connection button; `.first()` is the layers panel, which is what a
     // screenshot caught this test clicking - it opened the ERD visualizer and waited three minutes
     // for a dialog that was never going to appear.
-    const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+    const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
     await sidebarButtons.last().click();
     const dialog = page.locator('[role="dialog"]');
     await expect(dialog).toBeVisible({ timeout: 15_000 });

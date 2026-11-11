@@ -3,7 +3,7 @@
 import type { RunFailure } from "../results-protocol";
 import type { ResultsView } from "./results-reducer";
 
-export const EMPTY_SENTENCE = "No results yet. Run a query in a LibreDB editor to see its rows here.";
+export const EMPTY_SENTENCE = "No results yet. Run a query in a KnowSQL editor to see its rows here.";
 export const RUNNING_SENTENCE = "Running query...";
 export const RUN_FAILED_TITLE = "The query failed.";
 export const CANCELLED_TITLE = "Query Cancelled";
@@ -22,7 +22,7 @@ export interface Notice {
 
 /** The architecture's sentence for a backend that stopped during a run, with a null code or signal as "none". */
 export function backendStoppedSentence(exitCode: number | null, signal: string | null): string {
-  return `The LibreDB backend stopped while this query ran (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}). The statement may already have run on the server.`;
+  return `The KnowSQL backend stopped while this query ran (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}). The statement may already have run on the server.`;
 }
 
 function pageFailureText(failure: RunFailure): string {

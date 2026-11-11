@@ -1,6 +1,6 @@
 # Security Posture
 
-What LibreDB Studio actually implements, and what it does not. Every row that claims a control
+What KnowSQL actually implements, and what it does not. Every row that claims a control
 names the file that enforces it and the test that fails when it breaks; `bun run security:check`
 runs in CI and fails the build when a row points at something that does not exist, or does not run,
 or when a security test exists that no row accounts for.

@@ -61,11 +61,11 @@ metadata:
     {{- toYaml $labels | nindent 4 }}
 spec:
   href: {{ printf "https://%s%s" $host (.Values.config.basePath | default "") | quote }}
-  text: {{ get $link "text" | default "LibreDB Studio" | quote }}
+  text: {{ get $link "text" | default "KnowSQL" | quote }}
   location: {{ $location }}
   {{- if eq $location "ApplicationMenu" }}
   applicationMenu:
-    section: {{ get $link "section" | default "LibreDB" | quote }}
+    section: {{ get $link "section" | default "KnowSQL" | quote }}
     {{- with get $link "imageUrl" }}
     imageURL: {{ . | quote }}
     {{- end }}

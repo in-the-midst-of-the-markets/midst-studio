@@ -179,7 +179,7 @@ const S1_UI = {
   spec: `- Requires browser automation. If it is unavailable to you, return verdict="BLOCKED" immediately with that reason in notes - do not fall back to a helm install and call it a UI test, and do not spend time forcing the tooling.
 - Log in to Rancher at https://localhost:${ctx.httpsPort} (self-signed cert: accept/bypass the warning). The admin password file path is recorded in the Phase 1 bootstrap transcript at ${RESULTS_DIR}/phase1-bootstrap.txt - read the path from there, never inline a password into your response.
 - Install the chart the way a user would, taking a screenshot into ${RESULTS_DIR}/s1ui/ at each step (name them 01-catalog.png, 02-chart-detail.png, ... in order):
-  1. Apps > Charts, "libredb" repo, the LibreDB Studio card visible.
+  1. Apps > Charts, "libredb" repo, the KnowSQL card visible.
   2. The chart detail page, with version ${ctx.chartVersion} selected.
   3. The install form step 1 (metadata): namespace s1ui, release name s1ui.
   4. The install form step 2 (values) LEFT AT DEFAULTS - change nothing. Capture the rendered form, and also the "Edit YAML" view so the defaults are on record.
@@ -346,7 +346,7 @@ const phase4 = await agent(
 TASK: Phase 4 UI evidence - BEST EFFORT ONLY, must not block anything else. Budget yourself to roughly 10 minutes.
 
 If Playwright browser automation is available to you, navigate to https://localhost:${ctx.httpsPort} (self-signed cert - you'll need to accept/bypass the certificate warning; Rancher's login form takes the admin credentials from ${ctx.adminTokenPath}'s associated account - if you need to log in via the UI rather than reusing the API token, read the password file mentioned in the Phase 1 bootstrap transcript at ${RESULTS_DIR}/phase1-bootstrap.txt for the file path, do not ask for it inline) and capture screenshots into ${RESULTS_DIR}/screenshots/ for:
-1. Apps > Charts showing the LibreDB Studio card from the "libredb" repo.
+1. Apps > Charts showing the KnowSQL card from the "libredb" repo.
 2. The install form / values YAML view for that chart.
 3. Any currently-installed app's detail page (if one exists at the time you check - the matrix scenarios clean up after themselves so you may need to be quick, or just show the Apps > Installed list which is still valid evidence even if empty).
 4. Any pod logs view you can reach through the UI.

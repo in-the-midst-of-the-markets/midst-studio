@@ -1,4 +1,4 @@
-// The ResultsPresenter until the results view lands: one LibreDB log line per run event, with the query id, the
+// The ResultsPresenter until the results view lands: one KnowSQL log line per run event, with the query id, the
 // document label and the connection name, and never the statement or a row.
 import type * as vscode from "vscode";
 import type { QueryPage } from "../../protocol";
@@ -6,7 +6,7 @@ import { backendStoppedSentence } from "../../webview/notices";
 import { BackendError, BackendExitedError } from "../backend-client";
 import type { ResultsPresenter, RunStart } from "./results-presenter";
 
-/** Writes each run's outcome to the LibreDB log, deciding by error class and BackendError.code, never by message text. */
+/** Writes each run's outcome to the KnowSQL log, deciding by error class and BackendError.code, never by message text. */
 export class LogResultsPresenter implements ResultsPresenter {
   constructor(private readonly log: Pick<vscode.LogOutputChannel, "info" | "warn" | "error">) {}
 

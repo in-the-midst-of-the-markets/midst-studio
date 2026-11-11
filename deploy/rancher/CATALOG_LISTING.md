@@ -1,6 +1,6 @@
 # SUSE Partner Certification & Solutions Catalog — Listing Content
 
-Canonical listing content for LibreDB Studio in the SUSE Partner Certification &
+Canonical listing content for KnowSQL in the SUSE Partner Certification &
 Solutions Catalog (PCSC), requested by SUSE as part of the SUSE Ready for Rancher
 certification (see rancher/partner-charts#1158 and tracking issue #166). This file is
 the single source for the catalog text.
@@ -128,8 +128,8 @@ What gets mailed is `pcsc-listing.html` beside this file, not the sections below
 
 | Field | Value |
 |-------|-------|
-| Product name | LibreDB Studio |
-| Vendor (public listing) | LibreDB — as published, the page heads the partner as **Sekoya** with the product as LibreDB Studio |
+| Product name | KnowSQL |
+| Vendor (public listing) | LibreDB — as published, the page heads the partner as **Sekoya** with the product as KnowSQL |
 | Partner of record (legal entity) | Sekoya Grup Bilisim ve Teknoloji Ltd. Sti., Istanbul, Turkiye |
 | Category | Data Management & Analysis (assigned by SUSE; we had proposed Database / Developer Tools) |
 | License | MIT (open source) |
@@ -145,14 +145,14 @@ What gets mailed is `pcsc-listing.html` beside this file, not the sections below
 
 ## Short description (one sentence)
 
-LibreDB Studio is an MIT-licensed, AI-assisted open source SQL IDE that connects to
+KnowSQL is an MIT-licensed, AI-assisted open source SQL IDE that connects to
 PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore,
 ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Apache Cassandra,
 Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ and OPC UA directly from the browser.
 
 ## Long description
 
-LibreDB Studio brings a full SQL IDE to Rancher-managed Kubernetes clusters: browse
+KnowSQL brings a full SQL IDE to Rancher-managed Kubernetes clusters: browse
 schemas and run queries across PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB,
 MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, Databend, BigQuery,
 Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ and OPC UA from a single web interface, with no desktop
@@ -174,9 +174,9 @@ configured.
 The Helm chart installs from the Rancher Apps catalog with default values: first-run
 admin credentials are generated automatically and printed to the pod log, so a working
 instance is one click away, while production installs can supply their own secrets, an
-existing Kubernetes Secret, or strict fail-closed mode. LibreDB Studio runs entirely
+existing Kubernetes Secret, or strict fail-closed mode. KnowSQL runs entirely
 on your own infrastructure, supports linux/amd64 and linux/arm64, and is developed and
-commercially supported by the LibreDB team. Supported Rancher, RKE2/K3s and Kubernetes
+commercially supported by the KnowSQL team. Supported Rancher, RKE2/K3s and Kubernetes
 versions are documented and validated for every release.
 
 ## Key features (bullet form, if the catalog template asks for them)
@@ -205,7 +205,7 @@ partner contact rather than sending them one at a time.
 
 | Field on the page | Published value | Should be |
 |---|---|---|
-| Version | LibreDB Studio 0.9.44 | 0.13.5 when this row was written, with the release link pointing at <https://github.com/libredb/libredb-studio/releases/tag/0.13.5>; resolved by the weekly import, which carries 0.16.2 as of 2026-09-23 (the note of that date below) |
+| Version | KnowSQL 0.9.44 | 0.13.5 when this row was written, with the release link pointing at <https://github.com/libredb/libredb-studio/releases/tag/0.13.5>; resolved by the weekly import, which carries 0.16.2 as of 2026-09-23 (the note of that date below) |
 | Key features | "Seven database engines" | sixteen while the page carries a release before Prometheus, 0.16.2 as of 2026-09-23, seventeen from a release that carries Prometheus (#1085) and not Kafka, eighteen from a release that carries Apache Kafka (#1088) and not etcd, nineteen from a release that carries etcd (#1089) and not Neo4j, twenty from a release that carries Neo4j and not Db2 LUW, twenty-one from a release that carries Db2 LUW (#786) and not Qdrant, twenty-two from a release that carries Qdrant and not Milvus, twenty-three from a release that carries Milvus and not InfluxDB, twenty-five from a release that carries InfluxDB and not Oxia, twenty-six from a release that carries Oxia and not Databend, twenty-seven from a release that carries Databend and not S3-compatible object storage, twenty-eight from a release that carries S3-compatible object storage and not Kubernetes, twenty-nine from a release that carries Kubernetes and not MQTT, and thirty, the wording in this file, from the release that carries MQTT |
 | Short and long description | the pre-0.11.0 revision, which names seven engines and an AI that writes SQL from natural language | until the page carries the release with Prometheus, the sixteen-engine body at 06a4cb11 (`git show 06a4cb11:deploy/rancher/pcsc-listing.html`); from a release with Prometheus and not Kafka, the seventeen-engine body at 8dfdfcce; from a release with Kafka and not etcd, the eighteen-engine body at 2ddb99c9; from a release with etcd and not Neo4j, the nineteen-engine body at 42050550; from a release with Neo4j and not Db2 LUW, the twenty-engine body at 23f5c859; from a release with Db2 LUW and not Qdrant, the twenty-one-engine body at 214f6537; from a release with Qdrant and not Milvus, the twenty-two-engine body at d8070ec6; from a release with Milvus and not InfluxDB, the twenty-three-engine body at 046f0ee9; from a release with InfluxDB and not Oxia, the twenty-five-engine body at eacf73a3; from a release with Oxia and not Databend, the twenty-six-engine body at a7f06def; from a release with Databend and not S3-compatible object storage, the twenty-seven-engine body at d5e5a9aff; from a release with S3-compatible object storage and not Kubernetes, the twenty-eight-engine body at 11717b7e5; from a release with Kubernetes and not MQTT, the twenty-nine-engine body at c23f3890; from the release with MQTT, `pcsc-listing.html` as it stands, thirty engines. No natural-language-to-SQL claim either way: that feature was removed from the product |
 | Hardware Architecture | x86-64 | x86-64 and Arm64 (`ghcr.io/libredb/libredb-studio` is linux/amd64 + linux/arm64) |
@@ -276,7 +276,7 @@ Since the Kubernetes provider they named twenty-nine and since the BigQuery prov
 Since the MQTT provider they name thirty, fourteen more than the page's 0.16.2 carries, so neither goes out before a release that carries MQTT reaches the catalog.
 
 Vendor naming, as settled: the page heads the partner as **Sekoya** (the legal entity,
-Sekoya Grup Bilisim ve Teknoloji Ltd. Sti.) with the product named **LibreDB Studio**.
+Sekoya Grup Bilisim ve Teknoloji Ltd. Sti.) with the product named **KnowSQL**.
 We had asked for the vendor line to read LibreDB; the split SUSE applied achieves the
 same thing — brand on the product, certification on the company — so it is accepted and
 not worth re-litigating.

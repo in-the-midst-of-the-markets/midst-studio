@@ -11,7 +11,7 @@ import versions from "../../vscode-versions.json";
 
 const EXTENSION_ID = "libredb.libredb-studio";
 
-describe("the LibreDB extension in a real extension host", () => {
+describe("the KnowSQL extension in a real extension host", () => {
   it("activates and registers libredb.showLog", async () => {
     const extension = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(extension, `${EXTENSION_ID} is not loaded in the test instance`);

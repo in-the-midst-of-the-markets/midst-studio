@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Build and install the LibreDB Studio FlatPark package from a LOCAL .deb
+# Build and install the KnowSQL FlatPark package from a LOCAL .deb
 # (issue #241).
 #
 # The descriptor set in packaging/flatpark pins a published release asset as

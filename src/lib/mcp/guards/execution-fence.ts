@@ -12,7 +12,7 @@ class McpSecurityViolationError extends Error {
 
 /**
  * Validates that an SQL statement is strictly safe for read-only execution via MCP.
- * Reuses LibreDB Studio's native execution fence (`inspectAgentStatement`), blocking DDL, DML,
+ * Reuses KnowSQL's native execution fence (`inspectAgentStatement`), blocking DDL, DML,
  * multi-statements, manual transactions, and side-effect keywords.
  *
  * @param sql SQL statement to inspect

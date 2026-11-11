@@ -266,7 +266,7 @@ describe("newQuery", () => {
     assert.equal(shownQuickPicks[0].options?.placeHolder, "Choose a connection for the new query");
     assert.deepEqual(
       progressRuns.map(({ options }) => options),
-      [{ location: ProgressLocation.Window, title: "LibreDB: opening orders" }],
+      [{ location: ProgressLocation.Window, title: "KnowSQL: opening orders" }],
     );
     const { document, uri } = openedOne();
     assert.equal(document.languageId, "json");
@@ -556,7 +556,7 @@ describe("changeConnection", () => {
     assert.deepEqual(calls, [["ensureOpen", MONGO.id]]);
     assert.deepEqual(
       progressRuns.map(({ options }) => options),
-      [{ location: ProgressLocation.Window, title: "LibreDB: opening orders" }],
+      [{ location: ProgressLocation.Window, title: "KnowSQL: opening orders" }],
     );
     assert.deepEqual(bindings.get(UNTITLED), { connectionId: MONGO.id });
     assert.deepEqual(languageChanges, [[UNTITLED, "json"]]);

@@ -495,7 +495,7 @@ describe("addConnection", () => {
       assert.deepEqual(shownMessages, [
         {
           level: "error",
-          message: "The LibreDB backend stopped (exit code none, signal SIGKILL).",
+          message: "The KnowSQL backend stopped (exit code none, signal SIGKILL).",
           options: { modal: true },
           items: ["Test Again", "Back to Review"],
         },
@@ -531,7 +531,7 @@ describe("addConnection", () => {
       const running = addConnection(deps);
       const test = await toTest();
       client.tested(
-        new BackendUnavailableError("The LibreDB backend stopped 4 times in a row and was not restarted.", "failed"),
+        new BackendUnavailableError("The KnowSQL backend stopped 4 times in a row and was not restarted.", "failed"),
       );
       assert.equal(await running, undefined);
       assert.deepEqual([shownMessages, test.disposed], [[], true]);
@@ -550,7 +550,7 @@ describe("addConnection", () => {
   describe("the catalogue", () => {
     it("closes the pick and shows nothing more when the backend is unavailable (builder's call 11)", async () => {
       const { deps } = setup({
-        catalog: () => Promise.reject(new BackendUnavailableError("The LibreDB backend is stopping.", "stopping")),
+        catalog: () => Promise.reject(new BackendUnavailableError("The KnowSQL backend is stopping.", "stopping")),
       });
       const running = addConnection(deps);
       const engines = await inputs.nextPick();
@@ -569,7 +569,7 @@ describe("addConnection", () => {
       await tick();
       assert.equal(engines.disposed, true);
       assert.deepEqual(shownMessages, [
-        { level: "error", message: "LibreDB could not list the database engines: boom", items: ["Show Log"] },
+        { level: "error", message: "KnowSQL could not list the database engines: boom", items: ["Show Log"] },
       ]);
       assert.equal(ran.showLog, 1);
     });

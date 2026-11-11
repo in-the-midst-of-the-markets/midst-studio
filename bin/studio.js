@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * npx launcher for LibreDB Studio (issue #110): `npx @libredb/studio`.
+ * npx launcher for KnowSQL (issue #110): `npx @libredb/studio`.
  *
  * The npm package stays a pure library for libredb-platform - the server
  * build is never shipped inside it. Instead this launcher downloads the
@@ -60,11 +60,11 @@ import {
 
 const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
-const USAGE = `LibreDB Studio ${pkg.version} launcher
+const USAGE = `KnowSQL ${pkg.version} launcher
 
 Usage: npx @libredb/studio [options]
 
-Starts the LibreDB Studio standalone server. On first run the launcher
+Starts the KnowSQL standalone server. On first run the launcher
 downloads the release archive for this platform (tar.gz; zip on Windows)
 from GitHub Releases, verifies its SHA256 checksum, and caches it in
 ~/.libredb-studio/${pkg.version}/. Later runs start straight from the cache.
@@ -343,8 +343,8 @@ function startServer(payloadDir, port, host) {
   // address behind a reverse proxy.
   if (!env.LIBREDB_MCP_URL?.trim()) env.LIBREDB_MCP_URL = mcpUrlFor(env.HOSTNAME, env.PORT);
   // Log-line contract: npx-engine-smoke.yml parses the resolved version from
-  // "Starting LibreDB Studio <version> " - keep the prefix stable.
-  console.log(`Starting LibreDB Studio ${pkg.version} on ${startupUrl(env.HOSTNAME, env.PORT)}`);
+  // "Starting KnowSQL <version> " - keep the prefix stable.
+  console.log(`Starting KnowSQL ${pkg.version} on ${startupUrl(env.HOSTNAME, env.PORT)}`);
   const child = spawn(process.execPath, ["server.js"], { cwd: payloadDir, env, stdio: "inherit" });
   child.on("error", (error) => fail(`Could not start server.js: ${error.message}`));
   for (const signal of /** @type {const} */ (["SIGINT", "SIGTERM"])) {
@@ -409,11 +409,11 @@ async function main() {
   }
 
   if (!fs.existsSync(path.join(payloadDir, "server.js"))) {
-    fail(`Payload in ${payloadDir} has no server.js - not a LibreDB Studio standalone archive`);
+    fail(`Payload in ${payloadDir} has no server.js - not a KnowSQL standalone archive`);
   }
   startServer(payloadDir, args.port, args.host);
 }
 
 main().catch((error) => {
-  fail(`LibreDB Studio launcher failed: ${error instanceof Error ? error.message : String(error)}`);
+  fail(`KnowSQL launcher failed: ${error instanceof Error ? error.message : String(error)}`);
 });

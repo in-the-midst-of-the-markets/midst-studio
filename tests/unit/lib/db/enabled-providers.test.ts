@@ -93,7 +93,7 @@ describe("createDatabaseProvider under a set list", () => {
       );
       expect(refusal).toBeInstanceOf(DatabaseConfigError);
       expect((refusal as DatabaseConfigError).message).toBe(
-        `The ${type} provider is not available in this distribution of LibreDB Studio.`,
+        `The ${type} provider is not available in this distribution of KnowSQL.`,
       );
       expect((refusal as DatabaseConfigError).code).toBe("CONFIG_ERROR");
       expect((refusal as DatabaseConfigError).provider).toBe(type);
@@ -104,7 +104,7 @@ describe("createDatabaseProvider under a set list", () => {
   test("the refusal comes before the readOnly check", async () => {
     process.env.LIBREDB_ENABLED_PROVIDERS = VSCODE_LIST;
     await expect(createDatabaseProvider(conn("sqlite", { readOnly: "yes" as never }))).rejects.toThrow(
-      "The sqlite provider is not available in this distribution of LibreDB Studio.",
+      "The sqlite provider is not available in this distribution of KnowSQL.",
     );
   });
 
@@ -155,7 +155,7 @@ const tunnelled = (type: string) =>
       password: "p",
     },
   });
-const REFUSAL = "The oracle provider is not available in this distribution of LibreDB Studio.";
+const REFUSAL = "The oracle provider is not available in this distribution of KnowSQL.";
 
 describe("the cached and tunnelled entry points refuse before the cache and the tunnel", () => {
   test("getOrCreateProvider", async () => {

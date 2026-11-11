@@ -25,7 +25,7 @@ const commands: Command[] = manifest.contributes.commands;
 const COMMAND_TITLES = new Set(commands.map((command) => command.title));
 const containers: Named[] = Object.values<Named[]>(manifest.contributes.viewsContainers).flat();
 const views: Named[] = Object.values<Named[]>(manifest.contributes.views).flat();
-/** The view and container names a reader sees: Connections, Results, LibreDB and LibreDB Results. */
+/** The view and container names a reader sees: Connections, Results, KnowSQL and KnowSQL Results. */
 const VIEW_NAMES = new Set([...views.map((view) => view.name), ...containers.map((container) => container.title)]);
 /**
  * The product's own names: the display name, the command category and the container titles. The embedded LibreDB

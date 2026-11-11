@@ -1556,7 +1556,7 @@ describe("the embedded workspace applies an object edit through the host", () =>
     await waitFor(() => expect(screen.getByTestId("object-source-edit-refused")).toBeTruthy());
     expect(screen.getByTestId("object-source-edit-refused").getAttribute("data-refusal")).toBe("request");
     expect(screen.getByTestId("object-source-edit-refused").textContent).toContain(
-      "The host answered the apply preview with more text than LibreDB can read, so nothing was previewed and nothing was sent.",
+      "The host answered the apply preview with more text than KnowSQL can read, so nothing was previewed and nothing was sent.",
     );
     expect(screen.queryByTestId("object-source-apply-dialog")).toBeNull();
     // The sentence is a claim about the apply, so it is asserted rather than trusted.
@@ -1620,7 +1620,7 @@ describe("the embedded workspace applies an object edit through the host", () =>
 
     await waitFor(() => expect(screen.getByTestId("object-source-apply-outcome")).toBeTruthy());
     expect(screen.getByTestId("object-source-apply-outcome").textContent).toContain(
-      "The apply was sent and the host answered with more text than LibreDB can read, so LibreDB cannot say whether this change landed.",
+      "The apply was sent and the host answered with more text than KnowSQL can read, so KnowSQL cannot say whether this change landed.",
     );
     expect(refreshTokenPassedToTheViewer()).toBe(0);
   });

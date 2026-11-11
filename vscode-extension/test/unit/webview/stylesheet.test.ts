@@ -22,7 +22,7 @@ function declarations(selector: string): Map<string, string> {
   return map;
 }
 
-/** Part 4's token table: each LibreDB token and the VS Code variable it reads. */
+/** Part 4's token table: each KnowSQL token and the VS Code variable it reads. */
 const TOKEN_TABLE: [string[], string][] = [
   [["--studio-canvas", "--studio-sunken", "--studio-surface", "--background"], "--vscode-panel-background"],
   [["--studio-control"], "--vscode-input-background"],

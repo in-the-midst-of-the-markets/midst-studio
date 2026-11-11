@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Update resolver for LibreDB Studio (issue #241).
+# Update resolver for KnowSQL (issue #241).
 #
 # Prints the current version + the Linux x86_64 desktop .deb as JSON on stdout:
 #   { "version": "0.9.62", "releaseDate": "YYYY-MM-DD",

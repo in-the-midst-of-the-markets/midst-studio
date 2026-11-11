@@ -208,7 +208,7 @@ describe("governance/preflight verifyGovernanceEnvAtBoot", () => {
       const label = `${variable}=${JSON.stringify(value)}`;
       expect(run.passed, label).toBe(false);
       expect(run.exitCalls, label).toEqual([1]);
-      expect(run.banner, label).toContain("LibreDB Studio cannot start");
+      expect(run.banner, label).toContain("KnowSQL cannot start");
       // Exactly this condition, named first on its line.
       expect(run.problems, label).toHaveLength(1);
       expect(run.problems[0]?.startsWith(`${variable} `), `${label}: ${run.problems[0]}`).toBe(true);

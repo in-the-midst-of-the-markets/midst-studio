@@ -44,7 +44,7 @@ PUBLIC_IP="$(curl -fsS --connect-timeout 1 --max-time 3 -H "X-aws-ec2-metadata-t
 # stops it from ever running again.
 ( umask 077
 cat > /etc/libredb-studio.info <<EOF
-LibreDB Studio is running.
+KnowSQL is running.
 
   URL:       http://${PUBLIC_IP:-<instance-public-ip>}:3000
   Sign in:   ${ADMIN_EMAIL}
@@ -83,6 +83,6 @@ chmod 600 /etc/libredb-studio.info
 cat /etc/libredb-studio.info > /dev/console 2>/dev/null || true
 
 if [ "$ready" -ne 1 ]; then
-  echo "WARNING: LibreDB Studio did not become ready within 5 minutes" > /dev/console
+  echo "WARNING: KnowSQL did not become ready within 5 minutes" > /dev/console
   docker logs libredb-studio --tail 100 || true
 fi

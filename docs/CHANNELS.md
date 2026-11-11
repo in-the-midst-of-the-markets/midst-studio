@@ -1,6 +1,6 @@
 # Distribution channels
 
-This page is the coverage matrix for LibreDB Studio: every place the product can
+This page is the coverage matrix for KnowSQL: every place the product can
 be obtained from, which of them are live today, and which platforms they serve.
 For install and operate instructions, use [DISTRIBUTION.md](DISTRIBUTION.md). The
 machine-readable inventory behind this page is

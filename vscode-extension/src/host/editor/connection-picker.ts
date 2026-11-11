@@ -7,7 +7,7 @@ import type { ConnectionStore } from "../connections/connection-store";
 import type { EngineIcons } from "../tree/icons";
 
 export const UNBIND = "Unbind this editor";
-export const NO_CONNECTIONS = "Add a LibreDB connection first.";
+export const NO_CONNECTIONS = "Add a KnowSQL connection first.";
 export const ADD_CONNECTION = "Add Connection";
 
 export interface PickerDeps {

@@ -145,7 +145,7 @@ describe("byte layouts", () => {
     for (const key of ["product", "version", "connection_name", "capabilities"]) {
       expect(body.includes(Buffer.from(key))).toBe(true);
     }
-    expect(body.includes(Buffer.from("LibreDB Studio"))).toBe(true);
+    expect(body.includes(Buffer.from("KnowSQL"))).toBe(true);
     expect(body.includes(Buffer.from("1.2.3"))).toBe(true);
     expect(body.includes(Buffer.from("\u001cauthentication_failure_closet\u0001"))).toBe(true);
     expect(body.includes(Buffer.from("\u0016consumer_cancel_notifyt\u0001"))).toBe(true);

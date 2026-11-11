@@ -14,7 +14,7 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
-  # network is the core function: LibreDB Studio connects to PostgreSQL, MySQL,
+  # network is the core function: KnowSQL connects to PostgreSQL, MySQL,
   # SQL Server, Oracle, MongoDB and Redis over their own TCP protocols, to
   # Couchbase, ClickHouse, Apache Druid, Elasticsearch, OpenSearch and Apache
   # Trino over HTTP, and to an AI provider when

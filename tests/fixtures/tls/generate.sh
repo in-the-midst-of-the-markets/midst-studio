@@ -36,9 +36,9 @@ leaf() { # file stem, common name, issuer stem, serial
     -set_serial "$4" -extfile "$1.ext" -out "$out/$1.crt"
 }
 
-authority ca "LibreDB Studio Test CA" 0x1001
-authority other-ca "LibreDB Studio Unrelated Test CA" 0x1002
-authority client-ca "LibreDB Studio Test Client CA" 0x1003
+authority ca "KnowSQL Test CA" 0x1001
+authority other-ca "KnowSQL Unrelated Test CA" 0x1002
+authority client-ca "KnowSQL Test Client CA" 0x1003
 leaf server localhost ca 0x2001
 leaf client libredb-studio-test-client client-ca 0x3001
 

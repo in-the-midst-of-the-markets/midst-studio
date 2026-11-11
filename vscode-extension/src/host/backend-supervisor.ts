@@ -61,13 +61,13 @@ export const RESTART_DELAYS_MS: readonly number[] = [1000, 5000, 15000];
 export const READY_RESET_MS = 60_000;
 export const STOP_STEP_MS = 2000;
 export const STDERR_TAIL_LINES = 50;
-export const CRASH_WARNING = "The LibreDB backend stopped unexpectedly and is restarting.";
-export const BUDGET_SPENT = "The LibreDB backend stopped 4 times in a row and was not restarted.";
+export const CRASH_WARNING = "The KnowSQL backend stopped unexpectedly and is restarting.";
+export const BUDGET_SPENT = "The KnowSQL backend stopped 4 times in a row and was not restarted.";
 
 const SHOW_LOG = "Show Log";
 const RESTART = "Restart";
-const STOPPING = "The LibreDB backend is stopping.";
-const DEADLINE = `The LibreDB backend did not answer its handshake within ${INITIALIZE_TIMEOUT_MS / 1000} s.`;
+const STOPPING = "The KnowSQL backend is stopping.";
+const DEADLINE = `The KnowSQL backend did not answer its handshake within ${INITIALIZE_TIMEOUT_MS / 1000} s.`;
 
 export class BackendUnavailableError extends Error {
   constructor(
@@ -95,7 +95,7 @@ interface Child {
 }
 
 function exitSentence({ exitCode, signal }: BackendExit): string {
-  return `The LibreDB backend exited (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}).`;
+  return `The KnowSQL backend exited (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}).`;
 }
 
 function exitLog(exit: BackendExit, tail: readonly string[]): string {
@@ -202,7 +202,7 @@ export class BackendSupervisor implements BackendLink {
     const generation = this.currentGeneration;
     const { extensionPath, log } = this.deps;
     log.info(
-      `Starting the LibreDB backend (generation ${generation}) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`,
+      `Starting the KnowSQL backend (generation ${generation}) from ${process.execPath}; ELECTRON_RUN_AS_NODE in the host: ${process.env.ELECTRON_RUN_AS_NODE ?? "unset"}.`,
     );
     let proc: ChildProcess;
     try {
@@ -257,7 +257,7 @@ export class BackendSupervisor implements BackendLink {
     const { node, electron, modules, platform, arch } = initialized.runtime;
     const providers = initialized.enabledProviders?.join(", ") ?? "all";
     this.deps.log.info(
-      `The LibreDB backend is ready: Node ${node}, Electron ${electron ?? "none"}, modules ${modules}, ${platform}/${arch}; enabled providers: ${providers}.`,
+      `The KnowSQL backend is ready: Node ${node}, Electron ${electron ?? "none"}, modules ${modules}, ${platform}/${arch}; enabled providers: ${providers}.`,
     );
     this.ready = { connection: child.connection, generation: child.generation, initialized };
     this.setState("ready");
@@ -290,7 +290,7 @@ export class BackendSupervisor implements BackendLink {
 
   private onError(child: Child, error: Error): void {
     if (child.phase !== "handshake") {
-      this.deps.log.error(`The LibreDB backend reported an error: ${error.message}`);
+      this.deps.log.error(`The KnowSQL backend reported an error: ${error.message}`);
       return;
     }
     child.expectedExit = true;
@@ -300,7 +300,7 @@ export class BackendSupervisor implements BackendLink {
 
   /** The binary could not be spawned: a failed start. */
   private couldNotStart(error: Error): void {
-    const sentence = `The LibreDB backend could not start: ${error.message}`;
+    const sentence = `The KnowSQL backend could not start: ${error.message}`;
     this.deps.log.error(sentence);
     this.afterFailure(sentence);
   }

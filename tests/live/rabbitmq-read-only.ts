@@ -49,7 +49,7 @@ import { FrameSplitter, methodId, TestAmqpConnection, TestPublisher } from "../h
 import { RABBITMQ_FIXTURE_VHOSTS, RABBITMQ_SEED_TABLE } from "./rabbitmq-seed";
 
 const CANARY = "q-canary";
-const STUDIO_CONNECTION_NAME = "LibreDB Studio";
+const STUDIO_CONNECTION_NAME = "KnowSQL";
 const argv = process.argv.slice(2);
 const dedicated = argv.includes("--dedicated");
 const plugin = argv.find((arg) => arg.startsWith("--plugin="))?.slice("--plugin=".length) ?? "present";
@@ -363,8 +363,8 @@ async function main(): Promise<void> {
     if (seen === 0) await sleep(500);
   }
   await marker.close();
-  check("the connection listing sees a connection named LibreDB Studio (the control)", seen === 1, `${seen}`);
-  check("6 s after the run, no connection named LibreDB Studio is left", leftover === 0, `${leftover}`);
+  check("the connection listing sees a connection named KnowSQL (the control)", seen === 1, `${seen}`);
+  check("6 s after the run, no connection named KnowSQL is left", leftover === 0, `${leftover}`);
 }
 
 try {
