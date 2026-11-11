@@ -489,6 +489,7 @@ const CONNECTION_FIELD_ROWS = {
   paypal: ["host", "user", "password"],
   // A client id in `user`, a client secret or access token in `password`, a tenant id in `database`, and a workbook path in `schema`.
   excel: ["user", "password", "database", "schema"],
+  googlesheets: ["password", "schema"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -650,6 +651,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   metaads: null,
   paypal: null,
   excel: null,
+  googlesheets: null,
   supabase: null,
   mysql: null,
   sqlite: null,

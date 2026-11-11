@@ -170,6 +170,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   metaads: 61,
   paypal: 62,
   excel: 63,
+  googlesheets: 64,
 };
 
 /**

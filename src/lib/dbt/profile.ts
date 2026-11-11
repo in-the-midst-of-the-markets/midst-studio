@@ -33,6 +33,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   metaads: unsupported,
   paypal: unsupported,
   excel: unsupported,
+  googlesheets: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,

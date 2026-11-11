@@ -159,6 +159,7 @@ describe("docs/MCP.md", () => {
         "metaads",
         "paypal",
         "excel",
+        "googlesheets",
         "supabase",
         "etcd",
         "oxia",

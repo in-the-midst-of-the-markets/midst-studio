@@ -47,6 +47,7 @@ import { TIKTOKADS_SQL_WRITING } from "@/lib/db/providers/sql/tiktokads/sql-writ
 import { METAADS_SQL_WRITING } from "@/lib/db/providers/sql/metaads/sql-writing";
 import { PAYPAL_SQL_WRITING } from "@/lib/db/providers/sql/paypal/sql-writing";
 import { EXCEL_SQL_WRITING } from "@/lib/db/providers/sql/excel/sql-writing";
+import { GOOGLESHEETS_SQL_WRITING } from "@/lib/db/providers/sql/googlesheets/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -126,6 +127,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   metaads: METAADS_SQL_WRITING,
   paypal: PAYPAL_SQL_WRITING,
   excel: EXCEL_SQL_WRITING,
+  googlesheets: GOOGLESHEETS_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,

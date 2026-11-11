@@ -66,6 +66,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   metaads: "sql/metaads/migration-ddl",
   paypal: "sql/paypal/migration-ddl",
   excel: "sql/excel/migration-ddl",
+  googlesheets: "sql/googlesheets/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -129,6 +130,7 @@ const REFUSED: DatabaseType[] = [
   "metaads",
   "paypal",
   "excel",
+  "googlesheets",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

@@ -148,6 +148,7 @@ const ALL_TYPES: DatabaseType[] = [
   "metaads",
   "paypal",
   "excel",
+  "googlesheets",
 ];
 
 describe("db-ui-config", () => {
@@ -399,6 +400,7 @@ describe("db-ui-config", () => {
         "firestore",
         "googleads",
         "googleanalytics",
+        "googlesheets",
         "hubspot",
         "intercom",
         "kafka",
@@ -452,6 +454,7 @@ describe("db-ui-config", () => {
         "firestore",
         "googleads",
         "googleanalytics",
+        "googlesheets",
         "hubspot",
         "intercom",
         "metaads",
@@ -1163,6 +1166,7 @@ describe("declared connection-field copy (#1085)", () => {
       "metaads",
       "paypal",
       "excel",
+      "googlesheets",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1767,6 +1771,7 @@ describe("db-showcase", () => {
         "metaads",
         "paypal",
         "excel",
+        "googlesheets",
       ]);
     });
   });

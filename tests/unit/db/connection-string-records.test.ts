@@ -183,6 +183,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "metaads",
       "paypal",
       "excel",
+      "googlesheets",
       "bigquery",
       "snowflake",
       "spark",

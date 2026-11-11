@@ -120,6 +120,11 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
     password: "census-secret",
     schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
   },
+  googlesheets: {
+    ...unconnected("googlesheets"),
+    password: "census-secret",
+    schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

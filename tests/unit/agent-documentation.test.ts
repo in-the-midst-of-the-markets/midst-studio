@@ -559,10 +559,11 @@ const MCP_CLAIM = /\bMCP\b|run_read_query|Five read-only tools/;
 
 /**
  * An engine count where the engines should be named (#1614: "Never write a count of engines; name them from the
- * list"), in each language a README states one in.
+ * list"), in each language a README states one in. The hyphen lookbehind keeps a fleet numeral such as
+ * "sixty-five engines" from matching the "five engines" alternative.
  */
 const ENGINE_COUNT =
-  /\b(five|six|seven) (engines|providers)\b|thirty-five|sixth engine|шести|여섯|六种|यही चार engines|この\d+つのエンジン/;
+  /(?<!-)\b(five|six|seven) (engines|providers)\b|thirty-five|sixth engine|шести|여섯|六种|यही चार engines|この\d+つのエンジン/;
 
 /**
  * A file's sentences, for a claim that may wrap: a soft line break inside a paragraph is joined, a list item, a table

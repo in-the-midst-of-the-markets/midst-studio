@@ -62,6 +62,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "metaads",
     "paypal",
     "excel",
+    "googlesheets",
     "libsql",
     "snowflake",
     "spark",

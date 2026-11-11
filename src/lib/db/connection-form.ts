@@ -733,6 +733,25 @@ export const CONNECTION_FORM: {
         "The workbook as /drives/<drive id>/items/<item id>. The access token is sent only to graph.microsoft.com.",
     },
   },
+  googlesheets: {
+    label: "Google Sheets",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.googlesheets,
+    fieldLabels: { password: "Key or access token", schema: "Spreadsheet ID" },
+    fieldPlaceholders: {
+      password: "ya29… or a service-account JSON",
+      schema: "spreadsheet-id",
+    },
+    fieldHints: {
+      password:
+        "A service-account key is sent only to oauth2.googleapis.com and exchanged for an access token. A pasted token is sent only to sheets.googleapis.com. Neither is put in a URL.",
+      schema:
+        "The spreadsheet id from its address, with no URL. The access token is sent only to sheets.googleapis.com.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1868,6 +1887,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "metaads",
   "paypal",
   "excel",
+  "googlesheets",
 ]);
 
 /**
@@ -1894,6 +1914,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "metaads",
   "paypal",
   "excel",
+  "googlesheets",
 ]);
 
 export interface ConnectionPickerCategory {

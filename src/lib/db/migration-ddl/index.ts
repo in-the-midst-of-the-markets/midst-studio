@@ -50,6 +50,7 @@ import { TIKTOKADS_MIGRATION_DDL } from "@/lib/db/providers/sql/tiktokads/migrat
 import { METAADS_MIGRATION_DDL } from "@/lib/db/providers/sql/metaads/migration-ddl";
 import { PAYPAL_MIGRATION_DDL } from "@/lib/db/providers/sql/paypal/migration-ddl";
 import { EXCEL_MIGRATION_DDL } from "@/lib/db/providers/sql/excel/migration-ddl";
+import { GOOGLESHEETS_MIGRATION_DDL } from "@/lib/db/providers/sql/googlesheets/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -124,6 +125,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   metaads: METAADS_MIGRATION_DDL,
   paypal: PAYPAL_MIGRATION_DDL,
   excel: EXCEL_MIGRATION_DDL,
+  googlesheets: GOOGLESHEETS_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

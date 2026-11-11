@@ -89,6 +89,10 @@ export type DatabaseType =
   // worksheet. A client secret is sent only to login.microsoftonline.com. The access
   // token is sent only to graph.microsoft.com.
   | "excel"
+  // Google Sheets. One spreadsheet on the Sheets API, read-only. One SELECT is one
+  // worksheet. A service-account key is exchanged only at oauth2.googleapis.com. The
+  // access token is sent only to sheets.googleapis.com.
+  | "googlesheets"
   | "bigquery"
   | "snowflake"
   | "mysql"

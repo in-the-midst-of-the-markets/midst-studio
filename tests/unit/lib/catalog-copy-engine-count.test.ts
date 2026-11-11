@@ -156,6 +156,7 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-four": 64,
   // Two past the registry once Microsoft Excel joined it.
   "sixty-five": 65,
+  "sixty-six": 66,
 };
 
 /**
