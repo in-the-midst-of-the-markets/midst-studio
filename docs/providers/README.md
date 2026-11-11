@@ -23,6 +23,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Google Ads | `googleads` | SQL (advertising) | none (HTTP: the Google Ads API) | SQL (a read-only subset translated to Google Ads Query Language) | [googleads.md](./googleads.md) |
 | Microsoft Ads | `microsoftads` | SQL (advertising) | none (HTTP: the Microsoft Advertising API) | SQL (a read-only subset translated to one Campaign Management read) | [microsoftads.md](./microsoftads.md) |
 | Pipedrive | `pipedrive` | SQL (CRM) | none (HTTP: the Pipedrive API) | SQL (a read-only subset translated to one API v2 list) | [pipedrive.md](./pipedrive.md) |
+| TikTok Ads | `tiktokads` | SQL (Marketing API) | none (HTTP: the Marketing API) | SQL (a read-only subset translated to one API v1.3 list) | [tiktokads.md](./tiktokads.md) |
 | MySQL | `mysql` | SQL | `mysql2` | SQL | [mysql.md](./mysql.md) |
 | Oracle | `oracle` | SQL | `oracledb` (Thin) | SQL | [oracle.md](./oracle.md) |
 | Db2 LUW | `db2` | SQL | `db2-node` (native N-API addon, Rust DRDA client) | SQL (Db2) | [db2.md](./db2.md) |

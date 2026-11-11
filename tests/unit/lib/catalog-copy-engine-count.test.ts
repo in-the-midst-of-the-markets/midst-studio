@@ -148,6 +148,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   sixty: 60,
   // Two past the registry once Pipedrive joined it.
   "sixty-one": 61,
+  // Two past the registry once TikTok Ads joined it.
+  "sixty-two": 62,
 };
 
 /**

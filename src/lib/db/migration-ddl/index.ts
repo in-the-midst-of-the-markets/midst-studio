@@ -46,6 +46,7 @@ import { DYNAMICS_MIGRATION_DDL } from "@/lib/db/providers/sql/dynamics/migratio
 import { GOOGLEADS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleads/migration-ddl";
 import { MICROSOFTADS_MIGRATION_DDL } from "@/lib/db/providers/sql/microsoftads/migration-ddl";
 import { PIPEDRIVE_MIGRATION_DDL } from "@/lib/db/providers/sql/pipedrive/migration-ddl";
+import { TIKTOKADS_MIGRATION_DDL } from "@/lib/db/providers/sql/tiktokads/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -116,6 +117,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   googleads: GOOGLEADS_MIGRATION_DDL,
   microsoftads: MICROSOFTADS_MIGRATION_DDL,
   pipedrive: PIPEDRIVE_MIGRATION_DDL,
+  tiktokads: TIKTOKADS_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

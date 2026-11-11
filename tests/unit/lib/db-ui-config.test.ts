@@ -144,6 +144,7 @@ const ALL_TYPES: DatabaseType[] = [
   "googleads",
   "microsoftads",
   "pipedrive",
+  "tiktokads",
 ];
 
 describe("db-ui-config", () => {
@@ -407,6 +408,7 @@ describe("db-ui-config", () => {
         "snmp",
         "snowflake",
         "stripe",
+        "tiktokads",
         "xero",
       ]);
       // A file-based engine still answers true: its panel is hidden by isFileBased instead.
@@ -456,6 +458,7 @@ describe("db-ui-config", () => {
         "snmp",
         "snowflake",
         "stripe",
+        "tiktokads",
         "xero",
       ]);
     });
@@ -1147,6 +1150,7 @@ describe("declared connection-field copy (#1085)", () => {
       "googleads",
       "microsoftads",
       "pipedrive",
+      "tiktokads",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1747,6 +1751,7 @@ describe("db-showcase", () => {
         "googleads",
         "microsoftads",
         "pipedrive",
+        "tiktokads",
       ]);
     });
   });
@@ -1995,6 +2000,7 @@ describe("the Snowflake entry", () => {
       "googleads",
       "microsoftads",
       "pipedrive",
+      "tiktokads",
     ]);
   });
 

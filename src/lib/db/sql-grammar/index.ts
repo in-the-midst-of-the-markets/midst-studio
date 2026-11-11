@@ -43,6 +43,7 @@ import { DYNAMICS_SQL_GRAMMAR } from "@/lib/db/providers/sql/dynamics/sql-gramma
 import { GOOGLEADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googleads/sql-grammar";
 import { MICROSOFTADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/microsoftads/sql-grammar";
 import { PIPEDRIVE_SQL_GRAMMAR } from "@/lib/db/providers/sql/pipedrive/sql-grammar";
+import { TIKTOKADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/tiktokads/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
 import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
@@ -114,6 +115,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   googleads: GOOGLEADS_SQL_GRAMMAR,
   microsoftads: MICROSOFTADS_SQL_GRAMMAR,
   pipedrive: PIPEDRIVE_SQL_GRAMMAR,
+  tiktokads: TIKTOKADS_SQL_GRAMMAR,
   supabase: SUPABASE_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,

@@ -179,6 +179,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   googleads: null,
   microsoftads: null,
   pipedrive: null,
+  tiktokads: null,
   supabase: null,
   s3: null,
   kubernetes: null,

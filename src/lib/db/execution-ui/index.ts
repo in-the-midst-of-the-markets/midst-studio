@@ -44,6 +44,7 @@ import { DYNAMICS_EXECUTION_UI } from "@/lib/db/providers/sql/dynamics/execution
 import { GOOGLEADS_EXECUTION_UI } from "@/lib/db/providers/sql/googleads/execution-ui";
 import { MICROSOFTADS_EXECUTION_UI } from "@/lib/db/providers/sql/microsoftads/execution-ui";
 import { PIPEDRIVE_EXECUTION_UI } from "@/lib/db/providers/sql/pipedrive/execution-ui";
+import { TIKTOKADS_EXECUTION_UI } from "@/lib/db/providers/sql/tiktokads/execution-ui";
 import { POSTGRES_EXECUTION_UI } from "@/lib/db/providers/sql/postgres-execution-ui";
 import { SUPABASE_EXECUTION_UI } from "@/lib/db/providers/sql/supabase/execution-ui";
 import { PROMETHEUS_EXECUTION_UI } from "@/lib/db/providers/timeseries/prometheus/execution-ui";
@@ -114,6 +115,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   googleads: GOOGLEADS_EXECUTION_UI,
   microsoftads: MICROSOFTADS_EXECUTION_UI,
   pipedrive: PIPEDRIVE_EXECUTION_UI,
+  tiktokads: TIKTOKADS_EXECUTION_UI,
   supabase: SUPABASE_EXECUTION_UI,
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,

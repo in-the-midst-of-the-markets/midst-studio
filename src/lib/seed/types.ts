@@ -148,6 +148,7 @@ const SeedDatabaseType = z.enum([
   "googleads",
   "microsoftads",
   "pipedrive",
+  "tiktokads",
 ]);
 
 export const SeedDefaultsSchema = z.object({
