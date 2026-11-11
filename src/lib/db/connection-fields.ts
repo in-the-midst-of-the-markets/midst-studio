@@ -481,6 +481,7 @@ const CONNECTION_FIELD_ROWS = {
   googleads: ["host", "user", "password", "database"],
   // An API host, a customer id in `user`, an access token and a developer token in `password`, and an account id in `database`.
   microsoftads: ["host", "user", "password", "database"],
+  pipedrive: ["host", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -637,6 +638,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   dynamics: null,
   googleads: null,
   microsoftads: null,
+  pipedrive: null,
   supabase: null,
   mysql: null,
   sqlite: null,

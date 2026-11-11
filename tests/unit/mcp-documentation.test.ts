@@ -154,6 +154,7 @@ describe("docs/MCP.md", () => {
         "dynamics",
         "googleads",
         "microsoftads",
+        "pipedrive",
         "supabase",
         "etcd",
         "oxia",

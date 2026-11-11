@@ -73,6 +73,9 @@ export type DatabaseType =
   // read of a standard resource. The access token and the developer token are sent
   // only to the Campaign Management host.
   | "microsoftads"
+  // Pipedrive. The API v2, read-only. One SELECT is one list of a standard
+  // resource. The API token is sent only to the Pipedrive host.
+  | "pipedrive"
   | "bigquery"
   | "snowflake"
   | "mysql"

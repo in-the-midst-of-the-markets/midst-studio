@@ -644,6 +644,21 @@ export const CONNECTION_FORM: {
       database: "The 10-digit Google Ads customer id, with or without hyphens.",
     },
   },
+  pipedrive: {
+    label: "Pipedrive",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.pipedrive,
+    fieldLabels: { host: "API host", password: "API token" },
+    fieldPlaceholders: { host: "api.pipedrive.com", password: "api-token" },
+    fieldHints: {
+      host: "The API token is sent only to api.pipedrive.com, or to your company host. Leave this empty to use api.pipedrive.com.",
+      password:
+        "The API token from Settings, Personal preferences, API. It is sent as x-api-token and is not refreshed.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1774,6 +1789,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "dynamics",
   "googleads",
   "microsoftads",
+  "pipedrive",
 ]);
 
 /**
@@ -1795,6 +1811,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "dynamics",
   "googleads",
   "microsoftads",
+  "pipedrive",
 ]);
 
 export interface ConnectionPickerCategory {

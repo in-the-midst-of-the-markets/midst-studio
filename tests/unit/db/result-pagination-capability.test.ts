@@ -80,6 +80,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   dynamics: true,
   googleads: true,
   microsoftads: true,
+  pipedrive: true,
   supabase: true,
   mysql: true,
   sqlite: true,
