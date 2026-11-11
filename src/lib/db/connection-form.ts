@@ -674,6 +674,21 @@ export const CONNECTION_FORM: {
       database: "The advertiser id, sent as advertiser_id. It is not a secret.",
     },
   },
+  metaads: {
+    label: "Meta Ads",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.metaads,
+    fieldLabels: { host: "API host", password: "Access token", database: "Ad account ID" },
+    fieldPlaceholders: { host: "graph.facebook.com", password: "access-token", database: "act_100539998049706" },
+    fieldHints: {
+      host: "The access token is sent only to graph.facebook.com. Leave this empty to use that host.",
+      password: "A Marketing API access token. It is sent as Authorization Bearer and is not refreshed.",
+      database: "The ad account id. An act_ prefix is optional. It is not a secret.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1806,6 +1821,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "microsoftads",
   "pipedrive",
   "tiktokads",
+  "metaads",
 ]);
 
 /**
@@ -1829,6 +1845,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "microsoftads",
   "pipedrive",
   "tiktokads",
+  "metaads",
 ]);
 
 export interface ConnectionPickerCategory {

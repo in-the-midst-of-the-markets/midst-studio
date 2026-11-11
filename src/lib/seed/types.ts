@@ -149,6 +149,7 @@ const SeedDatabaseType = z.enum([
   "microsoftads",
   "pipedrive",
   "tiktokads",
+  "metaads",
 ]);
 
 export const SeedDefaultsSchema = z.object({

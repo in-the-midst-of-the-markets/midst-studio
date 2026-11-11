@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Sixty-one type-ids are supported by fifty-nine provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Sixty-two type-ids are supported by sixty provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -337,6 +337,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Microsoft Ads | `microsoftads` | SQL (the Microsoft Advertising API, read-only) | [providers/microsoftads.md](./providers/microsoftads.md) |
 | Pipedrive | `pipedrive` | SQL (the Pipedrive API, read-only) | [providers/pipedrive.md](./providers/pipedrive.md) |
 | TikTok Ads | `tiktokads` | SQL (the Marketing API, read-only) | [providers/tiktokads.md](./providers/tiktokads.md) |
+| Meta Ads | `metaads` | SQL (the Marketing API, read-only) | [providers/metaads.md](./providers/metaads.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

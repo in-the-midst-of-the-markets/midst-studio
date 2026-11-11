@@ -79,6 +79,9 @@ export type DatabaseType =
   // TikTok Ads. The Marketing API v1.3, read-only. One SELECT is one list of a
   // standard resource. The access token is sent only to business-api.tiktok.com.
   | "tiktokads"
+  // Meta Ads. The Marketing API Graph API v27.0, read-only. One SELECT is one list
+  // of a standard resource. The access token is sent only to graph.facebook.com.
+  | "metaads"
   | "bigquery"
   | "snowflake"
   | "mysql"

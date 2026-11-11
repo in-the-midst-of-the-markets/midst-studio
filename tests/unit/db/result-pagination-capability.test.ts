@@ -82,6 +82,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   microsoftads: true,
   pipedrive: true,
   tiktokads: true,
+  metaads: true,
   supabase: true,
   mysql: true,
   sqlite: true,

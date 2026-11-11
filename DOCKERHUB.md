@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Sixty external engines share one interface.
-The sixty-first row is the embedded LibreDB store: it ships inside the image.
+Sixty-one external engines share one interface.
+The sixty-second row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -178,7 +178,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the sixty drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the sixty-one drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

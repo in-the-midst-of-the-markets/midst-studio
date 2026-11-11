@@ -54,6 +54,7 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   microsoftads: true,
   pipedrive: true,
   tiktokads: true,
+  metaads: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same

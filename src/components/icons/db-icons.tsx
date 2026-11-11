@@ -379,6 +379,24 @@ export const TikTokAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A placement card, for a Meta Ads account. Not the vendor mark. */
+export const MetaAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="4" y="4" width="16" height="10" rx="2" />
+    <path d="M8 18h8" />
+    <path d="M12 14v4" />
+  </svg>
+);
+
 /** A deal moving through a pipeline, for a Pipedrive company. Not the vendor mark. */
 export const PipedriveIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
