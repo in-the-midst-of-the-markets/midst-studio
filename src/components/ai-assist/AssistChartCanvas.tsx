@@ -31,6 +31,7 @@ import {
 import { init, registerMap, use as registerECharts } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { CirclePackChart } from "@/components/charts/CirclePackChart";
+import { chartOptionForDisplay } from "@/lib/charts/chart-html";
 import { isCirclePack } from "@/lib/charts/circle-pack";
 import { watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 
@@ -87,7 +88,7 @@ export function AssistChartCanvas({
     if (element === null) return;
     registerMap(WORLD_MAP_NAME, WORLD_OUTLINE);
     const chart = init(element);
-    chart.setOption(optionRef.current, true);
+    chart.setOption(chartOptionForDisplay(optionRef.current), true);
     chartRef.current = chart;
     stopRef.current = watchChartSize(element, () => {
       chart.resize();
@@ -96,7 +97,7 @@ export function AssistChartCanvas({
 
   useEffect(() => {
     optionRef.current = option;
-    chartRef.current?.setOption(option, true);
+    chartRef.current?.setOption(chartOptionForDisplay(option), true);
   }, [option]);
 
   if (isCirclePack(option)) {

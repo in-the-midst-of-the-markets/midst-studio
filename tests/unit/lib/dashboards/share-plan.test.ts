@@ -141,6 +141,20 @@ describe("planDashboardShare", () => {
     expect(quiet.dashboard.notes?.[0]?.width).toBe(200);
     expect(plan.dashboard.notes?.[0]?.query).toContain("SELECT * FROM");
     expect(planDashboardShare(board(), [], [connection])).toBe("A chart on this dashboard is no longer saved.");
+    const tagged = planDashboardShare(
+      board(),
+      [
+        chart({
+          look: {
+            tooltip: { formatter: "<img src=x onerror=alert(1)>" },
+            series: [{ label: { formatter: "{b}" } }],
+          },
+        }),
+      ],
+      [connection],
+    );
+    if (typeof tagged === "string") throw new Error(tagged);
+    expect(tagged.charts[0]?.look).toEqual({ tooltip: {}, series: [{ label: { formatter: "{b}" } }] });
   });
 
   test("refuses a chart with no connection, a cross-database join, a write, and too many queries", () => {
