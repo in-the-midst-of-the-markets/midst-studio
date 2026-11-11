@@ -171,6 +171,7 @@ describe("Pipedrive SQL", () => {
       "SELECT deal.id FROM deal WHERE deal.title = @",
       'SELECT "de""al.title" FROM deal',
       "SELECT deal.id FROM",
+      "SELECT deal.id",
     ];
     for (const sql of refused) {
       expect(() => translatePipedriveSql(sql)).toThrow(QueryError);
