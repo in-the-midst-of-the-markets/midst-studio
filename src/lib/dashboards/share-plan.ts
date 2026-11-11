@@ -1,7 +1,8 @@
-import { embedTokens } from "@/lib/embeddings/placeholder";
+import { chartOptionForDisplay } from "@/lib/charts/chart-html";
+import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { addQueryFilter, applyQueryFilters, readQueryFilters, removeQueryFilter } from "@/lib/charts/query-filters";
 import type { FilterCompare } from "@/lib/charts/query-filters";
-import { refreshDelayMs } from "@/lib/charts/chart-refresh";
+import { embedTokens } from "@/lib/embeddings/placeholder";
 import { ensureChartToken } from "@/lib/dashboards/public-id";
 import { queryWithDashboardFilters } from "@/lib/dashboards/dashboard";
 import { CROSS_DB_JOINS_ID } from "@/lib/saved-join/connection";
@@ -189,6 +190,8 @@ function publicChart(chart: SavedChartConfig, query: string | undefined): SavedC
   const next: SavedChartConfig = { ...chart, query };
   delete next.connectionId;
   delete next.refreshSeconds;
+  // The look is drawn with innerHTML for a tooltip formatter and the data view title.
+  if (next.look !== undefined) next.look = chartOptionForDisplay(next.look);
   return next;
 }
 

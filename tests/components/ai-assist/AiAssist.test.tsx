@@ -272,6 +272,19 @@ describe("AssistChartCanvas", () => {
     expect(view.queryByRole("list")).toBeNull();
   });
 
+  test("does not draw a tooltip formatter that contains a tag", () => {
+    render(
+      <AssistChartCanvas
+        option={{ tooltip: { formatter: "<img src=x onerror=alert(1)>" }, series: [{ label: { formatter: "{b}" } }] }}
+        notes={[]}
+      />,
+    );
+    expect(charts.at(-1)?.setOption).toHaveBeenCalledWith(
+      { tooltip: {}, series: [{ label: { formatter: "{b}" } }] },
+      true,
+    );
+  });
+
   test("keeps the same chart when a parent render does not change the option", () => {
     const option = { series: [1] };
     const view = render(<AssistChartCanvas option={option} notes={[]} />);
