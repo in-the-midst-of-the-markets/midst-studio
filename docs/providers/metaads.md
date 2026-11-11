@@ -8,7 +8,7 @@ The object tree is one account and the standard resources this connection shows:
 
 ## SQL grammar
 
-[`src/lib/db/providers/sql/metaads/sql-grammar.ts`](../../src/lib/db/providers/sql/metaads/sql-grammar.ts) declares `METAADS_SQL_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
+[`src/lib/db/providers/sql/metaads/sql-grammar.ts`](../../src/lib/db/providers/sql/metaads/sql-grammar.ts) declares `METAADS_SQL_GRAMMAR`, whose `grammar` is `META_ADS_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. Format uses sql-formatter's MySQL language (the grammar's `formatterLanguage`).
 
