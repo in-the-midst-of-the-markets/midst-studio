@@ -1,8 +1,8 @@
 apiVersion: v2
 name: libredb-studio
-description: Web-based SQL IDE for cloud-native teams supporting sixty-four engines - PostgreSQL, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets
+description: Web-based SQL IDE for cloud-native teams supporting sixty-five engines - PostgreSQL, Amazon Redshift, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets
 type: application
-version: 0.1.137
+version: 0.1.138
 appVersion: "1.2.0"
 kubeVersion: ">=1.26.0-0"
 home: https://github.com/libredb/libredb-studio
@@ -131,6 +131,10 @@ keywords:
   # looking for a QuestDB client types. Its wire protocol is PostgreSQL's, whose keyword is
   # already above; this is the keyword that finds the engine itself.
   - questdb
+  # One keyword, like questdb above: `redshift` is the type-id and the product an
+  # evaluator looking for an Amazon Redshift cluster types. Its wire protocol is
+  # PostgreSQL's, whose keyword is already above; this is the keyword that finds the warehouse.
+  - redshift
   # One keyword each: the type-id is the product an evaluator types.
   - airtable
   - supabase
@@ -427,6 +431,7 @@ annotations:
       url: https://github.com/libredb/libredb-studio
   artifacthub.io/changes: |
     - "Add the read-only Google Sheets connector: one spreadsheet and its worksheets on the Sheets API"
+    - "Add the Amazon Redshift connector: PostgreSQL wire protocol on port 5439, schemas and tables from information_schema"
     - "Add the read-only Microsoft Excel connector: one workbook, its worksheets, the first row as fields"
     - "Add the read-only PayPal connector: transactions, balances, invoices, disputes, products, plans and payouts"
     - "Name the product KnowSQL in the chart's display text"

@@ -142,6 +142,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   // the certificates in hand define, which the provider already holds (#1720).
   sparkplug: null,
   questdb: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  redshift: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
 });
 
 async function censusCapabilities(type: DatabaseType): Promise<ProviderCapabilities> {

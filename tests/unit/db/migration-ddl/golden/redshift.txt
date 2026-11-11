@@ -1,0 +1,8 @@
+-- fixture: full
+-- Migration generated at 2026-10-19T12:00:00.000Z
+-- Dialect: redshift
+-- Changes: 1 added, 1 removed, 2 modified
+
+-- Amazon Redshift: Cannot generate table DDL. Amazon Redshift table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.
+-- fixture: none
+-- No schema changes detected.

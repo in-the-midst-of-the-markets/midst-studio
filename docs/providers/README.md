@@ -42,6 +42,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | ClickHouse | `clickhouse` | SQL | none (HTTP interface) | SQL | [clickhouse.md](./clickhouse.md) |
 | Apache Druid | `druid` | SQL (analytics) | none (HTTP: SQL endpoint) | SQL (Calcite) | [druid.md](./druid.md) |
 | QuestDB | `questdb` | SQL (time series) | `pg` (PostgreSQL wire, port 8812) | SQL (QuestDB) | [questdb.md](./questdb.md) |
+| Amazon Redshift | `redshift` | SQL (warehouse) | `pg` (PostgreSQL wire, port 5439) | SQL (Redshift) | [redshift.md](./redshift.md) |
 | Elasticsearch | `elasticsearch` | SQL (search) | none (HTTP: `_sql` + REST) | SQL (Elasticsearch SQL) | [elasticsearch.md](./elasticsearch.md) |
 | OpenSearch | `opensearch` | SQL (search) | none (HTTP: `_plugins/_sql` + REST) | SQL (OpenSearch SQL plugin) | [opensearch.md](./opensearch.md) |
 | Trino | `trino` | SQL (federated query engine) | none (HTTP: the client protocol, `POST /v1/statement`) | SQL (Trino) | [trino.md](./trino.md) |
@@ -221,7 +222,7 @@ tier and no version column for it - the number is the finding:
   memory.
 
 **No instance was reachable**, so these are deliberately absent rather than assumed to work: every
-managed-only service - Amazon Redshift, Aurora, AlloyDB (the managed service; the downloadable
+managed-only service - Aurora, AlloyDB (the managed service; the downloadable
 **AlloyDB Omni** is in the table above), Neon, Supabase, Cloud SQL, Azure SQL Database,
 Microsoft Fabric, Azure Synapse, Azure SQL Managed Instance, Amazon ElastiCache, Upstash,
 PlanetScale, Azure Cosmos DB and Amazon DocumentDB. Their status is tracked in

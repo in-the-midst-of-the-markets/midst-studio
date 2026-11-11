@@ -591,6 +591,25 @@ export const SupabaseIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Column bars for Amazon Redshift, drawn for Studio. Not the vendor mark. */
+export const RedshiftIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 20 V10" />
+    <path d="M10 20 V6" />
+    <path d="M16 20 V13" />
+    <path d="M20 20 H3" />
+  </svg>
+);
+
 /** A Q for QuestDB, drawn for Studio. Not the vendor mark. */
 export const QuestDbIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

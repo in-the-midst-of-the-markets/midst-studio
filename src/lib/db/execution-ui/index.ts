@@ -6,6 +6,7 @@ import { DATABEND_EXECUTION_UI } from "@/lib/db/providers/sql/databend/execution
 import { DB2_EXECUTION_UI } from "@/lib/db/providers/sql/db2/execution-ui";
 import { DRUID_EXECUTION_UI } from "@/lib/db/providers/sql/druid/execution-ui";
 import { QUESTDB_EXECUTION_UI } from "@/lib/db/providers/sql/questdb/execution-ui";
+import { REDSHIFT_EXECUTION_UI } from "@/lib/db/providers/sql/redshift/execution-ui";
 import { DUCKDB_EXECUTION_UI } from "@/lib/db/providers/sql/duckdb/execution-ui";
 import { ELASTICSEARCH_EXECUTION_UI } from "@/lib/db/providers/sql/search/elasticsearch-execution-ui";
 import { ETCD_EXECUTION_UI } from "@/lib/db/providers/keyvalue/etcd/execution-ui";
@@ -128,6 +129,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,
   questdb: QUESTDB_EXECUTION_UI,
+  redshift: REDSHIFT_EXECUTION_UI,
   rabbitmq: RABBITMQ_EXECUTION_UI,
   redis: REDIS_EXECUTION_UI,
   s3: S3_EXECUTION_UI,

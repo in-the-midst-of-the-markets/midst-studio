@@ -425,6 +425,24 @@ export const CONNECTION_FORM: {
     showConnectionStringToggle: false,
     connectionFields: CONNECTION_FIELDS.postgres,
   },
+  redshift: {
+    label: "Amazon Redshift",
+    // The cluster's PostgreSQL wire port. The Data API is not this connection.
+    defaultPort: "5439",
+    // A postgresql:// paste belongs to the PostgreSQL type. Redshift has no scheme of its own here.
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.redshift,
+    fieldPlaceholders: {
+      host: "example.region.redshift.amazonaws.com",
+      user: "awsuser",
+      database: "dev",
+    },
+    fieldHints: {
+      host: "The cluster or workgroup endpoint. The password is sent to that host on the PostgreSQL wire protocol.",
+      user: "The database user. IAM authentication is not this connection.",
+      database: "The database name on the cluster.",
+    },
+  },
   airtable: {
     label: "Airtable",
     defaultPort: "",
@@ -1826,6 +1844,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "airtable",
   "supabase",
   DEFAULT_CONNECTION_TYPE,
+  "redshift",
   "mysql",
   "sqlite",
   "oracle",

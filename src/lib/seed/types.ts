@@ -101,6 +101,7 @@ const SeedDatabaseType = z.enum([
   "clickhouse",
   "druid",
   "questdb",
+  "redshift",
   "elasticsearch",
   "opensearch",
   "trino",

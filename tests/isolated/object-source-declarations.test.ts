@@ -143,6 +143,7 @@ const SOURCE_DECLARATIONS: Readonly<Record<DatabaseType, readonly string[]>> = O
   clickhouse: ["table/sql", "view/sql", "materialized_view/sql", "dictionary/sql", "function/sql"],
   druid: [],
   questdb: [],
+  redshift: [],
   trino: ["table/sql", "view/sql", "materialized_view/sql", "function/sql"],
   cassandra: ["table/sql", "materialized_view/sql", "index/sql", "type/sql", "function/sql", "aggregate/sql"],
   // One declaration constant serves both ids, so these two rows always move together.
@@ -299,6 +300,8 @@ const CENSUS_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "snmp",
   // QuestDB publishes tables and columns through tables() and table_columns(), and no definition text.
   "questdb",
+  // Amazon Redshift publishes schemas, tables and columns through information_schema, and no definition text.
+  "redshift",
   // An Airtable table is records behind the Web API, and no kind carries a definition text.
   "airtable",
   // A HubSpot object is records behind the CRM API, and no kind carries a definition text.
@@ -404,7 +407,7 @@ describe("the fleet census of object source declarations", () => {
     // EXTERNAL_DATABASE_TYPES.length (38 with db2, neo4j, milvus, qdrant, influxdb, influxdb3, oxia, databend,
     // bigquery, snowflake, s3, kubernetes, mqtt, firestore, rabbitmq, opcua, mtconnect and sparkplug) plus the
     // embedded store.
-    expect(CENSUS_TYPES).toHaveLength(65);
+    expect(CENSUS_TYPES).toHaveLength(66);
     expect(Object.keys(SOURCE_DECLARATIONS).sort()).toEqual([...SHIPPED_DATABASE_TYPES].sort());
   });
 
@@ -435,8 +438,8 @@ describe("the fleet census of object source declarations", () => {
     // BOTH source-bearing, sparkplug two kinds, BOTH source-bearing, weaviate one kind, source-bearing (#1566),
     // and clarity, googleanalytics, quickbooks, odoo, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel and googlesheets one kind each,
     // neither source-bearing.
-    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(72);
-    expect(rows).toHaveLength(224);
+    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(74);
+    expect(rows).toHaveLength(226);
   });
 
   test("the MariaDB branch declares two more, which an unconnected provider cannot show", async () => {
@@ -554,8 +557,8 @@ describe("the fleet census of object source declarations", () => {
     // 181 unconnected kinds plus the MariaDB branch's eight, and the kinds each new provider
     // brought: MTConnect's three (#1722), NETCONF's and Modbus's, SNMP's two (#1721) and
     // Sparkplug B's two (#1720), and Weaviate's one (#1566). Intercom adds one kind, and
-    // Microsoft Dynamics adds one, and Microsoft Excel adds one, and Google Sheets adds one, and none of them carries a source.
-    expect(rows).toHaveLength(232);
+    // Microsoft Dynamics adds one, and Microsoft Excel adds one, and Google Sheets adds one, and Amazon Redshift adds two, and none of them carries a source.
+    expect(rows).toHaveLength(234);
 
     const halfDeclared = rows
       .filter((row) => row.kind.sourceLanguage !== undefined && row.kind.hasSource !== true)

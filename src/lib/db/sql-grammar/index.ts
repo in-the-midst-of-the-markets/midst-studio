@@ -53,6 +53,7 @@ import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-gramma
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
 import { QDRANT_SQL_GRAMMAR } from "@/lib/db/providers/vector/qdrant/sql-grammar";
 import { QUESTDB_SQL_GRAMMAR } from "@/lib/db/providers/sql/questdb/sql-grammar";
+import { REDSHIFT_SQL_GRAMMAR } from "@/lib/db/providers/sql/redshift/sql-grammar";
 import { WEAVIATE_SQL_GRAMMAR } from "@/lib/db/providers/vector/weaviate/sql-grammar";
 import { RABBITMQ_SQL_GRAMMAR } from "@/lib/db/providers/stream/rabbitmq/sql-grammar";
 import { REDIS_SQL_GRAMMAR } from "@/lib/db/providers/keyvalue/redis-sql-grammar";
@@ -128,6 +129,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,
   questdb: QUESTDB_SQL_GRAMMAR,
+  redshift: REDSHIFT_SQL_GRAMMAR,
   rabbitmq: RABBITMQ_SQL_GRAMMAR,
   redis: REDIS_SQL_GRAMMAR,
   s3: S3_SQL_GRAMMAR,
