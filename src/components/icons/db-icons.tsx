@@ -397,6 +397,25 @@ export const MetaAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A card and a coin, for a PayPal account. Not the vendor mark. */
+export const PayPalIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="3" y="6" width="14" height="10" rx="2" />
+    <circle cx="17" cy="15" r="4" />
+    <path d="M17 13.5v3" />
+    <path d="M15.5 15h3" />
+  </svg>
+);
+
 /** A deal moving through a pipeline, for a Pipedrive company. Not the vendor mark. */
 export const PipedriveIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

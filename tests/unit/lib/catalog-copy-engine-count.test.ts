@@ -152,6 +152,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-two": 62,
   // Two past the registry once Meta Ads joined it.
   "sixty-three": 63,
+  // Two past the registry once PayPal joined it.
+  "sixty-four": 64,
 };
 
 /**

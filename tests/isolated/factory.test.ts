@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, libredb$/,
     );
   });
 
@@ -1602,6 +1602,7 @@ describe("createDatabaseProvider", () => {
       // The shared database is not an advertiser id, and the shared password is shorter than an access token.
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
+      paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
     };
 
     const declaringTypes: string[] = [];
@@ -1683,6 +1684,7 @@ describe("createDatabaseProvider", () => {
       // The shared database is not an advertiser id, and the shared password is shorter than an access token.
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
+      paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
     };
 
     const cannotCancel: string[] = [];
@@ -1743,6 +1745,8 @@ describe("createDatabaseProvider", () => {
       // No cancel: the eight read services the seam names have no Cancel among them.
       "opcua",
       "opensearch",
+      // No cancel: a PayPal read is one GET, and the REST API has nothing that stops it.
+      "paypal",
       // No cancel: a Pipedrive read is one GET, and the API has nothing that stops it.
       "pipedrive",
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.

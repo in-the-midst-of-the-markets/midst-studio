@@ -149,7 +149,7 @@ npx @libredb/studio
 
 </div>
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads and PayPal
 
 <div dir="rtl" align="right">
 
@@ -177,6 +177,7 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **Pipedrive** | none: the Pipedrive API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An API token, sent only to api.pipedrive.com or a company host |
 | **TikTok Ads** | none: the Marketing API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token, sent only to business-api.tiktok.com, and an advertiser id |
 | **Meta Ads** | none: the Marketing API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token, sent only to graph.facebook.com, and an ad account id |
+| **PayPal** | none: the REST API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. A client id and secret, exchanged for a token sent only to api-m.paypal.com or api-m.sandbox.paypal.com |
 | **PostgreSQL** | `pg` | <span dir="rtl">مکمل SQL IDE، EXPLAIN execution plans، transactions، query cancellation (`pg_cancel_backend`)</span> |
 | **MySQL** | `mysql2` | <span dir="rtl">مکمل SQL IDE، EXPLAIN، transactions، query cancellation (`KILL QUERY`)</span> |
 | **Oracle** | <span dir="rtl">`oracledb` (Thin موڈ)</span> | <span dir="rtl">مکمل SQL IDE، `FETCH FIRST N ROWS` کے ساتھ pagination، `V$` monitoring views، `ANALYZE TABLE`، `ALTER INDEX REBUILD`، transactions</span> |
