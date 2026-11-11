@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, libredb$/,
     );
   });
 
@@ -1613,6 +1613,7 @@ describe("createDatabaseProvider", () => {
         password: "census-secret",
         schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
+      mixpanel: { host: "mixpanel.com", user: "service-account", password: "census-secret", database: "1234567" },
     };
 
     const declaringTypes: string[] = [];
@@ -1705,6 +1706,7 @@ describe("createDatabaseProvider", () => {
         password: "census-secret",
         schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
+      mixpanel: { host: "mixpanel.com", user: "service-account", password: "census-secret", database: "1234567" },
     };
 
     const cannotCancel: string[] = [];
@@ -1744,6 +1746,8 @@ describe("createDatabaseProvider", () => {
       "metaads",
       // No cancel: a Microsoft Ads read is one POST, and the API has nothing that stops it.
       "microsoftads",
+      // No cancel: a Mixpanel read is one request, and the Query API has nothing that stops it.
+      "mixpanel",
       // No cancel either, and for a reason of its own: a read is one exchange at a time on a
       // connection this provider does not hold open, and Modbus has no request that stops one in
       // flight - the five requests MB-S1 allows are four reads and the identification read (#1723).

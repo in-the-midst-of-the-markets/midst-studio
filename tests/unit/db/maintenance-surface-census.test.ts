@@ -96,6 +96,7 @@ const EXPECTED: Readonly<Record<DatabaseType, SurfaceRow>> = {
   paypal: NONE,
   excel: NONE,
   googlesheets: NONE,
+  mixpanel: NONE,
   supabase: { tabs: "analyze,vacuum,reindex", tree: "analyze+vacuum(vacuum)", outsideMaintenanceType: "" },
   mysql: { tabs: "analyze,optimize,check", tree: "analyze+vacuum(optimize)", outsideMaintenanceType: "" },
   sqlite: { tabs: "analyze,reindex", tree: "analyze", outsideMaintenanceType: "" },
@@ -164,7 +165,7 @@ describe("every shipped provider's per-row maintenance controls (R46 C3)", () =>
 
   test("11 of 43 type-ids offer per-row controls on the two tabs, 10 on the row menus, one outside MaintenanceType", () => {
     const rows = Object.values(EXPECTED);
-    expect(rows.length).toBe(66);
+    expect(rows.length).toBe(67);
     expect(rows.filter((row) => row.tabs !== "").length).toBe(12);
     expect(rows.filter((row) => row.tree !== "").length).toBe(11);
     expect(rows.filter((row) => row.outsideMaintenanceType !== "").length).toBe(1);

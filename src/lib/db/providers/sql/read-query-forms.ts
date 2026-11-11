@@ -185,6 +185,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   paypal: null,
   excel: null,
   googlesheets: null,
+  mixpanel: null,
   supabase: null,
   s3: null,
   kubernetes: null,

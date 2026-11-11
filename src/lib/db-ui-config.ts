@@ -64,6 +64,7 @@ import {
   PayPalIcon,
   ExcelIcon,
   GoogleSheetsIcon,
+  MixpanelIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -143,6 +144,7 @@ export const DB_UI_CONFIG: {
   paypal: branded(CONNECTION_FORM.paypal, PayPalIcon, "text-hue-blue bg-hue-blue/10"),
   excel: branded(CONNECTION_FORM.excel, ExcelIcon, "text-hue-emerald bg-hue-emerald/10"),
   googlesheets: branded(CONNECTION_FORM.googlesheets, GoogleSheetsIcon, "text-hue-lime bg-hue-lime/10"),
+  mixpanel: branded(CONNECTION_FORM.mixpanel, MixpanelIcon, "text-hue-mauve bg-hue-mauve/10"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

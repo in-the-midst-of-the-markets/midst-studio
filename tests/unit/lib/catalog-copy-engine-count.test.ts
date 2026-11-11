@@ -161,6 +161,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-six": 66,
   // Two past the registry once Amazon Redshift joined it.
   "sixty-seven": 67,
+  // Two past the registry once Mixpanel joined it.
+  "sixty-eight": 68,
 };
 
 /**

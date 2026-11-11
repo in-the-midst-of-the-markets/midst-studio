@@ -184,6 +184,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "paypal",
       "excel",
       "googlesheets",
+      "mixpanel",
       "bigquery",
       "snowflake",
       "spark",

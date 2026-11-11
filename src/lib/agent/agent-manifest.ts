@@ -108,6 +108,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   paypal: null,
   excel: null,
   googlesheets: null,
+  mixpanel: null,
   supabase: null,
   s3: "s3api",
   kubernetes: "kubectl",

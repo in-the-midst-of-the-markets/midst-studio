@@ -397,6 +397,25 @@ export const MetaAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Three rising bars, for a Mixpanel project. Not the vendor mark. */
+export const MixpanelIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 19h16" />
+    <path d="M7 19V13" />
+    <path d="M12 19V8" />
+    <path d="M17 19V4" />
+  </svg>
+);
+
 /** A sheet of cells with a tab, for a Google Sheets spreadsheet. Not the vendor mark. */
 export const GoogleSheetsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

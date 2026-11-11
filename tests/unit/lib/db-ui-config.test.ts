@@ -150,6 +150,7 @@ const ALL_TYPES: DatabaseType[] = [
   "paypal",
   "excel",
   "googlesheets",
+  "mixpanel",
 ];
 
 describe("db-ui-config", () => {
@@ -407,6 +408,7 @@ describe("db-ui-config", () => {
         "kafka",
         "metaads",
         "microsoftads",
+        "mixpanel",
         "notion",
         "odoo",
         "paypal",
@@ -460,6 +462,7 @@ describe("db-ui-config", () => {
         "intercom",
         "metaads",
         "microsoftads",
+        "mixpanel",
         "netconf",
         "notion",
         "odoo",
@@ -1169,6 +1172,7 @@ describe("declared connection-field copy (#1085)", () => {
       "paypal",
       "excel",
       "googlesheets",
+      "mixpanel",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1776,6 +1780,8 @@ describe("db-showcase", () => {
         "googlesheets",
         // Last, behind Google Sheets: a warehouse on the PostgreSQL wire, in the Databases group.
         "redshift",
+        // Last, a product-analytics API, in the SAAS Connectors group.
+        "mixpanel",
       ]);
     });
   });
@@ -2027,6 +2033,7 @@ describe("the Snowflake entry", () => {
       "tiktokads",
       "metaads",
       "paypal",
+      "mixpanel",
     ]);
   });
 

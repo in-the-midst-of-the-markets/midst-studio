@@ -65,6 +65,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   paypal: true,
   excel: true,
   googlesheets: true,
+  mixpanel: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -408,6 +409,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "paypal",
       "excel",
       "googlesheets",
+      "mixpanel",
     ]);
   });
 
@@ -436,6 +438,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "paypal",
       "excel",
       "googlesheets",
+      "mixpanel",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

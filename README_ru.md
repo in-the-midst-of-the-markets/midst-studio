@@ -138,7 +138,7 @@ KnowSQL устроен наоборот: **инструмент приходит
 
 ### Шестьдесят СУБД, один интерфейс
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets and Amazon Redshift
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel and Amazon Redshift
 
 Для всех SQL-СУБД доступен одинаковый набор инструментов: дерево объектов базы (схемы, таблицы, столбцы), ER-диаграммы, сравнение схем и панели мониторинга. MongoDB и Redis работают не на SQL, поэтому ER-диаграмм и сравнения схем для них нет.
 
@@ -169,6 +169,7 @@ ER-диаграмма для Elasticsearch и OpenSearch показывает и
 | **PayPal** | none: the REST API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. A client id and secret, exchanged for a token sent only to api-m.paypal.com or api-m.sandbox.paypal.com |
 | **Microsoft Excel** | none: the REST API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. A workbook on Microsoft Graph. A client secret is exchanged at login.microsoftonline.com; the token is sent only to graph.microsoft.com |
 | **Google Sheets** | none: the REST API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. One spreadsheet on the Sheets API. A service-account key is exchanged at oauth2.googleapis.com; the token is sent only to sheets.googleapis.com |
+| **Mixpanel** | none: the REST API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. One project on the Query API. A service account secret is sent only to mixpanel.com, eu.mixpanel.com, or in.mixpanel.com |
 | **PostgreSQL** | `pg` | Полноценная SQL IDE, планы выполнения EXPLAIN, транзакции, отмена запросов (`pg_cancel_backend`) |
 | **MySQL** | `mysql2` | Полноценная SQL IDE, EXPLAIN, транзакции, отмена запросов (`KILL QUERY`) |
 | **Oracle** | `oracledb` (тонкий клиент, режим Thin) | Полноценная SQL IDE, постраничный вывод через `FETCH FIRST N ROWS`, представления мониторинга `V$`, `ANALYZE TABLE`, `ALTER INDEX REBUILD`, транзакции |

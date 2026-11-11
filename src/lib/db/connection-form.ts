@@ -751,6 +751,32 @@ export const CONNECTION_FORM: {
         "The workbook as /drives/<drive id>/items/<item id>. The access token is sent only to graph.microsoft.com.",
     },
   },
+  mixpanel: {
+    label: "Mixpanel",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.mixpanel,
+    fieldLabels: {
+      host: "API host",
+      user: "Service account",
+      password: "Service account secret",
+      database: "Project ID",
+    },
+    fieldPlaceholders: {
+      host: "mixpanel.com",
+      user: "service-account",
+      password: "service-secret",
+      database: "1234567",
+    },
+    fieldHints: {
+      host: "The secret is sent only to mixpanel.com, eu.mixpanel.com, or in.mixpanel.com. Leave this empty to use the US host.",
+      user: "The service account username. It is sent only to that Mixpanel host.",
+      password: "The service account secret. Studio sends it as HTTP Basic and does not put it in a URL.",
+      database: "The numeric project id. It is sent as project_id on that same host.",
+    },
+  },
   googlesheets: {
     label: "Google Sheets",
     defaultPort: "",
@@ -1907,6 +1933,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "paypal",
   "excel",
   "googlesheets",
+  "mixpanel",
 ]);
 
 /**
@@ -1934,6 +1961,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "paypal",
   "excel",
   "googlesheets",
+  "mixpanel",
 ]);
 
 export interface ConnectionPickerCategory {

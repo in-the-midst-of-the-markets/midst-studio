@@ -63,6 +63,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "paypal",
     "excel",
     "googlesheets",
+    "mixpanel",
     "redshift",
     "libsql",
     "snowflake",
