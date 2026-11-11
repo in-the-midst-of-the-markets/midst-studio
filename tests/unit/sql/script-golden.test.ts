@@ -92,6 +92,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   tiktokads: "every-code-semicolon",
   metaads: "every-code-semicolon",
   paypal: "every-code-semicolon",
+  excel: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

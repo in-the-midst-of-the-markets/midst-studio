@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, libredb$/,
     );
   });
 
@@ -1603,6 +1603,12 @@ describe("createDatabaseProvider", () => {
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
       paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
+      excel: {
+        user: "11111111-1111-4111-8111-111111111111",
+        database: "22222222-2222-4222-8222-222222222222",
+        password: "census-secret",
+        schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
+      },
     };
 
     const declaringTypes: string[] = [];
@@ -1685,6 +1691,12 @@ describe("createDatabaseProvider", () => {
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
       paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
+      excel: {
+        user: "11111111-1111-4111-8111-111111111111",
+        database: "22222222-2222-4222-8222-222222222222",
+        password: "census-secret",
+        schema: "/drives/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee/items/01BYE5RZitem",
+      },
     };
 
     const cannotCancel: string[] = [];
@@ -1705,6 +1717,8 @@ describe("createDatabaseProvider", () => {
       // No cancel: a Dynamics read is one OData request, and the Web API has nothing that stops it.
       "dynamics",
       "elasticsearch",
+      // No cancel: an Excel read is one range request, and Microsoft Graph has nothing that stops it.
+      "excel",
       // No cancel: a Google Ads search is one POST, and the API has nothing that stops it.
       "googleads",
       // No cancel: a Google Analytics report is one POST, and the Data API has nothing that stops it.

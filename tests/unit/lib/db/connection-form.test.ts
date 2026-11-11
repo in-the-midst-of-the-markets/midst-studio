@@ -63,6 +63,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   tiktokads: true,
   metaads: true,
   paypal: true,
+  excel: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -402,6 +403,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "tiktokads",
       "metaads",
       "paypal",
+      "excel",
     ]);
   });
 
@@ -428,6 +430,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "tiktokads",
       "metaads",
       "paypal",
+      "excel",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

@@ -85,6 +85,10 @@ export type DatabaseType =
   // PayPal. The REST API, read-only. One SELECT is one list. The client id and
   // secret are sent only to api-m.paypal.com or api-m.sandbox.paypal.com.
   | "paypal"
+  // Microsoft Excel. One workbook on Microsoft Graph, read-only. One SELECT is one
+  // worksheet. A client secret is sent only to login.microsoftonline.com. The access
+  // token is sent only to graph.microsoft.com.
+  | "excel"
   | "bigquery"
   | "snowflake"
   | "mysql"

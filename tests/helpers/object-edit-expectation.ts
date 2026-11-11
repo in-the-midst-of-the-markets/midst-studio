@@ -147,6 +147,7 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "tiktokads",
   "metaads",
   "paypal",
+  "excel",
   // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
   "supabase",
 ] as const);

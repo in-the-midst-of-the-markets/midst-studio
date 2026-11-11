@@ -704,6 +704,35 @@ export const CONNECTION_FORM: {
       password: "The REST app secret. Studio exchanges it for an access token and does not put it in a URL.",
     },
   },
+  excel: {
+    label: "Microsoft Excel",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.excel,
+    fieldLabels: {
+      user: "Client ID",
+      password: "Client secret or access token",
+      database: "Tenant ID",
+      schema: "Workbook path",
+    },
+    fieldPlaceholders: {
+      user: "client-id",
+      password: "client-secret",
+      database: "tenant-id",
+      schema: "/drives/drive-id/items/item-id",
+    },
+    fieldHints: {
+      user: "The application (client) id. Leave this and the tenant id empty to paste an access token instead.",
+      password:
+        "A client secret is sent only to login.microsoftonline.com and exchanged for an access token. A pasted token is sent only to graph.microsoft.com. Neither is put in a URL.",
+      database:
+        "The directory (tenant) id. Required with a client secret, and left empty when the password is an access token.",
+      schema:
+        "The workbook as /drives/<drive id>/items/<item id>. The access token is sent only to graph.microsoft.com.",
+    },
+  },
   microsoftads: {
     label: "Microsoft Ads",
     defaultPort: "",
@@ -1838,6 +1867,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "tiktokads",
   "metaads",
   "paypal",
+  "excel",
 ]);
 
 /**
@@ -1863,6 +1893,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "tiktokads",
   "metaads",
   "paypal",
+  "excel",
 ]);
 
 export interface ConnectionPickerCategory {

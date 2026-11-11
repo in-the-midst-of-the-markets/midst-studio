@@ -182,6 +182,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "tiktokads",
       "metaads",
       "paypal",
+      "excel",
       "bigquery",
       "snowflake",
       "spark",
