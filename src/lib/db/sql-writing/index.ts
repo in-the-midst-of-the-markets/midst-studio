@@ -42,6 +42,7 @@ import { INTERCOM_SQL_WRITING } from "@/lib/db/providers/sql/intercom/sql-writin
 import { DYNAMICS_SQL_WRITING } from "@/lib/db/providers/sql/dynamics/sql-writing";
 import { GOOGLEADS_SQL_WRITING } from "@/lib/db/providers/sql/googleads/sql-writing";
 import { MICROSOFTADS_SQL_WRITING } from "@/lib/db/providers/sql/microsoftads/sql-writing";
+import { PIPEDRIVE_SQL_WRITING } from "@/lib/db/providers/sql/pipedrive/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -116,6 +117,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   dynamics: DYNAMICS_SQL_WRITING,
   googleads: GOOGLEADS_SQL_WRITING,
   microsoftads: MICROSOFTADS_SQL_WRITING,
+  pipedrive: PIPEDRIVE_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,

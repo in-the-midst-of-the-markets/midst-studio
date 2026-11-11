@@ -146,6 +146,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "fifty-nine": 59,
   // Two past the registry once Microsoft Ads joined it.
   sixty: 60,
+  // Two past the registry once Pipedrive joined it.
+  "sixty-one": 61,
 };
 
 /**

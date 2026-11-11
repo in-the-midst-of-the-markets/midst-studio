@@ -43,6 +43,7 @@ import { INTERCOM_CONNECTION_STRING } from "@/lib/db/providers/sql/intercom/conn
 import { DYNAMICS_CONNECTION_STRING } from "@/lib/db/providers/sql/dynamics/connection-string";
 import { GOOGLEADS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleads/connection-string";
 import { MICROSOFTADS_CONNECTION_STRING } from "@/lib/db/providers/sql/microsoftads/connection-string";
+import { PIPEDRIVE_CONNECTION_STRING } from "@/lib/db/providers/sql/pipedrive/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -112,6 +113,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   dynamics: DYNAMICS_CONNECTION_STRING,
   googleads: GOOGLEADS_CONNECTION_STRING,
   microsoftads: MICROSOFTADS_CONNECTION_STRING,
+  pipedrive: PIPEDRIVE_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

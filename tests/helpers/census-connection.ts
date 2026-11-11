@@ -60,6 +60,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   dynamics: "contoso.crm.dynamics.com",
   googleads: "googleads.googleapis.com",
   microsoftads: "campaign.api.bingads.microsoft.com",
+  pipedrive: "api.pipedrive.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -101,6 +102,8 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
     database: "7654321",
     password: '{"accessToken":"census-token","developerToken":"census-dev"}',
   },
+  // The shared password is six characters, shorter than an API token this provider accepts.
+  pipedrive: { ...unconnected("pipedrive"), password: "census-token" },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),
   sqlite: unconnected("sqlite"),

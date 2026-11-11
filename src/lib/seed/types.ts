@@ -147,6 +147,7 @@ const SeedDatabaseType = z.enum([
   "dynamics",
   "googleads",
   "microsoftads",
+  "pipedrive",
 ]);
 
 export const SeedDefaultsSchema = z.object({

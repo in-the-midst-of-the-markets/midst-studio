@@ -88,6 +88,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   dynamics: "every-code-semicolon",
   googleads: "every-code-semicolon",
   microsoftads: "every-code-semicolon",
+  pipedrive: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

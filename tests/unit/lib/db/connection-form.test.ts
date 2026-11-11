@@ -59,6 +59,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   dynamics: true,
   googleads: true,
   microsoftads: true,
+  pipedrive: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -394,6 +395,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "dynamics",
       "googleads",
       "microsoftads",
+      "pipedrive",
     ]);
   });
 
@@ -416,6 +418,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "dynamics",
       "googleads",
       "microsoftads",
+      "pipedrive",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

@@ -57,6 +57,7 @@ import {
   DynamicsIcon,
   GoogleAdsIcon,
   MicrosoftAdsIcon,
+  PipedriveIcon,
   SupabaseIcon,
 } from "@/components/icons/db-icons";
 import type { HostUriScheme } from "@/lib/connection-host-uri";
@@ -129,6 +130,7 @@ export const DB_UI_CONFIG: {
   dynamics: branded(CONNECTION_FORM.dynamics, DynamicsIcon, "text-hue-indigo bg-hue-indigo/10"),
   googleads: branded(CONNECTION_FORM.googleads, GoogleAdsIcon, "text-hue-yellow bg-hue-yellow/10"),
   microsoftads: branded(CONNECTION_FORM.microsoftads, MicrosoftAdsIcon, "text-hue-sky bg-hue-sky/15"),
+  pipedrive: branded(CONNECTION_FORM.pipedrive, PipedriveIcon, "text-hue-lime bg-hue-lime/15"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

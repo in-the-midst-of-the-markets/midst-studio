@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, libredb$/,
     );
   });
 
@@ -1597,6 +1597,8 @@ describe("createDatabaseProvider", () => {
         database: "7654321",
         password: '{"accessToken":"census-token","developerToken":"census-dev"}',
       },
+      // The shared password is six characters, shorter than an API token this provider accepts.
+      pipedrive: { host: "api.pipedrive.com", password: "census-token" },
     };
 
     const declaringTypes: string[] = [];
@@ -1673,6 +1675,8 @@ describe("createDatabaseProvider", () => {
         database: "7654321",
         password: '{"accessToken":"census-token","developerToken":"census-dev"}',
       },
+      // The shared password is six characters, shorter than an API token this provider accepts.
+      pipedrive: { host: "api.pipedrive.com", password: "census-token" },
     };
 
     const cannotCancel: string[] = [];
@@ -1731,6 +1735,8 @@ describe("createDatabaseProvider", () => {
       // No cancel: the eight read services the seam names have no Cancel among them.
       "opcua",
       "opensearch",
+      // No cancel: a Pipedrive read is one GET, and the API has nothing that stops it.
+      "pipedrive",
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
       "questdb",
       // No cancel: a QuickBooks Online read is one GET, and the query API has nothing that stops it.

@@ -143,6 +143,7 @@ const ALL_TYPES: DatabaseType[] = [
   "dynamics",
   "googleads",
   "microsoftads",
+  "pipedrive",
 ];
 
 describe("db-ui-config", () => {
@@ -399,6 +400,7 @@ describe("db-ui-config", () => {
         "microsoftads",
         "notion",
         "odoo",
+        "pipedrive",
         "quickbooks",
         "rabbitmq",
         "shopify",
@@ -448,6 +450,7 @@ describe("db-ui-config", () => {
         "notion",
         "odoo",
         "opcua",
+        "pipedrive",
         "quickbooks",
         "shopify",
         "snmp",
@@ -1143,6 +1146,7 @@ describe("declared connection-field copy (#1085)", () => {
       "dynamics",
       "googleads",
       "microsoftads",
+      "pipedrive",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1742,6 +1746,7 @@ describe("db-showcase", () => {
         "dynamics",
         "googleads",
         "microsoftads",
+        "pipedrive",
       ]);
     });
   });
@@ -1989,6 +1994,7 @@ describe("the Snowflake entry", () => {
       "dynamics",
       "googleads",
       "microsoftads",
+      "pipedrive",
     ]);
   });
 

@@ -101,6 +101,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   dynamics: null,
   googleads: null,
   microsoftads: null,
+  pipedrive: null,
   supabase: null,
   s3: "s3api",
   kubernetes: "kubectl",

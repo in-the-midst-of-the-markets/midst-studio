@@ -362,6 +362,26 @@ export const IntercomIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A deal moving through a pipeline, for a Pipedrive company. Not the vendor mark. */
+export const PipedriveIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="5" cy="12" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="19" cy="12" r="2" />
+    <path d="M7 12h3" />
+    <path d="M14 12h3" />
+  </svg>
+);
+
 /** A click on a campaign card, for a Microsoft Ads account. Not the vendor mark. */
 export const MicrosoftAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

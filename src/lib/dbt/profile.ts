@@ -28,6 +28,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   dynamics: unsupported,
   googleads: unsupported,
   microsoftads: unsupported,
+  pipedrive: unsupported,
   mysql: mysqlTarget,
   snowflake: snowflakeTarget,
   clickhouse: clickhouseTarget,
