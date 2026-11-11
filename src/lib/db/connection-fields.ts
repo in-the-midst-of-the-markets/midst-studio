@@ -484,6 +484,7 @@ const CONNECTION_FIELD_ROWS = {
   pipedrive: ["host", "password"],
   // An access token in `password`, and the advertiser id in `database`. The host must be business-api.tiktok.com.
   tiktokads: ["host", "password", "database"],
+  metaads: ["host", "password", "database"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -642,6 +643,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   microsoftads: null,
   pipedrive: null,
   tiktokads: null,
+  metaads: null,
   supabase: null,
   mysql: null,
   sqlite: null,

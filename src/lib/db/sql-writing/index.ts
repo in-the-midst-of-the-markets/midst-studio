@@ -44,6 +44,7 @@ import { GOOGLEADS_SQL_WRITING } from "@/lib/db/providers/sql/googleads/sql-writ
 import { MICROSOFTADS_SQL_WRITING } from "@/lib/db/providers/sql/microsoftads/sql-writing";
 import { PIPEDRIVE_SQL_WRITING } from "@/lib/db/providers/sql/pipedrive/sql-writing";
 import { TIKTOKADS_SQL_WRITING } from "@/lib/db/providers/sql/tiktokads/sql-writing";
+import { METAADS_SQL_WRITING } from "@/lib/db/providers/sql/metaads/sql-writing";
 import { POSTGRES_SQL_WRITING } from "@/lib/db/providers/sql/postgres-sql-writing";
 import { SUPABASE_SQL_WRITING } from "@/lib/db/providers/sql/supabase/sql-writing";
 import { ELASTICSEARCH_SQL_WRITING } from "@/lib/db/providers/sql/search/elasticsearch-sql-writing";
@@ -120,6 +121,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   microsoftads: MICROSOFTADS_SQL_WRITING,
   pipedrive: PIPEDRIVE_SQL_WRITING,
   tiktokads: TIKTOKADS_SQL_WRITING,
+  metaads: METAADS_SQL_WRITING,
   supabase: SUPABASE_SQL_WRITING,
   prometheus: PROMETHEUS_SQL_WRITING,
   qdrant: QDRANT_SQL_WRITING,

@@ -90,6 +90,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   microsoftads: "every-code-semicolon",
   pipedrive: "every-code-semicolon",
   tiktokads: "every-code-semicolon",
+  metaads: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

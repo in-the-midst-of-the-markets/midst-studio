@@ -150,7 +150,7 @@ LibreDB Studio 走另一条路：**工具去找数据，而不是把数据搬来
 
 LibreDB Studio 走的是另一条路。它部署在数据旁边：一个容器、一个 Helm chart、一个 operator、一份 PaaS 一键模板，或者用 `npm i @libredb/studio` 嵌进你自己的产品。没有任何东西需要朝外暴露。
 
-六十种引擎共用一个界面，PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ 和 OPC UA、MTConnect、Modbus、NETCONF、SNMP 和 QuestDB, Sparkplug B，处处是同一套浏览器，凡是引擎有东西可报的地方都有 ER 图、schema 对比和监控。四十种里有三种是只读的，因为它们自己的 SQL 就是只读的：Druid、Elasticsearch 和 OpenSearch 的文法里根本没有 `UPDATE`，也没有 `CREATE TABLE`，所以那些控件被如实报告为不支持，而不是等到用的时候才失败。Cassandra 是其中刻意报告得最少的一个：它给出的任何行数和容量都不真实，所以对象浏览器索性两者都不显示，而不是显示一个错的数字；它确实会发布的分区估算来自已刷盘的文件，实测一张 500 行的表被读作 143。Trino 是另一个异类：它是查询引擎而不是数据库，所以不声明任何主键和索引，报告的字节数属于它背后那些连接器所在的系统, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive and TikTok Ads。
+六十种引擎共用一个界面，PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ 和 OPC UA、MTConnect、Modbus、NETCONF、SNMP 和 QuestDB, Sparkplug B，处处是同一套浏览器，凡是引擎有东西可报的地方都有 ER 图、schema 对比和监控。四十种里有三种是只读的，因为它们自己的 SQL 就是只读的：Druid、Elasticsearch 和 OpenSearch 的文法里根本没有 `UPDATE`，也没有 `CREATE TABLE`，所以那些控件被如实报告为不支持，而不是等到用的时候才失败。Cassandra 是其中刻意报告得最少的一个：它给出的任何行数和容量都不真实，所以对象浏览器索性两者都不显示，而不是显示一个错的数字；它确实会发布的分区估算来自已刷盘的文件，实测一张 500 行的表被读作 143。Trino 是另一个异类：它是查询引擎而不是数据库，所以不声明任何主键和索引，报告的字节数属于它背后那些连接器所在的系统, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads。
 
 Sparkplug B 是最新的一个：通过 MQTT 读取一台 broker，metric 来自边缘节点出生证书的声明，值来自其后的数据消息；它从构造上就是只读的，因为 encoder 没有任何写 PUBLISH 的函数，CONNECT 也不带遗嘱（will）：5.4 把边缘节点的死亡证书注册为它的遗嘱，读取方若设置了遗嘱，自己断开时就会发布一条死亡消息。组和边缘节点是容器，每个 metric 是一行，它的值、时间戳和定义都来自声明它的出生证书，序号缺口从两条相邻的数据消息读出而不是猜出。
 
@@ -180,14 +180,14 @@ Oxia、InfluxDB (InfluxQL)、Milvus、Qdrant、Weaviate、Neo4j、etcd、Apache 
 ### 为什么选择 LibreDB Studio？
 
 - **部署在数据旁边**：容器、Helm chart、Rancher、OpenShift operator、PaaS 一键模板，或用 npm 嵌入。
-- **六十种引擎，一个界面**：PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive and TikTok Ads。
+- **六十种引擎，一个界面**：PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Redis、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Cassandra、Prometheus、Apache Kafka、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MQTT、RabbitMQ、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads。
 - **你人在哪它就在哪跑**：浏览器、手机、Windows、MacOS、Linux 桌面。
 - **一个只读的 Agent，配你自己的模型**：说一个问题，这次运行就会起草 SQL、读取结果，并写出一份每条结论都引用来源的报告。Gemini、OpenAI，或者跑开源模型的本地 Ollama。
 - **没有东西被锁在墙后**：RBAC、OIDC 单点登录、审计日志和 ER 图，全部以 MIT 发布。
 
 <p align="center">
   <img src="public/screenshots/connection-modal.png" alt="多数据库连接管理器" width="100%" />
-  <br/><em>连接 PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、MongoDB、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Cassandra、Redis、SQLite、DuckDB、libSQL、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MTConnect、Modbus、NETCONF、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive and TikTok Ads，支持 SSL/TLS 与 SSH 隧道（Kafka 支持 TLS，不支持隧道；OPC UA 自带传输层安全，不走共用面板；NETCONF 通过 SSH 连接，固定设备自身的主机密钥，两者都不走；SNMP 两者都没有：它走 UDP，共用隧道载不了，v3 的安全在报文内部）。</em>
+  <br/><em>连接 PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、MongoDB、Couchbase、Firestore、ClickHouse、Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Cassandra、Redis、SQLite、DuckDB、libSQL、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、MTConnect、Modbus、NETCONF、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads，支持 SSL/TLS 与 SSH 隧道（Kafka 支持 TLS，不支持隧道；OPC UA 自带传输层安全，不走共用面板；NETCONF 通过 SSH 连接，固定设备自身的主机密钥，两者都不走；SNMP 两者都没有：它走 UDP，共用隧道载不了，v3 的安全在报文内部）。</em>
 </p>
 
 [![Ask DeepWiki](.github/assets/deepwiki-badge.svg)](https://deepwiki.com/libredb/libredb-studio)
@@ -312,6 +312,7 @@ Studio 最主要的 AI 界面是编辑器旁边的 **Agent 侧栏**，下面列�
 | **Microsoft Ads** | none: the Microsoft Advertising API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token and a developer token, sent only to campaign.api.bingads.microsoft.com or the sandbox host |
 | **Pipedrive** | none: the Pipedrive API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An API token, sent only to api.pipedrive.com or a company host |
 | **TikTok Ads** | none: the Marketing API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token, sent only to business-api.tiktok.com, and an advertiser id |
+| **Meta Ads** | none: the Marketing API | SELECT, WHERE, ORDER BY, LIMIT and OFFSET. Read-only. An access token, sent only to graph.facebook.com, and an ad account id |
 | **PostgreSQL** | `pg` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`pg_cancel_backend`） |
 | **MySQL** | `mysql2` | 完整 SQL IDE、EXPLAIN 计划、事务、查询取消（`KILL QUERY`） |
 | **Oracle** | `oracledb`（Thin 模式） | 完整 SQL IDE、`FETCH FIRST N ROWS` 分页、`V$` 监控视图、`ANALYZE TABLE`、`ALTER INDEX REBUILD`、事务 |
@@ -377,7 +378,7 @@ Studio 最主要的 AI 界面是编辑器旁边的 **Agent 侧栏**，下面列�
 | **编辑器** | Monaco Editor（VS Code 内核） | Web |
 | **AI** | 多模型（Gemini、OpenAI、Ollama、自定义） | Web、移动端 |
 | **认证** | JWT（`jose`）+ OIDC（`openid-client`）、PKCE、角色映射 | Web、移动端 |
-| **数据库** | PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Couchbase、Firestore、ClickHouse、Apache Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Redis、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive and TikTok Ads | Web、移动端 |
+| **数据库** | PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Couchbase、Firestore、ClickHouse、Apache Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Redis、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP、QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads | Web、移动端 |
 | **图表** | Recharts（柱状图、折线图、饼图、面积图、散点图、直方图、堆叠图） | Web、移动端 |
 | **ERD** | React Flow、ELK.js（自动布局） | Web |
 | **状态与表格** | TanStack Table 与 Virtual | Web、移动端 |
@@ -464,7 +465,7 @@ journalctl -u libredb-studio
 
 ### 前置条件
 - [Bun](https://bun.sh/)（推荐）或 Node.js 24+
-- 一个可查询的目标数据库（PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Couchbase、Firestore、ClickHouse、Apache Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Redis、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP 或 QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive and TikTok Ads）
+- 一个可查询的目标数据库（PostgreSQL、MySQL、Oracle、Db2 LUW、SQL Server、SQLite、libSQL、DuckDB、MongoDB、Couchbase、Firestore、ClickHouse、Apache Druid、Elasticsearch、OpenSearch、Trino、BigQuery、Databend、Snowflake、Apache Spark、Apache Cassandra、Redis、Prometheus、Apache Kafka、MQTT、RabbitMQ、etcd、Neo4j、Milvus、Qdrant、Weaviate、InfluxDB (InfluxQL)、InfluxDB 3 (SQL)、Oxia、S3-compatible object storage、Kubernetes、OPC UA、MTConnect、Modbus、NETCONF、SNMP 或 QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads）
 
 ### 快速开始（本地）
 1. **克隆并安装**
@@ -962,7 +963,7 @@ extraEnvFrom:
 | `defaults` | 否 | 合并进所有连接的默认值 |
 | `connections[].id` | 是 | 唯一 slug（`[a-z0-9-]+`，最多 64 字符） |
 | `connections[].name` | 是 | UI 中显示的名称 |
-| `connections[].type` | 是 | `postgres`、`mysql`、`sqlite`、`libsql`、`duckdb`、`oracle`、`db2`、`mssql`、`clickhouse`、`druid`、`trino`、`bigquery`、`databend`、`snowflake`、`spark`、`cassandra`、`elasticsearch`、`opensearch`、`mongodb`、`couchbase`、`firestore`、`redis`、`prometheus`、`kafka`、`mqtt`、`rabbitmq`、`etcd`、`neo4j`、`milvus`、`qdrant`、`weaviate`、`influxdb`、`influxdb3`、`questdb`、`airtable`、`supabase`、`hubspot`、`stripe`、`clarity`、`googleanalytics`、`quickbooks`、`odoo`、`shopify`、`notion`、`xero`、`intercom`、`dynamics`、`googleads`、`microsoftads`、`pipedrive`、`tiktokads`、`oxia`、`s3`、`kubernetes`、`opcua`、`mtconnect`、`modbus`、`netconf`、`snmp`、`sparkplug`、`libredb` |
+| `connections[].type` | 是 | `postgres`、`mysql`、`sqlite`、`libsql`、`duckdb`、`oracle`、`db2`、`mssql`、`clickhouse`、`druid`、`trino`、`bigquery`、`databend`、`snowflake`、`spark`、`cassandra`、`elasticsearch`、`opensearch`、`mongodb`、`couchbase`、`firestore`、`redis`、`prometheus`、`kafka`、`mqtt`、`rabbitmq`、`etcd`、`neo4j`、`milvus`、`qdrant`、`weaviate`、`influxdb`、`influxdb3`、`questdb`、`airtable`、`supabase`、`hubspot`、`stripe`、`clarity`、`googleanalytics`、`quickbooks`、`odoo`、`shopify`、`notion`、`xero`、`intercom`、`dynamics`、`googleads`、`microsoftads`、`pipedrive`、`tiktokads`、`metaads`、`oxia`、`s3`、`kubernetes`、`opcua`、`mtconnect`、`modbus`、`netconf`、`snmp`、`sparkplug`、`libredb` |
 | `connections[].roles` | 是 | `["*"]`（所有人）、`["admin"]`、`["user"]` 或 `["admin", "user"]` |
 | `connections[].managed` | 否 | `true` = 由管理员控制，界面中不可编辑（默认），`false` = 给用户一份可编辑的副本 |
 | `connections[].readOnly` | 否 | `true` 时拒绝该连接上的所有写入（仅在执行该模式的引擎上，即 etcd）；在非托管连接上会被拒绝 |

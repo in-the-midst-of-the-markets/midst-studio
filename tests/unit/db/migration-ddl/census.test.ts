@@ -63,6 +63,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   microsoftads: "sql/microsoftads/migration-ddl",
   pipedrive: "sql/pipedrive/migration-ddl",
   tiktokads: "sql/tiktokads/migration-ddl",
+  metaads: "sql/metaads/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -123,6 +124,7 @@ const REFUSED: DatabaseType[] = [
   "microsoftads",
   "pipedrive",
   "tiktokads",
+  "metaads",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

@@ -156,6 +156,7 @@ describe("docs/MCP.md", () => {
         "microsoftads",
         "pipedrive",
         "tiktokads",
+        "metaads",
         "supabase",
         "etcd",
         "oxia",

@@ -180,6 +180,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "microsoftads",
       "pipedrive",
       "tiktokads",
+      "metaads",
       "bigquery",
       "snowflake",
       "spark",

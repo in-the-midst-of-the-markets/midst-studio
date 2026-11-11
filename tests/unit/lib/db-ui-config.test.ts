@@ -145,6 +145,7 @@ const ALL_TYPES: DatabaseType[] = [
   "microsoftads",
   "pipedrive",
   "tiktokads",
+  "metaads",
 ];
 
 describe("db-ui-config", () => {
@@ -398,6 +399,7 @@ describe("db-ui-config", () => {
         "hubspot",
         "intercom",
         "kafka",
+        "metaads",
         "microsoftads",
         "notion",
         "odoo",
@@ -447,6 +449,7 @@ describe("db-ui-config", () => {
         "googleanalytics",
         "hubspot",
         "intercom",
+        "metaads",
         "microsoftads",
         "netconf",
         "notion",
@@ -1151,6 +1154,7 @@ describe("declared connection-field copy (#1085)", () => {
       "microsoftads",
       "pipedrive",
       "tiktokads",
+      "metaads",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1752,6 +1756,7 @@ describe("db-showcase", () => {
         "microsoftads",
         "pipedrive",
         "tiktokads",
+        "metaads",
       ]);
     });
   });
@@ -2001,6 +2006,7 @@ describe("the Snowflake entry", () => {
       "microsoftads",
       "pipedrive",
       "tiktokads",
+      "metaads",
     ]);
   });
 

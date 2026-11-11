@@ -54,9 +54,9 @@ describe("readsSqlText against each provider's queryLanguage", () => {
     expect(SQL_GRAMMAR.libredb.readsSqlText).toBe(true);
   });
 
-  test("the measured counts: 38 providers read sql, 39 grammar rows read SQL text", async () => {
+  test("the measured counts: 39 providers read sql, 40 grammar rows read SQL text", async () => {
     const languages = await queryLanguages();
-    expect([...languages.values()].filter((language) => language === "sql").length).toBe(38);
-    expect(Object.values(SQL_GRAMMAR).filter((spec) => spec.readsSqlText).length).toBe(39);
+    expect([...languages.values()].filter((language) => language === "sql").length).toBe(39);
+    expect(Object.values(SQL_GRAMMAR).filter((spec) => spec.readsSqlText).length).toBe(40);
   });
 });
