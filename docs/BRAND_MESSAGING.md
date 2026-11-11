@@ -1,10 +1,10 @@
-# LibreDB Brand Messaging
+# KnowSQL Brand Messaging
 
-The messaging architecture marketing teams work from: what LibreDB claims, who it says it to, what backs each claim, and what it will not say.
+The messaging architecture marketing teams work from: what KnowSQL claims, who it says it to, what backs each claim, and what it will not say.
 
 ## Positioning statement
 
-> For engineering teams whose databases live in the cloud, LibreDB Studio is the database editor that deploys next to the data instead of onto your laptop: one browser tab for PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, SQLite, libSQL, DuckDB, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, MQTT, RabbitMQ, OPC UA, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage and Kubernetes, with SSO and audit built in, under MIT with nothing held back.
+> For engineering teams whose databases live in the cloud, KnowSQL is the database editor that deploys next to the data instead of onto your laptop: one browser tab for PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, SQLite, libSQL, DuckDB, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, MQTT, RabbitMQ, OPC UA, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage and Kubernetes, with SSO and audit built in, under MIT with nothing held back.
 
 One sentence, one reference point. Everything else in this brief either supports it or is cut.
 
@@ -46,7 +46,7 @@ And it has to be unrestricted. You cannot place a per-seat licensed, feature-gat
 
 ### Why the paid Platform is consistent with this
 
-LibreDB Studio is MIT because it has to go everywhere. libredb-platform is paid because it is a service rather than an environment: hosting, tenancy, billing and support for teams that would rather not run Studio themselves.
+KnowSQL is MIT because it has to go everywhere. libredb-platform is paid because it is a service rather than an environment: hosting, tenancy, billing and support for teams that would rather not run Studio themselves.
 
 The line holds under pressure, which is the point. The editor you deploy is free and stays free; what costs money is someone else running it for you. No capability is moved across that line to create a reason to upgrade.
 
@@ -62,7 +62,7 @@ One umbrella claim, three entry doors into it, three assurance layers underneath
 2. One tab, sixty-one engines.
 3. Nothing sits behind an Enterprise wall.
 
-**Door 3 is deliberately third, and stays third.** Leading with it would define LibreDB as another company's opponent rather than as a position of its own, and it would put our credibility at the mercy of their pricing page. Third, the same fact reads as reassurance rather than accusation.
+**Door 3 is deliberately third, and stays third.** Leading with it would define KnowSQL as another company's opponent rather than as a position of its own, and it would put our credibility at the mercy of their pricing page. Third, the same fact reads as reassurance rather than accusation.
 
 **The three assurances are not entry points.** Nobody arrives because of a test-coverage number. People stay because of one. Assurances belong in the second half of a piece, after a door has already done its work.
 
@@ -120,7 +120,7 @@ Every promise in this brief resolves to a row below. A claim with no row here do
 
 Facts drift. Provider counts, channel counts and competitor editions all change, so each row carries the date it was checked. A row whose date has gone stale is unverified, not true.
 
-### LibreDB Studio
+### KnowSQL
 
 | Claim | Evidence | Source | Verified |
 | :--- | :--- | :--- | :--- |
@@ -164,12 +164,12 @@ Recorded so they are not reintroduced later from memory.
 
 | Dropped claim | Why |
 | :--- | :--- |
-| "CloudBeaver Community has LDAP, LibreDB does not" | Current documentation lists LDAP under the Enterprise Edition only. The half about LibreDB stands and appears in the honesty limits; the half about CloudBeaver is no longer verifiable and is not used |
+| "CloudBeaver Community has LDAP, KnowSQL does not" | Current documentation lists LDAP under the Enterprise Edition only. The half about KnowSQL stands and appears in the honesty limits; the half about CloudBeaver is no longer verifiable and is not used |
 | "Issue #3961 proves NoSQL is unavailable in the Community Edition" | The issue is a driver-configuration question, not an availability statement. The bundled driver set is the evidence instead |
 
 ## Audience layers
 
-Adoption of infrastructure tooling flows bottom-up. A platform lead evaluates LibreDB because an engineer already tried it, which is why the engineer is the primary audience and the lead is the second layer rather than the first.
+Adoption of infrastructure tooling flows bottom-up. A platform lead evaluates KnowSQL because an engineer already tried it, which is why the engineer is the primary audience and the lead is the second layer rather than the first.
 
 ### Layer A — the individual developer (primary)
 
@@ -226,7 +226,7 @@ An engineer speaking to an engineer.
 - Competitors are never disparaged by name. A comparison is a table with sources, and the reader draws the conclusion.
 - Prefer the concrete number to the impressive word. "Sixty-one engines" beats "extensive database support".
 - Say the limitation out loud. Stating scope precisely is what makes the rest of the claims credible to this audience.
-- Product terms stay in English in every language. LibreDB Studio, not a translated variant.
+- Product terms stay in English in every language. KnowSQL, not a translated variant.
 
 ## Tagline candidates
 
@@ -247,7 +247,7 @@ Direction, not copy. This brief contains no finished copy for any surface. It sa
 | GitHub About | Door 2, in one line | The first thing a repository visitor reads, and the only place a full sentence has to work with no layout around it | Defect: it names four engines against sixty-one shipped. Fix before any campaign starts |
 | README opening | Door 1, then Door 3 | Visitors arriving from search need the claim before the feature list | States a category rather than a claim. Rewrite |
 | Website hero | Door 1 | The site as a whole can carry the story; the hero carries the claim and a single proof | States a category rather than a claim. Rewrite |
-| Website story section | The brand story, both scenes | Nothing on the site currently says why LibreDB exists | Missing entirely. Add |
+| Website story section | The brand story, both scenes | Nothing on the site currently says why KnowSQL exists | Missing entirely. Add |
 | Comparison page | Door 3, in table form | The one surface where the four gated capabilities belong in full, each with its source attached | Missing. Add, sourced from the proof library |
 | Hacker News and Reddit | Door 1, Layer A register | This audience rejects positioning language and accepts a specific verifiable claim | Not yet attempted |
 | LinkedIn | Door 2 with Assurance 1, Layer B register | Reaches the lead rather than the engineer | Not yet attempted |

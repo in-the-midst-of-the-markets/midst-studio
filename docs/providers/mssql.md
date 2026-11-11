@@ -1,6 +1,6 @@
 # Microsoft SQL Server Provider
 
-> Microsoft SQL Server support for LibreDB Studio, built on the [`mssql`](https://github.com/tediousjs/node-mssql)
+> Microsoft SQL Server support for KnowSQL, built on the [`mssql`](https://github.com/tediousjs/node-mssql)
 > driver (Tedious/TDS). This document is the single reference point for the SQL Server provider:
 > design, architecture, usage, and tests. It is a SQL-family provider sharing `SQLBaseProvider`;
 > read the [PostgreSQL doc](./postgres.md) first for the canonical SQL walkthrough, then this doc for

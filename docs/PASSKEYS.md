@@ -41,7 +41,7 @@ Browsers tie a passkey to the host name and refuse passkeys on an IP address, so
 With `PASSKEY_ORIGIN` set, the banner prints a second line that names the address to open:
 
 ```
-LibreDB Studio 0.x.y  ->  http://127.0.0.1:3000
+KnowSQL 0.x.y  ->  http://127.0.0.1:3000
 Passkeys  ->  http://localhost:3000
 ```
 

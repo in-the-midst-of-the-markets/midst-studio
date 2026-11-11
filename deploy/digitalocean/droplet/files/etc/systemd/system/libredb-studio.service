@@ -1,5 +1,5 @@
 [Unit]
-Description=LibreDB Studio
+Description=KnowSQL
 After=docker.service network-online.target
 # Wants= not BindsTo=/Requires=: dependency-triggered stops bypass
 # Restart=always, so a docker daemon restart (e.g. unattended-upgrades)

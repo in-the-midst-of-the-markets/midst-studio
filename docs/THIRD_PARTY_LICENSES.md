@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-LibreDB Studio itself is distributed under the MIT License (see [`LICENSE`](../LICENSE)).
+KnowSQL itself is distributed under the MIT License. The upstream LibreDB terms are [`LICENSE`](../LICENSE). KnowSQL's own terms, the same license with the copyright held by In the Midst of the Markets, are [`LICENSE-KNOWSQL`](../LICENSE-KNOWSQL).
 Two direct production dependencies carry terms beyond the MIT notice their package ships:
 
 | Package | License | Used at |

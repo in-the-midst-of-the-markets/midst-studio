@@ -1,6 +1,6 @@
 # Elasticsearch Provider
 
-> Elasticsearch support for LibreDB Studio, built on Elasticsearch's own SQL endpoint
+> Elasticsearch support for KnowSQL, built on Elasticsearch's own SQL endpoint
 > (`POST /_sql?format=json`, port `9200`) with **no driver dependency of any kind**: every statement is
 > a JSON body and the answer comes back through the runtime's own `fetch`. This document is the single
 > reference point for the `elasticsearch` type-id: design, architecture, usage, and tests. Its sibling

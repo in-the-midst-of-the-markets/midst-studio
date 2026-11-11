@@ -1,4 +1,4 @@
-# Run LibreDB Studio on Fly.io from the prebuilt image.
+# Run KnowSQL on Fly.io from the prebuilt image.
 # Setup steps: docs/FLY.md
 #
 # Credentials are NOT set here on purpose - put them in Fly secrets

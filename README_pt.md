@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>O editor de banco de dados que roda ao lado dos seus dados, não no seu notebook.</strong>
@@ -122,7 +122,7 @@ Agora multiplique isso pela escala. A aplicação usa Postgres, documentos vão 
 
 **Os bancos de dados já se mudaram.** Foram para Kubernetes, nuvens gerenciadas, VPCs de clientes que só se alcançam passando por um bastion. **Mas as ferramentas para lê-los não se mudaram junto.** Continuam sendo aplicativos desktop: pesados, com licença por assento, que precisam ser instalados antes de usar e que assumem um único banco, um único notebook e uma pessoa que nunca troca de máquina.
 
-O LibreDB Studio segue o caminho oposto: **a ferramenta vai até os dados, em vez de trazer os dados até a ferramenta.**
+O KnowSQL segue o caminho oposto: **a ferramenta vai até os dados, em vez de trazer os dados até a ferramenta.**
 
 Levada a sério, essa frase deixa de ser preferência e vira especificação.
 

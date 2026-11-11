@@ -18,12 +18,12 @@ export interface BackendProcess {
   exit(code: number): never;
 }
 
-export const NO_IPC_CHANNEL = "The LibreDB backend needs the IPC channel its host forks it with.";
+export const NO_IPC_CHANNEL = "The KnowSQL backend needs the IPC channel its host forks it with.";
 
 /** How long the child waits for its pools to close once its host has gone (part 1 criterion 13 allows 3 s). */
 export const DISCONNECT_CLOSE_MS = 2000;
 
-export const DISCONNECT_CLOSE_FAILED = "The LibreDB backend could not close its connections after its host went away:";
+export const DISCONNECT_CLOSE_FAILED = "The KnowSQL backend could not close its connections after its host went away:";
 
 /** Closes every pool, waiting at most DISCONNECT_CLOSE_MS, then exits 0 as the factory's signal handler does. */
 async function closeThenExit(proc: BackendProcess, factory: BackendFactory): Promise<void> {

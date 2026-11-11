@@ -17,7 +17,7 @@
 -->
 <component type="desktop-application">
   <id>org.libredb.Studio</id>
-  <name>LibreDB Studio</name>
+  <name>KnowSQL</name>
   <summary>AI-powered SQL IDE for PostgreSQL, MySQL, MongoDB and more</summary>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT</project_license>
@@ -32,8 +32,8 @@
       upstream desktop build unmodified.
     </p>
     <p>
-      LibreDB Studio is an open-source SQL IDE for developers and data teams. The desktop
-      app runs entirely on your machine: it starts a local LibreDB Studio server in the
+      KnowSQL is an open-source SQL IDE for developers and data teams. The desktop
+      app runs entirely on your machine: it starts a local KnowSQL server in the
       background and shows it in a native window. It reaches the databases you configure
       and, if you turn the optional AI features on, the model provider you pick. Nothing
       else leaves the machine.
@@ -97,7 +97,7 @@
     </p>
     <p>
       Updates arrive through "flatpak update": FlatPark re-pins this package whenever a new
-      LibreDB Studio release is published on GitHub.
+      KnowSQL release is published on GitHub.
     </p>
   </description>
 

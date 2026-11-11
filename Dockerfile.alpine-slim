@@ -1,5 +1,5 @@
 # ==============================================================================
-# LibreDB Studio - Alpine "slim" image  [issue #840, size variant]
+# KnowSQL - Alpine "slim" image  [issue #840, size variant]
 #
 # A THIRD variant, and the only one that trades FEATURES for size. `Dockerfile`
 # (Debian) is the default tag and `Dockerfile.alpine` is the security variant

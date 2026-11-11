@@ -48,7 +48,7 @@ export function renderResultsHtml(inputs: ResultsHtmlInputs): string {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${cspSource} 'nonce-${nonce}' '${RADIX_SCROLL_AREA_STYLE_HASH}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="${styleUri}">
-  <title>LibreDB Results</title>
+  <title>KnowSQL Results</title>
 </head>
 <body>
   <div id="root"></div>

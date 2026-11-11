@@ -216,7 +216,7 @@ const UNSAVED_CONSEQUENCE = "It will be lost if you reload or close this tab.";
 
 /** OURS. The sentence for an apply whose answer this pane could not narrow. */
 const UNREADABLE_OUTCOME =
-  "The apply was sent and its answer could not be read, so LibreDB cannot say whether this change landed. Re-read this definition before trying again.";
+  "The apply was sent and its answer could not be read, so KnowSQL cannot say whether this change landed. Re-read this definition before trying again.";
 
 /** OURS. The sentence for a build whose answer this pane could not narrow. */
 const UNREADABLE_BUILD = "The apply preview could not be read, so nothing was previewed and nothing was sent.";

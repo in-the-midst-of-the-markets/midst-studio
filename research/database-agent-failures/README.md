@@ -1,7 +1,7 @@
 # What Stops a Small Language Model From Driving a Database Agent
 
 An empirical study of why small open-weight models fail when driving the tool-calling agent in
-LibreDB Studio, and of how much of that failure was ours rather than theirs.
+KnowSQL, and of how much of that failure was ours rather than theirs.
 
 Authors: Cevheri Bozoglan, Yusuf Gundogdu, Abdullah Kaya, Koray Sirin.
 

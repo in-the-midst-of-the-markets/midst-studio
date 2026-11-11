@@ -344,7 +344,7 @@ describe("instrumentation register()", () => {
       log.mockRestore();
     }
 
-    expect(output).toContain("LibreDB Studio");
+    expect(output).toContain("KnowSQL");
     expect(output).toContain("https://github.com/libredb/libredb-studio");
   });
 

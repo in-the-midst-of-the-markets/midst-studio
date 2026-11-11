@@ -2,7 +2,7 @@
 // setState and always passes maskingConfig, so loadMaskingConfig never runs, and a call that slips through fails loudly.
 // It exports only storage, so a new import from that module fails the build.
 function refuse(): never {
-  throw new Error("The LibreDB Results view keeps no browser storage.");
+  throw new Error("The KnowSQL Results view keeps no browser storage.");
 }
 
 export const storage: unknown = new Proxy({}, { get: refuse });

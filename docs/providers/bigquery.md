@@ -1,6 +1,6 @@
 # Google BigQuery Provider
 
-> Google BigQuery support for LibreDB Studio over the BigQuery REST API v2 (`https://bigquery.googleapis.com`), with no Google SDK.
+> Google BigQuery support for KnowSQL over the BigQuery REST API v2 (`https://bigquery.googleapis.com`), with no Google SDK.
 > Every statement is a `jobs.query` call through the shared `node:https` transport, and the access token comes from a service-account key, Application Default Credentials or the metadata server (Workload Identity).
 > This document is the reference for the BigQuery provider: connection, credentials, seeding, query behaviour, the dry-run estimate, schema introspection and monitoring.
 

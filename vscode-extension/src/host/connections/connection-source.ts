@@ -9,8 +9,8 @@ import { pathLabel } from "./field-prompts";
 import { type ProfileEntry, toWireConnection } from "./profile";
 
 export const MISSING_SECRET_PROMPT =
-  "Not stored on this machine. LibreDB stores it in VS Code's secret storage once the connection opens.";
-export const REASK_PROMPT = "LibreDB replaces the stored value in VS Code's secret storage once the connection opens.";
+  "Not stored on this machine. KnowSQL stores it in VS Code's secret storage once the connection opens.";
+export const REASK_PROMPT = "KnowSQL replaces the stored value in VS Code's secret storage once the connection opens.";
 export const ENTER_CREDENTIALS = "Enter Credentials";
 
 /**

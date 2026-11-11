@@ -1,4 +1,4 @@
-# LibreDB Studio API Documentation
+# KnowSQL API Documentation
 
 > **Version:** 0.16.2
 > **Base URL:** `https://your-domain.com` or `http://localhost:3000`
@@ -27,7 +27,7 @@
 
 ## Overview
 
-LibreDB Studio provides a RESTful API for database management operations. The API supports PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Redis, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B.
+KnowSQL provides a RESTful API for database management operations. The API supports PostgreSQL, MySQL, SQLite, libSQL, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Redis, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB and Sparkplug B.
 
 ### Key Features
 
@@ -62,7 +62,7 @@ Responses are JSON. There is **no global envelope** — each endpoint returns it
 
 ## Authentication
 
-LibreDB Studio uses JWT (JSON Web Tokens) for authentication. Tokens are stored in HTTP-only cookies for security.
+KnowSQL uses JWT (JSON Web Tokens) for authentication. Tokens are stored in HTTP-only cookies for security.
 
 ### Authentication Flow
 

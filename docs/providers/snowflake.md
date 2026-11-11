@@ -1,6 +1,6 @@
 # Snowflake Provider
 
-> Snowflake support for LibreDB Studio over the Snowflake SQL API v2 (`https://<account>.snowflakecomputing.com/api/v2/statements`), with Studio's own client and no Snowflake driver.
+> Snowflake support for KnowSQL over the Snowflake SQL API v2 (`https://<account>.snowflakecomputing.com/api/v2/statements`), with Studio's own client and no Snowflake driver.
 > Every statement is one asynchronous SQL API request through the shared `node:https` transport, signed with a key-pair JWT or a programmatic access token.
 > This document is the reference for the Snowflake provider: connecting, the recommended Snowflake-side setup, sessions, cost, results, the tree, features, the confirmation gate, security, errors and the embedded package.
 
@@ -721,7 +721,7 @@ Still unconfirmed: every Snowflake form not named above, among them `CREATE CATA
 
 A data movement policy refusal answers HTTP 422 with code 001003, the code a syntax error answers, and `Data movement policy triggered. Contact your administrator for details.`, so Studio shows Snowflake's text.
 
-Every request sends the User-Agent `LibreDB-Studio/<version>`, or `LibreDB-Studio` in the embedded package, whose build injects no version, unless the host sets `NEXT_PUBLIC_APP_VERSION`.
+Every request sends the User-Agent `KnowSQL/<version>`, or `KnowSQL` in the embedded package, whose build injects no version, unless the host sets `NEXT_PUBLIC_APP_VERSION`.
 A submit answered 429, 500, 502, 503 or 504 is resent with the same request id and `retry=true`, so Snowflake never runs it twice, after a backoff from 500 ms doubling to 8 s, at most 5 sends; 401, 403, 404, 422 and 522 are never retried.
 Studio holds 4 statements per connection, 8 across all Snowflake connections of the Studio process, and a queue of 64 shared by them, from the submit to the last partition, which bounds the memory results take; a full queue refuses with the shared limiter's sentence.
 

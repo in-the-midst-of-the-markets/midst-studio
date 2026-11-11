@@ -757,7 +757,7 @@ describe("charts/libredb-studio OpenShift catalog annotations and helm test hook
     const chart = parse(readFileSync(join(CHART_DIR, "Chart.yaml"), "utf8")) as {
       annotations: Record<string, string>;
     };
-    expect(chart.annotations["charts.openshift.io/name"]).toBe("LibreDB Studio");
+    expect(chart.annotations["charts.openshift.io/name"]).toBe("KnowSQL");
     expect(chart.annotations["charts.openshift.io/provider"]).toBe("LibreDB");
     expect(chart.annotations["charts.openshift.io/providerType"]).toBe("community");
     expect(chart.annotations["charts.openshift.io/supportURL"]).toBe(

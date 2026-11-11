@@ -7,7 +7,7 @@ import type { BindingStore } from "./bindings";
 import type { RunRegistry } from "./run-registry";
 
 /** The item's name in the status bar's own menu. */
-export const STATUS_ITEM_NAME = "LibreDB Connection";
+export const STATUS_ITEM_NAME = "KnowSQL Connection";
 
 export interface StatusBarDeps {
   readonly window: Pick<

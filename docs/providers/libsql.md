@@ -1,6 +1,6 @@
 # libSQL Provider
 
-> libSQL support for LibreDB Studio, built on the Hrana HTTP protocol (`POST /v2/pipeline`) with
+> libSQL support for KnowSQL, built on the Hrana HTTP protocol (`POST /v2/pipeline`) with
 > **no driver dependency of any kind**: a statement is JSON in the body of a POST and the answer
 > comes back through the runtime's own `fetch`. One type-id reaches two deployments — a self-hosted
 > **libSQL server (`sqld`)** and **Turso Cloud** — because they speak the same protocol and embed the

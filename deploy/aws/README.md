@@ -1,6 +1,6 @@
 # AWS Marketplace — free AMI product
 
-LibreDB Studio ships to AWS Marketplace as a **free AMI-based product**: the
+KnowSQL ships to AWS Marketplace as a **free AMI-based product**: the
 buyer launches one EC2 instance from our image and pays AWS only for the
 instance, the volume and data transfer. There is no metering, no contract and no
 software charge.

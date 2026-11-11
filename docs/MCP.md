@@ -1,6 +1,6 @@
 # MCP server
 
-LibreDB Studio serves the [Model Context Protocol](https://modelcontextprotocol.io) at `/api/mcp`.
+KnowSQL serves the [Model Context Protocol](https://modelcontextprotocol.io) at `/api/mcp`.
 An AI client of your own, such as Claude Code, Codex, Cursor, VS Code or Gemini CLI, reads the schemas of the connections an operator opted in and runs bounded, read-only SQL, MongoDB commands and kubectl reads through Studio, while the database credentials stay on the server.
 It is off by default.
 
@@ -293,7 +293,7 @@ In `.vscode/mcp.json`; VS Code asks for the token once and stores it:
     {
       "type": "promptString",
       "id": "libredb-mcp-token",
-      "description": "LibreDB Studio MCP token",
+      "description": "KnowSQL MCP token",
       "password": true
     }
   ],

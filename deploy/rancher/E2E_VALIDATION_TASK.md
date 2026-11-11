@@ -1,7 +1,7 @@
 # Rancher End-to-End Validation - Dynamic Workflow Agent Task
 
 Agent task brief: stand up a real Rancher Manager on this Linux machine, install the
-**latest published LibreDB Studio chart** from the live Helm repository through Rancher,
+**latest published KnowSQL chart** from the live Helm repository through Rancher,
 and validate a full scenario matrix (zero-config, manual secrets, strict mode,
 existingSecret, persistence, multi-replica, upgrade). Produce an evidence-backed report
 suitable for `docs/RANCHER.md` and the SUSE Ready for Rancher certification
@@ -326,7 +326,7 @@ Every database id below is the `seed:` id Studio's managed list shows for that C
 
 ### R6 - NavLink
 
-- Read the `NavLink`s of the cluster, then, as `dev-a`, open the cluster in Rancher and use the LibreDB Studio entry of its menu.
+- Read the `NavLink`s of the cluster, then, as `dev-a`, open the cluster in Rancher and use the KnowSQL entry of its menu.
 - Expect: one `NavLink` carries the label `app.kubernetes.io/name: libredb-studio` and an `https://` `toURL` that is Studio's ingress host; the entry appears in the cluster's menu and opens Studio, signed in as `dev-a`, in a new tab.
 
 ## Phase 4 - UI evidence (best effort, do not block the matrix)
@@ -334,7 +334,7 @@ Every database id below is the `seed:` id Studio's managed list shows for that C
 If browser automation is available (Playwright), capture into
 `deploy/rancher/results/screenshots/`:
 
-- Apps > Charts showing the LibreDB Studio card from the `libredb` repo.
+- Apps > Charts showing the KnowSQL card from the `libredb` repo.
 - The install form / values YAML view.
 - The installed app detail page with the workload green.
 - Pod logs view showing the first-run credentials banner (S1 namespace, before cleanup).

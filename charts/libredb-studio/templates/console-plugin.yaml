@@ -135,7 +135,7 @@ metadata:
   labels:
     {{- include "libredb-studio.consolePluginLabels" . | nindent 4 }}
 spec:
-  displayName: LibreDB Studio
+  displayName: KnowSQL
   i18n:
     loadType: Preload
   backend:

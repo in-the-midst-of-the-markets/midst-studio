@@ -292,7 +292,7 @@ describe("the Connections tree against PostgreSQL, SQL Server, MySQL and MongoDB
     store = new ConnectionStore({
       setting: new FakeSetting([]),
       secrets: new MemorySecretStorage(),
-      log: window.createOutputChannel("LibreDB tree test", { log: true }),
+      log: window.createOutputChannel("KnowSQL tree test", { log: true }),
     });
     opened = new OpenConnections();
     client = new BackendClient(link, new ProfileConnectionSource({ store, window, workspace }), opened);
@@ -614,7 +614,7 @@ describe("the Connections tree against PostgreSQL, SQL Server, MySQL and MongoDB
         bindings,
         runs,
         service,
-        log: window.createOutputChannel("LibreDB editor test", { log: true }),
+        log: window.createOutputChannel("KnowSQL editor test", { log: true }),
         timers: { setTimeout },
         showLog: () => Promise.resolve(),
         openUserSettings: () => Promise.resolve(),

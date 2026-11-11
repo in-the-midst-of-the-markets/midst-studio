@@ -1,5 +1,5 @@
 # =============================================================================
-# LibreDB Studio — Ready-to-use Docker Compose
+# KnowSQL — Ready-to-use Docker Compose
 # =============================================================================
 # Pulls the published image (ghcr.io/libredb/libredb-studio:latest) — no source
 # build required. Works on any Docker host and PaaS that consumes a plain

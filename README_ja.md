@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>ノートPCではなく、データの隣にデプロイするデータベースエディタ。</strong>
@@ -121,7 +121,7 @@ Helm、Homebrew、Snap、winget、deb/rpm は[インストール方法](#イン�
 
 **データベースは移動しました。** Kubernetesの中へ、マネージドクラウドへ、踏み台越しに辿り着く顧客のVPCへ。**しかし、それを読むツールは移動していません。** 今も重量級のデスクトップアプリで、席数課金で、インストールが前提で、「データベースは1つ、PCは1台、担当者は端末を変えない」という想定の上に立っています。
 
-LibreDB Studioは逆向きです。**データをツールのところへ持ってくるのではなく、ツールがデータのところへ行きます。**
+KnowSQLは逆向きです。**データをツールのところへ持ってくるのではなく、ツールがデータのところへ行きます。**
 
 これを真に受けると、好みの問題ではなく仕様になります。
 

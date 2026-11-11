@@ -12,7 +12,7 @@ import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from "ne
  * provider inside a host would fight it for the same class attribute.
  *
  * `defaultTheme="dark"` keeps the pre-token appearance for anyone who never
- * touches the toggle — dark is what LibreDB Studio has always been.
+ * touches the toggle — dark is what KnowSQL has always been.
  *
  * `enableSystem={false}` because the toggle offers two states, not three. It is
  * not merely cosmetic: with system disabled, next-themes stops RESOLVING a stored

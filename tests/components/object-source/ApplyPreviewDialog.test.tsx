@@ -597,7 +597,7 @@ describe("ApplyPreviewDialog", () => {
   test("one line under the diff states the identity, with the character count", () => {
     draw(PREVIEW);
     expect(text("-identity")).toBe(
-      "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you typed, and the whole of the right side is what will be sent, 1,234 characters.",
+      "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you typed, and the whole of the right side is what will be sent, 1,234 characters.",
     );
   });
 
@@ -614,7 +614,7 @@ describe("ApplyPreviewDialog", () => {
     // false for exactly the case the second sentence was added for. The count belongs to the plan
     // and the diff names which statement it is showing.
     expect(text("-identity")).toBe(
-      "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you " +
+      "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you " +
         "typed. The diff shows statement 1 of 2, and 1,243 characters will be sent in total.",
     );
     expect(text("-identity")).not.toContain("the whole of the right side");
@@ -978,7 +978,7 @@ describe("ApplyPreviewDialog", () => {
     );
     expect(text("-outcome")).toContain("must be owner of function order_total");
     expect(text("-outcome")).toContain(
-      "This apply runs as the database credential on this connection and not as your LibreDB login, so re-entering your password will not change this.",
+      "This apply runs as the database credential on this connection and not as your KnowSQL login, so re-entering your password will not change this.",
     );
     expect(query("-goto-error")).toBeNull();
     expect(query("-confirm")).toBeNull();
@@ -1053,7 +1053,7 @@ describe("ApplyPreviewDialog", () => {
       "This text does not name `app.order_total(integer)`, so that object was not changed.",
     );
     expect(text("-outcome")).toContain(
-      "A different object was created and LibreDB did not remove it: `libredb_probe_v2`.",
+      "A different object was created and KnowSQL did not remove it: `libredb_probe_v2`.",
     );
     expect(query("-outcome-code")).toBeNull();
   });
@@ -1065,7 +1065,7 @@ describe("ApplyPreviewDialog", () => {
       preimage: PREIMAGE,
       outcome: { outcome: "applied-elsewhere", undone: true, duration: 30 },
     });
-    expect(text("-outcome")).toContain("LibreDB took that back, so nothing was left behind");
+    expect(text("-outcome")).toContain("KnowSQL took that back, so nothing was left behind");
   });
 
   test("`applied-elsewhere` with no name still says the object is there", () => {
@@ -1075,7 +1075,7 @@ describe("ApplyPreviewDialog", () => {
       preimage: PREIMAGE,
       outcome: { outcome: "applied-elsewhere", undone: false, duration: 30 },
     });
-    expect(text("-outcome")).toContain("A different object was created and LibreDB did not remove it.");
+    expect(text("-outcome")).toContain("A different object was created and KnowSQL did not remove it.");
   });
 
   test("`interrupted` never offers a retry, at any status", () => {
@@ -1128,7 +1128,7 @@ describe("ApplyPreviewDialog", () => {
         outcome: "interrupted",
         committed: "unknown",
         sentence:
-          "The apply was sent and its answer could not be read, so LibreDB cannot say whether this change landed. " +
+          "The apply was sent and its answer could not be read, so KnowSQL cannot say whether this change landed. " +
           "Re-read this definition before trying again.",
         duration: 0,
       }),
@@ -1187,7 +1187,7 @@ describe("ApplyPreviewDialog", () => {
       refusal({
         outcome: "interrupted",
         committed: "unknown",
-        sentence: "Query killed. Message: Terminated from LibreDB Studio",
+        sentence: "Query killed. Message: Terminated from KnowSQL",
         duration: 1_200,
       }),
     );
@@ -1618,7 +1618,7 @@ describe("ApplyPreviewDialog", () => {
     // the server no longer holds.
     expect(headers()).toEqual(["On the server before this apply", "What was sent"]);
     expect(text("-identity")).toBe(
-      "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you " +
+      "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you " +
         "typed, and the whole of the right side is what was sent, 1,234 characters.",
     );
   });
@@ -1689,7 +1689,7 @@ describe("ApplyPreviewDialog", () => {
     };
     draw({ kind: "preview", plan: compared, preimage: PREIMAGE });
     expect(text("-session-pin")).toBe(
-      'LibreDB runs this apply with search_path set to "app", pg_catalog, for that one round trip only.',
+      'KnowSQL runs this apply with search_path set to "app", pg_catalog, for that one round trip only.',
     );
     expect(text("-revision-note")).toBe(
       "This apply re-reads the definition first and refuses if it differs from the left side.",
@@ -1697,7 +1697,7 @@ describe("ApplyPreviewDialog", () => {
     cleanup();
     draw({ ...COLLATERAL_OUTCOME, plan: compared } as ApplyPreviewState);
     expect(text("-session-pin")).toBe(
-      'LibreDB ran this apply with search_path set to "app", pg_catalog, for that one round trip only.',
+      'KnowSQL ran this apply with search_path set to "app", pg_catalog, for that one round trip only.',
     );
     expect(text("-revision-note")).toBe(
       "This apply re-read the definition first, and it would have refused if it differed from the left side.",
@@ -1740,7 +1740,7 @@ describe("ApplyPreviewDialog", () => {
       },
     });
     expect(text("-identity")).toBe(
-      "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you " +
+      "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you " +
         "typed. The diff shows statement 1 of 2, and 1,243 characters were sent in total.",
     );
   });
@@ -1781,7 +1781,7 @@ describe("ApplyPreviewDialog", () => {
   const FUTURE = [
     "Nothing runs until you press Apply.",
     "Applying this replaces the whole container",
-    "LibreDB runs this apply with search_path",
+    "KnowSQL runs this apply with search_path",
     "This apply re-reads the definition first",
     "I understand what this will replace.",
     "Will be sent",
@@ -1941,13 +1941,13 @@ describe("ApplyPreviewDialog", () => {
     });
     expect(headers()).toEqual(["On the server now", "Will be sent"]);
     expect(text("-session-pin")).toBe(
-      'LibreDB runs this apply with search_path set to "app", pg_catalog, for that one round trip only.',
+      'KnowSQL runs this apply with search_path set to "app", pg_catalog, for that one round trip only.',
     );
     expect(text("-revision-note")).toBe(
       "This apply re-reads the definition first and refuses if it differs from the left side.",
     );
     expect(text("-identity")).toBe(
-      "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you " +
+      "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you " +
         "typed, and the whole of the right side is what will be sent, 1,234 characters.",
     );
   });

@@ -2,7 +2,7 @@ apiVersion: v2
 name: libredb-studio
 description: Web-based SQL IDE for cloud-native teams supporting sixty-one engines - PostgreSQL, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads
 type: application
-version: 0.1.133
+version: 0.1.134
 appVersion: "1.2.0"
 kubeVersion: ">=1.26.0-0"
 home: https://github.com/libredb/libredb-studio
@@ -171,8 +171,8 @@ annotations:
   artifacthub.io/license: MIT
   artifacthub.io/prerelease: "false"
   # Read by the OpenShift console's Helm catalog and the chart verifier.
-  charts.openshift.io/name: LibreDB Studio
-  charts.openshift.io/provider: LibreDB
+  charts.openshift.io/name: KnowSQL
+  charts.openshift.io/provider: KnowSQL
   charts.openshift.io/providerType: community
   charts.openshift.io/supportURL: https://github.com/libredb/libredb-studio/issues
   # False: 0.1.60 tracks app release 0.14.1, which repairs how the light theme is
@@ -417,6 +417,7 @@ annotations:
     - name: Source
       url: https://github.com/libredb/libredb-studio
   artifacthub.io/changes: |
+    - "Name the product KnowSQL in the chart's display text"
     - "Add the read-only Meta Ads connector: campaigns, ad sets and ads from one ad account"
     - "Add the read-only Intercom connector: Contacts, Conversations, Admins, Tags, Segments and Teams"
     - "Default image 1.2.0 is the first that authProvider openshift accepts, so OpenShift sign-in renders without an image.tag override"

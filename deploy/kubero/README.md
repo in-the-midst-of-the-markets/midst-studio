@@ -1,10 +1,10 @@
-# LibreDB Studio on Kubero
+# KnowSQL on Kubero
 
 [Kubero](https://www.kubero.dev) is a self-hosted, open-source PaaS — a
 "Heroku alternative for Kubernetes" — that deploys 12-factor apps onto a cluster
 from a built-in template catalog.
 
-LibreDB Studio is listed in the official
+KnowSQL is listed in the official
 [Kubero template catalog](https://www.kubero.dev/templates)
 (merged in [kubero-dev/kubero#754](https://github.com/kubero-dev/kubero/pull/754)).
 The canonical template lives in the Kubero repo at
@@ -22,7 +22,7 @@ to set one up):
 
 1. **Open your Kubero dashboard** → create or pick a pipeline/app, then browse
    **Templates**.
-2. **Search** for **LibreDB Studio**.
+2. **Search** for **KnowSQL**.
 3. **Fill in the variables** — admin/user credentials, a strong `JWT_SECRET`
    (32+ chars), and any optional AI/storage settings.
 4. **Deploy.**

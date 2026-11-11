@@ -52,11 +52,11 @@ describe("ConnectionStatusBar", () => {
   it("creates its item once, on the right at priority 100, named and clicking to Change Connection", () => {
     const { item } = setup();
     assert.equal(STATUS_ITEM, "libredb.connection");
-    assert.equal(STATUS_ITEM_NAME, "LibreDB Connection");
+    assert.equal(STATUS_ITEM_NAME, "KnowSQL Connection");
     assert.equal(item().id, "libredb.connection");
     assert.equal(item().alignment, StatusBarAlignment.Right);
     assert.equal(item().priority, 100);
-    assert.equal(item().name, "LibreDB Connection");
+    assert.equal(item().name, "KnowSQL Connection");
     assert.equal(item().command, "libredb.changeConnection");
   });
 

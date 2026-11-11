@@ -1,4 +1,4 @@
-# LibreDB Studio on Fly.io
+# KnowSQL on Fly.io
 
 Fly.io does not have a template gallery, so this repo ships a ready
 [`fly.toml`](../fly.toml) instead. It runs the prebuilt

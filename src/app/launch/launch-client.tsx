@@ -200,9 +200,9 @@ export default function LaunchClient() {
           <SessionConflict {...conflict} />
         ) : confirm !== null ? (
           <>
-            <h1 className="mb-2 text-xl font-semibold">Sign in to LibreDB Studio</h1>
+            <h1 className="mb-2 text-xl font-semibold">Sign in to KnowSQL</h1>
             <p className="mb-6 text-sm text-fg-tertiary">
-              {`This launch link signs you in to LibreDB Studio as ${confirm.email}.`}
+              {`This launch link signs you in to KnowSQL as ${confirm.email}.`}
             </p>
             <button
               type="button"
@@ -213,7 +213,7 @@ export default function LaunchClient() {
             </button>
           </>
         ) : failure === null ? (
-          <p className="text-sm text-fg-tertiary">Signing you in to LibreDB Studio...</p>
+          <p className="text-sm text-fg-tertiary">Signing you in to KnowSQL...</p>
         ) : (
           <>
             <h1 className="mb-2 text-xl font-semibold">The launch link did not sign you in</h1>

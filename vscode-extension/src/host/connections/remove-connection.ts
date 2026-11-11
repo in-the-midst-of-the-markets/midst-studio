@@ -80,7 +80,7 @@ export async function removeConnection(deps: RemoveDeps, target?: unknown): Prom
   }
   if (undeletedKeys.length > 0) {
     void deps.window.showWarningMessage(
-      `LibreDB removed ${name}, but could not delete ${undeletedKeys.length} of its secrets from VS Code's secret storage. The LibreDB log names them.`,
+      `KnowSQL removed ${name}, but could not delete ${undeletedKeys.length} of its secrets from VS Code's secret storage. The KnowSQL log names them.`,
     );
   }
   return removal.removed;

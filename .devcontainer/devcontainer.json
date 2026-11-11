@@ -1,5 +1,5 @@
 {
-  "name": "LibreDB Studio",
+  "name": "KnowSQL",
   "build": {
     "dockerfile": "Dockerfile"
   },

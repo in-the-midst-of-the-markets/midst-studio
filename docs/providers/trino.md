@@ -1,6 +1,6 @@
 # Trino Provider
 
-> Trino support for LibreDB Studio, built on Trino's own client protocol (`POST /v1/statement`,
+> Trino support for KnowSQL, built on Trino's own client protocol (`POST /v1/statement`,
 > port `8080`) with **no driver dependency of any kind**: every statement is the body of an HTTP
 > request and the answer is read by following a chain of `nextUri` links through the runtime's own
 > `fetch`. This document is the single reference point for the Trino provider: design, architecture,
@@ -1663,7 +1663,7 @@ in the schema tree.
 `supportsMaintenance: true`, `maintenanceOperations: ["kill"]`.
 
 `kill` takes the query id the Sessions panel shows and runs
-`CALL system.runtime.kill_query(query_id => '…', message => 'Terminated from LibreDB Studio')`.
+`CALL system.runtime.kill_query(query_id => '…', message => 'Terminated from KnowSQL')`.
 Live-verified end to end on 476: the target's own exchange then fails with `ADMINISTRATIVELY_KILLED`
 and carries the message. The result says *"Asked Trino to terminate …"* and not "terminated", because
 the procedure returns as soon as the coordinator accepts the request.

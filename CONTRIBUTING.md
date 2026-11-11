@@ -1,6 +1,6 @@
-# Contributing to LibreDB Studio
+# Contributing to KnowSQL
 
-First off, thank you for considering contributing to LibreDB Studio! It's people like you that make LibreDB Studio such a great tool.
+First off, thank you for considering contributing to KnowSQL! It's people like you that make KnowSQL such a great tool.
 
 ## Code of Conduct
 
@@ -20,8 +20,8 @@ Each translated README also carries a translation-lag banner: a blockquote above
 
 ### Issues and pull requests come from real users
 
-LibreDB Studio is maintained by volunteers, and every issue and pull request is read by a person.
-We expect them to come from people who use LibreDB Studio: a bug you hit while working with it, a feature you need, a fix for a problem you ran into.
+KnowSQL is maintained by volunteers, and every issue and pull request is read by a person.
+We expect them to come from people who use KnowSQL: a bug you hit while working with it, a feature you need, a fix for a problem you ran into.
 
 We close, without review, issues and pull requests that are opened by a bot or an autonomous agent, or that come from scanning the source code for edge cases rather than from using the product.
 The same applies to batches of reports opened minutes apart from one template, whether or not each finding is technically correct.

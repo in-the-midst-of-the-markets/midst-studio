@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>데이터베이스 에디터를 로컬에 설치하는 대신, 데이터가 위치한 환경에 배포해 사용하세요.</strong>
@@ -90,7 +90,7 @@
   <a href="#빠른-시작"><strong>빠른 시작</strong></a> •
   <a href="#온라인-데모"><strong>온라인 데모</strong></a> •
   <a href="#설치-방법"><strong>설치 방법</strong></a> •
-  <a href="#one-click-배포"><strong>LibreDB Studio 배포하기</strong></a>
+  <a href="#one-click-배포"><strong>KnowSQL 배포하기</strong></a>
 </p>
 
 > 이 한국어 README는 커뮤니티에서 번역한 문서로, 영문 버전의 최신 내용이 아직 반영되지 않았을 수 있습니다. 내용이 다른 경우 [영문 버전](README.md)을 기준으로 합니다.
@@ -113,7 +113,7 @@ npx @libredb/studio
 
 > Helm, Homebrew, Snap, winget 또는 deb/rpm을 사용하려면 [전체 설치 방법](#설치-방법)을 참고하세요.
 
-## LibreDB Studio가 필요한 이유
+## KnowSQL가 필요한 이유
 
 호스팅 서비스를 이용하면 Postgres 데이터베이스를 40초 만에 생성해 사용할 수 있습니다.
 
@@ -123,9 +123,9 @@ npx @libredb/studio
 
 **데이터베이스가 운영되는 환경은 이미 달라졌습니다.** 이제 데이터베이스는 Kubernetes나 관리형 클라우드에서 실행되며, 때로는 점프 호스트를 거쳐야 접근할 수 있는 고객 VPC에 위치하기도 합니다. **하지만 데이터베이스를 다루는 도구는 여전히 데스크톱에 머물러 있습니다.** 무겁고, 사용자 단위로 비용이 부과되며, 사용하기 전에 설치해야 합니다. 하나의 데이터베이스와 하나의 노트북, 그리고 항상 같은 기기를 사용하는 한 명의 사용자를 전제로 만들어진 도구들입니다.
 
-LibreDB Studio는 다른 방식으로 접근합니다. **데이터를 도구가 있는 곳으로 가져오는 대신, 도구를 데이터가 있는 곳으로 가져갑니다.**
+KnowSQL는 다른 방식으로 접근합니다. **데이터를 도구가 있는 곳으로 가져오는 대신, 도구를 데이터가 있는 곳으로 가져갑니다.**
 
-이러한 접근 방식은 LibreDB Studio의 설계 방향에도 그대로 반영됩니다.
+이러한 접근 방식은 KnowSQL의 설계 방향에도 그대로 반영됩니다.
 
 * 에디터는 브라우저에서 실행되어야 합니다. 데이터가 사용자의 컴퓨터에 있는 것도 아니고, 함께 일하는 사람들도 같은 컴퓨터를 사용하는 것이 아니기 때문입니다.
 
@@ -142,7 +142,7 @@ LibreDB Studio는 다른 방식으로 접근합니다. **데이터를 도구가 
 
 ## 온라인 데모
 
-> **설치 없이 바로 LibreDB Studio를 사용해 보세요!**
+> **설치 없이 바로 KnowSQL를 사용해 보세요!**
 
 | 체험 방식          | URL                                            | 인증 정보                                                                                                               |
 | -------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -153,9 +153,9 @@ LibreDB Studio는 다른 방식으로 접근합니다. **데이터를 도구가 
 
 ## 개요
 
-LibreDB Studio는 데이터가 있는 환경에 직접 배포하는 방식을 지향합니다. Container, Helm chart, Operator, PaaS One-click template을 이용해 배포하거나, `npm i @libredb/studio`를 사용해 자신의 제품에 직접 임베드할 수도 있습니다. 데이터베이스를 외부에 노출할 필요도 없습니다.
+KnowSQL는 데이터가 있는 환경에 직접 배포하는 방식을 지향합니다. Container, Helm chart, Operator, PaaS One-click template을 이용해 배포하거나, `npm i @libredb/studio`를 사용해 자신의 제품에 직접 임베드할 수도 있습니다. 데이터베이스를 외부에 노출할 필요도 없습니다.
 
-60개의 엔진을 하나의 인터페이스에서 사용할 수 있습니다. PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads를 모두 동일한 브라우저 환경에서 다룰 수 있으며, 각 엔진이 제공하는 정보에 따라 ER 다이어그램, schema 비교, 모니터링 기능도 사용할 수 있습니다. 이 가운데 Druid, Elasticsearch, OpenSearch는 SQL 인터페이스에서 데이터 조회만 지원하므로 LibreDB Studio에서도 읽기 전용으로 제공됩니다. 이들 엔진에서는 `UPDATE`나 `CREATE TABLE` 같은 명령을 지원하지 않기 때문에, LibreDB Studio에서도 해당 기능을 사용할 수 없는 것으로 명확하게 표시합니다. Cassandra의 경우 제공하는 행 수와 용량 정보가 정확하지 않아 객체 브라우저에 해당 정보를 표시하지 않습니다. 부정확한 값을 보여주는 것보다 아예 표시하지 않는 방식을 택한 것입니다. Cassandra에서 제공하는 파티션 수 추정치는 디스크에 기록된 파일을 기반으로 하는데, 실제 테스트에서는 500개의 행이 있는 테이블이 143개로 추정되기도 했습니다. Trino는 데이터베이스가 아니라 쿼리 엔진이라는 점에서 또 다른 차이가 있습니다. 따라서 primary key나 index 정보를 제공하지 않으며, 표시되는 데이터 크기 역시 Trino 자체가 아닌 연결된 각 connector의 시스템을 기준으로 합니다.
+60개의 엔진을 하나의 인터페이스에서 사용할 수 있습니다. PostgreSQL, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Databend, Snowflake, Apache Spark, Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads and Meta Ads를 모두 동일한 브라우저 환경에서 다룰 수 있으며, 각 엔진이 제공하는 정보에 따라 ER 다이어그램, schema 비교, 모니터링 기능도 사용할 수 있습니다. 이 가운데 Druid, Elasticsearch, OpenSearch는 SQL 인터페이스에서 데이터 조회만 지원하므로 KnowSQL에서도 읽기 전용으로 제공됩니다. 이들 엔진에서는 `UPDATE`나 `CREATE TABLE` 같은 명령을 지원하지 않기 때문에, KnowSQL에서도 해당 기능을 사용할 수 없는 것으로 명확하게 표시합니다. Cassandra의 경우 제공하는 행 수와 용량 정보가 정확하지 않아 객체 브라우저에 해당 정보를 표시하지 않습니다. 부정확한 값을 보여주는 것보다 아예 표시하지 않는 방식을 택한 것입니다. Cassandra에서 제공하는 파티션 수 추정치는 디스크에 기록된 파일을 기반으로 하는데, 실제 테스트에서는 500개의 행이 있는 테이블이 143개로 추정되기도 했습니다. Trino는 데이터베이스가 아니라 쿼리 엔진이라는 점에서 또 다른 차이가 있습니다. 따라서 primary key나 index 정보를 제공하지 않으며, 표시되는 데이터 크기 역시 Trino 자체가 아닌 연결된 각 connector의 시스템을 기준으로 합니다.
 
 가장 최근에 추가된 엔진은 Sparkplug B입니다. MQTT로 broker 하나를 읽고, 에지 노드의 출생 인증서가 선언한 metric과 그 뒤의 데이터 메시지가 실어 오는 값을 읽습니다. 구조적으로 읽기 전용입니다. 인코더에는 PUBLISH를 쓰는 함수가 없고, CONNECT는 will을 싣지 않습니다. 5.4가 에지 노드의 사망 인증서를 그 will로 등록하므로, will을 설정한 읽기 측은 자기 소켓이 끊길 때 사망을 발행하게 됩니다. 그룹과 에지 노드는 컨테이너이고, metric은 한 행으로서 그 값과 타임스탬프와 정의는 그것을 선언한 인증서에서 오며, 시퀀스 간격은 추측하지 않고 연속된 두 데이터 메시지에서 읽습니다.
 
@@ -194,7 +194,7 @@ Oxia, InfluxDB (InfluxQL), Milvus, Qdrant, Weaviate, Neo4j, etcd, Apache Kafka, 
 
 주요 기능을 별도의 유료 기능으로 제한하지도 않습니다. SSO, ER 다이어그램, AI 기능을 비롯한 모든 NoSQL 엔진이 MIT 라이선스로 제공되는 버전에 포함되어 있습니다. MIT 라이선스는 이러한 아키텍처를 가능하게 하기 위한 필수 조건입니다. 사용자 단위로 라이선스 비용을 부과하거나 요금제에 따라 기능을 제한한다면 필요한 모든 환경에 자유롭게 배포하기 어렵기 때문입니다.
 
-### LibreDB Studio를 선택하는 이유
+### KnowSQL를 선택하는 이유
 
 * **데이터가 있는 환경에 직접 배포**: Container, Helm chart, Rancher, OpenShift Operator, PaaS One-click template을 사용하거나 npm으로 직접 임베드할 수 있습니다.
 
@@ -449,7 +449,7 @@ Standalone 애플리케이션에서만 사용할 수 있습니다. 임베드용 
 
 ### 빠른 시작 (Docker)
 
-명령어 하나로 LibreDB Studio를 실행할 수 있습니다. 클론, 설치, 빌드가 필요하지 않습니다 :
+명령어 하나로 KnowSQL를 실행할 수 있습니다. 클론, 설치, 빌드가 필요하지 않습니다 :
 
 ```bash
 docker run \
@@ -647,7 +647,7 @@ Sample table: `app.customers`, `app.products`, `app.orders`, `app.order_items`, 
 
 ## 테스트
 
-LibreDB Studio는 7개 계층에 걸쳐 549개의 테스트 파일과 17,692개의 테스트를 갖추고 있으며, 별도로 93개의 브라우저 테스트를 제공합니다. CI에서는 **100% line coverage**를 필수 조건으로 적용합니다(`bun run coverage:check`).
+KnowSQL는 7개 계층에 걸쳐 549개의 테스트 파일과 17,692개의 테스트를 갖추고 있으며, 별도로 93개의 브라우저 테스트를 제공합니다. CI에서는 **100% line coverage**를 필수 조건으로 적용합니다(`bun run coverage:check`).
 
 ### 자주 사용하는 명령어
 
@@ -717,7 +717,7 @@ bun run test:coverage
 
 ## One-click 배포
 
-DigitalOcean, Koyeb, Render, Railway, Sealos, CapRover 또는 Dokploy에서 클릭 한 번으로 LibreDB Studio 인스턴스를 배포할 수 있습니다.
+DigitalOcean, Koyeb, Render, Railway, Sealos, CapRover 또는 Dokploy에서 클릭 한 번으로 KnowSQL 인스턴스를 배포할 수 있습니다.
 
  [![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?name=libredb-studio&type=docker&image=ghcr.io%2Flibredb%2Flibredb-studio%3Alatest&instance_type=free&regions=fra&instances_min=0&autoscaling_sleep_idle_delay=3900&env%5BADMIN_EMAIL%5D=admin%40libredb.org&env%5BJWT_SECRET%5D=set_a_real_secret&env%5BLLM_API_KEY%5D=your_GEMINI_API_KEY&env%5BLLM_MODEL%5D=gemini-2.5-flash&env%5BLLM_PROVIDER%5D=gemini&env%5BNEXT_PUBLIC_AUTH_PROVIDER%5D=local&env%5BSTORAGE_PROVIDER%5D=local&ports=3000%3Bhttp%3B%2F&hc_protocol%5B3000%5D=tcp&hc_grace_period%5B3000%5D=5&hc_interval%5B3000%5D=30&hc_restart_limit%5B3000%5D=3&hc_timeout%5B3000%5D=5&hc_path%5B3000%5D=%2F&hc_method%5B3000%5D=get)  
  [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/libredb/libredb-studio)  
@@ -730,15 +730,15 @@ DigitalOcean, Koyeb, Render, Railway, Sealos, CapRover 또는 Dokploy에서 클�
 
 > **DigitalOcean:** [Marketplace 등록 페이지](https://marketplace.digitalocean.com/apps/libredb-studio)에서 사전 구성된 Droplet을 생성합니다. 처음 실행할 때 전용 관리자 인증 정보가 생성되며, 시작 메시지(MOTD)에서 해당 정보를 확인할 수 있는 위치를 안내합니다.
 >
-> **CapRover:** CapRover Panel에서 **Apps → One-Click Apps/Databases**로 이동해 **LibreDB Studio**를 검색한 다음 배포합니다.
+> **CapRover:** CapRover Panel에서 **Apps → One-Click Apps/Databases**로 이동해 **KnowSQL**를 검색한 다음 배포합니다.
 >
 > **Koyeb:** 배포하기 전에 안전한 `JWT_SECRET`(최소 32자, `openssl rand -base64 32`로 생성)과 필요한 인증 정보를 설정해야 합니다. Koyeb에서는 secret을 자동으로 생성할 수 없습니다. 미리 입력된 값은 의도적으로 사용할 수 없게 설정되어 있습니다. 해당 secret은 최소 길이인 32자보다 짧기 때문에 그대로 사용하면 애플리케이션이 실행을 중단하고 이유를 안내합니다. README에 그대로 노출된 secret으로 애플리케이션이 실행되는 것을 방지하기 위한 것입니다. 배포 버튼에는 `STORAGE_PROVIDER=local`이 설정되어 있어 Connection metadata가 브라우저에 저장되며, 이는 Koyeb의 임시 파일 시스템에 적합합니다. 재배포 후에도 Connection을 유지하려면 `STORAGE_PROVIDER=postgres`로 변경하고 `STORAGE_POSTGRES_URL`을 Koyeb에서 호스팅하는 Postgres 또는 Neon 데이터베이스로 설정하세요. 배포 버튼에는 `LLM_PROVIDER`/`LLM_MODEL`/`LLM_API_KEY`도 미리 설정되어 있지만, Agent 실행은 서버가 직접 나열하는 seed Connection에서만 시작할 수 있습니다. 따라서 UI에서 만든 Connection에서는 `STORAGE_PROVIDER` 값과 관계없이 Start 버튼이 비활성화됩니다([docs/AGENT.md](docs/AGENT.md#turning-it-on) 참고). 자세한 내용은 [`deploy/koyeb/`](deploy/koyeb/)에서 확인할 수 있습니다.
 >
 > **Fly.io:** repository에 바로 사용할 수 있는 [`fly.toml`](fly.toml)이 포함되어 있습니다. 애플리케이션 이름, volume, secrets를 포함한 전체 배포 과정은 [`docs/FLY.md`](docs/FLY.md)를 참고하세요.
 >
-> **Cosmos:** [Cosmos](https://cosmos-cloud.io) Marketplace에서 **LibreDB Studio**를 검색해 클릭 한 번으로 설치할 수 있습니다. Cosmos가 secret을 자동으로 생성하고 영구 SQLite volume을 구성한 뒤 SmartShield reverse proxy를 통해 서비스를 제공합니다. 자세한 내용은 [`deploy/cosmos/`](deploy/cosmos/)를 참고하세요.
+> **Cosmos:** [Cosmos](https://cosmos-cloud.io) Marketplace에서 **KnowSQL**를 검색해 클릭 한 번으로 설치할 수 있습니다. Cosmos가 secret을 자동으로 생성하고 영구 SQLite volume을 구성한 뒤 SmartShield reverse proxy를 통해 서비스를 제공합니다. 자세한 내용은 [`deploy/cosmos/`](deploy/cosmos/)를 참고하세요.
 >
-> **Dokploy:** [Dokploy Template Directory](https://templates.dokploy.com)에서 클릭 한 번으로 설치할 수 있습니다. Dokploy Panel에서 **Create Service → Template**으로 이동해 **LibreDB Studio**를 검색한 다음 배포합니다. Dokploy가 `ADMIN_PASSWORD`, `USER_PASSWORD`, `JWT_SECRET`을 자동으로 생성하며, Connection은 Traefik 뒤의 SQLite volume에 영구 저장됩니다. 자세한 내용은 [`deploy/dokploy/`](deploy/dokploy/)를 참고하세요.
+> **Dokploy:** [Dokploy Template Directory](https://templates.dokploy.com)에서 클릭 한 번으로 설치할 수 있습니다. Dokploy Panel에서 **Create Service → Template**으로 이동해 **KnowSQL**를 검색한 다음 배포합니다. Dokploy가 `ADMIN_PASSWORD`, `USER_PASSWORD`, `JWT_SECRET`을 자동으로 생성하며, Connection은 Traefik 뒤의 SQLite volume에 영구 저장됩니다. 자세한 내용은 [`deploy/dokploy/`](deploy/dokploy/)를 참고하세요.
 
 ### 환경 변수
 
@@ -792,16 +792,16 @@ reverse proxy의 하위 경로(예: `/tools/libredb`)에 배포하려면 `BASE_P
 
 ### Railway
 
-LibreDB Studio는 클릭 한 번으로 배포할 수 있는 [Railway](https://railway.com) template을 제공합니다.
+KnowSQL는 클릭 한 번으로 배포할 수 있는 [Railway](https://railway.com) template을 제공합니다.
 Template 정의, 설치 방법 및 release checklist는 [`deploy/railway/`](deploy/railway/)에서 확인할 수 있습니다.
 이 template은 미리 build된 `ghcr.io/libredb/libredb-studio` image를 실행하고 SQLite 데이터를 Railway volume에 영구 저장합니다. CapRover와 마찬가지로 Docker image template은 release할 때마다 버전을 수동으로 업데이트해야 합니다.
 
 ### CapRover
 
-LibreDB Studio는 공식 [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) 목록에 등록되어 있습니다.
+KnowSQL는 공식 [CapRover One-Click Apps](https://github.com/caprover/one-click-apps/blob/master/public/v4/apps/libredb-studio.yml) 목록에 등록되어 있습니다.
 
 1. **CapRover Panel 열기** → **Apps → One-Click Apps/Databases**
-2. **LibreDB Studio** 검색
+2. **KnowSQL** 검색
 3. **변수 입력** (관리자/사용자 인증 정보, `JWT_SECRET`, 선택 사항인 AI/storage 설정)
 4. **배포 !**
 
@@ -809,19 +809,19 @@ LibreDB Studio는 공식 [CapRover One-Click Apps](https://github.com/caprover/o
 
 ### Kubero
 
-LibreDB Studio는 공식 [Kubero Template Directory](https://www.kubero.dev/templates)에 등록되어 있습니다. Kubero는 self-hosted 방식으로 운영할 수 있는 "Kubernetes 기반 Heroku 대안"입니다.
-Kubero Panel에서 **Templates**로 이동해 **LibreDB Studio**를 검색하고 인증 정보와 `JWT_SECRET`을 입력한 다음 배포합니다. Template은 미리 build된 `ghcr.io/libredb/libredb-studio` image를 실행하며, SQLite 데이터는 `/app/data`에 연결된 5Gi volume에 영구 저장됩니다.
+KnowSQL는 공식 [Kubero Template Directory](https://www.kubero.dev/templates)에 등록되어 있습니다. Kubero는 self-hosted 방식으로 운영할 수 있는 "Kubernetes 기반 Heroku 대안"입니다.
+Kubero Panel에서 **Templates**로 이동해 **KnowSQL**를 검색하고 인증 정보와 `JWT_SECRET`을 입력한 다음 배포합니다. Template은 미리 build된 `ghcr.io/libredb/libredb-studio` image를 실행하며, SQLite 데이터는 `/app/data`에 연결된 5Gi volume에 영구 저장됩니다.
 설치 방법과 설치 후 설정은 [`deploy/kubero/`](deploy/kubero/)에서 확인할 수 있습니다. Railway와 CapRover와 마찬가지로 Docker image template은 release할 때마다 버전을 수동으로 업데이트해야 합니다.
 
 ### Cosmos
 
-LibreDB Studio는 공식 [Cosmos servapp Marketplace](https://github.com/azukaar/cosmos-servapps-official)에 등록되어 있습니다. [Cosmos](https://cosmos-cloud.io)는 self-hosted 서버 관리 및 보안 reverse proxy를 제공하는 도구입니다.
-Cosmos Panel에서 **Marketplace**를 열고 **LibreDB Studio**를 검색한 다음 설치합니다. Cosmos가 인증 정보와 `JWT_SECRET`을 자동으로 생성하고 `/app/data`에 영구 SQLite volume을 구성한 뒤 SmartShield로 보호되는 경로를 통해 서비스를 제공합니다.
+KnowSQL는 공식 [Cosmos servapp Marketplace](https://github.com/azukaar/cosmos-servapps-official)에 등록되어 있습니다. [Cosmos](https://cosmos-cloud.io)는 self-hosted 서버 관리 및 보안 reverse proxy를 제공하는 도구입니다.
+Cosmos Panel에서 **Marketplace**를 열고 **KnowSQL**를 검색한 다음 설치합니다. Cosmos가 인증 정보와 `JWT_SECRET`을 자동으로 생성하고 `/app/data`에 영구 SQLite volume을 구성한 뒤 SmartShield로 보호되는 경로를 통해 서비스를 제공합니다.
 설치 방법과 설치 후 설정은 [`deploy/cosmos/`](deploy/cosmos/)에서 확인할 수 있습니다. Railway, CapRover, Kubero와 마찬가지로 Docker image template은 release할 때마다 버전을 수동으로 업데이트해야 합니다.
 
 ### Render (클라우드 배포 권장)
 
-LibreDB Studio에는 One-click 배포를 위한 `render.yaml` Blueprint가 포함되어 있습니다.
+KnowSQL에는 One-click 배포를 위한 `render.yaml` Blueprint가 포함되어 있습니다.
 
 1. **이 repository를 Fork합니다.**
 2. **Render에 연결합니다.** [dashboard.render.com](https://dashboard.render.com) → New → Blueprint
@@ -1064,7 +1064,7 @@ docker compose -f docker-compose.vault-demo.yml up
 
 이 제품은 브라우저 애플리케이션이므로 브라우저에서 발생하는 bug 역시 제품의 bug입니다. CI에서는 Desktop Chromium에서 전체 Playwright 테스트를 실행하고 WebKit에서는 `security-headers` spec(`webkit-security`)을 실행합니다.
 
-이 WebKit spec 하나를 제외하면 Safari 및 이전 버전 WebKit의 regression, 모바일 layout, Linux Desktop 버전에서 사용하는 WebKitGTK 엔진은 실제 환경에서 테스트해야 합니다. LibreDB Studio는 이를 위해 BrowserStack을 사용합니다.
+이 WebKit spec 하나를 제외하면 Safari 및 이전 버전 WebKit의 regression, 모바일 layout, Linux Desktop 버전에서 사용하는 WebKitGTK 엔진은 실제 환경에서 테스트해야 합니다. KnowSQL는 이를 위해 BrowserStack을 사용합니다.
 
 ## 후원
 

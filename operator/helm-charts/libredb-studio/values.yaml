@@ -691,9 +691,9 @@ openshift:
     # NamespaceDashboard link fails the render.
     location: ApplicationMenu
     # -- The ApplicationMenu section the link is listed under.
-    section: "LibreDB"
+    section: "KnowSQL"
     # -- The link's text.
-    text: "LibreDB Studio"
+    text: "KnowSQL"
     # -- The ApplicationMenu icon, 24 by 24, as an https URL or a data:image URI. Empty
     # renders none.
     imageUrl: ""
@@ -895,7 +895,7 @@ rancher:
     # operator, whose role grants no NavLink.
     enabled: false
     # -- The link's text
-    label: "LibreDB Studio"
+    label: "KnowSQL"
     # -- The navigation group the link appears under
     group: "Databases"
     # -- The browser target the link opens in

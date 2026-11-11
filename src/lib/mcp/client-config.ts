@@ -74,7 +74,7 @@ export function mcpClientConfigs(url: string): readonly McpClientConfig[] {
       language: "json",
       snippet: json({
         inputs: [
-          { type: "promptString", id: MCP_VSCODE_INPUT_ID, description: "LibreDB Studio MCP token", password: true },
+          { type: "promptString", id: MCP_VSCODE_INPUT_ID, description: "KnowSQL MCP token", password: true },
         ],
         servers: {
           libredb: { type: "http", url, headers: { Authorization: `Bearer \${input:${MCP_VSCODE_INPUT_ID}}` } },

@@ -1,6 +1,6 @@
-# LibreDB Studio desktop shell
+# KnowSQL desktop shell
 
-A Tauri v2 window around the standalone LibreDB Studio server. The shell adds no
+A Tauri v2 window around the standalone KnowSQL server. The shell adds no
 features: it starts the same `node server.js` payload every other channel ships,
 waits for it to become healthy, logs the local user in and shows the app. Issue
 [#232](https://github.com/libredb/libredb-studio/issues/232); the design it

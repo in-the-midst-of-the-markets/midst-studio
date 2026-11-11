@@ -6,7 +6,7 @@ Never reuse any of it.
 
 | File | What it is |
 |---|---|
-| `ca.crt` | The test CA, self-signed, `CN=LibreDB Studio Test CA` |
+| `ca.crt` | The test CA, self-signed, `CN=KnowSQL Test CA` |
 | `server.crt` | The server certificate the test CA signed, for `localhost`, `127.0.0.1` and `::1` |
 | `server.key.jwk.json` | The server certificate's private key, as a JWK |
 | `other-ca.crt` | An unrelated CA that signed nothing here: the wrong CA in the verification tests |

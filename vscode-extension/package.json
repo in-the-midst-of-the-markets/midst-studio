@@ -1,8 +1,8 @@
 {
   "name": "libredb-studio",
   "publisher": "libredb",
-  "displayName": "LibreDB Studio",
-  "description": "Browse and query PostgreSQL, MySQL, SQL Server, MongoDB, Redis, ClickHouse, Elasticsearch, Kafka and many more databases with LibreDB Studio.",
+  "displayName": "KnowSQL",
+  "description": "Browse and query PostgreSQL, MySQL, SQL Server, MongoDB, Redis, ClickHouse, Elasticsearch, Kafka and many more databases with KnowSQL.",
   "version": "0.4.1",
   "private": true,
   "license": "MIT",
@@ -65,63 +65,63 @@
       {
         "command": "libredb.showLog",
         "title": "Show Log",
-        "category": "LibreDB"
+        "category": "KnowSQL"
       },
       {
         "command": "libredb.addConnection",
         "title": "Add Connection",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(add)"
       },
       {
         "command": "libredb.removeConnection",
         "title": "Remove Connection",
-        "category": "LibreDB"
+        "category": "KnowSQL"
       },
       {
         "command": "libredb.refresh",
         "title": "Refresh",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(refresh)"
       },
       {
         "command": "libredb.newQuery",
         "title": "New Query",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(file-code)"
       },
       {
         "command": "libredb.selectRows",
         "title": "Select Rows",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(play)"
       },
       {
         "command": "libredb.runQuery",
         "title": "Run Query",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(play)"
       },
       {
         "command": "libredb.cancelQuery",
         "title": "Cancel Query",
-        "category": "LibreDB",
+        "category": "KnowSQL",
         "icon": "$(debug-stop)"
       },
       {
         "command": "libredb.changeConnection",
         "title": "Change Connection",
-        "category": "LibreDB"
+        "category": "KnowSQL"
       }
     ],
     "configuration": {
-      "title": "LibreDB",
+      "title": "KnowSQL",
       "properties": {
         "libredb.connections": {
           "type": "array",
           "scope": "application",
           "default": [],
-          "markdownDescription": "Database connections, without passwords or connection strings: LibreDB keeps those in VS Code's secret storage on each machine. Add one with **LibreDB: Add Connection**.",
+          "markdownDescription": "Database connections, without passwords or connection strings: KnowSQL keeps those in VS Code's secret storage on each machine. Add one with **KnowSQL: Add Connection**.",
           "items": {
             "type": "object",
             "required": [
@@ -200,14 +200,14 @@
       "activitybar": [
         {
           "id": "libredb",
-          "title": "LibreDB",
+          "title": "KnowSQL",
           "icon": "media/libredb.svg"
         }
       ],
       "panel": [
         {
           "id": "libredbResults",
-          "title": "LibreDB Results",
+          "title": "KnowSQL Results",
           "icon": "media/libredb.svg"
         }
       ]

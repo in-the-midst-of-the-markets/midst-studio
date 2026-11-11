@@ -140,7 +140,7 @@ describe("the Connections view's root in a real extension host", () => {
     assert.equal(bad.description, "invalid");
     assert.equal(
       bad.tooltip,
-      "The connection bad has the type nosuchdb, which is not a database LibreDB Studio connects to.",
+      "The connection bad has the type nosuchdb, which is not a database KnowSQL connects to.",
     );
     assert.ok(bad.iconPath instanceof vscode.ThemeIcon);
     assert.equal(bad.iconPath.id, "error");

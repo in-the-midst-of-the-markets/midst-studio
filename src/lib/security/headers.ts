@@ -1,5 +1,5 @@
 /**
- * The security header set LibreDB Studio requires, as pure data.
+ * The security header set KnowSQL requires, as pure data.
  *
  * THIS MODULE MUST HAVE NO IMPORTS. It is published as `@libredb/studio/security` so that
  * libredb-platform can adopt the same policy from its own Next config, where neither the "@/"

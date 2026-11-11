@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copies the CapRover one-click templates and their logos from a LibreDB Studio
+# Copies the CapRover one-click templates and their logos from a KnowSQL
 # checkout into a caprover/one-click-apps checkout, byte for byte, and prints
 # the catalog paths it wrote. The one list of what goes upstream, used by both
 # jobs of .github/workflows/caprover-fork.yml.

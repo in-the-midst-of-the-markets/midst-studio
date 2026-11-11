@@ -1,11 +1,11 @@
-# LibreDB Studio on Cosmos
+# KnowSQL on Cosmos
 
 [Cosmos](https://cosmos-cloud.io) ([azukaar/Cosmos-Server](https://github.com/azukaar/Cosmos-Server))
 is a self-hosted server manager and reverse proxy that bundles authentication,
 a built-in firewall, and an application-layer security proxy (SmartShield). It
 installs apps from a community "servapp" marketplace with one click.
 
-LibreDB Studio is listed in the official
+KnowSQL is listed in the official
 [Cosmos servapp marketplace](https://github.com/azukaar/cosmos-servapps-official)
 (merged in
 [azukaar/cosmos-servapps-official#218](https://github.com/azukaar/cosmos-servapps-official/pull/218)).
@@ -21,7 +21,7 @@ From a running Cosmos instance (see the
 [Cosmos install docs](https://cosmos-cloud.io/doc/1%20index/) to set one up):
 
 1. **Open your Cosmos dashboard** → **Marketplace**.
-2. **Search** for **LibreDB Studio**.
+2. **Search** for **KnowSQL**.
 3. **Install.** Cosmos auto-generates the admin/user passwords and `JWT_SECRET`,
    provisions a persistent volume, and wires up a SmartShield-protected route.
 4. **Set the URL** for the app when prompted, then finish the install.

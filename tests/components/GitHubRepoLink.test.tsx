@@ -25,7 +25,7 @@ describe("GitHubRepoLink", () => {
     expect(link!.getAttribute("href")).toBe("https://github.com/libredb/libredb-studio");
     expect(link!.getAttribute("target")).toBe("_blank");
     expect(link!.getAttribute("rel")).toBe("noopener noreferrer");
-    expect(link!.getAttribute("aria-label")).toBe("LibreDB Studio on GitHub");
+    expect(link!.getAttribute("aria-label")).toBe("KnowSQL on GitHub");
     // An icon-only link must never be announced as a button (jsx-a11y gate).
     expect(link!.getAttribute("role")).toBeNull();
   });

@@ -1,5 +1,5 @@
 /*
- * LibreDB Studio theme layer — the ONLY place a studio surface colour is written.
+ * KnowSQL theme layer — the ONLY place a studio surface colour is written.
  *
  * This file is shipped in the package (`dist/styles.css`) because
  * `src/app/globals.css` is not: anything expressed as a global CSS rule reaches

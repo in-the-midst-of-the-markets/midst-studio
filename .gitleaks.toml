@@ -1,4 +1,4 @@
-# Secret scanning configuration for LibreDB Studio (security programme control 2.1).
+# Secret scanning configuration for KnowSQL (security programme control 2.1).
 #
 # The full-history sweep found 24 matches across 753 commits and classified
 # every one of them as a fabricated value: no credential has ever been
@@ -25,7 +25,7 @@
 # rejected outright in favour of `regexes` + `regexTarget` or a
 # `.gitleaksignore` fingerprint). There are none of those today.
 
-title = "LibreDB Studio secret scanning"
+title = "KnowSQL secret scanning"
 
 [extend]
 # Start from gitleaks' own rule set rather than an in-repo copy: the rules move

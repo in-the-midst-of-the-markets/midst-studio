@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=LibreDB Studio
+Name=KnowSQL
 GenericName=SQL IDE
 Comment=AI-powered SQL IDE for PostgreSQL, MySQL, MongoDB and more
 Exec=libredb-studio

@@ -135,7 +135,7 @@ function commandSummary(unit: Extract<ObjectEditUnit, { readonly medium: "comman
  */
 function identitySentence(plan: ObjectEditPlan, sent: boolean): string {
   const opening =
-    "The shaded regions are added by LibreDB to make this apply safe. Everything else is exactly what you ";
+    "The shaded regions are added by KnowSQL to make this apply safe. Everything else is exactly what you ";
   const total = counted(planExecutableLength(plan.unit));
   if (plan.unit.medium === "statement" && plan.unit.steps.length > 1) {
     // The byte-identity clause is DROPPED here rather than qualified: with more than one step the
@@ -628,7 +628,7 @@ export function ApplyPreviewDialog(props: ApplyPreviewDialogProps): React.JSX.El
 
           {pins.map((pin) => (
             <p key={pin.setting} className="text-xs text-fg-muted" data-testid="object-source-apply-session-pin">
-              {`LibreDB ${sent ? "ran" : "runs"} this apply with ${pin.setting} set to ${pin.value}, for that one round trip only.`}
+              {`KnowSQL ${sent ? "ran" : "runs"} this apply with ${pin.setting} set to ${pin.value}, for that one round trip only.`}
             </p>
           ))}
 
@@ -809,7 +809,7 @@ function OutcomeRegion({
     if (pinned !== undefined) lines.push(pinned);
     if (outcome.refusal.refusal === "privilege") {
       lines.push(
-        "This apply runs as the database credential on this connection and not as your LibreDB login, so " +
+        "This apply runs as the database credential on this connection and not as your KnowSQL login, so " +
           "re-entering your password will not change this.",
       );
     }
@@ -843,10 +843,10 @@ function OutcomeRegion({
     lines.push(`This text does not name \`${label}\`, so that object was not changed.`);
     lines.push(
       outcome.undone
-        ? "A different object was written and LibreDB took that back, so nothing was left behind."
+        ? "A different object was written and KnowSQL took that back, so nothing was left behind."
         : outcome.wrote === undefined
-          ? "A different object was created and LibreDB did not remove it."
-          : `A different object was created and LibreDB did not remove it: \`${outcome.wrote}\`.`,
+          ? "A different object was created and KnowSQL did not remove it."
+          : `A different object was created and KnowSQL did not remove it: \`${outcome.wrote}\`.`,
     );
   } else if (outcome.outcome === "interrupted") {
     /*
@@ -871,7 +871,7 @@ function OutcomeRegion({
      * fault names. Pointing the other way, "the apply was sent" is equally unmeasured: an
      * `appFetch` rejection on a dead network reaches this arm too, and `applyFrame` above already
      * tells the same reader "Whether it reached the server is unknown." So the one thing true of
-     * every member is that LibreDB holds no answer that settles whether the change landed.
+     * every member is that KnowSQL holds no answer that settles whether the change landed.
      *
      * X20 offered a SEVENTH STATE or a PER-OUTCOME SENTENCE OVERRIDE and this file takes neither,
      * because both put the fix in the caller. `ApplyPreviewState` is this component's type but the

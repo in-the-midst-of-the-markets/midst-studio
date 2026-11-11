@@ -1,5 +1,5 @@
 // The backend interface between the extension host and the child, the JSON-RPC method names and the wire types.
-// Every LibreDB import is type-only, so this module adds no provider code to the host bundle.
+// Every KnowSQL import is type-only, so this module adds no provider code to the host bundle.
 import type { CancellationToken } from "vscode-jsonrpc";
 import type { EditorQueryBody } from "@/lib/api/editor-query";
 import type { ApiErrorCode } from "@/lib/api/error-codes";

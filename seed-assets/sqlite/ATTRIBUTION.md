@@ -32,5 +32,5 @@ Employees Sample Database at
 Shipped tables: `employee`, `department`, `dept_emp`, `dept_manager`,
 `salary`, `title`; views `current_dept_emp`, `dept_emp_latest_date`.
 
-This file ships in LibreDB Studio distribution artifacts as the template for
+This file ships in KnowSQL distribution artifacts as the template for
 the embedded "Sample (Employees)" connection (see `docs/providers/sqlite.md`).

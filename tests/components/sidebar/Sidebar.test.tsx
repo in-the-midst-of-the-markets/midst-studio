@@ -570,7 +570,7 @@ describe("Sidebar", () => {
     expect(queryByText("v9.8.7")).toBeNull();
     expect(queryByText("vundefined")).toBeNull();
     expect(container.textContent).not.toContain("undefined");
-    expect(container.querySelector('a[aria-label="LibreDB Studio on GitHub"]')).toBeNull();
+    expect(container.querySelector('a[aria-label="KnowSQL on GitHub"]')).toBeNull();
     expect(queryByRole("link", { name: "AI" })).toBeNull();
     expect(queryByText("Connected")).not.toBeNull();
   });

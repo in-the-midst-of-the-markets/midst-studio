@@ -1,8 +1,8 @@
-# LibreDB Studio
+# KnowSQL
 
 **The open-source SQL IDE built for cloud-native teams.**
 
-LibreDB Studio gives you a full-featured database workspace in your browser: connect to PostgreSQL, MySQL, MongoDB, Redis and fifty-seven more engines, write and run queries, have the optional AI explain them wherever the engine returns a query plan, and share results with your team.
+KnowSQL gives you a full-featured database workspace in your browser: connect to PostgreSQL, MySQL, MongoDB, Redis and fifty-seven more engines, write and run queries, have the optional AI explain them wherever the engine returns a query plan, and share results with your team.
 
 ## Features
 
@@ -21,11 +21,11 @@ LibreDB Studio gives you a full-featured database workspace in your browser: con
 
 ## How it works
 
-LibreDB Studio runs as a Docker container managed by systemd (`libredb-studio.service`). Application data persists in `/app/data` and survives restarts and upgrades. A unique JWT secret and admin/user passwords are generated on first boot — no shared default credentials.
+KnowSQL runs as a Docker container managed by systemd (`libredb-studio.service`). Application data persists in `/app/data` and survives restarts and upgrades. A unique JWT secret and admin/user passwords are generated on first boot — no shared default credentials.
 
 ## Add a Managed Database (optional)
 
-When you create the Droplet, you can choose **Add a Database** and DigitalOcean creates a Managed PostgreSQL or MySQL cluster together with it. On first boot LibreDB Studio adds that database to its sidebar, so it is there the first time you sign in with an account that has the admin role, with nothing to type.
+When you create the Droplet, you can choose **Add a Database** and DigitalOcean creates a Managed PostgreSQL or MySQL cluster together with it. On first boot KnowSQL adds that database to its sidebar, so it is there the first time you sign in with an account that has the admin role, with nothing to type.
 
 - The connection signs in as the cluster's administrator (`doadmin`), so only accounts with the admin role see it, and it is locked in the UI: the password stays on the Droplet in `/etc/libredb-studio.env`, readable by root only, and is never sent to the browser.
 - Traffic to the cluster is encrypted, as with the `sslmode=require` connection string DigitalOcean gives you, but the server certificate is not verified. To verify it, add the cluster's CA certificate to `/etc/libredb-studio/seed/connections.yaml` as described in the [DigitalOcean deployment guide](https://github.com/libredb/libredb-studio/blob/main/deploy/digitalocean/README.md#managed-database).

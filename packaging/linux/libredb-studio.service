@@ -1,9 +1,9 @@
-# systemd unit for LibreDB Studio, installed by the .deb/.rpm packages
+# systemd unit for KnowSQL, installed by the .deb/.rpm packages
 # (issue #112). Configuration goes in /etc/libredb-studio/env; state
 # (SQLite storage, generated auth credentials) lives in
 # /var/lib/libredb-studio, owned by the DynamicUser service account.
 [Unit]
-Description=LibreDB Studio - web-based SQL IDE
+Description=KnowSQL - web-based SQL IDE
 Documentation=https://github.com/libredb/libredb-studio
 After=network-online.target
 Wants=network-online.target

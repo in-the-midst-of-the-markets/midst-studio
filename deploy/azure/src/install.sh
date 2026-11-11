@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LibreDB Studio — Azure Marketplace solution template first-boot installer.
+# KnowSQL — Azure Marketplace solution template first-boot installer.
 #
 # Executed by the CustomScript VM extension via protectedSettings.commandToExecute.
 # Every argument is base64-encoded by the ARM template, so no shell quoting or
@@ -17,7 +17,7 @@ set -euo pipefail
 [ -f /var/log/libredb-install.log ] || install -m 600 /dev/null /var/log/libredb-install.log
 chmod 600 /var/log/libredb-install.log
 exec > >(tee -a /var/log/libredb-install.log) 2>&1
-echo "=== LibreDB Studio install started: $(date -Is) ==="
+echo "=== KnowSQL install started: $(date -Is) ==="
 
 b64d() { printf '%s' "${1:-}" | base64 -d 2>/dev/null || true; }
 
@@ -184,7 +184,7 @@ docker network inspect libredb >/dev/null 2>&1 || docker network create libredb
 # ------------------------------------------------------------ systemd units ---
 cat > /etc/systemd/system/libredb-studio.service <<EOF
 [Unit]
-Description=LibreDB Studio
+Description=KnowSQL
 After=docker.service network-online.target
 Wants=network-online.target docker.service
 
@@ -210,7 +210,7 @@ EOF
 
 cat > /etc/systemd/system/libredb-caddy.service <<EOF
 [Unit]
-Description=LibreDB Studio reverse proxy (Caddy)
+Description=KnowSQL reverse proxy (Caddy)
 After=docker.service network-online.target libredb-studio.service
 Wants=network-online.target docker.service
 
@@ -246,7 +246,7 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 if [ "$ok" -ne 1 ]; then
-  echo "FATAL: LibreDB Studio did not become healthy within 5 minutes" >&2
+  echo "FATAL: KnowSQL did not become healthy within 5 minutes" >&2
   docker logs libredb-studio --tail 200 || true
   exit 1
 fi
@@ -327,7 +327,7 @@ if [ "$TLS_MODE" = "internal" ]; then
 fi
 
 cat > /etc/libredb-studio.info <<EOF
-LibreDB Studio is running.
+KnowSQL is running.
 
   URL:   ${APP_URL}
   Admin: ${APP_ADMIN_EMAIL}   (password: the one you entered during deployment)
@@ -344,4 +344,4 @@ ${TLS_NOTE}
 EOF
 cp /etc/libredb-studio.info /etc/motd
 
-echo "=== LibreDB Studio install finished: $(date -Is) ==="
+echo "=== KnowSQL install finished: $(date -Is) ==="

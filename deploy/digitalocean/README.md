@@ -1,4 +1,4 @@
-# DigitalOcean Marketplace — LibreDB Studio
+# DigitalOcean Marketplace — KnowSQL
 
 Build and submission files for the 1-Click Droplet App (Path B of #72).
 Base image: **Ubuntu 24.04 LTS** (`ubuntu-24-04-x64`).

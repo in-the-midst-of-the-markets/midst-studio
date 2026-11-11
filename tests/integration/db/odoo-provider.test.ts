@@ -177,7 +177,7 @@ describe("OdooProvider", () => {
     expect(probe.options?.maxSockets).toBe(4);
     expect(probe.options?.headers.Authorization).toBe(`Bearer ${KEY}`);
     expect(probe.options?.headers.Accept).toBe("application/json");
-    expect(probe.options?.headers["User-Agent"]).toBe("LibreDB-Studio");
+    expect(probe.options?.headers["User-Agent"]).toBe("KnowSQL");
     expect(JSON.stringify(probe.options?.headers).toLowerCase()).not.toContain("x-odoo-database");
     expect(await opened.listContainers()).toEqual([{ path: ["database"], name: "database", level: 0 }]);
     expect(await opened.listContainers([])).toEqual([{ path: ["database"], name: "database", level: 0 }]);

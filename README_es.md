@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" width="200" alt="LibreDB Studio Logo" />
+  <img src="public/logo.svg" width="200" alt="KnowSQL Logo" />
 </p>
 
-<h1 align="center">LibreDB Studio</h1>
+<h1 align="center">KnowSQL</h1>
 
 <p align="center">
   <strong>El editor de bases de datos que se despliega junto a tus datos, no dentro de tu laptop.</strong>
@@ -122,7 +122,7 @@ Ahora multiplicá eso por escala. La aplicación usa Postgres, los documentos va
 
 **Las bases de datos ya se mudaron.** Se fueron a Kubernetes, a nubes administradas, a VPC de clientes a las que solo se llega cruzando un bastión. **Pero las herramientas para leerlas no se mudaron con ellas.** Siguen siendo aplicaciones de escritorio: pesadas, con licencia por asiento, que hay que instalar antes de usar, y que asumen que tenés una sola base, una sola laptop y una persona que nunca cambia de equipo.
 
-LibreDB Studio va por el otro camino: **la herramienta va hacia los datos, en lugar de traer los datos hacia la herramienta.**
+KnowSQL va por el otro camino: **la herramienta va hacia los datos, en lugar de traer los datos hacia la herramienta.**
 
 Tomada en serio, esa frase deja de ser una preferencia y se vuelve una especificación.
 

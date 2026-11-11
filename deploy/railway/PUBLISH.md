@@ -1,4 +1,4 @@
-# Publishing the LibreDB Studio Railway Template
+# Publishing the KnowSQL Railway Template
 
 A Railway **marketplace template** is built in the visual template editor, not
 from a repo file. This is the exact checklist to create and publish it. The
@@ -82,7 +82,7 @@ The `${{ secret(...) }}` values are generated once, when the template is deploye
 ## 7. Publish
 
 - Click **Publish** (or Workspace → Templates → **Publish** next to it).
-- Fill the form: display name **LibreDB Studio**, a short description (≤75 chars,
+- Fill the form: display name **KnowSQL**, a short description (≤75 chars,
   e.g. `Open-source web SQL IDE with AI — PostgreSQL, MySQL, Mongo, Redis & more`),
   tags from `template.json`, the logo (`libredb-studio.png`), category
   Database/Developer Tools.

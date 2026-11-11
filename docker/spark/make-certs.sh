@@ -38,7 +38,7 @@ esac
 mkdir -p -- "$dir"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=LibreDB Studio Spark fixture CA" \
+openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=KnowSQL Spark fixture CA" \
   -keyout "$work/ca.key" -out "$dir/ca.pem" \
   -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign" 2>/dev/null
 openssl req -newkey rsa:2048 -nodes -subj "/CN=localhost" -keyout "$dir/server.key" -out "$work/server.csr" 2>/dev/null

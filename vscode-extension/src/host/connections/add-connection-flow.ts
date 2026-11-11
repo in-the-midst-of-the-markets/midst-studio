@@ -94,7 +94,7 @@ export const PORT_REFUSAL = "Enter a port from 1 to 65535, or leave it empty.";
 export const NAME_BLANK = "Enter a name for this connection.";
 /** The refusal of a paste no engine reads, naming the formats the catalogue says the paste box reads. */
 export function unreadablePaste(formats: string): string {
-  return `LibreDB could not read this connection string. Supported formats: ${formats}`;
+  return `KnowSQL could not read this connection string. Supported formats: ${formats}`;
 }
 
 export function nameTaken(name: string): string {
@@ -102,7 +102,7 @@ export function nameTaken(name: string): string {
 }
 
 export function notOffered(label: string): string {
-  return `${label} is not available in LibreDB Studio for VS Code.`;
+  return `${label} is not available in KnowSQL for VS Code.`;
 }
 
 /** The tooltip of the $(settings-gear) button that opens Review. */

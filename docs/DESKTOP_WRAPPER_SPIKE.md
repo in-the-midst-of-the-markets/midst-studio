@@ -42,7 +42,7 @@ The go is conditional on two spike-phase validations listed under "Go/no-go" bel
 | Sidecar support | First-class: `externalBin` per target triple + the shell plugin's sidecar API (spawn, stdout/stderr events, kill) | Child processes via Node `child_process`; equally capable |
 | Our renderer needs | None beyond a plain browser context — the app is a served web page; no Node integration in the renderer is needed | Node-in-renderer is Electron's main advantage and we do not need it |
 
-Since LibreDB Studio's UI is entirely served by the sidecar HTTP server, the wrapper needs
+Since KnowSQL's UI is entirely served by the sidecar HTTP server, the wrapper needs
 nothing from the shell except "open a webview at a URL and manage a child process". That is
 exactly the case where Tauri's size/memory advantage costs nothing.
 

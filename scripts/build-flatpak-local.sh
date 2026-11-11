@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Build and install the LibreDB Studio Flatpak from a LOCAL AppImage (issue #232).
+# Build and install the KnowSQL Flatpak from a LOCAL AppImage (issue #232).
 #
 # The manifest that ships to Flathub points at a released AppImage asset. This
 # script renders the same manifest against an AppImage you just built, so the

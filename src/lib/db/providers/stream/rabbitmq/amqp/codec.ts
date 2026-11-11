@@ -25,7 +25,7 @@ export const READ_CHANNEL = 1;
 const INT64_MAX = BigInt(2) ** BigInt(63) - BigInt(1);
 const UINT64_MAX = BigInt(2) ** BigInt(64) - BigInt(1);
 const AGE = /^[1-9][0-9]*[YMDhms]$/;
-const PRODUCT = "LibreDB Studio";
+const PRODUCT = "KnowSQL";
 
 /** A broken frame from the peer: the fact names it, and the reply code is what connection.close carries (null: none). */
 export class ProtocolViolation extends Error {

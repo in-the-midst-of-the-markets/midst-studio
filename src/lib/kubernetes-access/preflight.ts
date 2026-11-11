@@ -203,7 +203,7 @@ export function verifyAccessReviewEnvAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: the environment contradicts the Kubernetes access review",
+      " KnowSQL cannot start: the environment contradicts the Kubernetes access review",
       authProviderSetting() === "openshift"
         ? " openshift sign-in always runs the Kubernetes access review, and these variables have to change:"
         : ` ${ACCESS_REVIEW_ENV} switches the Kubernetes access review on, and these variables have to change:`,

@@ -4707,7 +4707,7 @@ export class PostgresProvider extends SQLBaseProvider {
     if (submitted !== current) {
       return refuse(
         "identity",
-        `this text declares "${submitted}" and the object being edited is "${current}", and LibreDB refuses an ` +
+        `this text declares "${submitted}" and the object being edited is "${current}", and KnowSQL refuses an ` +
           "edited header rather than sending it. CREATE OR REPLACE with a different name or a different " +
           "argument list creates a SECOND routine and leaves this one untouched, after which every call site " +
           "fails 42725 is not unique. A changed parameter DEFAULT is rendered inside this same header and " +
@@ -4799,7 +4799,7 @@ export class PostgresProvider extends SQLBaseProvider {
       return refuse(
         "unsupported",
         `this server did not answer PostgreSQL's own multi-statement check for this text (${counted.sentence}), so ` +
-          "LibreDB cannot establish that the edit is a single statement and refuses it rather than sending a text " +
+          "KnowSQL cannot establish that the edit is a single statement and refuses it rather than sending a text " +
           "whose extra statements would run",
       );
     }
@@ -5221,7 +5221,7 @@ export class PostgresProvider extends SQLBaseProvider {
     // side alone falls into that function's `applied` tail and the reader is shown "This apply is
     // done. The new definition is on the server." for a round trip that carried something the plan
     // did not name. That is strictly worse than today, where the dialog's second line, which X20
-    // narrowed, already says the true thing: LibreDB holds no answer that settles whether the
+    // narrowed, already says the true thing: KnowSQL holds no answer that settles whether the
     // change landed. What is left wrong is that dialog's FIRST line, "Whether it reached the server
     // is unknown", over a member where it demonstrably did. Both files belong to other hands, so
     // the residual is filed as D89, which carries both ways out and the cost of each.

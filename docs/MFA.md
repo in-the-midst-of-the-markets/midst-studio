@@ -1,6 +1,6 @@
-# Two-Factor Authentication (TOTP) — LibreDB Studio
+# Two-Factor Authentication (TOTP) — KnowSQL
 
-LibreDB Studio can require a time-based one-time password (TOTP) after the password on the **local**
+KnowSQL can require a time-based one-time password (TOTP) after the password on the **local**
 auth provider. It is opt-in per account, configured entirely through environment variables, and
 verified against RFC 6238 — so any standard authenticator app works: Google Authenticator, Authy,
 1Password, Bitwarden, Aegis, KeePassXC, and the rest.

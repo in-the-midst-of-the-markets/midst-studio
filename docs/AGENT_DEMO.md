@@ -1,6 +1,6 @@
 # Agent demo script
 
-Twenty-five cases, ordered easy to hard, for showing LibreDB Studio's agent to someone who has
+Twenty-five cases, ordered easy to hard, for showing KnowSQL's agent to someone who has
 not seen it. Every case here was **driven live** against a real model and a real database before it
 was written down, and each one records what actually came back — including the ones that refuse.
 Nothing in this file is aspirational.

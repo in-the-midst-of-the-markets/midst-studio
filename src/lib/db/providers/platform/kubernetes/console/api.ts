@@ -61,7 +61,7 @@ export async function version(context: KubectlContext): Promise<KubectlGrid> {
   return textGrid(
     ["FIELD", "VALUE"],
     [
-      ["Client Version", `LibreDB Studio ${context.appVersion ?? "(version not recorded)"}, which runs no kubectl`],
+      ["Client Version", `KnowSQL ${context.appVersion ?? "(version not recorded)"}, which runs no kubectl`],
       ["Server Version", field("gitVersion")],
       ["Server Git Commit", field("gitCommit")],
       ["Server Build Date", field("buildDate")],

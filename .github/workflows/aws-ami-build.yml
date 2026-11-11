@@ -242,7 +242,7 @@ jobs:
             echo "| Ingestion role | \`${INGESTION_ROLE_ARN}\` |"
             echo
             echo "### Next steps in the portal"
-            echo "1. AWS Marketplace Management Portal -> Server products -> LibreDB Studio."
+            echo "1. AWS Marketplace Management Portal -> Server products -> KnowSQL."
             echo "2. Request changes -> Update versions -> Test 'Add version' with the AMI ID above to run a scan without creating a version."
             echo "3. When the scan passes, Add new version: OS Ubuntu 24.04, OS user \`ubuntu\`, scanning port 22, endpoint http / / 3000."
             echo "4. Do not deregister this AMI or delete its snapshot while the version request is under review."

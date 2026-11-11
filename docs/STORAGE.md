@@ -1,6 +1,6 @@
-# Storage — LibreDB Studio
+# Storage — KnowSQL
 
-LibreDB Studio uses a **pluggable storage abstraction layer** that lets it operate in two modes:
+KnowSQL uses a **pluggable storage abstraction layer** that lets it operate in two modes:
 
 - **Local mode** (default): Zero-config, all data lives in the browser's `localStorage`. Ideal for single-user / open-source usage.
 - **Server mode**: Data is persisted to a server-side database (SQLite or PostgreSQL) with per-user scoping. Ideal for teams and enterprise deployments.
@@ -45,7 +45,7 @@ This document is split into two parts. Most readers want **[Part 1 — Setup & C
 
 # Part 1 — Setup & Configuration
 
-LibreDB Studio supports three storage modes. Pick the one that fits your use case and follow the steps below.
+KnowSQL supports three storage modes. Pick the one that fits your use case and follow the steps below.
 
 ## Which Mode Should I Use?
 

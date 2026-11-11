@@ -55,13 +55,13 @@ export class BackendError extends Error {
   }
 }
 
-/** "The LibreDB backend stopped (exit code <n or none>, signal <s or none>)." */
+/** "The KnowSQL backend stopped (exit code <n or none>, signal <s or none>)." */
 export class BackendExitedError extends Error {
   readonly exitCode: number | null;
   readonly signal: NodeJS.Signals | null;
 
   constructor({ exitCode, signal }: BackendExit) {
-    super(`The LibreDB backend stopped (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}).`);
+    super(`The KnowSQL backend stopped (exit code ${exitCode ?? "none"}, signal ${signal ?? "none"}).`);
     this.name = "BackendExitedError";
     this.exitCode = exitCode;
     this.signal = signal;
@@ -367,7 +367,7 @@ export function toBackendError(error: unknown, lastExit: BackendExit | undefined
     error instanceof ConnectionError;
   if (lost) {
     if (lastExit === undefined) {
-      return new Error("A pending request was rejected while the LibreDB backend had not exited.");
+      return new Error("A pending request was rejected while the KnowSQL backend had not exited.");
     }
     return new BackendExitedError(lastExit);
   }

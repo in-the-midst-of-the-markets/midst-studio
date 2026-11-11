@@ -442,7 +442,7 @@ describe("the plugin server and the ConsolePlugin", () => {
     const plugin = one(docs, "ConsolePlugin", "libredb-studio");
     expect(plugin.apiVersion).toBe("console.openshift.io/v1");
     expect(plugin.metadata.namespace).toBeUndefined();
-    expect(plugin.spec?.displayName).toBe("LibreDB Studio");
+    expect(plugin.spec?.displayName).toBe("KnowSQL");
     expect(plugin.spec?.backend).toEqual({
       type: "Service",
       service: { name: SERVER, namespace: PLUGIN_NAMESPACE, port: 9443, basePath: "/" },

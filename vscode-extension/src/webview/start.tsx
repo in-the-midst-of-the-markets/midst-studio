@@ -6,8 +6,8 @@ import { installCopyRelay } from "./clipboard";
 import { ResultsApp } from "./results-app";
 import { createResultsStore, type ResultsStore, type VsCodeApi } from "./results-store";
 
-export const NO_NONCE = "The LibreDB Results script has no nonce.";
-export const NO_ROOT = "The LibreDB Results page has no #root element.";
+export const NO_NONCE = "The KnowSQL Results script has no nonce.";
+export const NO_ROOT = "The KnowSQL Results page has no #root element.";
 
 export interface ResultsPageEnv {
   window: Window;

@@ -1705,7 +1705,7 @@ function systemPrompt(record: AgentRunRecord, grounding: PlanningGrounding, engi
     record.mode === "agent"
       ? requiredVariant(record.statementLanguage, record.workflowType).objective
       : planObjectiveOf(record.statementLanguage, record.workflowType);
-  return `You are the LibreDB Studio database investigator. ${rules}${handover} ${objective} ${SHARED_RULES}`;
+  return `You are the KnowSQL database investigator. ${rules}${handover} ${objective} ${SHARED_RULES}`;
 }
 
 // ============================================================================

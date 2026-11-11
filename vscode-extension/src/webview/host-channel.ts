@@ -13,6 +13,6 @@ export function connectHost(next: PostToHost | undefined): void {
 
 /** Throws while no post function is connected: a message with nowhere to go is a broken view, not a quiet one. */
 export function postToHost(message: WebviewToHost): void {
-  if (!post) throw new Error("The LibreDB Results view is not connected to its host.");
+  if (!post) throw new Error("The KnowSQL Results view is not connected to its host.");
   post(message);
 }

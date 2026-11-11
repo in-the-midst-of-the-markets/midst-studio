@@ -33,7 +33,7 @@ test.describe("Qdrant in the connection dialog", () => {
     await page.goto("/");
     await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10000 });
 
-    const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+    const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
     await sidebarButtons.last().click();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
     await page.locator('[role="dialog"]').getByRole("button", { name: "Qdrant", exact: true }).click();

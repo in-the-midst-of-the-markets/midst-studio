@@ -335,7 +335,7 @@ describe("the first-run flow in a real extension host", () => {
     }
   });
 
-  it("opens the LibreDB view on an empty tree, which VS Code shows as the Add Connection welcome (step 2)", async function () {
+  it("opens the KnowSQL view on an empty tree, which VS Code shows as the Add Connection welcome (step 2)", async function () {
     this.timeout(60_000);
     await vscode.commands.executeCommand("workbench.view.extension.libredb");
     const started = Date.now();

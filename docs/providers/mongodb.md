@@ -1,6 +1,6 @@
 # MongoDB Provider
 
-> Document-database support for LibreDB Studio, built on the official
+> Document-database support for KnowSQL, built on the official
 > [`mongodb`](https://github.com/mongodb/node-mongodb-native) Node.js driver.
 > This document is the single reference point for the MongoDB provider: design, architecture, usage,
 > and tests. MongoDB is a **document** database — not relational — so, like the [Redis provider](./redis.md),

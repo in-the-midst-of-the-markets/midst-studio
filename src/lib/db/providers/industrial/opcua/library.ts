@@ -142,7 +142,7 @@ async function clientFor(
   policyUri: string,
 ): Promise<OPCUAClient> {
   return OPCUAClient.create({
-    applicationName: "LibreDB Studio",
+    applicationName: "KnowSQL",
     clientCertificateManager: await certificateStore(options.pkiRoot),
     ...(options.clientCertificatePath === undefined ? {} : { certificateFile: options.clientCertificatePath }),
     ...(options.clientPrivateKeyPath === undefined ? {} : { privateKeyFile: options.clientPrivateKeyPath }),

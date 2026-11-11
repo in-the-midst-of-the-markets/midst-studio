@@ -1,4 +1,4 @@
-//! LibreDB Studio desktop shell.
+//! KnowSQL desktop shell.
 //!
 //! The shell owns three things and nothing else: a webview, the sidecar process
 //! that serves the app on loopback, and the handoff that logs the local user in.
@@ -149,7 +149,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("failed to start the LibreDB Studio desktop shell");
+        .expect("failed to start the KnowSQL desktop shell");
 
     app.run(|handle, event| {
         if matches!(event, RunEvent::Exit) {
@@ -205,7 +205,7 @@ fn boot(handle: tauri::AppHandle) {
             if let Some(window) = window.as_ref() {
                 let _ = window.eval(failure_script(&message, &detail));
             }
-            eprintln!("LibreDB Studio desktop: {message}\n{detail}");
+            eprintln!("KnowSQL desktop: {message}\n{detail}");
         }
     }
 }
@@ -296,7 +296,7 @@ fn supervise(handle: &tauri::AppHandle, window: Option<&WebviewWindow>) -> Resul
             }
             None => {
                 return Err(format!(
-                    "the LibreDB Studio server stopped {} times in a row and was not restarted again.",
+                    "the KnowSQL server stopped {} times in a row and was not restarted again.",
                     backoff::MAX_RESTARTS + 1
                 ))
             }

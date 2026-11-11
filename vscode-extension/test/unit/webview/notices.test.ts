@@ -36,11 +36,11 @@ describe("the results view's notices", () => {
   it("spells a missing exit code or signal as none", () => {
     assert.equal(
       backendStoppedSentence(null, "SIGKILL"),
-      "The LibreDB backend stopped while this query ran (exit code none, signal SIGKILL). The statement may already have run on the server.",
+      "The KnowSQL backend stopped while this query ran (exit code none, signal SIGKILL). The statement may already have run on the server.",
     );
     assert.equal(
       backendStoppedSentence(1, null),
-      "The LibreDB backend stopped while this query ran (exit code 1, signal none). The statement may already have run on the server.",
+      "The KnowSQL backend stopped while this query ran (exit code 1, signal none). The statement may already have run on the server.",
     );
   });
 

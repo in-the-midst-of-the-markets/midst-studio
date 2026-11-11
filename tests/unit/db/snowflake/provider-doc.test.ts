@@ -665,9 +665,9 @@ describe("every other number and sentence the doc states is the code's", () => {
       SNOWFLAKE_RETRY_MAX_MS,
     ]);
     expect(FLAT_DOC).toContain(`setting \`client_result_chunk_size\` to ${SNOWFLAKE_CHUNK_SIZE_MB}`);
-    expect(SNOWFLAKE_USER_AGENT).toMatch(/^LibreDB-Studio(\/.+)?$/);
+    expect(SNOWFLAKE_USER_AGENT).toMatch(/^KnowSQL(\/.+)?$/);
     expect(FLAT_DOC).toContain(
-      "Every request sends the User-Agent `LibreDB-Studio/<version>`, or `LibreDB-Studio` in the embedded package, whose build injects no version, unless the host sets `NEXT_PUBLIC_APP_VERSION`.",
+      "Every request sends the User-Agent `KnowSQL/<version>`, or `KnowSQL` in the embedded package, whose build injects no version, unless the host sets `NEXT_PUBLIC_APP_VERSION`.",
     );
   });
 

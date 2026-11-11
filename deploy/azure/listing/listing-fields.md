@@ -1,4 +1,4 @@
-# Partner Center listing fields — LibreDB Studio (Azure Application)
+# Partner Center listing fields — KnowSQL (Azure Application)
 
 Single source of truth for every text field in the offer listing. Copy these
 into Partner Center verbatim. Character limits are enforced by tests/unit/build-azure-package.test.ts
@@ -11,7 +11,7 @@ spaces too).
 | Field | Value |
 |---|---|
 | Offer ID | `libredb-studio` (immutable — double-check before saving) |
-| Offer alias | `LibreDB Studio (Azure Application)` |
+| Offer alias | `KnowSQL (Azure Application)` |
 
 ## Properties (§7.2)
 
@@ -26,7 +26,7 @@ spaces too).
 **Name** (limit 200):
 
 <!-- limit:200 -->
-LibreDB Studio
+KnowSQL
 
 **Search results summary** (limit 100):
 
@@ -85,7 +85,7 @@ Planned captions:
 | Plan ID | `single-vm` |
 | Plan name | `Single virtual machine` |
 | Plan type | Solution template |
-| Plan summary | Deploys LibreDB Studio on one Ubuntu 24.04 LTS virtual machine with automatic HTTPS. You pay only for the Azure resources. |
+| Plan summary | Deploys KnowSQL on one Ubuntu 24.04 LTS virtual machine with automatic HTTPS. You pay only for the Azure resources. |
 | Version | from `deploy/azure/package-version.txt` |
 | Package file | `dist/azure/libredb-studio-azure-<version>.zip` |
 

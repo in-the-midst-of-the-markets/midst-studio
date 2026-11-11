@@ -71,7 +71,7 @@ describe("LoginPage (OIDC mode)", () => {
   test("error=oidc_no_role shows the no-role message", () => {
     setMockSearchParams(new URLSearchParams("error=oidc_no_role"));
     const { getByText, queryByText } = render(<LoginForm authProvider="oidc" passkey={null} />);
-    const message = getByText("Your account has no role that allows access to LibreDB Studio. Ask your administrator.");
+    const message = getByText("Your account has no role that allows access to KnowSQL. Ask your administrator.");
     expect(message.textContent).not.toMatch(/try again/i);
     expect(queryByText("Authentication failed. Please try again.")).toBeNull();
   });

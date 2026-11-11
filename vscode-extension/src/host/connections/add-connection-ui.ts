@@ -154,7 +154,7 @@ class Session {
       if (error instanceof BackendUnavailableError) throw error;
       this.close();
       void this.deps.window
-        .showErrorMessage(`LibreDB could not list the database engines: ${messageOf(error)}`, SHOW_LOG)
+        .showErrorMessage(`KnowSQL could not list the database engines: ${messageOf(error)}`, SHOW_LOG)
         .then((choice) => {
           if (choice === SHOW_LOG) void this.deps.showLog();
         });

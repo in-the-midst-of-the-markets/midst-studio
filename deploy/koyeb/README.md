@@ -1,9 +1,9 @@
-# LibreDB Studio on Koyeb
+# KnowSQL on Koyeb
 
 [Koyeb](https://www.koyeb.com) is a serverless PaaS that can run the prebuilt
-LibreDB Studio Docker image directly from GHCR — no rebuild, no Dockerfile.
+KnowSQL Docker image directly from GHCR — no rebuild, no Dockerfile.
 
-There are two ways to get LibreDB Studio onto Koyeb:
+There are two ways to get KnowSQL onto Koyeb:
 
 1. **Deploy to Koyeb button** (self-service, already live in the repo
    [README](../../README.md#one-click-deploy)).

@@ -1,6 +1,6 @@
 # LibreDB Provider
 
-> Embedded key-value store support for LibreDB Studio, built on the
+> Embedded key-value store support for KnowSQL, built on the
 > [`@libredb/libredb`](https://github.com/libredb/libredb-database) package.
 > This document is the single reference point for the LibreDB provider: design, architecture,
 > usage, and tests. If you are reading the code, extending LibreDB support, or authoring a new
@@ -24,7 +24,7 @@
 
 LibreDB is an embedded, ordered key-value store with no server and no wire protocol. A `.libredb`
 file is raw ordered key-value bytes on disk; the `@libredb/libredb` package opens and operates on
-that file in-process, synchronously. LibreDB Studio is a SQL-oriented IDE, so the central design
+that file in-process, synchronously. KnowSQL is a SQL-oriented IDE, so the central design
 problem is the same one the Redis provider faced:
 
 > **How do you present a key-value store through the same `DatabaseProvider` interface that

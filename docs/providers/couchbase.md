@@ -1,6 +1,6 @@
 # Couchbase Provider
 
-> Couchbase Server support for LibreDB Studio, built on the documented REST surfaces — the Query
+> Couchbase Server support for KnowSQL, built on the documented REST surfaces — the Query
 > Service (`/query/service`) and the management API (`/pools/default...`) — with **no driver
 > dependency of any kind**. This document is the single reference point for the Couchbase provider:
 > design, architecture, usage, and tests. If you are reading the code, extending Couchbase support,

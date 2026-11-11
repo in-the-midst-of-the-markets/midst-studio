@@ -1,5 +1,5 @@
 # ==============================================================================
-# LibreDB Studio - Production Dockerfile
+# KnowSQL - Production Dockerfile
 # Optimized for Render, Railway, Fly.io, and Kubernetes
 # ==============================================================================
 

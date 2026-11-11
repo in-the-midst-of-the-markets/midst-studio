@@ -58,7 +58,7 @@ function verifyStorageEncryptionKeyAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: STORAGE_ENCRYPTION_KEY is too short",
+      " KnowSQL cannot start: STORAGE_ENCRYPTION_KEY is too short",
       ` Got ${key.length} characters; the minimum is ${JWT_SECRET_MIN_LENGTH}.`,
       " Every credential write would fail, so boot stops here.",
       " Fix it either way:",
@@ -82,7 +82,7 @@ function verifyAuthProviderAtBoot(): boolean {
       [
         "",
         "============================================================",
-        " LibreDB Studio cannot start: NEXT_PUBLIC_AUTH_PROVIDER is invalid",
+        " KnowSQL cannot start: NEXT_PUBLIC_AUTH_PROVIDER is invalid",
         ` Got ${JSON.stringify(authProviderValue())}. ${AUTH_PROVIDER_INVALID_MESSAGE}.`,
         " The value is case-sensitive; any other value would leave the sign-in mode undecided, so boot stops here.",
         "============================================================",
@@ -98,7 +98,7 @@ function verifyAuthProviderAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: OpenShift sign-in variables are set, but NEXT_PUBLIC_AUTH_PROVIDER is not openshift",
+      " KnowSQL cannot start: OpenShift sign-in variables are set, but NEXT_PUBLIC_AUTH_PROVIDER is not openshift",
       ...stray.map((name) => `   - ${name} is set`),
       " Set NEXT_PUBLIC_AUTH_PROVIDER=openshift to sign in through the cluster, or unset these variables.",
       "============================================================",
@@ -118,7 +118,7 @@ function verifyOpenShiftAuthAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: the environment contradicts openshift sign-in",
+      " KnowSQL cannot start: the environment contradicts openshift sign-in",
       " NEXT_PUBLIC_AUTH_PROVIDER=openshift signs people in through the cluster, and these variables have to change:",
       ...problems.map((problem) => `   - ${problem}`),
       " docs/OPENSHIFT.md lists every check.",
@@ -143,7 +143,7 @@ function verifySessionTtlAtBoot(): boolean {
       [
         "",
         "============================================================",
-        " LibreDB Studio cannot start: AUTH_SESSION_TTL_SECONDS is invalid",
+        " KnowSQL cannot start: AUTH_SESSION_TTL_SECONDS is invalid",
         ` Got "${process.env.AUTH_SESSION_TTL_SECONDS}"; it must be a whole number of seconds`,
         ` from ${SESSION_TTL_MIN_SECONDS} to ${SESSION_TTL_MAX_SECONDS}.`,
         " Every login would fail, so boot stops here.",
@@ -176,7 +176,7 @@ function verifyStorageSchemaAtBoot(): boolean {
       [
         "",
         "============================================================",
-        " LibreDB Studio cannot start: STORAGE_POSTGRES_SCHEMA is invalid",
+        " KnowSQL cannot start: STORAGE_POSTGRES_SCHEMA is invalid",
         ` ${(error as Error).message}.`,
         " Set it to the schema that holds the storage tables, such as studio,",
         " or unset it to keep the tables where the connection's search_path puts them.",
@@ -203,7 +203,7 @@ function verifyBearerAudienceAtBoot(): boolean {
       [
         "",
         "============================================================",
-        " LibreDB Studio cannot start: OIDC_BEARER_AUDIENCE is invalid",
+        " KnowSQL cannot start: OIDC_BEARER_AUDIENCE is invalid",
         ` ${(error as Error).message}.`,
         " Set it to the audience the identity provider puts in the native client's access tokens,",
         " or unset it to turn bearer access tokens off.",
@@ -246,7 +246,7 @@ export function verifyAuthEnvAtBoot(): boolean {
       [
         "",
         "============================================================",
-        " LibreDB Studio cannot start: JWT_SECRET is not set",
+        " KnowSQL cannot start: JWT_SECRET is not set",
         " AUTH_BOOTSTRAP is off, which also turns off secret generation,",
         " so nothing will produce one. Every login would fail with HTTP 503.",
         " Fix it either way:",
@@ -271,7 +271,7 @@ export function verifyAuthEnvAtBoot(): boolean {
     [
       "",
       "============================================================",
-      " LibreDB Studio cannot start: JWT_SECRET is too short",
+      " KnowSQL cannot start: JWT_SECRET is too short",
       ` Got ${secret.length} characters; the minimum is ${JWT_SECRET_MIN_LENGTH}.`,
       " Every login would fail with HTTP 503, so boot stops here.",
       " Fix it either way:",

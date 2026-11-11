@@ -52,7 +52,7 @@ interface Message {
 const typesOf = (messages: readonly unknown[]): string[] => messages.map((message) => (message as Message).type);
 const isReady = (raw: unknown): boolean => (raw as Message).type === "ready";
 
-describe("the LibreDB Results view in a real extension host against PostgreSQL", () => {
+describe("the KnowSQL Results view in a real extension host against PostgreSQL", () => {
   const runId = `${process.pid}-${Date.now()}`;
   const pgId = `pr13pg-${runId}`;
   const pgName = "e2e results pg";

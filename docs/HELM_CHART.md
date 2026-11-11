@@ -2,7 +2,7 @@
 
 ## Overview
 
-LibreDB Studio's Helm chart provides a production-grade Kubernetes deployment with security hardening, pluggable storage, autoscaling, and dual distribution (GitHub Pages + OCI).
+KnowSQL's Helm chart provides a production-grade Kubernetes deployment with security hardening, pluggable storage, autoscaling, and dual distribution (GitHub Pages + OCI).
 
 ## Distribution Channels
 
@@ -143,7 +143,7 @@ When `postgresql.enabled=true`:
 
 ```
 ┌──────────────────────┐      ┌───────────────────────┐
-│  LibreDB Studio Pod  │      │  PostgreSQL Pod        │
+│  KnowSQL Pod  │      │  PostgreSQL Pod        │
 │                      │      │  (Bitnami subchart)    │
 │  STORAGE_POSTGRES_URL├─────►│  :5432                 │
 │  = postgresql://     │      │                        │

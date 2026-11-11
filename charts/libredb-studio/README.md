@@ -1,4 +1,4 @@
-# LibreDB Studio Helm Chart
+# KnowSQL Helm Chart
 
 [![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/libredb-studio)](https://artifacthub.io/packages/search?repo=libredb-studio)
 
@@ -40,7 +40,7 @@ helm install libredb libredb/libredb-studio \
 
 ```bash
 helm install libredb oci://ghcr.io/libredb/charts/libredb-studio \
-  --version 0.1.133 \
+  --version 0.1.134 \
   --set secrets.jwtSecret=$(openssl rand -base64 32) \
   --set secrets.adminPassword=MyAdmin123
 ```
@@ -68,7 +68,7 @@ helm install libredb libredb/libredb-studio \
 
 ### PostgreSQL (built-in subchart)
 
-Deploys a Bitnami PostgreSQL instance alongside LibreDB Studio.
+Deploys a Bitnami PostgreSQL instance alongside KnowSQL.
 
 ```bash
 helm install libredb libredb/libredb-studio \
@@ -233,7 +233,7 @@ seedConnections:
 rancher:
   navLink:
     enabled: true
-    label: LibreDB Studio
+    label: KnowSQL
     group: Databases
     target: _blank
 ingress:
@@ -932,8 +932,8 @@ helm uninstall libredb
 | `openshift.signIn.review` | openshift mode: `KUBERNETES_ACCESS_REVIEW_SIGN_IN`, a review a person must also pass to sign in, as `oc auth can-i` takes it; empty writes nothing | `""` |
 | `openshift.consoleLink.enabled` | Render a `console.openshift.io/v1` ConsoleLink to `https://<openshiftRoute.host><config.basePath>`; needs `console.openshift.io/v1` or `apis=force`, `openshiftRoute.host` and a cluster admin | `false` |
 | `openshift.consoleLink.location` | `ApplicationMenu` or `NamespaceDashboard` | `ApplicationMenu` |
-| `openshift.consoleLink.section` | The `ApplicationMenu` section | `LibreDB` |
-| `openshift.consoleLink.text` | The link's text | `LibreDB Studio` |
+| `openshift.consoleLink.section` | The `ApplicationMenu` section | `KnowSQL` |
+| `openshift.consoleLink.text` | The link's text | `KnowSQL` |
 | `openshift.consoleLink.imageUrl` | The `ApplicationMenu` icon, an https URL or a `data:image/` URI; empty renders none | `""` |
 | `openshift.consoleLink.namespaces` | `NamespaceDashboard`: the namespaces whose dashboard shows the link | `[]` |
 | `openshift.consoleLink.namespaceSelector` | `NamespaceDashboard`: a label selector for those namespaces | `{}` |
@@ -975,7 +975,7 @@ A typical OpenShift install, with the Route, the cluster's trusted CA bundle and
 
 ```bash
 helm install studio libredb/libredb-studio \
-  --version 0.1.133 \
+  --version 0.1.134 \
   --set openshiftRoute.enabled=true \
   --set openshift.trustedCABundle.enabled=true \
   --set openshift.topology.partOf=libredb \
@@ -1016,7 +1016,7 @@ openshift:
 ```
 
 ```bash
-helm install studio libredb/libredb-studio --version 0.1.133 --namespace data -f openshift-values.yaml
+helm install studio libredb/libredb-studio --version 0.1.134 --namespace data -f openshift-values.yaml
 ```
 
 The chart annotates the ServiceAccount with `serviceaccounts.openshift.io/oauth-redirectreference.first`, naming the Route, and `serviceaccounts.openshift.io/oauth-redirecturi.first`, the callback path under `config.basePath`, so the OAuth server accepts that one callback.

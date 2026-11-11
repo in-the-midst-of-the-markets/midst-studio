@@ -1,10 +1,10 @@
-# LibreDB Studio - Cursor Rules
+# KnowSQL - Cursor Rules
 
-This file provides comprehensive guidance for AI assistants and developers working on LibreDB Studio. Follow these rules to maintain code quality, consistency, and architectural integrity.
+This file provides comprehensive guidance for AI assistants and developers working on KnowSQL. Follow these rules to maintain code quality, consistency, and architectural integrity.
 
 ## Project Overview
 
-LibreDB Studio is a modern, AI-powered, open-source SQL IDE for cloud-native teams. It provides a web-based interface for managing PostgreSQL, MySQL, SQLite, and MongoDB databases with features like AI-assisted query generation, visual schema exploration, and real-time monitoring.
+KnowSQL is a modern, AI-powered, open-source SQL IDE for cloud-native teams. It provides a web-based interface for managing PostgreSQL, MySQL, SQLite, and MongoDB databases with features like AI-assisted query generation, visual schema exploration, and real-time monitoring.
 
 **Key Characteristics:**
 - Mobile-first, professional-always design philosophy

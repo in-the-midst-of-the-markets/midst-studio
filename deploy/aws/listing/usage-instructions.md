@@ -1,4 +1,4 @@
-# LibreDB Studio - usage instructions
+# KnowSQL - usage instructions
 
 Pasted into the AWS Marketplace Management Portal's usage instructions field.
 AWS grades this field: the items below are the ones its guide makes mandatory

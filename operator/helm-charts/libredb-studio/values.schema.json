@@ -737,8 +737,8 @@
               "default": "ApplicationMenu",
               "description": "ApplicationMenu (the application launcher) or NamespaceDashboard (the dashboard of the namespaces named below)"
             },
-            "section": { "type": "string", "minLength": 1, "default": "LibreDB", "description": "The ApplicationMenu section the link is listed under" },
-            "text": { "type": "string", "minLength": 1, "default": "LibreDB Studio", "description": "The link's text" },
+            "section": { "type": "string", "minLength": 1, "default": "KnowSQL", "description": "The ApplicationMenu section the link is listed under" },
+            "text": { "type": "string", "minLength": 1, "default": "KnowSQL", "description": "The link's text" },
             "imageUrl": {
               "type": "string",
               "default": "",
@@ -1078,7 +1078,7 @@
               "default": false,
               "description": "Render the NavLink; needs ingress.enabled with a host"
             },
-            "label": { "type": "string", "minLength": 1, "default": "LibreDB Studio", "description": "The link's text" },
+            "label": { "type": "string", "minLength": 1, "default": "KnowSQL", "description": "The link's text" },
             "group": { "type": "string", "default": "Databases", "description": "The navigation group the link appears under" },
             "target": { "type": "string", "default": "_blank", "description": "The browser target the link opens in" },
             "iconSrc": { "type": "string", "default": "", "pattern": "^$|^https://\\S+$|^data:image/\\S+$", "description": "The link's icon, as an https URL or a data:image URI; empty uses the LibreDB logo inline" }

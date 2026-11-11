@@ -33,7 +33,7 @@ async function openDialog(page: Page) {
   await page.waitForURL(/\/admin/);
   await page.goto("/");
   await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10_000 });
-  const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+  const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
   await sidebarButtons.last().click();
   const dialog = page.locator('[role="dialog"]');
   await expect(dialog).toBeVisible({ timeout: 5000 });

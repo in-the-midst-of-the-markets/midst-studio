@@ -1,6 +1,6 @@
 # Distribution & Install Guide
 
-The canonical guide to every supported way of installing and operating LibreDB Studio, and to
+The canonical guide to every supported way of installing and operating KnowSQL, and to
 how the release pipeline publishes each channel. For a one-line-per-channel overview, see the
 [Install matrix in the README](../README.md#install).
 
@@ -40,7 +40,7 @@ server log:
 
 ```
 ============================================================
- LibreDB Studio first run: generated admin credentials
+ KnowSQL first run: generated admin credentials
  Email:    admin@libredb.org
  Password: <generated>
  Stored in <data dir>/auth-bootstrap.json (delete the file to regenerate)
@@ -1086,7 +1086,7 @@ The zip is flat by design (see [Release artifact naming](#release-artifact-namin
 
 ## Desktop app (AppImage, Debian package, FlatPark)
 
-Every other channel on this page ships LibreDB Studio as a server you open in a browser. The
+Every other channel on this page ships KnowSQL as a server you open in a browser. The
 desktop build ships it as an application window: a Tauri v2 shell starts the same standalone
 server as a local sidecar on a random loopback port, waits for it to become healthy, signs you in
 and shows the workspace. There is no browser tab, no port to remember and no password prompt for
@@ -1145,7 +1145,7 @@ claim it.
 ### FlatPark (Flatpak)
 
 [FlatPark](https://flatpark.org/) is a signed Flatpak remote and **the** Flatpak channel for
-LibreDB Studio, live since 0.9.62 ([#241](https://github.com/libredb/libredb-studio/issues/241)):
+KnowSQL, live since 0.9.62 ([#241](https://github.com/libredb/libredb-studio/issues/241)):
 
 ```bash
 flatpak --user remote-add --if-not-exists flatpark https://dl.flatpark.org/flatpark.flatpakrepo
@@ -1180,7 +1180,7 @@ The descriptor set, the local build flow and the submission checklist live in
 
 ### Flathub (submission declined)
 
-**LibreDB Studio is not on Flathub, and `flatpak install flathub org.libredb.Studio` will not
+**KnowSQL is not on Flathub, and `flatpak install flathub org.libredb.Studio` will not
 work.** Install from the FlatPark remote above - same app id, same sandbox policy, same
 `flatpak override` commands.
 
@@ -1244,7 +1244,7 @@ flatpak --user remote-delete libredb-flatpark-local
 ## App catalogs (Unraid, Sealos)
 
 Both channels install the same published container image through a catalog the platform itself
-publishes, so a user browsing that platform finds LibreDB Studio without ever visiting this repo.
+publishes, so a user browsing that platform finds KnowSQL without ever visiting this repo.
 They are documented here rather than under `deploy/<provider>/` because neither descriptor lives in
 this repo: the Sealos template lives upstream in
 [`labring-actions/templates`](https://github.com/labring-actions/templates) and the Unraid template
@@ -1263,7 +1263,7 @@ only when the template is bumped - `on_demand` for both in
 
 Listed in [Community Applications](https://ca.unraid.net/apps/libredb-studio-0a5x41a1cy1kay) (CA)
 since 2026-08-04 ([issue #283](https://github.com/libredb/libredb-studio/issues/283)). In the Unraid
-web UI: **Apps** tab, search for **LibreDB Studio**, then **Install**.
+web UI: **Apps** tab, search for **KnowSQL**, then **Install**.
 
 - **The web UI host port defaults to 3006**, mapped to container port 3000. Any free host port
   works; the template steers away from 3000 because it commonly collides with other apps.
@@ -1328,7 +1328,7 @@ The plugin is LibreDB-owned, so a version bump is a commit and a release in that
 ## Google Cloud Marketplace
 
 Publicly listed since **2026-09-04** as a free **Terraform Kubernetes app**: a customer finds
-LibreDB Studio in the Marketplace catalog inside the Google Cloud console and deploys it into their
+KnowSQL in the Marketplace catalog inside the Google Cloud console and deploys it into their
 own GKE cluster. Deploying requires the **Kubernetes Engine Admin** role on the target project.
 
 It is the one channel in the inventory with **no public artefact to read a version from**, and that
@@ -1369,7 +1369,7 @@ bash scripts/build-standalone-payload.sh dist --smoke
 
 ## VS Code extension (Marketplace)
 
-LibreDB Studio for VS Code lives in [`vscode-extension/`](../vscode-extension), an npm package of its own with a version line of its own.
+KnowSQL for VS Code lives in [`vscode-extension/`](../vscode-extension), an npm package of its own with a version line of its own.
 It has been on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=libredb.libredb-studio) since 21 October 2026, under the publisher `libredb`: 0.1.0 and 0.1.1 as pre-releases, then 0.2.0 as its first release.
 A listing with pre-releases only refuses a plain install (`code --install-extension libredb.libredb-studio` fails with "it has no release version"), which is why 0.2.0 is a release.
 This section is its release runbook.
@@ -1422,7 +1422,7 @@ When the publish job cannot run, the owner uploads the VSIX the gates tested; no
 
 1. Download the `vscode-extension-vsix` artifact of the tag's `vscode-extension-release.yml` run, or of `main`'s `vscode-extension.yml` run at the tagged commit, and check that its manifest names `Publisher="libredb"`, the version, and, on an odd minor, the `PreRelease` property.
 2. Install it into a fresh VS Code profile (`code --user-data-dir <dir> --extensions-dir <dir> --install-extension <file>`) and run one query on each v0 engine.
-3. On https://marketplace.visualstudio.com/manage/publishers/libredb, upload it as a new version of LibreDB Studio, or through **New extension** > **Visual Studio Code** for a new extension.
+3. On https://marketplace.visualstudio.com/manage/publishers/libredb, upload it as a new version of KnowSQL, or through **New extension** > **Visual Studio Code** for a new extension.
 4. When the Marketplace has verified it, check that `code --install-extension libredb.libredb-studio` installs that version in another fresh profile, with `--pre-release` on an odd minor.
 
 A version number can be uploaded once, so a fix to a published version is the next patch.
@@ -1539,7 +1539,7 @@ All channels have now had their first live run (the Snap publish completed its f
 
    ```bash
    npm deprecate '@libredb/studio@<=0.10.0' \
-     'LibreDB Studio 0.11.0+ requires Node.js 24 LTS; npm pinned you to this release because your Node is older. Upgrade Node, or run: docker run -p 3000:3000 ghcr.io/libredb/libredb-studio:latest'
+     'KnowSQL 0.11.0+ requires Node.js 24 LTS; npm pinned you to this release because your Node is older. Upgrade Node, or run: docker run -p 3000:3000 ghcr.io/libredb/libredb-studio:latest'
    ```
 
    Deprecating a version does not unpublish or hide it: it keeps installing and running exactly as
@@ -1763,7 +1763,7 @@ pin or editing a channel entry is always a human commit.
 `kubernetes-operators`, `package-managers`, `os-desktop`, `paas-catalogs`,
 `deploy-recipes`, `cloud-marketplaces`. They are independent of tier (who
 publishes). `paas-catalogs` and `deploy-recipes` look similar but answer different
-questions: `paas-catalogs` means the platform itself lists LibreDB Studio in its own
+questions: `paas-catalogs` means the platform itself lists KnowSQL in its own
 catalog, so a user browsing that platform discovers it without visiting this repo;
 `deploy-recipes` means we publish a config file or instructions and the platform does
 not list us anywhere, so discovery only happens through our repo. There is no `closed`

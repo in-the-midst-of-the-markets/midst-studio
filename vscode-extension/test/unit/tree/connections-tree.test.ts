@@ -364,7 +364,7 @@ describe("ConnectionsTree's reads", () => {
       };
       const orders = await child(context.tree, await tablesFolder(context), "o/1kq2v7x93j0ab/public/orders/table");
       const error = only(await context.tree.getChildren(orders), "error");
-      assert.equal(error.message, "The LibreDB backend stopped while this was read.");
+      assert.equal(error.message, "The KnowSQL backend stopped while this was read.");
       assert.equal(error.message, BACKEND_STOPPED_DURING_READ);
       assert.equal(error.code, undefined);
     });
@@ -384,7 +384,7 @@ describe("ConnectionsTree's reads", () => {
       new BackendError(
         400,
         "CONFIG_ERROR",
-        "The oracle provider is not available in this distribution of LibreDB Studio.",
+        "The oracle provider is not available in this distribution of KnowSQL.",
       ),
     ]) {
       it(`marks the connection failed and answers the error of a refused open: ${refusal.code}`, async () => {

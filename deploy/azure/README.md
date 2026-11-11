@@ -1,6 +1,6 @@
 # Azure Marketplace (Azure Application → solution template)
 
-LibreDB Studio's Microsoft Marketplace channel: a free ("Get It Now")
+KnowSQL's Microsoft Marketplace channel: a free ("Get It Now")
 solution template that deploys one Ubuntu 24.04 LTS VM running the
 `ghcr.io/libredb/libredb-studio` container behind a Caddy reverse proxy with
 automatic HTTPS. The listing texts Partner Center needs are in

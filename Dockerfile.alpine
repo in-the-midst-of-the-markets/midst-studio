@@ -1,5 +1,5 @@
 # ==============================================================================
-# LibreDB Studio - Alpine (musl) production Dockerfile  [issue #840]
+# KnowSQL - Alpine (musl) production Dockerfile  [issue #840]
 #
 # A SECOND image variant, not a replacement. `Dockerfile` (Debian trixie-slim)
 # stays the default tag; this one is published as `-alpine` and exists for the

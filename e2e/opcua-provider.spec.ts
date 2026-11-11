@@ -21,7 +21,7 @@ test.describe("OPC UA in the connection dialog", () => {
     await page.waitForURL("/");
     await expect(page.locator("text=Query 1").first()).toBeVisible({ timeout: 10000 });
 
-    const sidebarButtons = page.locator("text=LibreDB Studio").locator("..").locator("..").locator("button");
+    const sidebarButtons = page.locator("text=KnowSQL").locator("..").locator("..").locator("button");
     await sidebarButtons.first().click();
   });
 

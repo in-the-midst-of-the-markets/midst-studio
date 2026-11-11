@@ -1,6 +1,6 @@
 # Database Provider Reference
 
-This folder holds the **prime (canonical) reference for each database provider** in LibreDB Studio.
+This folder holds the **prime (canonical) reference for each database provider** in KnowSQL.
 There is exactly one document per provider, named by the provider's canonical **type-id** and kept
 in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CLAUDE.md)).
 

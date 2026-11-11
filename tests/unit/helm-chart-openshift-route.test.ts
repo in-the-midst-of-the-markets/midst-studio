@@ -224,7 +224,7 @@ describe("install notes about the OpenShift Route", () => {
 
   test("a set host is named as the HTTPS address", () => {
     const text = notes([...ROUTE_API, ...ENABLED, "--set", "openshiftRoute.host=studio.apps.example.com"]);
-    expect(text).toContain("Access LibreDB Studio via the OpenShift Route:\n  https://studio.apps.example.com\n");
+    expect(text).toContain("Access KnowSQL via the OpenShift Route:\n  https://studio.apps.example.com\n");
     expect(text).not.toContain(READ_HOST);
   });
 
@@ -242,7 +242,7 @@ describe("install notes about the OpenShift Route", () => {
 
   test("a generated host is read with oc get route", () => {
     const text = notes([...ROUTE_API, ...ENABLED]);
-    expect(text).toContain("Access LibreDB Studio via the OpenShift Route:");
+    expect(text).toContain("Access KnowSQL via the OpenShift Route:");
     expect(text).toContain(READ_HOST);
   });
 
@@ -251,7 +251,7 @@ describe("install notes about the OpenShift Route", () => {
       const text = notes(args);
       expect(text).not.toContain("OpenShift Route");
       expect(text).not.toContain("oc get route");
-      expect(text).toContain("Access LibreDB Studio via port-forward:");
+      expect(text).toContain("Access KnowSQL via port-forward:");
     }
   });
 
@@ -270,7 +270,7 @@ describe("install notes about the OpenShift Route", () => {
       "--set",
       "ingress.hosts[0].paths[0].pathType=Prefix",
     ]);
-    expect(text).toContain("Access LibreDB Studio via Ingress:\n  http://libredb.example.com/");
+    expect(text).toContain("Access KnowSQL via Ingress:\n  http://libredb.example.com/");
     expect(text).toContain("  https://studio.apps.example.com\n");
   });
 

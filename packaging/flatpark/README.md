@@ -190,6 +190,6 @@ as documentation of the packaging decisions, not as the live descriptor.
 Flathub's infrastructure. The two were always deliberately independent: different artifact,
 different fetch model, different review policy. The sequencing question is settled -
 flathub/flathub#9538 was declined on 2026-07-30 under Flathub's generative AI policy, so **FlatPark
-is the only Flatpak channel for LibreDB Studio** and there is no dual listing to revisit. The
+is the only Flatpak channel for KnowSQL** and there is no dual listing to revisit. The
 Flathub manifest stays in the tree as smoke coverage for the AppImage; the status note is in
 [`../flatpak/README.md`](../flatpak/README.md).

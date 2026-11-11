@@ -33,17 +33,17 @@ export interface ResultsViewDeps {
 /** How much of a refusal's "<field>: <reason>" reaches the log: the reason can carry text the view chose. */
 const REFUSAL_DETAIL_CHARS = 200;
 
-/** "The LibreDB Results view sent a message the host refused: <field>: <reason>.", cut to a bounded detail. */
+/** "The KnowSQL Results view sent a message the host refused: <field>: <reason>.", cut to a bounded detail. */
 export function refusedMessage(error: ResultsProtocolError): string {
   const detail =
     error.message.length > REFUSAL_DETAIL_CHARS
       ? `${error.message.slice(0, REFUSAL_DETAIL_CHARS)} (cut)`
       : error.message;
-  return `The LibreDB Results view sent a message the host refused: ${detail}.`;
+  return `The KnowSQL Results view sent a message the host refused: ${detail}.`;
 }
 
-/** "The LibreDB Results view reported an error: <message>" */
-export const reportedError = (message: string): string => `The LibreDB Results view reported an error: ${message}`;
+/** "The KnowSQL Results view reported an error: <message>" */
+export const reportedError = (message: string): string => `The KnowSQL Results view reported an error: ${message}`;
 
 /**
  * A notice's text with every square bracket removed. VS Code's notification renders [label](href) as a link and
@@ -112,7 +112,7 @@ export class ResultsViewProvider implements vscode.WebviewViewProvider, ResultsS
       return;
     }
     this.deps.commands.executeCommand(`${RESULTS_VIEW}.focus`, { preserveFocus: true }).then(undefined, (error) => {
-      this.deps.log.error(`Revealing the LibreDB Results view failed: ${messageOf(error)}`);
+      this.deps.log.error(`Revealing the KnowSQL Results view failed: ${messageOf(error)}`);
     });
   }
 
@@ -166,7 +166,7 @@ export class ResultsViewProvider implements vscode.WebviewViewProvider, ResultsS
       await this.deps.clipboard.writeText(text);
     } catch (error) {
       ok = false;
-      this.deps.log.error(`The LibreDB Results view could not write the clipboard: ${messageOf(error)}`);
+      this.deps.log.error(`The KnowSQL Results view could not write the clipboard: ${messageOf(error)}`);
     }
     this.post({ v: 1, type: "copied", requestId, ok });
   }

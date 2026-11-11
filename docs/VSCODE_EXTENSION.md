@@ -1,6 +1,6 @@
-# VS Code Extension Architecture - LibreDB Studio
+# VS Code Extension Architecture - KnowSQL
 
-This document explains how the LibreDB Studio VS Code extension in `vscode-extension/` works, which parts are its own code and which parts it reuses from Studio.
+This document explains how the KnowSQL VS Code extension in `vscode-extension/` works, which parts are its own code and which parts it reuses from Studio.
 It is written for the owner and for contributors who know the web app and want to find their way around the extension.
 Every claim names a file and a symbol; when the code and this page disagree, the code wins.
 

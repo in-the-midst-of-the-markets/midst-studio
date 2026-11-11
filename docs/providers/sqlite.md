@@ -1,6 +1,6 @@
 # SQLite Provider
 
-> File-based SQLite support for LibreDB Studio, using the runtime's **built-in SQLite driver**:
+> File-based SQLite support for KnowSQL, using the runtime's **built-in SQLite driver**:
 > `bun:sqlite` under Bun, `node:sqlite` under Node (see [Runtime](#runtime--driver-selection)).
 > This document is the single reference point for the SQLite provider: design, architecture, usage,
 > and tests. It is a SQL-family provider sharing `SQLBaseProvider`; read the

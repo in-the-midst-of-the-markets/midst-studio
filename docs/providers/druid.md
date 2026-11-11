@@ -1,6 +1,6 @@
 # Apache Druid Provider
 
-> Apache Druid support for LibreDB Studio, built on Druid's SQL HTTP endpoint
+> Apache Druid support for KnowSQL, built on Druid's SQL HTTP endpoint
 > (`POST /druid/v2/sql`, port `8888` on the Router or `8082` on the Broker) with **no driver
 > dependency of any kind**: every statement is a JSON body and the answer comes back through the
 > runtime's own `fetch`. This document is the single reference point for the Druid provider: design,

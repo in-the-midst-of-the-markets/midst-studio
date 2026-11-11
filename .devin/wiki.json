@@ -1,11 +1,11 @@
 {
   "repo_notes": [
     {
-      "content": "LibreDB Studio is a modern, AI-powered, open-source SQL IDE for cloud-native teams. It provides a zero-install, browser-based interface for managing PostgreSQL, MySQL, SQLite, Oracle, SQL Server, MongoDB, Redis databases. Built with Next.js 16 (App Router), React 19, TypeScript strict mode, Tailwind CSS 4, shadcn/ui, and Monaco Editor. The project uses Bun as its preferred runtime.",
+      "content": "KnowSQL is a modern, AI-powered, open-source SQL IDE for cloud-native teams. It provides a zero-install, browser-based interface for managing PostgreSQL, MySQL, SQLite, Oracle, SQL Server, MongoDB, Redis databases. Built with Next.js 16 (App Router), React 19, TypeScript strict mode, Tailwind CSS 4, shadcn/ui, and Monaco Editor. The project uses Bun as its preferred runtime.",
       "author": "Maintainer"
     },
     {
-      "content": "LibreDB Studio runs two ways: as a standalone Next.js app AND as an embeddable npm package (@libredb/studio) that host apps can mount. It is not embedded in libredb-platform - the two were decoupled on 2026-08-14 and are separate products. The embedding layer lives in src/workspace/ (the StudioWorkspace shell plus connection/query adapter hooks) and src/exports/ (the public package entry points). build:lib (tsup) produces the package dist, which is separate from the Next.js production build - any change reachable from src/exports/ requires running build:lib, not just the Next.js build.",
+      "content": "KnowSQL runs two ways: as a standalone Next.js app AND as an embeddable npm package (@libredb/studio) that host apps can mount. It is not embedded in libredb-platform - the two were decoupled on 2026-08-14 and are separate products. The embedding layer lives in src/workspace/ (the StudioWorkspace shell plus connection/query adapter hooks) and src/exports/ (the public package entry points). build:lib (tsup) produces the package dist, which is separate from the Next.js production build - any change reachable from src/exports/ requires running build:lib, not just the Next.js build.",
       "author": "Maintainer"
     },
     {

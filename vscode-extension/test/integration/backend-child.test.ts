@@ -209,7 +209,7 @@ describe("the backend child against PostgreSQL, SQL Server, MySQL and MongoDB", 
     assert.equal(mismatch.code, 500);
     assert.equal(
       mismatch.message,
-      "The LibreDB backend speaks protocol version 1, but the extension sent version 2. Reinstall the LibreDB extension.",
+      "The KnowSQL backend speaks protocol version 1, but the extension sent version 2. Reinstall the KnowSQL extension.",
     );
     assert.deepEqual(mismatch.data, { code: "PROTOCOL_MISMATCH" });
   });
@@ -403,7 +403,7 @@ describe("the backend child against PostgreSQL, SQL Server, MySQL and MongoDB", 
       assert.equal(refused.code, 400);
       assert.equal(
         refused.message,
-        `The ${connection.type} provider is not available in this distribution of LibreDB Studio.`,
+        `The ${connection.type} provider is not available in this distribution of KnowSQL.`,
       );
       assert.deepEqual(refused.data, { code: "CONFIG_ERROR" });
     }

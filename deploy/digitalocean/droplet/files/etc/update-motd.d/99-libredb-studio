@@ -7,7 +7,7 @@ IP=$(curl -fsm 2 http://169.254.169.254/metadata/v1/interfaces/public/0/ipv4/add
 DBAAS_STATUS=/var/lib/libredb-studio/dbaas.status
 cat <<EOF
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  LibreDB Studio
+  KnowSQL
   Open-source SQL IDE for cloud-native teams
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   Access:   http://${IP}:3000

@@ -367,7 +367,7 @@ describe("config/auth-preflight AUTH_SESSION_TTL_SECONDS", () => {
       const { result, exitCalls, banner } = runPreflight();
       expect(result).toBe(false);
       expect(exitCalls).toEqual([1]);
-      expect(banner).toContain("LibreDB Studio cannot start");
+      expect(banner).toContain("KnowSQL cannot start");
       expect(banner).toContain("AUTH_SESSION_TTL_SECONDS");
       expect(banner).toContain("300");
       expect(banner).toContain("86400");
@@ -433,7 +433,7 @@ describe("config/auth-preflight STORAGE_POSTGRES_SCHEMA", () => {
     const { result, exitCalls, banner } = run("postgres", "Studio-Schema");
     expect(result).toBe(false);
     expect(exitCalls).toEqual([1]);
-    expect(banner).toContain("LibreDB Studio cannot start: STORAGE_POSTGRES_SCHEMA is invalid");
+    expect(banner).toContain("KnowSQL cannot start: STORAGE_POSTGRES_SCHEMA is invalid");
     expect(banner).toContain(
       'STORAGE_POSTGRES_SCHEMA must be a lowercase PostgreSQL schema name matching ^[a-z_][a-z0-9_]{0,62}$, got "Studio-Schema"',
     );
@@ -497,7 +497,7 @@ describe("config/auth-preflight OIDC_BEARER_AUDIENCE", () => {
     });
     expect(result).toBe(false);
     expect(exitCalls).toEqual([1]);
-    expect(banner).toContain("LibreDB Studio cannot start: OIDC_BEARER_AUDIENCE is invalid");
+    expect(banner).toContain("KnowSQL cannot start: OIDC_BEARER_AUDIENCE is invalid");
     expect(banner).toContain("OIDC_BEARER_AUDIENCE must not equal OIDC_CLIENT_ID");
   });
 
@@ -569,7 +569,7 @@ describe("config/auth-preflight sign-in mode", () => {
     expect(result).toBe(false);
     expect(exitCalls).toEqual([1]);
     expect(banners).toBe(1);
-    expect(banner).toContain("LibreDB Studio cannot start: NEXT_PUBLIC_AUTH_PROVIDER is invalid");
+    expect(banner).toContain("KnowSQL cannot start: NEXT_PUBLIC_AUTH_PROVIDER is invalid");
     expect(banner).toContain("NEXT_PUBLIC_AUTH_PROVIDER must be local, oidc or openshift, or unset for local");
   });
 
@@ -581,7 +581,7 @@ describe("config/auth-preflight sign-in mode", () => {
     expect(result).toBe(false);
     expect(exitCalls).toEqual([1]);
     expect(banners).toBe(1);
-    expect(banner).toContain("LibreDB Studio cannot start: OpenShift sign-in variables are set");
+    expect(banner).toContain("KnowSQL cannot start: OpenShift sign-in variables are set");
     expect(banner).toContain("OPENSHIFT_PUBLIC_URL");
     expect(banner).not.toContain("studio.apps.example.com");
   });
@@ -598,7 +598,7 @@ describe("config/auth-preflight sign-in mode", () => {
     expect(result).toBe(false);
     expect(exitCalls).toEqual([1]);
     expect(banners).toBe(1);
-    expect(banner).toContain("LibreDB Studio cannot start: the environment contradicts openshift sign-in");
+    expect(banner).toContain("KnowSQL cannot start: the environment contradicts openshift sign-in");
     expect(banner).toContain("   - OPENSHIFT_OAUTH_TOKEN_FILE ");
     expect(banner).toContain("   - OPENSHIFT_API_CA_FILE ");
     expect(banner).toContain("   - ADMIN_PASSWORD ");

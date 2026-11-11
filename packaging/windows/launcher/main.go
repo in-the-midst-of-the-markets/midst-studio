@@ -36,7 +36,7 @@ func main() {
 	for _, required := range []string{paths.Node, paths.Server} {
 		if _, statErr := os.Stat(required); statErr != nil {
 			fatal(fmt.Sprintf(
-				"%s not found - libredb-studio.exe must stay at the root of the extracted LibreDB Studio zip (next to node\\ and server.js)",
+				"%s not found - libredb-studio.exe must stay at the root of the extracted KnowSQL zip (next to node\\ and server.js)",
 				required,
 			))
 		}

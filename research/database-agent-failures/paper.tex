@@ -45,7 +45,7 @@ from a model timing out. The corpus, the scorer and a verifier that regenerates 
 
 \section{Introduction}
 
-The question we set out to answer was operational. LibreDB Studio ships an agent mode that plans and executes
+The question we set out to answer was operational. KnowSQL ships an agent mode that plans and executes
 read-only database work through a fixed tool contract. Its users run it against their own databases, and a
 substantial fraction want to run it against a model on their own hardware rather than a hosted API, because
 sending schema inventories and query text to a third party is exactly what their environment forbids. Which
@@ -166,7 +166,7 @@ which this paper supplies field evidence without testing it directly.
 
 \section{System under test}
 
-LibreDB Studio's agent is a constrained loop with a verifier, not a general assistant with database tools
+KnowSQL's agent is a constrained loop with a verifier, not a general assistant with database tools
 attached. Three properties matter for reading the results.
 
 \paragraph{Six surfaces.} Five run in agent mode, \code{investigation}, \code{query-optimization},
@@ -749,7 +749,7 @@ This paper is released under CC BY 4.0. The dataset, the exporter, the scorer an
 the MIT licence, as is the application.
 
 \section*{Conflict of interest}
-All authors are contributors to LibreDB Studio, the software evaluated. No external funding supported this work.
+All authors are contributors to KnowSQL, the software evaluated. No external funding supported this work.
 
 \begin{thebibliography}{99}
 \small

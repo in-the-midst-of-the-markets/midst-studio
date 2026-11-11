@@ -1,5 +1,5 @@
 // The engine catalogue engines/list answers (part 2, "Where each per-engine fact comes from"): each engine the
-// add-connection flow offers, with the form facts LibreDB declares for it.
+// add-connection flow offers, with the form facts KnowSQL declares for it.
 // The form table and the connection-string rows value-import modules that live beside the providers, so only the
 // child bundles this module; it constructs no provider.
 import { PASTE_FORMATS_TEXT } from "@/lib/connection-paste-formats";

@@ -105,7 +105,7 @@ describe("SQLite in the backend child", () => {
   it("refuses a database file in Restricted Mode, naming workspace trust", async () => {
     const restricted = params(sqlite("restricted", join(dir, "restricted.db")), { allowExternalFileAccess: false });
     const refused = await errorOf(session.connection.sendRequest(METHODS.openConnection, restricted));
-    assert.equal(refused.message, "Restricted Mode: LibreDB opens no SQLite database until you trust this workspace.");
+    assert.equal(refused.message, "Restricted Mode: KnowSQL opens no SQLite database until you trust this workspace.");
     assert.deepEqual(refused.data, { code: "CONFIG_ERROR" });
     assert.equal(existsSync(join(dir, "restricted.db")), false);
   });

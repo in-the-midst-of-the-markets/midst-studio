@@ -1,4 +1,4 @@
-# Agent Runtime — LibreDB Studio
+# Agent Runtime — KnowSQL
 
 The agent runtime drives one **read-only database investigation**: a user states an objective, a
 model drafts SQL against the connected database, repairs statements that fail, and composes a report
@@ -162,7 +162,7 @@ Two companion pages carry what this one deliberately does not:
 
 ## Table of Contents
 
-- [Agent Runtime — LibreDB Studio](#agent-runtime--libredb-studio)
+- [Agent Runtime — KnowSQL](#agent-runtime--libredb-studio)
   - [Table of Contents](#table-of-contents)
   - [Turning it on](#turning-it-on)
   - [What a run is](#what-a-run-is)

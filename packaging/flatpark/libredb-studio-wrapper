@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-# FlatPark entry point for LibreDB Studio (issue #241).
+# FlatPark entry point for KnowSQL (issue #241).
 #
 # The desktop shell is a Tauri (WebKitGTK) binary that apply_extra stages at
 # /app/extra/usr/bin/libredb-studio-desktop. On launch it starts the bundled

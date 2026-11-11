@@ -76,7 +76,7 @@ function exchange(body: string = answer(), extra: Partial<SnowflakeRawExchange> 
         "X-Snowflake-Authorization-Token-Type": "KEYPAIR_JWT",
         "Content-Type": "application/json",
         Accept: "application/json",
-        "User-Agent": "LibreDB-Studio/0.18.3",
+        "User-Agent": "KnowSQL/0.18.3",
         Cookie: "dropped=1",
       },
       body: {

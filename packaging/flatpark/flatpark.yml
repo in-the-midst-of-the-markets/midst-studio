@@ -1,4 +1,4 @@
-# FlatPark catalog descriptor for LibreDB Studio (issue #241).
+# FlatPark catalog descriptor for KnowSQL (issue #241).
 #
 # FlatPark (https://flatpark.org/) is a signed Flatpak remote that repackages
 # official vendor downloads as extra-data - it does not build from source. This
@@ -8,7 +8,7 @@
 # read-descriptor.mjs in flatpark/flatpark is a line scanner, not a YAML parser,
 # so keep the plain two-space block style below exactly as it is.
 id: org.libredb.Studio
-name: LibreDB Studio
+name: KnowSQL
 summary: AI-powered SQL IDE for PostgreSQL, MySQL, MongoDB and more
 website: https://libredb.org
 source_url: https://github.com/libredb/libredb-studio

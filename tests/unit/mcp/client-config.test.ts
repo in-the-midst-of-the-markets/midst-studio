@@ -50,7 +50,7 @@ describe("the snippets", () => {
   test("VS Code takes type http and a password input the header names", () => {
     expect(JSON.parse(snippet("vscode"))).toEqual({
       inputs: [
-        { type: "promptString", id: "libredb-mcp-token", description: "LibreDB Studio MCP token", password: true },
+        { type: "promptString", id: "libredb-mcp-token", description: "KnowSQL MCP token", password: true },
       ],
       servers: { libredb: { type: "http", url: URL, headers: { Authorization: "Bearer ${input:libredb-mcp-token}" } } },
     });

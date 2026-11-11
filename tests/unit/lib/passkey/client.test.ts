@@ -36,7 +36,7 @@ const REGISTRATION_CANCELLED = "No passkey was created. The request was cancelle
 const REQUEST_OPTIONS = { challenge: "c2lnbi1pbg", rpId: "studio.example.com" };
 const CREATION_OPTIONS: PublicKeyCredentialCreationOptionsJSON = {
   challenge: "cmVnaXN0ZXI",
-  rp: { name: "LibreDB Studio" },
+  rp: { name: "KnowSQL" },
   user: { id: "dXNlcg", name: "owner@example.com", displayName: "owner@example.com" },
   pubKeyCredParams: [{ type: "public-key", alg: -7 }],
 };

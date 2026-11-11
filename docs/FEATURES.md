@@ -1,4 +1,4 @@
-# LibreDB Studio Expert Features
+# KnowSQL Expert Features
 
 ## Implemented Features
 

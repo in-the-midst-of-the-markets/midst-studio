@@ -1,6 +1,6 @@
-// LibreDB beside an installed SQL extension (part 3 criterion 21, "Coexisting with pgsql and mssql"): this host loads
-// the extensions directory scripts/coexistence-extensions.mjs filled, so ms-mssql.mssql runs beside LibreDB. LibreDB
-// shows its UI only on documents it bound; what mssql does on a LibreDB-bound document, its diagnostics and its Panel
+// KnowSQL beside an installed SQL extension (part 3 criterion 21, "Coexisting with pgsql and mssql"): this host loads
+// the extensions directory scripts/coexistence-extensions.mjs filled, so ms-mssql.mssql runs beside KnowSQL. KnowSQL
+// shows its UI only on documents it bound; what mssql does on a KnowSQL-bound document, its diagnostics and its Panel
 // views are printed for the record, not asserted. It needs Docker and the Marketplace, so it runs in the coexistence
 // subset only.
 import assert from "node:assert/strict";
@@ -69,7 +69,7 @@ async function waitForPostgres(engine: RunningEngine): Promise<void> {
   }
 }
 
-describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
+describe("KnowSQL beside ms-mssql.mssql in a real extension host", () => {
   const runId = `${process.pid}-${Date.now()}`;
   const connectionId = `pr14co-${runId}`;
   const connectionName = "e2e coexistence pg";
@@ -196,7 +196,7 @@ describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
     }
   });
 
-  it("puts an unbound sql document in no LibreDB key, shows no status item, and Run on it runs nothing (criterion 21)", async function () {
+  it("puts an unbound sql document in no KnowSQL key, shows no status item, and Run on it runs nothing (criterion 21)", async function () {
     this.timeout(120_000);
     const document = await vscode.workspace.openTextDocument({ language: "sql", content: "select 1" });
     await vscode.window.showTextDocument(document);
@@ -215,7 +215,7 @@ describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
     assert.deepEqual(results.posted.slice(postedFrom), []);
   });
 
-  it("runs a LibreDB-bound document beside mssql, and records mssql's diagnostics on it", async function () {
+  it("runs a KnowSQL-bound document beside mssql, and records mssql's diagnostics on it", async function () {
     this.timeout(120_000);
     const editor = await boundEditor();
     const uri = editor.document.uri;
@@ -230,7 +230,7 @@ describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
     );
   });
 
-  it("keeps the LibreDB Results view working beside mssql's Panel views", async function () {
+  it("keeps the KnowSQL Results view working beside mssql's Panel views", async function () {
     this.timeout(120_000);
     const { viewsContainers, views } = mssqlManifest().contributes ?? {};
     const panels = (viewsContainers?.panel ?? []).map((container) => container.id);
@@ -248,7 +248,7 @@ describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
       console.log(`${view}.focus: ${outcome}`);
     }
     assert.ok(focused > 0, `no ${MSSQL_ID} Panel view took focus, so the Results view was never displaced`);
-    // A focused view of another Panel container hides LibreDB's, so only the focus below can show it again.
+    // A focused view of another Panel container hides KnowSQL's, so only the focus below can show it again.
     await waitFor(
       () => !results.visible,
       10_000,
@@ -269,7 +269,7 @@ describe("LibreDB beside ms-mssql.mssql in a real extension host", () => {
     assert.deepEqual(await postedSince(from, 2, "the second run"), ["runStarted", "runSucceeded"]);
   });
 
-  it("contributes no keybinding, and no mssql keybinding names a LibreDB context key", () => {
+  it("contributes no keybinding, and no mssql keybinding names a KnowSQL context key", () => {
     const manifest = vscode.extensions.getExtension(EXTENSION_ID)?.packageJSON as {
       contributes: { keybindings?: unknown };
     };

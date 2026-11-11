@@ -1,11 +1,11 @@
-# OIDC SSO — LibreDB Studio
+# OIDC SSO — KnowSQL
 
-LibreDB Studio supports vendor-agnostic OpenID Connect (OIDC) authentication. This document is split into two parts: a **Setup Guide** for operators configuring SSO against a provider, and an **Architecture & Internals** reference for contributors working on the auth subsystem.
+KnowSQL supports vendor-agnostic OpenID Connect (OIDC) authentication. This document is split into two parts: a **Setup Guide** for operators configuring SSO against a provider, and an **Architecture & Internals** reference for contributors working on the auth subsystem.
 
 For the built-in OAuth server of an OpenShift cluster, which is not an OpenID Connect provider, see [OPENSHIFT.md](OPENSHIFT.md) and `NEXT_PUBLIC_AUTH_PROVIDER=openshift` instead.
 An OpenShift cluster that uses direct external OIDC authentication has no built-in OAuth server, so Studio signs in there with this mode against the cluster's identity provider, without Kubernetes discovery: on a cluster that serves `config.openshift.io/v1`, the Kubernetes access review of an OIDC session denies every request ([OPENSHIFT.md](OPENSHIFT.md#supported-versions)).
 
-LibreDB Studio uses the **Authorization Code Flow with PKCE** (S256). After OIDC authentication, a local JWT session is created — the rest of the app (middleware, hooks, protected routes, RBAC) works identically to local email/password login.
+KnowSQL uses the **Authorization Code Flow with PKCE** (S256). After OIDC authentication, a local JWT session is created — the rest of the app (middleware, hooks, protected routes, RBAC) works identically to local email/password login.
 
 ```
 Browser → /api/auth/oidc/login → OIDC Discovery → PKCE + state → redirect to provider
@@ -99,7 +99,7 @@ Navigate to `/login` and click **"Login with SSO"**.
 
 ## Try it locally with Keycloak
 
-To see SSO login and role mapping before configuring your own provider, start the demo stack. It runs LibreDB Studio, a preconfigured Keycloak and a TLS proxy from one file, with no source checkout, `.env` file or second command:
+To see SSO login and role mapping before configuring your own provider, start the demo stack. It runs KnowSQL, a preconfigured Keycloak and a TLS proxy from one file, with no source checkout, `.env` file or second command:
 
 ```bash
 curl -fsSLO https://raw.githubusercontent.com/libredb/libredb-studio/main/docker-compose.oidc-demo.yml
@@ -320,7 +320,7 @@ No Studio code is specific to Rancher: it is the ordinary OIDC mode with the val
    metadata:
      name: libredb-studio
    spec:
-     description: LibreDB Studio
+     description: KnowSQL
      redirectURIs:
        - https://studio.example.com/api/auth/oidc/callback
      tokenExpirationSeconds: 300
@@ -505,7 +505,7 @@ The role mapping system:
 By default every account the provider signs in is at least a `user`.
 Set `OIDC_USER_ROLES` to let in only accounts that hold a role: the claim named by `OIDC_ROLE_CLAIM` must then hold a value of `OIDC_ADMIN_ROLES` or of `OIDC_USER_ROLES`.
 An account that holds neither gets no session.
-The callback sends it to `/login?error=oidc_no_role`, the login page says "Your account has no role that allows access to LibreDB Studio. Ask your administrator.", and the audit trail records `login_failure` with reason `oidc_no_role` and the account's email, username or subject as the actor.
+The callback sends it to `/login?error=oidc_no_role`, the login page says "Your account has no role that allows access to KnowSQL. Ask your administrator.", and the audit trail records `login_failure` with reason `oidc_no_role` and the account's email, username or subject as the actor.
 
 The values are a comma list, trimmed, and compared case-insensitively.
 An account that holds both roles is `admin`.
@@ -532,7 +532,7 @@ OIDC_USER_ROLES=user
 
 ### Custom seed roles with OIDC_ROLE_PREFIX
 
-In addition to mapping users to the binary `admin` or `user` application role, LibreDB Studio can extract fine-grained team roles from the identity provider and use them to gate access to [seed connections](SEED_CONNECTIONS.md).
+In addition to mapping users to the binary `admin` or `user` application role, KnowSQL can extract fine-grained team roles from the identity provider and use them to gate access to [seed connections](SEED_CONNECTIONS.md).
 
 When `OIDC_ROLE_PREFIX` is configured (for example, `OIDC_ROLE_PREFIX=team:`):
 1. **Extraction**: `mapOIDCClaimRoles()` inspects the claim specified by `OIDC_ROLE_CLAIM`.
@@ -718,11 +718,11 @@ With Keycloak:
 
 ### Same user auto-logs in on every SSO click
 
-- With the default `OIDC_PROMPT=login`, LibreDB Studio sends `prompt=login` to force re-authentication
+- With the default `OIDC_PROMPT=login`, KnowSQL sends `prompt=login` to force re-authentication
 - With `OIDC_PROMPT=omit` this is intended: the provider session signs the user in (single sign-on)
 - If the issue persists, check your provider's session settings
 
-### "Your account has no role that allows access to LibreDB Studio"
+### "Your account has no role that allows access to KnowSQL"
 
 - `OIDC_USER_ROLES` is set, and the account's ID token holds no value of `OIDC_ADMIN_ROLES` or `OIDC_USER_ROLES` in the claim `OIDC_ROLE_CLAIM` names.
 - Give the account an admin or a user role at the provider, directly or through a group the provider puts in that claim, and sign in again.
@@ -769,7 +769,7 @@ A session minted in `openshift` mode reads as signed out in the other modes, and
 
 # Part 2 — Architecture & Internals
 
-> Developer reference for the OIDC authentication subsystem in LibreDB Studio.
+> Developer reference for the OIDC authentication subsystem in KnowSQL.
 > For user-facing setup instructions, see [Part 1 — Setup Guide](#part-1--setup-guide).
 
 ## Design Philosophy
@@ -1447,7 +1447,7 @@ Both OIDC routes redirect to `/login?error=<code>` on failure, and record the sa
 |------|---------|
 | `oidc_config` | Single sign-on is not configured correctly on this server. Contact your administrator. |
 | `oidc_discovery` | The identity provider could not be reached. Try again later, or contact your administrator if this continues. |
-| `oidc_no_role` | Your account has no role that allows access to LibreDB Studio. Ask your administrator. |
+| `oidc_no_role` | Your account has no role that allows access to KnowSQL. Ask your administrator. |
 | `oidc_role_overflow` | Your account has too many roles or a role name is too long. Ask your administrator. |
 | `oidc_session_revoked` | An administrator has ended your sessions. Try again later, or ask your administrator. |
 | anything else | Authentication failed. Please try again. |

@@ -50,7 +50,7 @@ describe("constants", () => {
     expect(SNOWFLAKE_RETRY_MAX_MS).toBe(8_000);
     expect(SNOWFLAKE_RETRY_ATTEMPTS).toBe(5);
     expect(SNOWFLAKE_CONTROL_ANSWER_MAX_BYTES).toBe(1_048_576);
-    expect(SNOWFLAKE_USER_AGENT).toMatch(/^LibreDB-Studio(\/.+)?$/);
+    expect(SNOWFLAKE_USER_AGENT).toMatch(/^KnowSQL(\/.+)?$/);
   });
 
   test("the backoff doubles from the base, jittered to half or the whole, and is capped", () => {
@@ -109,7 +109,7 @@ describe("headers and transport options", () => {
       });
       expect(sent.body).toBe("{}");
       expect(sent.maxResponseBytes).toBe(MAX);
-      expect(sent.headers["user-agent"].startsWith("LibreDB-Studio")).toBe(true);
+      expect(sent.headers["user-agent"].startsWith("KnowSQL")).toBe(true);
     });
   }
 

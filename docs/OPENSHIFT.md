@@ -1,4 +1,4 @@
-# LibreDB Studio on OpenShift
+# KnowSQL on OpenShift
 
 On OpenShift, Studio installs through its operator from the community catalog or with its Helm chart, signs people in with their OpenShift account, lists the databases of the cluster's database operators, and links itself from the web console.
 Its console plugin adds a Databases page and an item on each database's details page to the web console, which open the database in Studio in a new tab.
@@ -20,7 +20,7 @@ Its console plugin adds a Databases page and an item on each database's details 
 A cluster admin installs the operator once per cluster, into the namespace of the cluster's Studio, and creates one `LibreDBStudio` there.
 The operator manages only its own namespace: it reconciles the `LibreDBStudio` there and no other.
 
-1. Install **LibreDB Studio** (package `libredb-studio-operator`) from the Community catalog in the console's OperatorHub, or from the CLI.
+1. Install **KnowSQL** (package `libredb-studio-operator`) from the Community catalog in the console's OperatorHub, or from the CLI.
    Its only install mode is **A specific namespace on the cluster**.
    Keep **Operator recommended Namespace** at `libredb-studio`, which the console creates when it does not exist, and choose Manual approval, as [Upgrading the operator](#upgrading-the-operator) explains.
    When the form says that the namespace already exists and will be used, check it as step 2 shows before you install, or pick another name.
@@ -181,7 +181,7 @@ This procedure ran end to end on OpenShift 4.22 (CRC 4.22.14) with Helm 4.1.3.
 2. Approve no InstallPlan of the new version, and install it in no other namespace yet.
    An approved InstallPlan, which Automatic approval approves at once, applies the new CRD even though the new CSV shows `Failed`, and so does an install in another namespace: 1.1.0 then runs on under the new CRD, so make the [upgrade checks](#upgrading-the-operator) on every resource at once, copying backup dumps out first.
    Then go on with step 3.
-3. Uninstall 1.1.0 and keep its resources: in Installed Operators in `openshift-operators`, run Uninstall Operator on the LibreDB Studio row that offers it (the new version's row, showing Failed, once an upgrade InstallPlan was approved), with "Delete all operand instances for this operator" left unchecked where the dialog shows it.
+3. Uninstall 1.1.0 and keep its resources: in Installed Operators in `openshift-operators`, run Uninstall Operator on the KnowSQL row that offers it (the new version's row, showing Failed, once an upgrade InstallPlan was approved), with "Delete all operand instances for this operator" left unchecked where the dialog shows it.
    The console removes the Subscription and that row's CSV only, so then delete every `libredb-studio-operator` CSV left in `openshift-operators` with the second command below.
    From the CLI, run both commands, which delete the Subscription and every `libredb-studio-operator` CSV in `openshift-operators`:
 
@@ -243,7 +243,7 @@ metadata:
   name: libredb
   namespace: team-a
 spec:
-  name: LibreDB
+  name: KnowSQL
   connectionConfig:
     url: https://libredb.org/libredb-studio/
 ```

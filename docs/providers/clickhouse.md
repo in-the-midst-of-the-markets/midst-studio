@@ -1,6 +1,6 @@
 # ClickHouse Provider
 
-> ClickHouse support for LibreDB Studio, built on the documented HTTP interface (port `8123`) with
+> ClickHouse support for KnowSQL, built on the documented HTTP interface (port `8123`) with
 > **no driver dependency of any kind**: every statement is the body of a `POST /` and the answer
 > comes back through the runtime's own `fetch`. This document is the single reference point for the
 > ClickHouse provider: design, architecture, usage, and tests. If you are reading the code, extending

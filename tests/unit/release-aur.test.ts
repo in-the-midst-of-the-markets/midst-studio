@@ -2,7 +2,7 @@
  * Unit tests for the AUR publish job in release-artifacts.yml (issue #971).
  *
  * Why a test for YAML: this job holds an SSH key that can rewrite a package
- * every Arch user of LibreDB Studio installs, and the failure modes that matter
+ * every Arch user of KnowSQL installs, and the failure modes that matter
  * are all in its wiring, not in any code a unit test would otherwise reach. It
  * must stay off until the channel is live (the package is staged before the
  * account exists), it must never push a prerelease (pkgver cannot hold one),

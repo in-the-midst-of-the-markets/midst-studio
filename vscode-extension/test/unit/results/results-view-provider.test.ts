@@ -187,7 +187,7 @@ describe("ResultsViewProvider: posting, revealing and describing", () => {
     answerCommand(() => Promise.reject(new Error("no such view")));
     provider.reveal();
     await settle();
-    assert.deepEqual(lines, [["error", "Revealing the LibreDB Results view failed: no such view"]]);
+    assert.deepEqual(lines, [["error", "Revealing the KnowSQL Results view failed: no such view"]]);
   });
 
   it("applies a description given before the view resolves, and each one after at once", () => {
@@ -249,13 +249,13 @@ describe("ResultsViewProvider: what the view sends", () => {
   it("names the refused field in the warning sentence and the error in the error sentence", () => {
     assert.equal(
       refusedMessage(new ResultsProtocolError("runId", "missing")),
-      "The LibreDB Results view sent a message the host refused: runId: missing.",
+      "The KnowSQL Results view sent a message the host refused: runId: missing.",
     );
     assert.equal(
       refusedMessage(new ResultsProtocolError("type", `unknown message type ${"y".repeat(500)}`)),
-      `The LibreDB Results view sent a message the host refused: type: unknown message type ${"y".repeat(173)} (cut).`,
+      `The KnowSQL Results view sent a message the host refused: type: unknown message type ${"y".repeat(173)} (cut).`,
     );
-    assert.equal(reportedError("boom"), "The LibreDB Results view reported an error: boom");
+    assert.equal(reportedError("boom"), "The KnowSQL Results view reported an error: boom");
   });
 
   it("bounds the refusal line, so a message the view controls cannot write its text into the log", () => {
@@ -300,7 +300,7 @@ describe("ResultsViewProvider: what the view sends", () => {
       assert.equal(view.lines.length, 1, field);
       const [level, line] = view.lines[0];
       assert.equal(level, "warn");
-      const prefix = `The LibreDB Results view sent a message the host refused: ${field}: `;
+      const prefix = `The KnowSQL Results view sent a message the host refused: ${field}: `;
       assert.ok(line.startsWith(prefix), line);
       assert.ok(line.endsWith(reason === "" ? "." : `${reason}.`), line);
       assert.deepEqual(view.after(), [], field);
@@ -351,7 +351,7 @@ describe("ResultsViewProvider: what the view sends", () => {
     view.webview.receive({ v: 1, type: "copy", requestId: 9, text: "ada@example.com" });
     await settle();
     assert.deepEqual(view.after(), [{ v: 1, type: "copied", requestId: 9, ok: false }]);
-    assert.deepEqual(view.lines, [["error", "The LibreDB Results view could not write the clipboard: no clipboard"]]);
+    assert.deepEqual(view.lines, [["error", "The KnowSQL Results view could not write the clipboard: no clipboard"]]);
   });
 
   it("shows an info notice in the status bar for three seconds and an error notice as a warning", () => {
