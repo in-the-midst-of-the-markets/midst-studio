@@ -66,6 +66,7 @@ import {
 import { mapDatabaseError } from "../../../map-database-error";
 import { describeOracleClientLoadFailure } from "../oracle-driver-errors";
 import { formatBytes } from "../../../utils/pool-manager";
+import { formatUptime } from "../../../utils/reading-time";
 import { analyzeQuery, assertRowBounds, DEFAULT_QUERY_LIMIT, MAX_UNLIMITED_ROWS } from "../../../utils/query-limiter";
 import { measuredNullableAggregate } from "../../../utils/measured-aggregate";
 import { assertReadOnlyBudget } from "../read-only-budget";
@@ -3184,10 +3185,7 @@ export class OracleProvider extends SQLBaseProvider {
         const upRows = (upRes.rows || []) as Record<string, unknown>[];
         if (upRows[0]) {
           const secs = Number(upRows[0].UPTIME_SECS || 0);
-          const days = Math.floor(secs / 86400);
-          const hours = Math.floor((secs % 86400) / 3600);
-          const minutes = Math.floor((secs % 3600) / 60);
-          uptime = days > 0 ? `${days}d ${hours}h ${minutes}m` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+          uptime = formatUptime(secs);
           if (upRows[0].STARTUP_TIME) startTime = new Date(String(upRows[0].STARTUP_TIME));
         }
       } catch {

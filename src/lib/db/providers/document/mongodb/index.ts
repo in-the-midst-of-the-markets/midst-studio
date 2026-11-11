@@ -68,6 +68,7 @@ import {
 } from "../../../errors";
 import { mapDatabaseError } from "../../../map-database-error";
 import { formatBytes } from "../../../utils/pool-manager";
+import { formatRunningTimeRounded, formatUptimeToTheHour } from "../../../utils/reading-time";
 import { unionFields, uniquelyKeyedRows } from "../../../utils/result-fields";
 import { CACHE_HIT_RATIO_UNAVAILABLE, formatCacheHitRatio, measuredNumber } from "@/lib/monitoring-cache-ratio";
 import {
@@ -1791,7 +1792,7 @@ export class MongoDBProvider extends BaseDatabaseProvider {
 
       // Calculate uptime
       const uptimeSeconds = serverStatus.uptime || 0;
-      const uptime = this.formatUptimeString(uptimeSeconds);
+      const uptime = formatUptimeToTheHour(uptimeSeconds);
 
       // Get collection count
       const collections = await this.db!.listCollections().toArray();
@@ -1995,7 +1996,7 @@ export class MongoDBProvider extends BaseDatabaseProvider {
           state,
           activity,
           query: JSON.stringify(op.command || {}).substring(0, 500),
-          duration: this.formatDurationString(durationMs),
+          duration: formatRunningTimeRounded(durationMs),
           durationMs,
           waitEventType: op.waitingForLock ? "Lock" : undefined,
           waitEvent: op.lockStats ? "Acquiring lock" : undefined,
@@ -2171,16 +2172,6 @@ export class MongoDBProvider extends BaseDatabaseProvider {
     }
 
     return stats;
-  }
-
-  private formatUptimeString(seconds: number): string {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
   }
 
   // ============================================================================
@@ -2699,12 +2690,5 @@ export class MongoDBProvider extends BaseDatabaseProvider {
     // exists to prevent. The sentence itself is shared (#789), so one event reads one way
     // on every engine.
     return bounded ? { details, truncated: { limit, reason: callerBoundTruncationReason(limit) } } : { details };
-  }
-
-  private formatDurationString(ms: number): string {
-    if (ms < 1000) return `${Math.round(ms)}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
-    if (ms < 3600000) return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
-    return `${Math.floor(ms / 3600000)}h ${Math.floor((ms % 3600000) / 60000)}m`;
   }
 }
