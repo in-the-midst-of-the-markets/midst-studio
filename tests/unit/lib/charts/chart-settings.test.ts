@@ -5,18 +5,21 @@ import { buildChartOption } from "@/lib/charts/echarts-option";
 import { optionForSavedChart } from "@/lib/charts/saved-chart-run";
 import { chartTheme } from "@/lib/charts/palette";
 import {
+  CHART_COLOR_LIMIT,
   CHART_FONTS,
   DEFAULT_CHART_SETTINGS,
   applyChartSettings,
   chartCategories,
+  chartColor,
+  chartThemeWithSettings,
+  nextChartColor,
   normalizeChartSettings,
   readChartSettings,
   subscribeChartSettings,
   writeChartSettings,
+  type ChartColorSettings,
   type ChartSettings,
 } from "@/lib/charts/chart-settings";
-import type { QueryResult } from "@/lib/types";
-
 afterEach(() => {
   localStorage.clear();
 });
@@ -30,9 +33,21 @@ function tuned(
   const current = DEFAULT_CHART_SETTINGS.types[typeId] ?? {};
   return {
     text: { ...DEFAULT_CHART_SETTINGS.text, ...text },
+    colors: DEFAULT_CHART_SETTINGS.colors,
     types: {
       ...DEFAULT_CHART_SETTINGS.types,
       [typeId]: { ...current, [controlId]: value },
+    },
+  };
+}
+
+function colored(colors: Partial<ChartColorSettings>, base: ChartSettings = DEFAULT_CHART_SETTINGS): ChartSettings {
+  return {
+    ...base,
+    colors: {
+      background: colors.background ?? "",
+      font: colors.font ?? "",
+      series: colors.series ?? [],
     },
   };
 }
@@ -87,6 +102,23 @@ describe("chart settings", () => {
       }),
     ).toEqual(tuned("graph", "labels", true));
     expect(normalizeChartSettings({ types: { bar: { gridlines: false } } }).types.bar?.gridlines).toBe(false);
+    expect(normalizeChartSettings({ colors: { background: "red", font: 1, series: "no" } })).toBe(
+      DEFAULT_CHART_SETTINGS,
+    );
+    const saved = ["#ff0000", "#FF0000", "blue", "#00ff00", "#112233", "#445566", "#778899", "#aabbcc", "#ddeeff"];
+    expect(
+      normalizeChartSettings({
+        colors: { background: " #101010 ", font: "#AbCdEf", series: [...saved, "#101010", "#010203"] },
+      }).colors,
+    ).toEqual({
+      background: "#101010",
+      font: "#abcdef",
+      series: ["#ff0000", "#00ff00", "#112233", "#445566", "#778899", "#aabbcc", "#ddeeff", "#101010"],
+    });
+    expect(chartColor("#abc")).toBe("");
+    expect(nextChartColor([])).toBe(chartTheme("dark").series[0]);
+    expect(nextChartColor(chartTheme("dark").series)).toBe(chartTheme("dark").series[0]);
+    expect(CHART_COLOR_LIMIT).toBe(8);
   });
 
   test("reads and writes the browser copy, and ignores a write the browser refuses", () => {
@@ -425,5 +457,118 @@ describe("chart settings", () => {
       tuned("radar", "labels", true, { axisFontSize: 16 }),
     );
     expect((onlySize.radar as { axisName: { fontSize: number } }).axisName.fontSize).toBe(16);
+  });
+
+  test("paints a background, a font color, and up to eight chart colors", () => {
+    const rows = [{ region: "east", total: 2, month: "Jan", change: 10 }];
+    const selection = { category: ["region"], values: ["total"] };
+    const dark = chartTheme("dark");
+    const colors = colored({
+      background: "#101010",
+      font: "#abcdef",
+      series: ["#112233", "#445566", "#778899", "#101010", "#010203", "#aabbcc", "#ddeeff", "#ff00aa"],
+    });
+    const bar = optionOf("bar", "basic", rows, selection, colors);
+    expect(bar.backgroundColor).toBe("#101010");
+    expect(bar.textStyle).toMatchObject({ color: "#abcdef" });
+    expect((bar.title as { textStyle: { color: string } }).textStyle.color).toBe("#abcdef");
+    expect((bar.legend as { textStyle: { color: string } }).textStyle.color).toBe("#abcdef");
+    expect((bar.yAxis as { axisLabel: { color: string } }).axisLabel.color).toBe("#abcdef");
+    expect(bar.color).toEqual(colors.colors.series);
+    expect(applyChartSettings(bar, "bar", "basic", colors)).toBe(bar);
+    const lead = buildChartOption({
+      typeId: "line",
+      variationId: "basic",
+      rows,
+      selection,
+      color: "#E66767",
+      settings: colored({ series: ["#112233", "#445566"] }),
+    });
+    if (lead === null) throw new Error("expected a line");
+    expect((lead.option.color as string[]).slice(0, 2)).toEqual(["#E66767", "#112233"]);
+    const fall = optionOf(
+      "waterfall",
+      "change",
+      [
+        { month: "Jan", change: 10 },
+        { month: "Feb", change: -4 },
+      ],
+      { category: ["month"], value: ["change"] },
+      colors,
+    );
+    expect((seriesAt(fall, 1).itemStyle as { color: string }).color).toBe("#778899");
+    expect((seriesAt(fall, 2).itemStyle as { color: string }).color).toBe("#ff00aa");
+    expect(chartThemeWithSettings(dark, DEFAULT_CHART_SETTINGS)).toBe(dark);
+    const themed = chartThemeWithSettings(dark, colored({ font: "#abcdef" }));
+    expect(themed.ink).toBe("#abcdef");
+    expect(themed.series).toBe(dark.series);
+    const padded = chartThemeWithSettings(dark, colored({ series: ["#3987e5", "#3987e5", "#ff0000"] }));
+    expect(padded.series[0]).toBe("#3987e5");
+    expect(padded.series[1]).toBe("#ff0000");
+    expect(padded.series).toHaveLength(8);
+    expect(new Set(padded.series).size).toBe(8);
+    const capped = chartThemeWithSettings(dark, colored({ series: colors.colors.series.concat("#000000") }));
+    expect(capped.series).toEqual(colors.colors.series);
+    const ground = applyChartSettings(
+      { backgroundColor: "transparent" },
+      "bar",
+      "basic",
+      colored({ background: "#101010" }),
+    );
+    expect(ground.backgroundColor).toBe("#101010");
+    expect(applyChartSettings(ground, "bar", "basic", colored({ background: "#101010" }))).toBe(ground);
+    const quiet = { label: "no", edgeLabel: "no", detail: "no", title: "Gauge" };
+    const plainSeries = applyChartSettings(
+      { series: quiet, visualMap: "no", calendar: "no", radar: "no", title: "Revenue", legend: [] },
+      "gauge",
+      "basic",
+      colored({ font: "#abcdef" }),
+    );
+    expect(plainSeries.series).toBe(quiet);
+    expect(plainSeries.textStyle).toEqual({ color: "#abcdef" });
+    const rich = {
+      label: { color: "#111" },
+      edgeLabel: { show: true },
+      detail: { color: "#111" },
+      title: { color: "#111" },
+    };
+    const painted = applyChartSettings(
+      {
+        textStyle: { color: "#111" },
+        title: { textStyle: { color: "#111" } },
+        legend: { textStyle: { color: "#111" } },
+        radar: { axisName: { color: "#111" } },
+        xAxis: [{ axisLabel: { color: "#111" } }, null],
+        yAxis: { axisLabel: { color: "#111" } },
+        series: [rich, { type: "bar" }, null],
+        visualMap: { textStyle: { color: "#111" } },
+        calendar: { dayLabel: {}, monthLabel: { color: "#abcdef" }, yearLabel: { color: "#abcdef" } },
+      },
+      "line",
+      "basic",
+      colored({ font: "#abcdef", background: "#101010" }),
+    );
+    expect((painted.series as { label: { color: string }; title: { color: string } }[])[0]?.label.color).toBe(
+      "#abcdef",
+    );
+    expect((painted.series as { edgeLabel: { color: string } }[])[0]?.edgeLabel.color).toBe("#abcdef");
+    expect((painted.series as { detail: { color: string } }[])[0]?.detail.color).toBe("#abcdef");
+    expect((painted.series as { title: { color: string } }[])[0]?.title.color).toBe("#abcdef");
+    expect((painted.series as unknown[])[1]).toEqual({ type: "bar" });
+    expect((painted.visualMap as { textStyle: { color: string } }).textStyle.color).toBe("#abcdef");
+    expect((painted.calendar as { dayLabel: { color: string } }).dayLabel.color).toBe("#abcdef");
+    expect(applyChartSettings(painted, "line", "basic", colored({ font: "#abcdef", background: "#101010" }))).toBe(
+      painted,
+    );
+    const kept = optionForSavedChart(
+      { typeId: "bar", variationId: "basic", selection },
+      { rows, fields: ["region", "total"], rowCount: 1, executionTime: 1 },
+      chartTheme("light"),
+      colored({ background: "#101010", font: "#ffffff", series: ["#112233"] }),
+    );
+    if (kept === null) throw new Error("expected a saved chart");
+    expect(kept.option.backgroundColor).toBe("#101010");
+    expect((kept.option.textStyle as { color: string }).color).toBe("#ffffff");
+    expect((kept.option.color as string[])[0]).toBe("#112233");
   });
 });

@@ -86,5 +86,9 @@ export function optionForSavedChart(
   if (built === null) return null;
   const look = storedChartLook(chart.look);
   const drawn = look === undefined ? built.option : withoutFilterLooks(applyChartValues(look, built.option));
-  return { option: restampThemeChrome(presentChartOption(drawn, built.option), theme), notes: built.notes };
+  const font = settings?.colors.font ?? "";
+  return {
+    option: restampThemeChrome(presentChartOption(drawn, built.option), theme, font === "" ? [] : [font]),
+    notes: built.notes,
+  };
 }
