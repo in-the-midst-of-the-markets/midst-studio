@@ -1721,6 +1721,8 @@ describe("createDatabaseProvider", () => {
       "cassandra",
       // No cancel: a Clarity export is one GET, and the API has nothing that stops it.
       "clarity",
+      // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
+      "cockroach",
       "couchbase",
       "db2",
       "druid",

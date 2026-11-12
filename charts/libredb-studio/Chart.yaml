@@ -1,8 +1,8 @@
 apiVersion: v2
 name: libredb-studio
-description: Web-based SQL IDE for cloud-native teams supporting sixty-six engines - PostgreSQL, Mixpanel, Amazon Redshift, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets
+description: Web-based SQL IDE for cloud-native teams supporting sixty-seven engines - PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets
 type: application
-version: 0.1.139
+version: 0.1.140
 appVersion: "1.2.0"
 kubeVersion: ">=1.26.0-0"
 home: https://github.com/libredb/libredb-studio
@@ -135,6 +135,10 @@ keywords:
   # evaluator looking for an Amazon Redshift cluster types. Its wire protocol is
   # PostgreSQL's, whose keyword is already above; this is the keyword that finds the warehouse.
   - redshift
+  # One keyword, like redshift above: `cockroach` is the type-id and the product an
+  # evaluator looking for a CockroachDB cluster types. Its wire protocol is
+  # PostgreSQL's, whose keyword is already above; this is the keyword that finds the cluster.
+  - cockroach
   # One keyword each: the type-id is the product an evaluator types.
   - airtable
   - supabase

@@ -129,6 +129,7 @@ const ALL_TYPES: DatabaseType[] = [
   "sparkplug",
   "questdb",
   "redshift",
+  "cockroach",
   "airtable",
   "supabase",
   "hubspot",
@@ -1151,6 +1152,7 @@ describe("declared connection-field copy (#1085)", () => {
       .map(([type]) => type);
     expect(declared).toEqual([
       "redshift",
+      "cockroach",
       "airtable",
       "supabase",
       "hubspot",
@@ -1780,6 +1782,8 @@ describe("db-showcase", () => {
         "googlesheets",
         // Last, behind Google Sheets: a warehouse on the PostgreSQL wire, in the Databases group.
         "redshift",
+        // Last, behind Amazon Redshift: a cluster on the PostgreSQL wire, in the Databases group.
+        "cockroach",
         // Last, a product-analytics API, in the SAAS Connectors group.
         "mixpanel",
       ]);

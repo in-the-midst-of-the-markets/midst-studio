@@ -23,18 +23,18 @@ metadata:
     categories: Database, Developer Tools
     console.openshift.io/plugins: '["libredb-studio"]'
     containerImage: ghcr.io/libredb/libredb-studio-operator:1.2.0
-    createdAt: "2026-11-11T23:56:44Z"
-    description: Open-source web-based SQL IDE for sixty-six engines - PostgreSQL,
-      Mixpanel, Amazon Redshift, MySQL, Oracle, Db2 LUW, SQL Server, SQLite, DuckDB,
-      MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch,
-      OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL,
-      Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate,
-      InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes,
-      OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase,
-      HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo,
-      Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads,
-      Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel and Google Sheets -
-      with AI-powered query assistance.
+    createdAt: "2026-11-12T02:55:27Z"
+    description: Open-source web-based SQL IDE for sixty-seven engines - PostgreSQL,
+      Mixpanel, Amazon Redshift, CockroachDB, MySQL, Oracle, Db2 LUW, SQL Server,
+      SQLite, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid,
+      Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache
+      Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus,
+      Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object
+      storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug
+      B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics,
+      QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics,
+      Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft
+      Excel and Google Sheets - with AI-powered query assistance.
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
     features.operators.openshift.io/proxy-aware: "false"
@@ -69,7 +69,7 @@ spec:
       name: libredbstudios.studio.libredb.org
       version: v1alpha1
   description: |
-    KnowSQL is an open-source, web-based SQL IDE. Query PostgreSQL, Mixpanel, Amazon Redshift,
+    KnowSQL is an open-source, web-based SQL IDE. Query PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB,
     MySQL, Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase,
     Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark,
     Apache Cassandra, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB,

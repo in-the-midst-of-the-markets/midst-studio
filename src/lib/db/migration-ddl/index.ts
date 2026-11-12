@@ -22,6 +22,7 @@ import { KUBERNETES_MIGRATION_DDL } from "@/lib/db/providers/platform/kubernetes
 import { BIGQUERY_MIGRATION_DDL } from "@/lib/db/providers/sql/bigquery/migration-ddl";
 import { CASSANDRA_MIGRATION_DDL } from "@/lib/db/providers/sql/cassandra/migration-ddl";
 import { CLICKHOUSE_MIGRATION_DDL } from "@/lib/db/providers/sql/clickhouse/migration-ddl";
+import { COCKROACH_MIGRATION_DDL } from "@/lib/db/providers/sql/cockroach/migration-ddl";
 import { DATABEND_MIGRATION_DDL } from "@/lib/db/providers/sql/databend/migration-ddl";
 import { DB2_MIGRATION_DDL } from "@/lib/db/providers/sql/db2/migration-ddl";
 import { DRUID_MIGRATION_DDL } from "@/lib/db/providers/sql/druid/migration-ddl";
@@ -79,6 +80,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   bigquery: BIGQUERY_MIGRATION_DDL,
   cassandra: CASSANDRA_MIGRATION_DDL,
   clickhouse: CLICKHOUSE_MIGRATION_DDL,
+  cockroach: COCKROACH_MIGRATION_DDL,
   couchbase: COUCHBASE_MIGRATION_DDL,
   databend: DATABEND_MIGRATION_DDL,
   db2: DB2_MIGRATION_DDL,

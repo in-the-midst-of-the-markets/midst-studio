@@ -122,6 +122,10 @@ export type DatabaseType =
   // provider: that one issues `SELECT pg_backend_pid()` when a run carries a query id,
   // and it reads sizes from `pg_total_relation_size`.
   | "redshift"
+  // CockroachDB, on its own PostgreSQL wire session (port 26257). Not the `postgres`
+  // provider: that one issues `SELECT pg_backend_pid()` when a run carries a query id,
+  // and it reads sizes from `pg_total_relation_size`.
+  | "cockroach"
   // Two type-ids, ONE provider implementation (issue #424 Phase 1,
   // `src/lib/db/providers/sql/search/index.ts`): the two products speak the same
   // shape of SQL over HTTP and differ only in wire detail. They stay separate ids

@@ -53,6 +53,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "druid",
   "questdb",
   "redshift",
+  // No kind declares `hasSource`: CockroachDB tables are not edited as source, which docs/providers/cockroach.md names.
+  "cockroach",
   "duckdb",
   "elasticsearch",
   // No kind declares `acceptsRowWrites` or `acceptsSourceEdits`: this version reads only, whatever `readOnly` says,

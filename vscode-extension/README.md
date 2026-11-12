@@ -12,7 +12,7 @@ It requires VS Code 1.123 or later.
 
 ## Engines
 
-- Relational and analytical: PostgreSQL, Amazon Redshift, MySQL, SQL Server, SQLite, ClickHouse, Apache Druid, Trino, libSQL, Databend, BigQuery, Snowflake, Apache Spark.
+- Relational and analytical: PostgreSQL, Amazon Redshift, CockroachDB, MySQL, SQL Server, SQLite, ClickHouse, Apache Druid, Trino, libSQL, Databend, BigQuery, Snowflake, Apache Spark.
 - Document, key-value and wide-column: MongoDB, Couchbase, Firestore, Redis, etcd, Oxia, Apache Cassandra.
 - Search and vector: Elasticsearch, OpenSearch, Milvus, Qdrant, Weaviate.
 - Graph and time series: Neo4j, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), QuestDB.

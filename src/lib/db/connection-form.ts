@@ -443,6 +443,24 @@ export const CONNECTION_FORM: {
       database: "The database name on the cluster.",
     },
   },
+  cockroach: {
+    label: "CockroachDB",
+    // The cluster's PostgreSQL wire port.
+    defaultPort: "26257",
+    // A postgresql:// paste belongs to the PostgreSQL type. CockroachDB has no scheme of its own here.
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.cockroach,
+    fieldPlaceholders: {
+      host: "cluster.cockroachlabs.cloud",
+      user: "root",
+      database: "defaultdb",
+    },
+    fieldHints: {
+      host: "The cluster host. The password is sent to that host on the PostgreSQL wire protocol.",
+      user: "The database user. A local cluster's usual user is root.",
+      database: "The database name on the cluster. A local cluster's usual database is defaultdb.",
+    },
+  },
   airtable: {
     label: "Airtable",
     defaultPort: "",
@@ -1871,6 +1889,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "supabase",
   DEFAULT_CONNECTION_TYPE,
   "redshift",
+  "cockroach",
   "mysql",
   "sqlite",
   "oracle",

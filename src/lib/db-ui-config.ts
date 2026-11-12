@@ -19,6 +19,7 @@ import {
   DruidIcon,
   QuestDbIcon,
   RedshiftIcon,
+  CockroachIcon,
   ElasticsearchIcon,
   OpenSearchIcon,
   TrinoIcon,
@@ -123,6 +124,7 @@ export const DB_UI_CONFIG: {
 } = {
   postgres: branded(CONNECTION_FORM.postgres, PostgreSQLIcon, "text-hue-blue bg-hue-blue-tint/10"),
   redshift: branded(CONNECTION_FORM.redshift, RedshiftIcon, "text-hue-red bg-hue-red/10"),
+  cockroach: branded(CONNECTION_FORM.cockroach, CockroachIcon, "text-hue-teal bg-hue-teal/15"),
   airtable: branded(CONNECTION_FORM.airtable, AirtableIcon, "text-hue-amber bg-hue-amber-tint/10"),
   supabase: branded(CONNECTION_FORM.supabase, SupabaseIcon, "text-hue-emerald bg-hue-emerald-tint/10"),
   hubspot: branded(CONNECTION_FORM.hubspot, HubSpotIcon, "text-hue-orange bg-hue-orange-tint/10"),

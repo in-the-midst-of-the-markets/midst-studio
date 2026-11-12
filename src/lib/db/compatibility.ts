@@ -135,6 +135,9 @@ const SHIPPED: Readonly<Record<DatabaseType, true>> = Object.freeze({
   // Amazon Redshift: its own provider, doc and integration test, on the PostgreSQL wire at port 5439.
   // Not a postgres relative: that provider's query-id probe calls pg_backend_pid().
   redshift: true,
+  // CockroachDB: its own provider, doc and integration test, on the PostgreSQL wire at port 26257.
+  // Not a postgres relative: that provider reads sizes from pg_total_relation_size, which answers NULL here.
+  cockroach: true,
   // S3-compatible object storage: its own provider, doc and integration test, read over the S3 REST API.
   s3: true,
   // Kubernetes: its own provider, doc and integration test, the first member of the `platform/` family: a cluster read
@@ -266,6 +269,8 @@ const EXTERNAL: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   questdb: true,
   // A cluster the user already runs, reached over Amazon Redshift's PostgreSQL wire protocol on port 5439.
   redshift: true,
+  // A cluster the user already runs, reached over CockroachDB's PostgreSQL wire protocol on port 26257.
+  cockroach: true,
   // A server or service the user already runs, reached over the S3 REST API.
   s3: true,
   // A cluster the user already runs, reached over the Kubernetes API server's REST API.
@@ -400,6 +405,8 @@ export const READ_ONLY_ENFORCED: Record<DatabaseType, boolean> = Object.freeze({
   questdb: false,
   // No read-only mode: the provider sends the statement the editor holds. A cluster would execute a write.
   redshift: false,
+  // No read-only mode: the provider sends the statement the editor holds. A cluster would execute a write.
+  cockroach: false,
   // Read-only whatever the flag says: the console's closed command table reaches no write, and the provider sends only
   // GET and HEAD.
   s3: true,
@@ -513,6 +520,7 @@ export const READS_FILE_ACCESS_POSTURE: Readonly<Record<DatabaseType, boolean>> 
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -598,6 +606,7 @@ export const SINGLE_WRITER_FILE: Readonly<Record<DatabaseType, boolean>> = Objec
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -701,6 +710,8 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   questdb: true,
   // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
   redshift: true,
+  // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
+  cockroach: true,
   // Closed, as etcd's and Oxia's: agent mode reads S3's metadata, and no MCP surface that lists buckets but never an
   // object key is designed yet (BACKLOG B104).
   s3: false,
@@ -868,6 +879,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   questdb: false,
   // No agent statement path, so MCP read stays closed.
   redshift: false,
+  // No agent statement path, so MCP read stays closed.
+  cockroach: false,
   // Agent mode executes metadata-only reads on S3, and MCP read stays closed on it until a change of its own opens it
   // (BACKLOG B104).
   s3: false,
@@ -970,6 +983,7 @@ export const CONNECTION_FORM_URI_MODE: Readonly<Record<DatabaseType, boolean>> =
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -1062,6 +1076,7 @@ export const CONNECTION_STRING_ACCEPTED: Readonly<Record<DatabaseType, boolean>>
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -1149,6 +1164,7 @@ export const OPENS_LOCAL_FILE: Readonly<Record<DatabaseType, boolean>> = Object.
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -1236,6 +1252,7 @@ export const OPENS_SERVER_LEVEL_WITHOUT_DATABASE: Readonly<Record<DatabaseType, 
   databend: false,
   questdb: false,
   redshift: false,
+  cockroach: false,
   s3: false,
   kubernetes: false,
   mqtt: false,
@@ -1287,6 +1304,8 @@ export interface WireCompatibleEngine {
  * Redpanda, the first relative of the `kafka` driver, from a tenth on 2026-09-25.
  * Databend, probed in the eighth run, is no longer a relative: it ships as the `databend`
  * type-id over its own HTTP query API, and one product is never counted twice.
+ * CockroachDB, probed on CCL v26.2.6 and v26.3.2, is no longer a relative: it ships as the
+ * `cockroach` type-id on its own PostgreSQL wire session, and one product is never counted twice.
  * The nine MySQL-wire relatives of the day, Databend among them, were re-measured together on 2026-09-06 for issues
  * #573 and #574, at the wire and then in a browser against the built app, and the
  * outcome per engine is recorded in `docs/providers/mysql.md` section 5.5 for the
@@ -1314,22 +1333,6 @@ export const WIRE_COMPATIBLE_ENGINES: readonly WireCompatibleEngine[] = [
     caveats: [
       "Row counts and sizes for a distributed table are wrong rather than missing: PostgreSQL statistics describe only the empty coordinator parent, not the shards.",
       "The citus_tables and citus_schemas views appear in the object browser alongside your own tables.",
-    ],
-  },
-  {
-    name: "CockroachDB",
-    via: "postgres",
-    tier: "partial",
-    probedVersion: "CockroachDB CCL v26.2.6",
-    caveats: [
-      "The object browser now lists real tables (previously empty, #38680): the schema query recovers from the missing pg_total_relation_size() builtin by falling back to an unmeasured (0-byte) size instead of failing outright. Foreign keys and indexes are unaffected by this and continue to work.",
-      "The overview panel loads with connections/size/uptime marked unavailable rather than failing outright: pg_postmaster_start_time(), pg_size_pretty() and pg_tablespace_location() do not exist there.",
-      "Its table and index counts are the user's own. CockroachDB documents exactly four system schemas, and crdb_internal objects reach pg_tables even though information_schema's BASE TABLE filter never shows them - so before those two schemas were excluded, the overview counted 98 tables (93 crdb_internal, 3 pg_extension) for the 2 the object browser listed, and the two panels disagreed inside one app.",
-      "Performance metrics, slow queries and active sessions do work: the pg_stat_* views CockroachDB provides are enough for them.",
-      'The Explain panel works, and shows what the query really did. CockroachDB refuses PostgreSQL\'s parenthesised options (`at or near "analyze": syntax error`, and `JSON` is legal there only beside DISTSQL, where it answers a processor diagram rather than a plan), so the grammar is measured at connect and this server gets its own unparenthesised EXPLAIN ANALYZE. Until it was measured the panel showed its "no execution plan" empty state, so a failed plan request read as a query with no plan.',
-      "Maintenance offers Analyze on one table and nothing else. CockroachDB has no VACUUM, no REINDEX and no whole-database ANALYZE (each a 42601 syntax error), so the provider asks the server at connect which of PostgreSQL's six maintenance statements its grammar has and draws no control for the rest; measured on v26.3.2 on 2026-10-04 (#1387). Until then all three were offered and each click answered HTTP 500 with the parser's error.",
-      "Monitoring > Tables and Storage, and the Admin > Operations table list, work. Two things were in the way. The size builtins took a concatenated name, which CockroachDB refused with `pg_size_pretty(): unknown signature: pg_table_size(string)` and which failed the whole read; they take pg_stat_user_tables.relid now (#1436). The rows were then still missing, because pg_stat_user_tables and pg_stat_all_tables both carry zero rows here while pg_class holds the user's tables, so the read falls back to pg_class when the view answers none (#1540). Measured on v26.3.2 on 2026-10-05: three user tables, listed with their names and no figures at all - reltuples, pg_table_size(), pg_indexes_size() and pg_total_relation_size() each answer NULL for a table it has, so every number is absent rather than zero, and the per-table maintenance actions are reachable again.",
-      "The Source tab shows a function's or procedure's definition with no Edit control. An edit is applied between two DO blocks that check the routine was not changed meanwhile, and CockroachDB runs an empty DO block but refuses PERFORM inside one (0A000, `unimplemented: this syntax`) and has no pg_proc.xmin (42703), so the provider asks the server at connect whether it runs that guard and offers no edit where it does not; measured on v26.3.2 on 2026-10-08 (#1437). Until then Edit was offered and every apply was refused after the reader had typed it.",
     ],
   },
   {

@@ -54,6 +54,7 @@
  "provider databend": "6497666bee5cdb4e0d69d2958ef4d44631654f7d88fc836b13bdd6ed57e816c4",
  "provider questdb": "451fff9b3fe34eaa790b66e2ae61e97d55d293727c878ae318fece8cdb236c88",
  "provider redshift": "451fff9b3fe34eaa790b66e2ae61e97d55d293727c878ae318fece8cdb236c88",
+ "provider cockroach": "451fff9b3fe34eaa790b66e2ae61e97d55d293727c878ae318fece8cdb236c88",
  "provider s3": "5be2fe8f0ad4f82b1e6fa87e8628bd7cd50bbb4eb935c8629bd16160222c8d19",
  "provider kubernetes": "d6857da936c0f521e0e149a67c0a1fa06638d079ca06a1bd49f8fd2778491996",
  "provider mqtt": "6c2020709eb956048dd93c0476dad4080860c4d084485ac1655fda1aafcb4117",

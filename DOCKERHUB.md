@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Sixty-six external engines share one interface.
-The sixty-seventh row is the embedded LibreDB store: it ships inside the image.
+Sixty-seven external engines share one interface.
+The sixty-eighth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -122,7 +122,7 @@ The sixty-seventh row is the embedded LibreDB store: it ships inside the image.
 | **SQL Server** | `mssql` | `OFFSET FETCH`, `sys.dm_*` DMVs, `DBCC CHECKDB`, Azure SQL auto-detect |
 | **SQLite** | `bun:sqlite` / `node:sqlite` | File-based or in-memory databases; the driver follows the runtime, with a `LIBREDB_SQLITE_DRIVER` override |
 | **libSQL** | none, HTTP | Full SQL IDE over the Hrana protocol against a libSQL server or Turso Cloud; SQLite's dialect across a network, with real per-table bytes from `dbstat` and an auth token instead of a password |
-| **DuckDB** | `@duckdb/node-api` | Full SQL IDE on a DuckDB file or `:memory:` on the server this image runs on: `EXPLAIN (FORMAT JSON)` plans, `duckdb_*` introspection, real per-table bytes, cancellation through `interrupt()`. No slow-query or session panel (DuckDB has none). One process may hold the file |
+| **DuckDB** | `@duckdb/node-api` | Full SQL IDE on a DuckDB file or `:memory:` on the server this image runs on: `EXPLAIN (FORMAT JSON)` plans, `duckdb_*` introspection, real per-table bytes, cancellation through `interrupt()`. One process may hold the file |
 | **MongoDB** | `mongodb` | JSON query editor, find/aggregate/insert/update/delete |
 | **Redis** | `ioredis` | Command editor, non-blocking `SCAN` key browser, `INFO` monitoring, per-type command generation |
 | **Couchbase** | none, HTTP | SQL++ query editor, bucket/scope/collection browser, cluster health |
@@ -176,6 +176,7 @@ The sixty-seventh row is the embedded LibreDB store: it ships inside the image.
 | **Google Sheets** | none, HTTP | Read-only spreadsheet: worksheets on the Sheets API, the first row names the fields |
 | **Mixpanel** | none, HTTP | Read-only lists |
 | **Amazon Redshift** | `pg` | Redshift SQL on the PostgreSQL wire, port 5439 |
+| **CockroachDB** | `pg` | SQL, port 26257 |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
 **Read-only where the engine is.** Druid, Elasticsearch and OpenSearch have no `UPDATE` and no `CREATE TABLE` anywhere in their grammar, so inline editing and DDL are reported as unsupported instead of failing.
@@ -183,7 +184,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the sixty-six drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-six further engines speak a wire protocol of one of the sixty-seven drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |
