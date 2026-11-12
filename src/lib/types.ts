@@ -1333,6 +1333,24 @@ export interface SavedChartConfig {
    * the query's values. A refresh fills those values back in. Absent rebuilds from the shelves.
    */
   look?: Record<string, unknown>;
+  /**
+   * What a click on a point publishes. The dimension value is stored as `{name}-{dimension}`
+   * and the metric value as `{name}-{metric}`. `publish` is the id other queries read.
+   * `dashboardId` opens that dashboard.
+   */
+  click?: ChartClickConfig;
+}
+
+/** The click a chart records, and the dashboard a click may open. */
+export interface ChartClickConfig {
+  /** Column whose clicked text is the dimension. Absent uses the chart's dimension shelf. */
+  dimension?: string;
+  /** Column whose clicked number is the metric. Absent uses the chart's metric shelf. */
+  metric?: string;
+  /** Which of the two ids a click gives to other queries. Absent means the dimension. */
+  publish?: "dimension" | "metric";
+  /** Dashboard to open on click. Absent stays on the dashboard that is open. */
+  dashboardId?: string;
 }
 
 /** One saved chart placed on a dashboard, at the size the user dragged it to. */

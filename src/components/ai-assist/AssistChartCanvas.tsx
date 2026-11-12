@@ -33,6 +33,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { CirclePackChart } from "@/components/charts/CirclePackChart";
 import { chartOptionForDisplay } from "@/lib/charts/chart-html";
 import { isCirclePack } from "@/lib/charts/circle-pack";
+import { chartClickPoint, type ChartClickPoint } from "@/lib/dashboards/chart-click";
 import { watchChartSize, WORLD_MAP_NAME, WORLD_OUTLINE } from "@/lib/charts/echarts-option";
 
 registerECharts([
@@ -69,13 +70,20 @@ registerECharts([
 export function AssistChartCanvas({
   option,
   notes,
+  onPoint,
 }: {
   readonly option: Record<string, unknown>;
   readonly notes: readonly string[];
+  /** A click on a series. Absent on a chart that does not publish a filter. */
+  readonly onPoint?: (point: ChartClickPoint) => void;
 }) {
   const chartRef = useRef<ReturnType<typeof init> | null>(null);
   const stopRef = useRef<(() => void) | null>(null);
   const optionRef = useRef(option);
+  const onPointRef = useRef(onPoint);
+  useEffect(() => {
+    onPointRef.current = onPoint;
+  }, [onPoint]);
 
   // React 19 detaches a ref when its callback identity changes, and that detach
   // disposes the chart. Typing in the chat re-renders this card, so the callback
@@ -89,6 +97,12 @@ export function AssistChartCanvas({
     registerMap(WORLD_MAP_NAME, WORLD_OUTLINE);
     const chart = init(element);
     chart.setOption(chartOptionForDisplay(optionRef.current), true);
+    const listened = chart as { on?: (event: string, handler: (params: unknown) => void) => void };
+    listened.on?.("click", (params: unknown) => {
+      const point = chartClickPoint(params);
+      if (point === null) return;
+      onPointRef.current?.(point);
+    });
     chartRef.current = chart;
     stopRef.current = watchChartSize(element, () => {
       chart.resize();

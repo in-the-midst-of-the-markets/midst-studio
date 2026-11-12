@@ -34,7 +34,7 @@ interface FilterToken {
 }
 
 function parseBody(body: string): Omit<FilterToken, "start" | "end"> | null {
-  const match = /^\s*([A-Za-z_][A-Za-z0-9_]{0,39})\s*(?::([^|]*))?(?:\|(.*))?\s*$/.exec(body);
+  const match = /^\s*([A-Za-z_][A-Za-z0-9_-]{0,39})\s*(?::([^|]*))?(?:\|(.*))?\s*$/.exec(body);
   const name = match?.[1];
   if (name === undefined) return null;
   const value = (match?.[2] ?? "").trim().slice(0, VALUE_CAP);

@@ -73,6 +73,18 @@ import {
   withoutFilter,
 } from "@/lib/dashboards/dashboard";
 import { refreshDelayMs } from "@/lib/charts/chart-refresh";
+import {
+  applyChartClicks,
+  chartClickFields,
+  chartClickIds,
+  chartClickValues,
+  clickColumnChoices,
+  drilldownDashboard,
+  mergeClickValues,
+  nextChartClick,
+  publishedClickFilters,
+  type ChartClickPoint,
+} from "@/lib/dashboards/chart-click";
 import { chartPublicId, isChartToken } from "@/lib/dashboards/public-id";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { presentChartOption } from "@/lib/charts/chart-present";
@@ -106,6 +118,7 @@ import { schemaContextOf } from "@/lib/db/detailed-object";
 import { CROSS_DB_JOINS_ID, crossDbJoinsSchema, withCrossDbJoins } from "@/lib/saved-join/connection";
 import { storage } from "@/lib/storage";
 import type {
+  ChartClickConfig,
   DashboardFilter,
   DashboardFilterControl,
   DatabaseConnection,
@@ -166,8 +179,10 @@ export function DashboardStudio() {
   const [components, setComponents] = useState<SavedDashboardComponent[]>(() => storage.getSavedComponents());
   const [schemaContext, setSchemaContext] = useState("[]");
   const [mode, setMode] = useState<"editor" | "viewer">("editor");
+  const [clickValues, setClickValues] = useState<Record<string, string>>({});
   const editing = mode === "editor";
   const active = dashboards.find((item) => item.id === activeId) ?? null;
+  const clickFilters = useMemo(() => publishedClickFilters(charts, clickValues), [charts, clickValues]);
 
   useEffect(() => {
     if (connections.length === 0) return;
@@ -508,6 +523,33 @@ export function DashboardStudio() {
                       schemas={schemas}
                       savedQueries={savedQueries}
                       filters={active.filters ?? []}
+                      clickFilters={clickFilters}
+                      dashboards={dashboards}
+                      dashboardId={active.id}
+                      onPoint={(point) => {
+                        const fields = chartClickFields(chart);
+                        const values = chartClickValues(point);
+                        const ids = chartClickIds(chart.name, fields);
+                        const metric = chart.click?.publish === "metric";
+                        const publishId = metric ? ids.metric : ids.dimension;
+                        const published = metric ? values.metric : values.dimension;
+                        setClickValues((current) => mergeClickValues(current, ids, values));
+                        if (publishId === null || published === "") return;
+                        const target = drilldownDashboard(
+                          active.id,
+                          chart.click?.dashboardId,
+                          dashboards.map((item) => item.id),
+                        );
+                        if (target !== null) choose(target);
+                      }}
+                      onClickConfig={(patch) => {
+                        const click = nextChartClick(chart.click, patch);
+                        const next = { ...chart };
+                        if (click === undefined) delete next.click;
+                        else next.click = click;
+                        storage.saveChart(next);
+                        setCharts(storage.getSavedCharts());
+                      }}
                       onRemove={() => remember(withoutChart(active, chart.id))}
                       onResize={(size) => remember(withFrame(active, chart.id, size))}
                       onQuery={(query) => {
@@ -666,6 +708,96 @@ function ResizeHandle({
   );
 }
 
+function ChartClickSetup({
+  chart,
+  fields,
+  dashboards,
+  dashboardId,
+  onChange,
+}: {
+  readonly chart: SavedChartConfig;
+  readonly fields: readonly string[];
+  readonly dashboards: readonly SavedDashboard[];
+  readonly dashboardId: string;
+  readonly onChange: (patch: Partial<ChartClickConfig>) => void;
+}) {
+  const chosen = chartClickFields(chart);
+  const ids = chartClickIds(chart.name, chosen);
+  const columns = clickColumnChoices(fields, chosen.dimension, chosen.metric);
+  const publish = chart.click?.publish === "metric" ? "metric" : "dimension";
+  const shown = publish === "metric" ? ids.metric : ids.dimension;
+  return (
+    <fieldset className="mx-4 mt-2 grid gap-2 border-0 p-0 sm:grid-cols-2">
+      <legend className="text-xs text-fg-muted">Click</legend>
+      <label className="block text-xs text-fg-muted">
+        Dimension
+        <select
+          aria-label="Click dimension"
+          value={chosen.dimension}
+          onChange={(event) => onChange({ dimension: event.target.value })}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          {columns.length === 0 && <option value="">No column</option>}
+          {columns.map((column) => (
+            <option key={column} value={column}>
+              {column}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-xs text-fg-muted">
+        Metric
+        <select
+          aria-label="Click metric"
+          value={chosen.metric}
+          onChange={(event) => onChange({ metric: event.target.value })}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          {columns.length === 0 && <option value="">No column</option>}
+          {columns.map((column) => (
+            <option key={column} value={column}>
+              {column}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-xs text-fg-muted">
+        Filter
+        <select
+          aria-label="Click filter"
+          value={publish}
+          onChange={(event) => onChange({ publish: event.target.value === "metric" ? "metric" : "dimension" })}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          <option value="dimension">{ids.dimension ?? "Dimension"}</option>
+          <option value="metric">{ids.metric ?? "Metric"}</option>
+        </select>
+      </label>
+      <label className="block text-xs text-fg-muted">
+        Opens
+        <select
+          aria-label="Click opens"
+          value={chart.click?.dashboardId ?? ""}
+          onChange={(event) => onChange({ dashboardId: event.target.value })}
+          className={`mt-1.5 ${fieldClass}`}
+        >
+          <option value="">This dashboard</option>
+          {dashboards
+            .filter((item) => item.id !== dashboardId)
+            .map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+        </select>
+      </label>
+      <p className="font-mono text-xs text-fg-muted sm:col-span-2">
+        {shown === null ? "This chart name cannot make a filter id." : `{{${shown}}}`}
+      </p>
+    </fieldset>
+  );
+}
+
 /** The chart id on screen. A chart saved before ids existed gets one, and that same id is stored. */
 function useStableChartToken(chart: SavedChartConfig): string {
   const [minted] = useState(() => (isChartToken(chart.token) ? chart.token : chartPublicId()));
@@ -686,6 +818,11 @@ function DashboardChart({
   schemas,
   savedQueries,
   filters,
+  clickFilters,
+  dashboards,
+  dashboardId,
+  onPoint,
+  onClickConfig,
   onRemove,
   onResize,
   onQuery,
@@ -704,6 +841,11 @@ function DashboardChart({
   readonly schemas: Readonly<Record<string, string>>;
   readonly savedQueries: readonly SavedQuery[];
   readonly filters: readonly DashboardFilter[];
+  readonly clickFilters: readonly { name: string; value: string }[];
+  readonly dashboards: readonly SavedDashboard[];
+  readonly dashboardId: string;
+  readonly onPoint: (point: ChartClickPoint) => void;
+  readonly onClickConfig: (patch: Partial<ChartClickConfig>) => void;
   readonly onRemove: () => void;
   readonly onResize: (size: { width: number; height: number }) => void;
   readonly onQuery: (query: string) => void;
@@ -724,7 +866,7 @@ function DashboardChart({
     chart.query === undefined || chart.query === "" ? "query" : "chart",
   );
   const [pending, setPending] = useState<"unsave" | "remove" | null>(null);
-  const query = queryWithDashboardFilters(chart.query ?? "", filters);
+  const query = applyChartClicks(queryWithDashboardFilters(chart.query ?? "", filters), clickFilters);
   const connectionId = chart.connectionId;
   const refreshSeconds = chart.refreshSeconds;
   const run = useCallback(
@@ -911,6 +1053,15 @@ function DashboardChart({
           <input aria-label="Chart id" readOnly value={chartId} className={`mt-1.5 ${fieldClass}`} />
         </label>
       )}
+      {!viewing && (
+        <ChartClickSetup
+          chart={chart}
+          fields={view.kind === "result" ? view.result.fields : []}
+          dashboards={dashboards}
+          dashboardId={dashboardId}
+          onChange={onClickConfig}
+        />
+      )}
       {shownFace === "chart" && !viewing && queryFilters.length > 0 && (
         <QueryFilterBar
           filters={queryFilters}
@@ -943,7 +1094,11 @@ function DashboardChart({
         )}
         <div className="relative min-h-0 flex-1">
           {painted !== null && (
-            <AssistChartCanvas option={painted} notes={code.option === null ? (built?.notes ?? []) : []} />
+            <AssistChartCanvas
+              option={painted}
+              notes={code.option === null ? (built?.notes ?? []) : []}
+              onPoint={onPoint}
+            />
           )}
           {shownFace === "query" && (
             <div className="absolute inset-0 z-10 flex min-h-0 flex-col bg-canvas">
