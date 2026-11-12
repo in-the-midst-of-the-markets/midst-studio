@@ -2,19 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { useSyncExternalStore } from "react";
+import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
+  CHART_COLOR_LIMIT,
   CHART_FONT_SIZE_MAX,
   CHART_FONT_SIZE_MIN,
   CHART_FONTS,
   DEFAULT_CHART_SETTINGS,
   chartCategories,
+  nextChartColor,
   normalizeChartSettings,
   readChartSettings,
   subscribeChartSettings,
   writeChartSettings,
+  type ChartColorSettings,
   type ChartSettings,
   type ChartTextSettings,
 } from "@/lib/charts/chart-settings";
+import { chartTheme } from "@/lib/charts/palette";
 
 function Choice({
   label,
@@ -58,9 +63,105 @@ function writeText(settings: ChartSettings, patch: Partial<ChartTextSettings>): 
   writeChartSettings(normalizeChartSettings({ ...settings, text: { ...settings.text, ...patch } }));
 }
 
+function writeColors(settings: ChartSettings, colors: ChartColorSettings): void {
+  writeChartSettings(normalizeChartSettings({ ...settings, colors }));
+}
+
+function ColorField({
+  label,
+  pickerLabel,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  pickerLabel: string;
+  value: string;
+  fallback: string;
+  onChange: (color: string) => void;
+}) {
+  const enabled = value !== "";
+  return (
+    <div className="flex items-center gap-2">
+      <label className="flex items-center gap-2 text-sm text-fg">
+        <input type="checkbox" checked={enabled} onChange={(event) => onChange(event.target.checked ? fallback : "")} />
+        {label}
+      </label>
+      {enabled && (
+        <input
+          type="color"
+          aria-label={pickerLabel}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-8 w-10 cursor-pointer rounded border border-hairline bg-canvas p-0.5"
+        />
+      )}
+    </div>
+  );
+}
+
+function replaceChartColor(settings: ChartSettings, index: number, raw: string): void {
+  const color = raw.trim().toLowerCase();
+  const series = settings.colors.series;
+  if (series[index] === color) return;
+  if (series.some((item, itemIndex) => itemIndex !== index && item === color)) {
+    writeColors(settings, settings.colors);
+    return;
+  }
+  writeColors(settings, {
+    ...settings.colors,
+    series: series.map((item, itemIndex) => (itemIndex === index ? color : item)),
+  });
+}
+
+function ChartColorList({ settings }: { settings: ChartSettings }) {
+  const series = settings.colors.series;
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs text-fg-muted">Chart colors, up to {CHART_COLOR_LIMIT}</span>
+      <div className="flex flex-wrap items-center gap-2">
+        {series.map((color, index) => (
+          <span key={color} className="flex items-center gap-1">
+            <input
+              type="color"
+              aria-label={`Chart color ${index + 1}`}
+              value={color}
+              onChange={(event) => replaceChartColor(settings, index, event.target.value)}
+              className="h-8 w-10 cursor-pointer rounded border border-hairline bg-canvas p-0.5"
+            />
+            <button
+              type="button"
+              aria-label={`Remove chart color ${index + 1}`}
+              onClick={() =>
+                writeColors(settings, {
+                  ...settings.colors,
+                  series: series.filter((_, itemIndex) => itemIndex !== index),
+                })
+              }
+              className="text-xs font-medium text-fg-muted hover:text-fg"
+            >
+              Remove
+            </button>
+          </span>
+        ))}
+      </div>
+      {series.length < CHART_COLOR_LIMIT && (
+        <button
+          type="button"
+          onClick={() => writeColors(settings, { ...settings.colors, series: [...series, nextChartColor(series)] })}
+          className="self-start text-xs font-medium text-fg-muted hover:text-fg"
+        >
+          Add chart color
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The chart defaults, opened from the profile menu. */
 export function ChartSettingsDialog({ onClose }: { onClose: () => void }) {
   const settings = useSyncExternalStore(subscribeChartSettings, readChartSettings, () => DEFAULT_CHART_SETTINGS);
+  const theme = chartTheme(useEffectiveTheme());
   const categories = chartCategories();
   const [typeId, setTypeId] = useState(categories[0]?.id ?? "line");
   const category = categories.find((item) => item.id === typeId) ?? categories[0];
@@ -93,7 +194,8 @@ export function ChartSettingsDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <p className="text-sm text-fg-muted">
-          Saved in this browser. A new chart starts from these choices. Chart code you edit still wins.
+          Saved in this browser. A new chart starts from these choices, including its background, font color, and up to
+          eight chart colors. Chart code you edit still wins.
         </p>
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-fg-muted">
@@ -128,6 +230,21 @@ export function ChartSettingsDialog({ onClose }: { onClose: () => void }) {
           />
         </div>
         <Choice label="Legend" checked={settings.text.legend} onChange={(legend) => writeText(settings, { legend })} />
+        <ColorField
+          label="Background"
+          pickerLabel="Background color"
+          value={settings.colors.background}
+          fallback={theme.exportBackground}
+          onChange={(background) => writeColors(settings, { ...settings.colors, background })}
+        />
+        <ColorField
+          label="Font color"
+          pickerLabel="Font color value"
+          value={settings.colors.font}
+          fallback={theme.ink}
+          onChange={(font) => writeColors(settings, { ...settings.colors, font })}
+        />
+        <ChartColorList settings={settings} />
         <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Chart
           <select

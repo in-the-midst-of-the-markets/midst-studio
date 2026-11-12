@@ -6,7 +6,7 @@
  */
 
 import { withBlankAffixes } from "@/lib/charts/chart-present";
-import { applyChartSettings, type ChartSettings } from "@/lib/charts/chart-settings";
+import { applyChartSettings, chartThemeWithSettings, type ChartSettings } from "@/lib/charts/chart-settings";
 import { applyChartTitle } from "@/lib/charts/chart-title";
 import { CIRCLE_PACK, layoutCircles, type PackTree } from "@/lib/charts/circle-pack";
 import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
@@ -68,7 +68,8 @@ export interface ChartBuildInput {
 type Row = Record<string, unknown>;
 
 function themeOf(input: ChartBuildInput): ChartTheme {
-  const theme = input.theme ?? chartTheme("dark");
+  const base = input.theme ?? chartTheme("dark");
+  const theme = input.settings === undefined ? base : chartThemeWithSettings(base, input.settings);
   const color = input.color;
   if (color === undefined || color === null || color === "") return theme;
   const lower = color.toLowerCase();

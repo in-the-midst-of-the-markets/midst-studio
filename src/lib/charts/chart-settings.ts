@@ -1,17 +1,23 @@
 /**
  * The chart defaults a person sets from the profile menu.
  *
- * They are this browser's starting look for each chart type. Chart code the
+ * They are this browser's starting look for each chart type: type, sizes,
+ * background, font color, and up to eight chart colors. Chart code the
  * person edits still wins, and a variation that exists to turn one of these
  * on or off keeps that choice for the chart where they picked it.
  */
 
 import { ECHART_TYPES } from "@/lib/charts/echarts-catalog";
+import { chartTheme, type ChartTheme } from "@/lib/charts/palette";
 
 const STORAGE_KEY = "libredb_chart_settings";
 
 export const CHART_FONT_SIZE_MIN = 8;
 export const CHART_FONT_SIZE_MAX = 72;
+/** How many chart colors the profile menu keeps. */
+export const CHART_COLOR_LIMIT = 8;
+
+const CHART_COLOR = /^#[0-9a-f]{6}$/;
 
 export const CHART_FONTS: readonly { readonly id: string; readonly label: string }[] = [
   { id: "Montserrat, sans-serif", label: "Montserrat" },
@@ -29,8 +35,18 @@ export interface ChartTextSettings {
   readonly legend: boolean;
 }
 
+export interface ChartColorSettings {
+  /** Empty leaves the page showing through the plot. */
+  readonly background: string;
+  /** Empty leaves the theme's own ink. */
+  readonly font: string;
+  /** Empty leaves the theme palette. At most eight different colors, in slot order. */
+  readonly series: readonly string[];
+}
+
 export interface ChartSettings {
   readonly text: ChartTextSettings;
+  readonly colors: ChartColorSettings;
   readonly types: Readonly<Record<string, Readonly<Record<string, boolean>>>>;
 }
 
@@ -317,10 +333,31 @@ function typeDefaults(): Record<string, Record<string, boolean>> {
   return types;
 }
 
+function colorDefaults(): ChartColorSettings {
+  return { background: "", font: "", series: [] };
+}
+
 export const DEFAULT_CHART_SETTINGS: ChartSettings = {
   text: textDefaults(),
+  colors: colorDefaults(),
   types: typeDefaults(),
 };
+
+/** A `#rrggbb` color, or "" when the value is not one. */
+export function chartColor(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const color = value.trim().toLowerCase();
+  return CHART_COLOR.test(color) ? color : "";
+}
+
+/** The next built-in chart color that is not already in the list. */
+export function nextChartColor(colors: readonly string[]): string {
+  const choices = chartTheme("dark").series;
+  for (const color of choices) {
+    if (!colors.includes(color)) return color;
+  }
+  return choices[0] as string;
+}
 
 function fontFamilyOf(value: unknown): string {
   return CHART_FONTS.some((font) => font.id === value) ? (value as string) : DEFAULT_CHART_SETTINGS.text.fontFamily;
@@ -334,6 +371,28 @@ function fontSizeOf(value: unknown, fallback: number): number {
 
 function booleanOf(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function colorsFrom(value: unknown): ChartColorSettings {
+  const record = isRecord(value) ? value : {};
+  const series: string[] = [];
+  if (Array.isArray(record.series)) {
+    for (const item of record.series) {
+      if (series.length >= CHART_COLOR_LIMIT) break;
+      const color = chartColor(item);
+      if (color === "" || series.includes(color)) continue;
+      series.push(color);
+    }
+  }
+  return { background: chartColor(record.background), font: chartColor(record.font), series };
+}
+
+function sameColors(colors: ChartColorSettings): boolean {
+  return (
+    colors.background === DEFAULT_CHART_SETTINGS.colors.background &&
+    colors.font === DEFAULT_CHART_SETTINGS.colors.font &&
+    colors.series.length === DEFAULT_CHART_SETTINGS.colors.series.length
+  );
 }
 
 function textFrom(value: unknown): ChartTextSettings {
@@ -367,6 +426,7 @@ function typesFrom(value: unknown): Record<string, Record<string, boolean>> {
 export function normalizeChartSettings(value: unknown): ChartSettings {
   if (!isRecord(value)) return DEFAULT_CHART_SETTINGS;
   const text = textFrom(value.text);
+  const colors = colorsFrom(value.colors);
   const types = typesFrom(value.types);
   const sameText =
     text.fontFamily === DEFAULT_CHART_SETTINGS.text.fontFamily &&
@@ -379,8 +439,8 @@ export function normalizeChartSettings(value: unknown): ChartSettings {
     const defaults = DEFAULT_CHART_SETTINGS.types[type.id] ?? {};
     return categoryControls(type.id).every((control) => next[control.id] === defaults[control.id]);
   });
-  if (sameText && sameTypes) return DEFAULT_CHART_SETTINGS;
-  return { text, types };
+  if (sameText && sameTypes && sameColors(colors)) return DEFAULT_CHART_SETTINGS;
+  return { text, colors, types };
 }
 
 let cachedRaw: string | null | undefined;
@@ -499,6 +559,85 @@ function hideLegend(option: Record<string, unknown>): Record<string, unknown> {
   return { ...option, legend: { show: false } };
 }
 
+function paletteOf(theme: ChartTheme, saved: readonly string[]): readonly string[] {
+  if (saved.length === 0) return theme.series;
+  const chosen: string[] = [];
+  const limit = theme.series.length;
+  for (const color of saved) {
+    if (chosen.length >= limit) break;
+    if (chosen.includes(color)) continue;
+    chosen.push(color);
+  }
+  for (const color of theme.series) {
+    if (chosen.length >= limit) break;
+    if (chosen.includes(color)) continue;
+    chosen.push(color);
+  }
+  return chosen;
+}
+
+/**
+ * The theme a chart is built from, with this browser's colors in front.
+ * An empty font or an empty chart-color list leaves that part of the theme.
+ */
+export function chartThemeWithSettings(theme: ChartTheme, settings: ChartSettings): ChartTheme {
+  const series = paletteOf(theme, settings.colors.series);
+  if (settings.colors.font === "" && series === theme.series) return theme;
+  return {
+    ...theme,
+    series,
+    ...(settings.colors.font === "" ? {} : { ink: settings.colors.font }),
+  };
+}
+
+function paintSeriesInk(series: Record<string, unknown>, color: string): Record<string, unknown> {
+  let painted = series;
+  if (isRecord(series.label)) painted = withNested(painted, "label", { color });
+  if (isRecord(painted.edgeLabel)) painted = withNested(painted, "edgeLabel", { color });
+  if (isRecord(painted.detail)) painted = withNested(painted, "detail", { color });
+  if (isRecord(painted.title)) painted = withNested(painted, "title", { color });
+  return painted;
+}
+
+function paintNamedInk(
+  option: Record<string, unknown>,
+  key: string,
+  paint: (record: Record<string, unknown>) => Record<string, unknown>,
+): Record<string, unknown> {
+  const value = option[key];
+  if (!isRecord(value)) return option;
+  const painted = paint(value);
+  return painted === value ? option : { ...option, [key]: painted };
+}
+
+function paintCalendarInk(calendar: Record<string, unknown>, color: string): Record<string, unknown> {
+  let painted = calendar;
+  for (const key of ["dayLabel", "monthLabel", "yearLabel"]) painted = withNested(painted, key, { color });
+  return painted;
+}
+
+function paintInk(option: Record<string, unknown>, color: string): Record<string, unknown> {
+  let next = withTextStyle(option, { color });
+  next = withTitleStyle(next, { color });
+  next = withLegendStyle(next, { color });
+  next = withRadarStyle(next, { color });
+  next = mapAxes(next, (axis) => withNested(axis, "axisLabel", { color }));
+  next = mapSeries(next, (series) => paintSeriesInk(series, color));
+  next = paintNamedInk(next, "visualMap", (record) => withNested(record, "textStyle", { color }));
+  next = paintNamedInk(next, "calendar", (record) => paintCalendarInk(record, color));
+  return next;
+}
+
+function applyColors(option: Record<string, unknown>, colors: ChartColorSettings): Record<string, unknown> {
+  if (colors.background === "" && colors.font === "") return option;
+  let next = option;
+  if (colors.background !== "" && next.backgroundColor !== colors.background) {
+    next = { ...next, backgroundColor: colors.background };
+  }
+  if (colors.font !== "") next = paintInk(next, colors.font);
+  return next;
+}
+
 function applyText(option: Record<string, unknown>, text: ChartTextSettings): Record<string, unknown> {
   const defaults = DEFAULT_CHART_SETTINGS.text;
   let next = option;
@@ -540,5 +679,5 @@ export function applyChartSettings(
   variationId: string,
   settings: ChartSettings,
 ): Record<string, unknown> {
-  return applyTypes(applyText(option, settings.text), typeId, variationId, settings);
+  return applyColors(applyTypes(applyText(option, settings.text), typeId, variationId, settings), settings.colors);
 }
