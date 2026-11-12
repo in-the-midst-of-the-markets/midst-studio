@@ -219,7 +219,7 @@ describe("MixpanelProvider", () => {
   });
 
   test("turns a transport failure into a connection error and closes the socket", async () => {
-    const wire = provider([{ throw: new TransportError("service-secret refused the socket") }]);
+    const wire = provider([{ throw: new TransportError("unreachable", "service-secret refused the socket") }]);
     try {
       await wire.engine.connect();
       throw new Error("connect should have failed");
