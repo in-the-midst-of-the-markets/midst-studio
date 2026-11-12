@@ -66,5 +66,25 @@ describe("buildEditorMessages", () => {
     expect(search[0]?.content).toContain("{{search:car}}");
     expect(search[0]?.content).toContain("Do not write a list of numbers");
     expect(search[0]?.content).not.toContain("NOT the JSON query DSL");
+
+    const shop = buildEditorMessages({
+      databaseType: "shopify",
+      questionBlock: "sales",
+      schemaBlock: "schema",
+      historyBlock: "",
+      editorBlock: "",
+    });
+    expect(shop[0]?.content).toContain("FROM sales SHOW total_sales");
+    expect(shop[0]?.content).toContain("Do not write SELECT");
+
+    const cluster = buildEditorMessages({
+      databaseType: "cockroach",
+      questionBlock: "tables",
+      schemaBlock: "schema",
+      historyBlock: "",
+      editorBlock: "",
+    });
+    expect(cluster[0]?.content).toContain("The connected engine is cockroach");
+    expect(cluster[0]?.content).toContain("pg_catalog, crdb_internal, or pg_extension");
   });
 });
