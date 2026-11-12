@@ -7,7 +7,7 @@
  */
 
 import { gunzipSync } from "node:zlib";
-import { mkdir, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rename, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDuckDBClient } from "@/lib/db/providers/sql/duckdb/client";
@@ -38,9 +38,17 @@ export interface ExtensionRequest {
 const VERSION = /^v\d+\.\d+\.\d+$/u;
 const PLATFORM = /^[a-z0-9_]+$/u;
 
-const CACHE_ROOT = join(tmpdir(), "knowsql-duckdb-extensions");
-
 let pending: Promise<JoinExtensionFiles> | null = null;
+let cacheDirectory: Promise<string> | null = null;
+
+/**
+ * A private directory for this process. `mkdtemp` creates it mode 0700 with an unpredictable
+ * name, so a file planted in the shared temp directory cannot be loaded as an extension.
+ */
+function extensionCacheDirectory(): Promise<string> {
+  cacheDirectory ??= mkdtemp(join(tmpdir(), "knowsql-duckdb-"));
+  return cacheDirectory;
+}
 
 /** Drop the cached lookup. Tests use this so one file does not keep another's download. */
 export function resetJoinExtensionFiles(): void {
@@ -77,7 +85,7 @@ async function locateJoinExtensions(signal?: AbortSignal): Promise<JoinExtension
       version,
       platform,
       fetch: (url, init) => fetch(url, init),
-      cacheRoot: CACHE_ROOT,
+      cacheRoot: await extensionCacheDirectory(),
       signal,
     });
   } finally {
@@ -116,11 +124,11 @@ async function cachedFile(request: ExtensionRequest, kind: "vss" | "duckpgq"): P
     return null;
   }
   if (bytes.length === 0) return null;
-  await mkdir(directory, { recursive: true });
-  // A pid in the temporary name keeps two joins downloading the same build from deleting
-  // each other's file before the rename.
+  await mkdir(directory, { recursive: true, mode: 0o700 });
+  // A pid in the temporary name keeps two downloads of the same build from replacing each
+  // other's file before the rename. The directory itself is private to this process.
   const temporary = `${file}.${process.pid}.partial`;
-  await writeFile(temporary, bytes);
+  await writeFile(temporary, bytes, { mode: 0o600 });
   await rename(temporary, file);
   return file;
 }
