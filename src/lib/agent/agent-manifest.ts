@@ -88,6 +88,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   databend: null,
   questdb: null,
   redshift: null,
+  cockroach: null,
   airtable: null,
   hubspot: null,
   stripe: null,

@@ -52,7 +52,6 @@ import { CENSUS_CONNECTION } from "../../helpers/census-connection";
  */
 const COMPOSE_SERVICE_BY_ENGINE: Readonly<Record<string, string>> = {
   Citus: "citus",
-  CockroachDB: "cockroachdb",
   Materialize: "materialize",
   RisingWave: "risingwave",
   TimescaleDB: "timescaledb",
@@ -518,7 +517,7 @@ describe("wire-compatibility registry", () => {
     // The one place these numerals live. A new provider moves them here and nowhere else, and the derived
     // assertions around this test say how the counts relate.
     expect([SHIPPED_DATABASE_TYPES.length, EXTERNAL_DATABASE_TYPES.length, WIRE_COMPATIBLE_ENGINES.length]).toEqual([
-      67, 66, 27,
+      68, 67, 26,
     ]);
     expect(connectableProductCount()).toBe(93);
   });

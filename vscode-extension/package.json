@@ -27,6 +27,7 @@
     "Supabase",
     "PostgreSQL",
     "Amazon Redshift",
+    "CockroachDB",
     "MySQL",
     "SQLite",
     "SQL Server",
@@ -51,7 +52,6 @@
     "Oxia",
     "Databend",
     "BigQuery",
-    "S3-compatible object storage",
     "SQL"
   ],
   "capabilities": {

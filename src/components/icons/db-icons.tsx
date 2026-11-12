@@ -610,6 +610,27 @@ export const SupabaseIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Three nodes for CockroachDB, drawn for Studio. Not the vendor mark. */
+export const CockroachIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="6" r="2" />
+    <circle cx="6" cy="16" r="2" />
+    <circle cx="18" cy="16" r="2" />
+    <path d="M12 8 L6 14" />
+    <path d="M12 8 L18 14" />
+    <path d="M8 16 H16" />
+  </svg>
+);
+
 /** Column bars for Amazon Redshift, drawn for Studio. Not the vendor mark. */
 export const RedshiftIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

@@ -163,6 +163,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-seven": 67,
   // Two past the registry once Mixpanel joined it.
   "sixty-eight": 68,
+  // Two past the registry once CockroachDB joined it.
+  "sixty-nine": 69,
 };
 
 /**

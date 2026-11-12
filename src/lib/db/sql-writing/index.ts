@@ -19,6 +19,7 @@ import { KUBERNETES_SQL_WRITING } from "@/lib/db/providers/platform/kubernetes/s
 import { BIGQUERY_SQL_WRITING } from "@/lib/db/providers/sql/bigquery/sql-writing";
 import { CASSANDRA_SQL_WRITING } from "@/lib/db/providers/sql/cassandra/sql-writing";
 import { CLICKHOUSE_SQL_WRITING } from "@/lib/db/providers/sql/clickhouse/sql-writing";
+import { COCKROACH_SQL_WRITING } from "@/lib/db/providers/sql/cockroach/sql-writing";
 import { DATABEND_SQL_WRITING } from "@/lib/db/providers/sql/databend/sql-writing";
 import { DB2_SQL_WRITING } from "@/lib/db/providers/sql/db2/sql-writing";
 import { DRUID_SQL_WRITING } from "@/lib/db/providers/sql/druid/sql-writing";
@@ -82,6 +83,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   bigquery: BIGQUERY_SQL_WRITING,
   cassandra: CASSANDRA_SQL_WRITING,
   clickhouse: CLICKHOUSE_SQL_WRITING,
+  cockroach: COCKROACH_SQL_WRITING,
   couchbase: COUCHBASE_SQL_WRITING,
   databend: DATABEND_SQL_WRITING,
   db2: DB2_SQL_WRITING,

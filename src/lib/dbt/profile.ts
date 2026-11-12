@@ -79,6 +79,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   sparkplug: unsupported,
   questdb: unsupported,
   redshift: unsupported,
+  cockroach: unsupported,
 };
 
 const DBT_PROFILE_NAME = "midst";

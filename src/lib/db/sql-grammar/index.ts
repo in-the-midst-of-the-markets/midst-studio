@@ -1,6 +1,7 @@
 import { BIGQUERY_SQL_GRAMMAR } from "@/lib/db/providers/sql/bigquery/sql-grammar";
 import { CASSANDRA_SQL_GRAMMAR } from "@/lib/db/providers/sql/cassandra/sql-grammar";
 import { CLICKHOUSE_SQL_GRAMMAR } from "@/lib/db/providers/sql/clickhouse/sql-grammar";
+import { COCKROACH_SQL_GRAMMAR } from "@/lib/db/providers/sql/cockroach/sql-grammar";
 import { COUCHBASE_SQL_GRAMMAR } from "@/lib/db/providers/document/couchbase/sql-grammar";
 import { DATABEND_SQL_GRAMMAR } from "@/lib/db/providers/sql/databend/sql-grammar";
 import { DB2_SQL_GRAMMAR } from "@/lib/db/providers/sql/db2/sql-grammar";
@@ -78,6 +79,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   bigquery: BIGQUERY_SQL_GRAMMAR,
   cassandra: CASSANDRA_SQL_GRAMMAR,
   clickhouse: CLICKHOUSE_SQL_GRAMMAR,
+  cockroach: COCKROACH_SQL_GRAMMAR,
   couchbase: COUCHBASE_SQL_GRAMMAR,
   databend: DATABEND_SQL_GRAMMAR,
   db2: DB2_SQL_GRAMMAR,

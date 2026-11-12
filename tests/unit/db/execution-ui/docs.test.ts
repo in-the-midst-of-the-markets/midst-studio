@@ -60,7 +60,7 @@ const sectionOf = (type: DatabaseType): string => {
 
 describe("each provider document's Execution UI subsection", () => {
   test("covers every engine the registry has a row for", () => {
-    expect(ENGINES).toHaveLength(67);
+    expect(ENGINES).toHaveLength(68);
   });
 
   for (const type of ENGINES) {

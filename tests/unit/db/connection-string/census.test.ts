@@ -61,6 +61,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "googlesheets",
     "mixpanel",
     "redshift",
+    "cockroach",
     "libsql",
     "snowflake",
     "spark",
