@@ -5,8 +5,8 @@
  * used (logging, sampling, roots); one source for the server's version; and a handler that still
  * serves after every earlier test has torn down.
  *
- * Servers are counted by McpServer.prototype.registerTool, which the factory calls four times per
- * server; providers by the real SQLite provider's connect.
+ * Servers are counted by McpServer.prototype.registerTool, which the factory calls once per
+ * registered tool; providers by the real SQLite provider's connect.
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -17,6 +17,7 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import * as route from "@/app/api/mcp/route";
 import { SQLiteProvider } from "@/lib/db/providers/sql/sqlite";
+import { MCP_TOOL_INPUT_SCHEMAS } from "@/lib/mcp/tools";
 import {
   APP_VERSION,
   countMethod,
@@ -83,7 +84,7 @@ async function serversBuiltBy(send: () => Promise<Response>): Promise<number> {
   try {
     const response = await send();
     await response.text();
-    return registrations.calls / 5;
+    return registrations.calls / Object.keys(MCP_TOOL_INPUT_SCHEMAS).length;
   } finally {
     registrations.restore();
   }
@@ -193,13 +194,9 @@ describe("one server per served request", () => {
         ),
       );
       for (const reply of replies) {
-        expect(reply.result?.tools.map((tool: { name: string }) => tool.name)).toEqual([
-          "list_connections",
-          "inspect_schema",
-          "run_read_query",
-          "run_kubectl_read",
-          "run_mongo_command",
-        ]);
+        expect(reply.result?.tools.map((tool: { name: string }) => tool.name)).toEqual(
+          Object.keys(MCP_TOOL_INPUT_SCHEMAS),
+        );
       }
       expect(connects.calls).toBe(0);
     } finally {
@@ -461,6 +458,6 @@ describe("the module-scope handler", () => {
   test("still serves after every earlier test in this file has torn down its clients", async () => {
     const response = await serve(legacyPost({ jsonrpc: "2.0", id: 99, method: "tools/list" }, { token }));
     expect(response.status).toBe(200);
-    expect((await readJsonRpc(response)).result?.tools).toHaveLength(5);
+    expect((await readJsonRpc(response)).result?.tools).toHaveLength(Object.keys(MCP_TOOL_INPUT_SCHEMAS).length);
   });
 });

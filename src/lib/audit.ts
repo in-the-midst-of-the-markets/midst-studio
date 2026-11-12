@@ -311,6 +311,10 @@ export type AuditReason =
   | "mcp_execution_failed"
   // The seed file could not be loaded, so no connection could be resolved.
   | "mcp_connections_unreadable"
+  // Server storage is off, unreadable, or this caller has no storage owner.
+  | "mcp_workspace_unavailable"
+  // A dashboard, chart, note, filter or saved query this account does not have.
+  | "mcp_workspace_missing"
   // The object edit path (#789 Phase 3). Eight codes for one apply's decidable outcomes, mapped
   // from `ObjectEditOutcome` by a total record in src/lib/db/object-edit.ts, so a new outcome
   // with no reading here fails to compile. `object_edit_plan_invalid` is the analogue of

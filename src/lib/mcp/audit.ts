@@ -11,8 +11,19 @@ import { emitAuditEvent, type AuditReason } from "@/lib/audit";
  * failure through: the caller decides, and every caller refuses to run what it cannot record.
  */
 
-/** The tools' names: the two every engine shares, and each statement tool its language's MCP facet declares. */
-export type McpToolAction = "list_connections" | "inspect_schema" | AgentLanguageMcpTool;
+/**
+ * The tools' names: the two every engine shares, each statement tool its language's MCP facet declares,
+ * and the account tools that save a query, a dashboard, its code, a filter and a share link.
+ */
+export type McpToolAction =
+  | "list_connections"
+  | "inspect_schema"
+  | AgentLanguageMcpTool
+  | "write_duckdb_query"
+  | "create_dashboard"
+  | "edit_dashboard_code"
+  | "create_dashboard_filter"
+  | "share_dashboard";
 
 export const MCP_DECISION_TARGET = "mcp/decision";
 export const MCP_EXECUTION_TARGET = "mcp/execution";
@@ -30,6 +41,10 @@ export type McpToolAuditReason = Extract<
   | "mcp_result_too_large"
   | "mcp_execution_failed"
   | "mcp_connections_unreadable"
+  // Server storage is off, unreadable, or the caller has no storage owner.
+  | "mcp_workspace_unavailable"
+  // A dashboard, chart, note, filter or saved query the account does not have.
+  | "mcp_workspace_missing"
 >;
 
 export interface McpCallRecord {

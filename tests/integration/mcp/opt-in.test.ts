@@ -11,6 +11,7 @@ import { getServerAuditBuffer } from "@/lib/audit";
 import { logger } from "@/lib/logger";
 import { MCP_CONNECTIONS_UNREADABLE_TEXT } from "@/lib/mcp/context";
 import { MCP_NOT_VISIBLE_TEXT } from "@/lib/mcp/output";
+import { MCP_TOOL_INPUT_SCHEMAS } from "@/lib/mcp/tools";
 import { resetCache } from "@/lib/seed";
 import { createSqliteFile, pinMcpTestEnvironment, resetMcpTestState, writeSeedFile } from "../../helpers/mcp-fixtures";
 import { connectClient, handlerServe, testAuthInfo } from "../../helpers/mcp-harness";
@@ -160,7 +161,7 @@ describe("a seed file that cannot be loaded", () => {
       const session = await connectClient(admin, { negotiation });
       try {
         expect(session.client.getProtocolEra()).toBe(negotiation === "legacy" ? "legacy" : "modern");
-        expect((await session.client.listTools()).tools).toHaveLength(5);
+        expect((await session.client.listTools()).tools).toHaveLength(Object.keys(MCP_TOOL_INPUT_SCHEMAS).length);
       } finally {
         await session.close();
       }
