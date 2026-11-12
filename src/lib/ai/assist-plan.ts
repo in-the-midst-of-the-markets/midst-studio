@@ -7,7 +7,13 @@
  * not that shape is dropped here, before a query is shown or run.
  */
 
-import { assistNativeRead, assistSampleSql, assistStatementRule, assistValueRule } from "@/lib/ai/assist-dialect";
+import {
+  assistNativeRead,
+  assistSampleSql,
+  assistStatementRule,
+  assistValueRule,
+  withAnalysisGuide,
+} from "@/lib/ai/assist-dialect";
 import { assistStatementLanguage, isAssistRead } from "@/lib/ai/assist-language";
 import { formatChartCode, parseChartCode, stripChartValues } from "@/lib/charts/chart-code";
 import { applyQueryFilters, promoteQueryFilters, queryIdentity } from "@/lib/charts/query-filters";
@@ -592,7 +598,7 @@ ${assistValueRule(prompt.databaseType)}
 A line in an earlier turn that starts with Chart " names a chart from those turns. Return a query with that same title to replace its sql, chart.type, chart.x, chart.y, and chart.code. chart.code is the chart's Code text: one JSON object for the title, series style, and colours. Leave out data, links, and indicator. Omit chart.code to keep the code already on that chart. A title that is not already there adds a chart. A line that starts with "User-edited query (leave it unchanged):" is a statement the user edited and ran. Do not change that statement, its chart type, or its chart.code. To change its colour, return the same sql with chart.color set. Naming a chart's title recolors that chart; all, every, or both recolors every chart; otherwise the latest chart changes colour.`;
   const user = `Question:\n${prompt.questionBlock}\n\nSaved queries:\n${prompt.savedBlock ?? ""}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
-    { role: "system", content: system },
+    { role: "system", content: withAnalysisGuide(prompt.databaseType, system) },
     { role: "user", content: user },
   ];
 }

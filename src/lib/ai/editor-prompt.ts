@@ -5,7 +5,7 @@
  * same parser. The sample text is a description of the field.
  */
 
-import { assistSampleSql, assistStatementRule, assistValueRule } from "@/lib/ai/assist-dialect";
+import { assistSampleSql, assistStatementRule, assistValueRule, withAnalysisGuide } from "@/lib/ai/assist-dialect";
 
 export const EDITOR_SQL_CAP = 8_000;
 
@@ -37,9 +37,10 @@ Return one JSON object and nothing else:
 The words inside the sample are a description of the field. queries has one item. sql is the statement to put in the editor. Revise the fenced statement when the question asks for a change. Write a new statement when the editor is empty or the question asks for a different query. ${statementRule} explanation is Markdown the person reads. Do not use HTML, links, or images.
 
 ${assistValueRule(prompt.databaseType)}`;
+  const told = withAnalysisGuide(prompt.databaseType, system);
   const user = `Question:\n${prompt.questionBlock}\n\nCurrent statement:\n${prompt.editorBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
-    { role: "system", content: system },
+    { role: "system", content: told },
     { role: "user", content: user },
   ];
 }

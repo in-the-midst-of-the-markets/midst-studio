@@ -7,7 +7,7 @@
  * Instructions are the author's rule for a case an example cannot say.
  */
 
-import { assistStatementRule } from "@/lib/ai/assist-dialect";
+import { assistStatementRule, withAnalysisGuide } from "@/lib/ai/assist-dialect";
 
 /** The longest board inventory a question may send. */
 export const BOARD_CONTEXT_CAP = 8_000;
@@ -44,7 +44,7 @@ Return one JSON object and nothing else:
 The words inside the sample are a description of the field. queries has one item. explanation is the chat reply. sql is the chart query. Leave queries empty when the person asked only for words. ${statementRule} A cell the question names is the one to revise. Otherwise write a new query rather than replacing a trusted example. explanation is Markdown the person reads. Do not use HTML, links, or images.`;
   const user = `Question:\n${prompt.questionBlock}\n\nBoard:\n${prompt.boardBlock}\n\nSchema:\n${prompt.schemaBlock}\n\nEarlier turns:\n${prompt.historyBlock}`;
   return [
-    { role: "system", content: system },
+    { role: "system", content: withAnalysisGuide(prompt.databaseType, system) },
     { role: "user", content: user },
   ];
 }

@@ -9,6 +9,7 @@
  */
 
 import { AGENT_STATEMENT_LANGUAGE } from "@/lib/agent/agent-manifest";
+import { ANALYSIS_FEATURE_GUIDE } from "@/lib/analysis/features";
 
 const STATEMENT_LANGUAGE: Readonly<Record<string, string | null>> = AGENT_STATEMENT_LANGUAGE;
 import { devToolsAction, readDevToolsRequest } from "@/lib/db/search-dev-tools";
@@ -101,6 +102,8 @@ interface Dialect {
   /** Whether a SQL read is a statement this editor can run. */
   readonly sql: boolean;
   readonly read: (sql: string) => boolean | null;
+  /** Extra features the model may use. Absent when this engine has none. */
+  readonly analysis?: string;
 }
 
 interface RouteTemplate {
@@ -409,11 +412,12 @@ const DIALECTS: Record<string, Dialect> = {
     read: () => null,
   },
   duckdb: {
-    rule: "sql is one read-only DuckDB statement. Rank a FLOAT array with array_cosine_distance and LIMIT. Walk edges with a recursive common-table expression. On a saved join, a numeric array column is FLOAT[n], and pagerank, weakly_connected_component, and local_clustering_coefficient read the property graph named saved. vss_join and vss_match compare two saved queries. No writes and no files.",
+    rule: "sql is one read-only DuckDB statement. No writes and no files.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
     sql: true,
     read: () => null,
+    analysis: ANALYSIS_FEATURE_GUIDE,
   },
   supabase: {
     rule: "sql is one read-only Postgres statement for this engine.",
@@ -432,6 +436,18 @@ function dialectOf(databaseType: string): Dialect | null {
 export function assistStatementRule(databaseType: string): string {
   if (isCypher(databaseType)) return CYPHER_RULE;
   return dialectOf(databaseType)?.rule ?? SQL_RULE;
+}
+
+/** The analysis catalog for this engine, or an empty string when it has none. */
+export function assistAnalysisGuide(databaseType: string): string {
+  return dialectOf(databaseType)?.analysis ?? "";
+}
+
+/** Appends the analysis catalog when this engine has one. */
+export function withAnalysisGuide(databaseType: string, system: string): string {
+  const guide = assistAnalysisGuide(databaseType);
+  if (guide === "") return system;
+  return `${system}\n\n${guide}`;
 }
 
 /** The sample sql field. It describes the statement and contains no quotes. */
