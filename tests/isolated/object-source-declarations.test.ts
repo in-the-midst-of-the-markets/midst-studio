@@ -894,11 +894,20 @@ describe("the key-browser declaration", () => {
  */
 const WITHHELD_KINDS: readonly string[] = Object.freeze(["kubernetes/secrets"]);
 
-/** The MCP tools the preconditions above already cover: the two schema tools and every statement arm's tool. */
+/**
+ * The MCP tools the preconditions above already cover: the two schema tools, every statement arm's tool,
+ * and the authoring tools. Those write this account's dashboards and saved queries. They do not list
+ * engine object names.
+ */
 const MCP_NAMES_COVERED_TOOLS: ReadonlySet<string> = new Set([
   "list_connections",
   "inspect_schema",
   ...Object.values(MCP_STATEMENT_ARMS).flatMap((arm) => (arm === null ? [] : [arm.tool])),
+  "write_duckdb_query",
+  "create_dashboard",
+  "edit_dashboard_code",
+  "create_dashboard_filter",
+  "share_dashboard",
 ]);
 
 /** What MCP offers an engine: whether it is exposable, and every tool the MCP server registers. */

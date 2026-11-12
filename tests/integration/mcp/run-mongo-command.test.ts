@@ -17,6 +17,7 @@ import { getServerAuditBuffer } from "@/lib/audit";
 import type { DatabaseProvider } from "@/lib/db/types";
 import { McpConnectionContext } from "@/lib/mcp/context";
 import { MCP_UNTRUSTED_NOTICE } from "@/lib/mcp/output";
+import { MCP_TOOL_INPUT_SCHEMAS } from "@/lib/mcp/tools";
 import { runStatement, type McpStatementInput } from "@/lib/mcp/tools/run-statement";
 import { mcpStatementArm } from "@/lib/mcp/tools/statement-arms";
 import type { ManagedConnection } from "@/lib/seed";
@@ -127,13 +128,7 @@ describe("the tool", () => {
     const session = await connectClient(serve, { negotiation: "legacy" });
     try {
       const tools = (await session.client.listTools()).tools;
-      expect(tools.map((tool) => tool.name)).toEqual([
-        "list_connections",
-        "inspect_schema",
-        "run_read_query",
-        "run_kubectl_read",
-        "run_mongo_command",
-      ]);
+      expect(tools.map((tool) => tool.name)).toEqual(Object.keys(MCP_TOOL_INPUT_SCHEMAS));
       const tool = tools.find((candidate) => candidate.name === "run_mongo_command");
       expect(tool?.description).toBe(RUN_MONGO_COMMAND_ARM.description);
       expect(tool?.annotations).toMatchObject({ readOnlyHint: true, openWorldHint: false });

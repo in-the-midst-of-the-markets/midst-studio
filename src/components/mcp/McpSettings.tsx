@@ -105,7 +105,8 @@ export function McpSettings() {
         <h1 className="text-lg font-semibold text-fg-bright">MCP</h1>
         <p>
           An AI client of your own reads the opted-in connections of this server and runs read-only SQL with a token
-          minted for you.
+          minted for you. When server storage is on, that client can also save a DuckDB query, create a dashboard, edit
+          its SQL or JavaScript, add an interactive filter, and share a dashboard link.
         </p>
       </header>
 

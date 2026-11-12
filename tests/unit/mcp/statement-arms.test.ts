@@ -13,6 +13,7 @@ import { SHIPPED_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { createDatabaseProvider } from "@/lib/db/factory";
 import { relationKindIds } from "@/lib/db/object-kinds";
 import type { McpToolAction } from "@/lib/mcp/audit";
+import { AUTHORING_TOOLS, type McpAuthoringTool } from "@/lib/mcp/tools/authoring";
 import type { McpConnectionContext } from "@/lib/mcp/context";
 import { MCP_UNTRUSTED_NOTICE } from "@/lib/mcp/output";
 import { MCP_TOOL_INPUT_SCHEMAS, type McpToolName } from "@/lib/mcp/tools";
@@ -159,7 +160,8 @@ describe("MCP_STATEMENT_ARMS", () => {
 describe("the tool names MCP keeps are the arms' own", () => {
   test("the statement tools are the facets' tools, and the audit actions are those and the shared tools", () => {
     const statementTools: SameUnion<McpStatementTool, AgentLanguageMcpTool> = true;
-    const actions: SameUnion<McpToolAction, (typeof SHARED_TOOLS)[number] | AgentLanguageMcpTool> = true;
+    const actions: SameUnion<McpToolAction, (typeof SHARED_TOOLS)[number] | AgentLanguageMcpTool | McpAuthoringTool> =
+      true;
     const names: SameUnion<McpToolName, McpToolAction> = true;
     expect([statementTools, actions, names]).toEqual([true, true, true]);
     expect(MCP_STATEMENT_TOOLS).toEqual(ARMS.map((arm) => arm.tool));
@@ -170,7 +172,11 @@ describe("the tool names MCP keeps are the arms' own", () => {
   });
 
   test("the route's schema map holds the shared tools, then exactly the arms' tools, in record order", () => {
-    expect(Object.keys(MCP_TOOL_INPUT_SCHEMAS)).toEqual([...SHARED_TOOLS, ...ARMS.map((arm) => arm.tool)]);
+    expect(Object.keys(MCP_TOOL_INPUT_SCHEMAS)).toEqual([
+      ...SHARED_TOOLS,
+      ...ARMS.map((arm) => arm.tool),
+      ...AUTHORING_TOOLS,
+    ]);
   });
 });
 

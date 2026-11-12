@@ -12,6 +12,13 @@ import { MCP_EXPOSABLE, MCP_STATEMENT_READ } from "@/lib/db/compatibility";
 import { MCP_UNTRUSTED_NOTICE } from "@/lib/mcp/output";
 import { MCP_INSTRUCTIONS } from "@/lib/mcp/server";
 import { INSPECT_SCHEMA_DESCRIPTION } from "@/lib/mcp/tools/inspect-schema";
+import {
+  CREATE_DASHBOARD_DESCRIPTION,
+  CREATE_DASHBOARD_FILTER_DESCRIPTION,
+  EDIT_DASHBOARD_CODE_DESCRIPTION,
+  SHARE_DASHBOARD_DESCRIPTION,
+  WRITE_DUCKDB_QUERY_DESCRIPTION,
+} from "@/lib/mcp/tools/authoring";
 import { LIST_CONNECTIONS_DESCRIPTION } from "@/lib/mcp/tools/list-connections";
 import { mcpStatementArm } from "@/lib/mcp/tools/statement-arms";
 import { RUN_READ_QUERY_DESCRIPTION, RUN_READ_QUERY_ENGINES, RUN_READ_QUERY_TYPES } from "../../helpers/run-read-query";
@@ -33,6 +40,11 @@ const DESCRIPTIONS = [
   ["run_read_query", RUN_READ_QUERY_DESCRIPTION, "Run one read-only SQL statement"],
   ["run_kubectl_read", RUN_KUBECTL_READ_ARM.description, "Run one read-only kubectl read"],
   ["run_mongo_command", RUN_MONGO_COMMAND_ARM.description, "Run one read-only MongoDB command"],
+  ["write_duckdb_query", WRITE_DUCKDB_QUERY_DESCRIPTION, "Write one read-only DuckDB statement"],
+  ["create_dashboard", CREATE_DASHBOARD_DESCRIPTION, "Create a dashboard"],
+  ["edit_dashboard_code", EDIT_DASHBOARD_CODE_DESCRIPTION, "Edit the SQL or JavaScript"],
+  ["create_dashboard_filter", CREATE_DASHBOARD_FILTER_DESCRIPTION, "Add an interactive filter"],
+  ["share_dashboard", SHARE_DASHBOARD_DESCRIPTION, "Copy a dashboard"],
 ] as const;
 
 describe("the tool descriptions", () => {

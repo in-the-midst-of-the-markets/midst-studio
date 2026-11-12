@@ -11,6 +11,7 @@ import { readQueryFormsOf } from "@/lib/db/providers/sql/read-query-forms";
 import { DB_UI_CONFIG } from "@/lib/db-ui-config";
 import { mcpClientConfigs } from "@/lib/mcp/client-config";
 import { RUN_READ_QUERY_ENGINES, RUN_READ_QUERY_TYPES } from "../helpers/run-read-query";
+import { AUTHORING_TOOLS } from "@/lib/mcp/tools/authoring";
 import { mcpStatementArm, servingStatementArms } from "@/lib/mcp/tools/statement-arms";
 import type { DatabaseType } from "@/lib/types";
 
@@ -90,10 +91,13 @@ describe("docs/MCP.md", () => {
   });
 
   test("names every statement tool this build registers, and counts the tools", () => {
-    const tools = ["list_connections", "inspect_schema", ...servingStatementArms().map((arm) => arm.tool)];
-    const COUNT_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six"];
-    expect(MCP_DOC).toContain(`- ${COUNT_WORDS[tools.length]} tools, each annotated read-only and closed-world:`);
-    for (const tool of tools) expect(MCP_DOC).toMatch(new RegExp(`^ {2}- \`${tool}\` `, "m"));
+    const reads = ["list_connections", "inspect_schema", ...servingStatementArms().map((arm) => arm.tool)];
+    const COUNT_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+    expect(MCP_DOC).toContain(`- ${COUNT_WORDS[reads.length]} read tools, each annotated read-only and closed-world:`);
+    expect(MCP_DOC).toContain(
+      `- ${COUNT_WORDS[AUTHORING_TOOLS.length]} authoring tools, each closed-world, which write this account when server storage is on:`,
+    );
+    for (const tool of [...reads, ...AUTHORING_TOOLS]) expect(MCP_DOC).toMatch(new RegExp(`^ {2}- \`${tool}\` `, "m"));
   });
 
   test("carries run_mongo_command's engine sentence, derived from its arm, and the read_tool field", () => {

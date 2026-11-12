@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import type { McpConnectionContext } from "../context";
 import { InspectSchemaInputSchema, registerInspectSchema } from "./inspect-schema";
 import { ListConnectionsInputSchema, registerListConnections } from "./list-connections";
+import { AUTHORING_INPUT_SCHEMAS, registerAuthoringTools } from "./authoring";
 import { registerStatementTools } from "./run-statement";
 import { MCP_STATEMENT_INPUT_SCHEMAS } from "./statement-arms";
 
@@ -18,6 +19,7 @@ export const MCP_TOOL_INPUT_SCHEMAS = {
   list_connections: ListConnectionsInputSchema,
   inspect_schema: InspectSchemaInputSchema,
   ...MCP_STATEMENT_INPUT_SCHEMAS,
+  ...AUTHORING_INPUT_SCHEMAS,
 } as const;
 
 export type McpToolName = keyof typeof MCP_TOOL_INPUT_SCHEMAS;
@@ -31,4 +33,5 @@ export function registerStudioTools(server: McpServer, context: McpConnectionCon
   registerListConnections(server, context);
   registerInspectSchema(server, context);
   registerStatementTools(server, context);
+  registerAuthoringTools(server, context);
 }
