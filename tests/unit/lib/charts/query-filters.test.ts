@@ -46,6 +46,9 @@ describe("query filters", () => {
       { name: "f", value: "6", options: [], compare: "=" },
     ]);
     expect(readQueryFilters("SELECT {{not-a name}}")).toEqual([]);
+    expect(readQueryFilters("SELECT {{Test-Dim:East}}")).toEqual([
+      { name: "Test-Dim", value: "East", options: [], compare: "=" },
+    ]);
     expect(readQueryFilters("SELECT {{region")).toEqual([]);
     expect(readQueryFilters("-- {{region:east}}")).toEqual([]);
     expect(readQueryFilters("SELECT 1")).toEqual([]);

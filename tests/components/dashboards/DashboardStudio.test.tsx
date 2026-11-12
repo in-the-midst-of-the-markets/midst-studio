@@ -1,18 +1,22 @@
 import "../../setup-dom";
 
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { mockGlobalFetch, restoreGlobalFetch } from "../../helpers/mock-fetch";
 import type { DatabaseConnection, SavedChartConfig, SavedDashboard } from "@/lib/types";
 
 const drawnOptions: Record<string, unknown>[] = [];
+const chartClicks: ((params: unknown) => void)[] = [];
 
 mock.module("echarts/core", () => ({
   use: () => {},
   init: () => ({
     setOption(option: Record<string, unknown>) {
       drawnOptions.push(option);
+    },
+    on(event: string, handler: (params: unknown) => void) {
+      if (event === "click") chartClicks.push(handler);
     },
     resize() {},
     dispose() {},
@@ -108,6 +112,7 @@ describe("DashboardStudio", () => {
   afterEach(() => {
     cleanup();
     localStorage.clear();
+    chartClicks.length = 0;
     restoreGlobalFetch();
     window.setInterval = interval;
     window.clearInterval = clear;
@@ -1159,6 +1164,80 @@ describe("DashboardStudio", () => {
     await waitFor(() => expect(storage.getSavedDashboards()[0]?.shareId).toBe(id));
     fireEvent.click(view.getByRole("button", { name: "Stop sharing" }));
     await waitFor(() => expect(storage.getSavedDashboards()[0]?.shareId).toBeUndefined());
+  });
+
+  test("a chart click sets Test-Dim and can open another dashboard", async () => {
+    storage.saveConnection(connection);
+    storage.saveChart(
+      chart({
+        id: "test",
+        name: "Test",
+        xAxis: "Dim",
+        yAxis: ["Amount"],
+        selection: { category: ["Dim"], values: ["Amount"] },
+        query: "SELECT Dim, Amount FROM sales",
+      }),
+    );
+    storage.saveChart(
+      chart({
+        id: "other",
+        name: "Other",
+        query: "SELECT name FROM sales WHERE dim = {{Test-Dim}}",
+      }),
+    );
+    storage.saveChart(chart({ id: "year", name: "2024", xAxis: "", yAxis: [], query: undefined, selection: {} }));
+    storage.saveDashboard(board("sales", ["test", "other", "year"], "Sales"));
+    storage.saveDashboard(board("detail", [], "Detail"));
+    storage.setActiveDashboardId("sales");
+    const posted: string[] = [];
+    mockGlobalFetch({
+      "/api/db/query": async (req) => {
+        const body = (await req.json()) as { sql?: string };
+        posted.push(body.sql ?? "");
+        return {
+          json: { rows: [{ Dim: "East", Amount: 12 }], fields: ["Dim", "Amount"], rowCount: 1, executionTime: 1 },
+        };
+      },
+    });
+    const view = render(<DashboardStudio />);
+    const tile = await view.findByTestId("dashboard-chart-test");
+    expect(within(tile).getByText("{{Test-Dim}}")).toBeTruthy();
+    fireEvent.change(within(tile).getByLabelText("Click dimension"), { target: { value: "Amount" } });
+    expect(storage.getSavedCharts().find((item) => item.id === "test")?.click?.dimension).toBe("Amount");
+    fireEvent.change(within(tile).getByLabelText("Click dimension"), { target: { value: "Dim" } });
+    fireEvent.change(within(tile).getByLabelText("Click metric"), { target: { value: "Amount" } });
+    fireEvent.change(within(tile).getByLabelText("Click filter"), { target: { value: "metric" } });
+    expect(within(tile).getByText("{{Test-Amount}}")).toBeTruthy();
+    await waitFor(() => expect(chartClicks.length).toBeGreaterThan(0));
+    act(() => {
+      chartClicks[0]?.({ componentType: "series", name: "", value: 12 });
+    });
+    fireEvent.change(within(tile).getByLabelText("Click filter"), { target: { value: "dimension" } });
+    expect(within(tile).getByText("{{Test-Dim}}")).toBeTruthy();
+    expect(view.getByTestId("dashboard-chart-year").textContent).toContain("This chart name cannot make a filter id.");
+    expect(within(view.getByTestId("dashboard-chart-year")).getAllByRole("option", { name: "No column" })).toHaveLength(
+      2,
+    );
+    await waitFor(() => expect(chartClicks.length).toBeGreaterThan(0));
+    const before = posted.length;
+    act(() => {
+      chartClicks[0]?.({ componentType: "legend", name: "Amount" });
+      chartClicks[0]?.({ componentType: "series", name: "", value: "" });
+    });
+    expect((view.getByLabelText("Dashboard") as HTMLSelectElement).value).toBe("sales");
+    act(() => {
+      chartClicks[0]?.({ componentType: "series", name: "East", value: 12 });
+    });
+    await waitFor(() => expect(posted.slice(before).some((sql) => sql.includes("'East'"))).toBe(true));
+    expect((view.getByLabelText("Dashboard") as HTMLSelectElement).value).toBe("sales");
+    fireEvent.change(within(tile).getByLabelText("Click opens"), { target: { value: "detail" } });
+    expect(storage.getSavedCharts().find((item) => item.id === "test")?.click?.dashboardId).toBe("detail");
+    fireEvent.click(view.getByRole("button", { name: "Viewer" }));
+    act(() => {
+      chartClicks[0]?.({ componentType: "series", name: "East", value: 12 });
+    });
+    expect((view.getByLabelText("Dashboard") as HTMLSelectElement).value).toBe("detail");
+    expect(view.getByRole("heading", { name: "Detail" })).toBeTruthy();
   });
 
   test("viewer mode on an empty page names the page Dash", () => {
