@@ -1,8 +1,12 @@
 # Analysis features
 
-The IDE chat includes this catalog when the connected engine is DuckDB. Cross_DB_Joins uses that engine, so a question about joined saved queries sees the same text. The sentences live once, in `src/lib/analysis/features.ts`, and `analysisFeaturesDocument()` returns them as data.
+Every IDE prompt includes the feature instructions from `featureInstructions()` in `src/lib/analysis/features.ts`. A chart click applies on any engine. The analysis catalog follows it, and each feature says where it runs. `analysisFeaturesDocument()` returns the catalog as data.
 
 MCP does not serve this catalog. A later resource can return that object unchanged. It is not a tool, and the chat still has to write one read-only statement.
+
+## Chart click
+
+Chart click. A chart named Test with a dimension column Dim publishes the filter {{Test-Dim}}. The metric column Amount publishes {{Test-Amount}}. The Filter choice on the chart is the id other queries read. Write that id where a literal would go, for example dim = {{Test-Dim}}. The value is the bar or the point on the line that was clicked, such as East or 12. The column name only names the filter. A click does not change which column the chart uses. Opens names another dashboard the click moves to. Use the click id the board lists for that chart.
 
 ## saved-join
 

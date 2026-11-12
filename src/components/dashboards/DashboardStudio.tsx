@@ -611,6 +611,7 @@ export function DashboardStudio() {
             active,
             charts,
             connections.map((item) => ({ id: item.id, name: item.name })),
+            dashboards.map((item) => ({ id: item.id, name: item.name })),
           )}
           onPlaceReply={placeAssistantReply}
         />

@@ -9,7 +9,7 @@
  */
 
 import { AGENT_STATEMENT_LANGUAGE } from "@/lib/agent/agent-manifest";
-import { ANALYSIS_FEATURE_GUIDE } from "@/lib/analysis/features";
+import { ANALYSIS_FEATURE_GUIDE, featureInstructions } from "@/lib/analysis/features";
 
 const STATEMENT_LANGUAGE: Readonly<Record<string, string | null>> = AGENT_STATEMENT_LANGUAGE;
 import { devToolsAction, readDevToolsRequest } from "@/lib/db/search-dev-tools";
@@ -443,11 +443,13 @@ export function assistAnalysisGuide(databaseType: string): string {
   return dialectOf(databaseType)?.analysis ?? "";
 }
 
-/** Appends the analysis catalog when this engine has one. */
-export function withAnalysisGuide(databaseType: string, system: string): string {
-  const guide = assistAnalysisGuide(databaseType);
-  if (guide === "") return system;
-  return `${system}\n\n${guide}`;
+/**
+ * Appends the feature instructions.
+ * A chart click and the analysis catalog are included for every engine.
+ * Each feature says where it runs, so the engine argument does not change the text.
+ */
+export function withAnalysisGuide(_databaseType: string, system: string): string {
+  return `${system}\n\n${featureInstructions()}`;
 }
 
 /** The sample sql field. It describes the statement and contains no quotes. */

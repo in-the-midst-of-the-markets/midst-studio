@@ -1,10 +1,12 @@
 /**
  * The analysis features a model may use when it writes a DuckDB statement.
  *
- * The IDE prompts include `ANALYSIS_FEATURE_GUIDE` for that engine. `analysisFeaturesDocument`
- * is the same list as data. MCP does not serve it yet; a later resource can return the object
- * unchanged, with no second copy of the sentences.
+ * `featureInstructions()` is what every IDE prompt includes: a chart click, then this catalog.
+ * `analysisFeaturesDocument` is the same catalog as data. MCP does not serve it yet; a later
+ * resource can return the object unchanged, with no second copy of the sentences.
  */
+
+import { CHART_CLICK_INSTRUCTIONS } from "@/lib/dashboards/chart-click";
 
 export interface AnalysisFeature {
   readonly id: string;
@@ -83,7 +85,15 @@ export function renderAnalysisGuide(features: readonly AnalysisFeature[]): strin
     (feature) =>
       `${feature.id} — ${feature.title}. Use when ${feature.useWhen} Statement: \`${feature.statement}\`. ${feature.limit}`,
   );
-  return `Analysis features you can use on this engine. Pick one when it fits the question, and keep the statement inside the engine rule.\n${lines.join("\n")}`;
+  return `Analysis features. Pick one when it fits the question, and keep the statement inside the engine rule. Each limit says where it runs.\n${lines.join("\n")}`;
 }
 
 export const ANALYSIS_FEATURE_GUIDE = renderAnalysisGuide(ANALYSIS_FEATURES);
+
+/**
+ * The instructions every IDE prompt includes.
+ * Chart clicks apply on any engine. The analysis features name the engine they need.
+ */
+export function featureInstructions(): string {
+  return `Feature instructions. Use one when it fits the question. These do not override the read-only rule.\n${CHART_CLICK_INSTRUCTIONS}\n\n${ANALYSIS_FEATURE_GUIDE}`;
+}

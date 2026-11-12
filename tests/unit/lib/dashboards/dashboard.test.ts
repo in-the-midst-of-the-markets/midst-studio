@@ -489,6 +489,7 @@ describe("dashboard layout", () => {
       { id: "bare", name: "Bare", typeId: "bar", variationId: "missing", xAxis: "day" },
     ]);
     expect(shapeOnly).toContain('1. chart "Bare" | Bar | shelves day | empty');
+    expect(shapeOnly).toContain("click {{Bare-day}}");
     expect(shapeOnly).not.toContain("Bar /");
     const verbose = dashboardAssistContext(
       { ...board(), instructions: "i".repeat(DASHBOARD_INSTRUCTIONS_CAP + 20) },
@@ -504,6 +505,53 @@ describe("dashboard layout", () => {
     const truncated = dashboardAssistContext(board(frames), many);
     expect(truncated.endsWith("characters omitted")).toBe(true);
     expect(truncated).toContain("… truncated,");
+  });
+
+  test("lists the click filter a chart publishes, including a hyphenated id", () => {
+    const text = dashboardAssistContext(
+      board([
+        { chartId: "test", width: 1, height: 1 },
+        { chartId: "metric", width: 1, height: 1 },
+        { chartId: "year", width: 1, height: 1 },
+        { chartId: "lost", width: 1, height: 1 },
+      ]),
+      [
+        {
+          id: "test",
+          name: "Test",
+          xAxis: "Dim",
+          yAxis: ["Amount"],
+          query: "SELECT name FROM sales WHERE dim = {{Test-Dim:East}}",
+          click: { dashboardId: "detail" },
+        },
+        {
+          id: "metric",
+          name: "Test",
+          xAxis: "Dim",
+          yAxis: ["Amount"],
+          click: { publish: "metric", dashboardId: "blank" },
+        },
+        { id: "year", name: "2024", xAxis: "Dim", yAxis: ["Amount"] },
+        {
+          id: "lost",
+          name: "Lost",
+          xAxis: "Dim",
+          click: { dashboardId: "missing" },
+        },
+      ],
+      [],
+      [
+        { id: "detail", name: "Detail" },
+        { id: "blank", name: "  " },
+      ],
+    );
+    expect(text).toContain("depends on {{Test-Dim}}");
+    expect(text).toContain('click {{Test-Dim}} opens "Detail"');
+    expect(text).toContain("click {{Test-Amount}}");
+    expect(text).not.toContain('opens "Untitled"');
+    expect(text).not.toContain("click {{2024");
+    expect(text).toContain("click {{Lost-Dim}}");
+    expect(text).not.toContain("click {{Lost-Dim}} opens");
   });
 
   test("draws a text box from a usable font, size, color, and alignment", () => {
