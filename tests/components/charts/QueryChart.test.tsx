@@ -461,4 +461,28 @@ describe("QueryChart", () => {
     expect(view.queryByRole("button", { name: "Use generated chart" })).toBeNull();
     expect((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain('"bar"');
   });
+
+  test("does not draw a tooltip color that breaks out of the arrow style", () => {
+    const view = render(React.createElement(QueryChart, { result: sales }));
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: {
+        value: JSON.stringify({
+          tooltip: {
+            backgroundColor: 'red"></div><img src=x onerror=alert(1)>',
+            borderColor: "#336699",
+          },
+        }),
+      },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    const option = charts.at(-1)?.option as {
+      tooltip?: { backgroundColor?: string; borderColor?: string };
+    };
+    expect(option.tooltip?.backgroundColor).toBeUndefined();
+    expect(option.tooltip?.borderColor).toBe("#336699");
+    expect(JSON.stringify(option)).not.toContain("onerror");
+  });
 });

@@ -190,7 +190,8 @@ function publicChart(chart: SavedChartConfig, query: string | undefined): SavedC
   const next: SavedChartConfig = { ...chart, query };
   delete next.connectionId;
   delete next.refreshSeconds;
-  // The look is drawn with innerHTML for a tooltip formatter and the data view title.
+  // The look is drawn with innerHTML. A string formatter, a data view title, and a
+  // tooltip color that is not a CSS color are removed before the snapshot is stored.
   if (next.look !== undefined) next.look = chartOptionForDisplay(next.look);
   return next;
 }

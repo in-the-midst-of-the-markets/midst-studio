@@ -34,6 +34,7 @@ import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEdit
 import { CirclePackChart } from "@/components/charts/CirclePackChart";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
 import { stripChartValues } from "@/lib/charts/chart-code";
+import { chartOptionForDisplay } from "@/lib/charts/chart-html";
 import { chartTitleText } from "@/lib/charts/chart-title";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
@@ -222,7 +223,7 @@ export function QueryChart({
     if (codeOpen || built === null || pack || element === null) return;
     registerMap(WORLD_MAP_NAME, WORLD_OUTLINE);
     const chart = init(element);
-    chart.setOption(code.option ?? built.option, true);
+    chart.setOption(chartOptionForDisplay(code.option ?? built.option), true);
     const stop = watchChartSize(element, () => chart.resize());
     return () => {
       stop();
