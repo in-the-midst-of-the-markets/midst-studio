@@ -11,6 +11,22 @@
 import { writeQueryFilter } from "@/lib/charts/query-filters";
 import type { ChartClickConfig } from "@/lib/types";
 
+/**
+ * What the model is told about a chart click.
+ * The id is the chart name plus the column. The value is the clicked bar or point.
+ */
+export const CHART_CLICK_INSTRUCTIONS = [
+  "Chart click. A chart named Test with a dimension column Dim publishes the filter {{Test-Dim}}.",
+  "The metric column Amount publishes {{Test-Amount}}.",
+  "The Filter choice on the chart is the id other queries read.",
+  "Write that id where a literal would go, for example dim = {{Test-Dim}}.",
+  "The value is the bar or the point on the line that was clicked, such as East or 12.",
+  "The column name only names the filter.",
+  "A click does not change which column the chart uses.",
+  "Opens names another dashboard the click moves to.",
+  "Use the click id the board lists for that chart.",
+].join(" ");
+
 const CLICK_ID = /^[A-Za-z_][A-Za-z0-9_-]{0,39}$/;
 const VALUE_CAP = 200;
 

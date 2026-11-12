@@ -1,8 +1,10 @@
 import { echartType } from "@/lib/charts/echarts-catalog";
 import { writeQueryFilter } from "@/lib/charts/query-filters";
+import { chartClickFields, chartClickIds } from "@/lib/dashboards/chart-click";
 import { chartPublicId, filterPublicId } from "@/lib/dashboards/public-id";
 import { bindEmbedPlaceholders, bindVectorFilterIds } from "@/lib/embeddings/placeholder";
 import type {
+  ChartClickConfig,
   DashboardFilter,
   DashboardFilterControl,
   DashboardFilterDesign,
@@ -508,6 +510,13 @@ interface AssistChart {
   readonly metricName?: string;
   readonly title?: string;
   readonly selection?: Readonly<Record<string, string[]>>;
+  readonly click?: ChartClickConfig;
+}
+
+/** A dashboard a click can open. */
+interface AssistDashboard {
+  readonly id: string;
+  readonly name: string;
 }
 
 /** A connection name for a cell that names a warehouse. */
@@ -529,6 +538,7 @@ export function dashboardAssistContext(
   dashboard: SavedDashboard | null,
   charts: readonly AssistChart[],
   connections: readonly AssistConnection[] = [],
+  dashboards: readonly AssistDashboard[] = [],
 ): string {
   if (dashboard === null) {
     return ["Dashboard: (none)", "Instructions: (none)", "", "Cells:", "(none)"].join("\n");
@@ -549,7 +559,7 @@ export function dashboardAssistContext(
   for (const frame of dashboard.charts) {
     const chart = charts.find((item) => item.id === frame.chartId);
     if (chart === undefined) continue;
-    cells.push(chartCell(index, chart, connections));
+    cells.push(chartCell(index, chart, connections, dashboards));
     index += 1;
   }
   lines.push(cells.length === 0 ? "(none)" : cells.join("\n"));
@@ -585,7 +595,7 @@ function connectionName(id: string | undefined, connections: readonly AssistConn
 function tokensIn(sql: string): string[] {
   const found: string[] = [];
   const seen = new Set<string>();
-  for (const match of sql.matchAll(/\{\{\s*([A-Za-z_][A-Za-z0-9_]{0,39})/g)) {
+  for (const match of sql.matchAll(/\{\{\s*([A-Za-z_][A-Za-z0-9_-]{0,39})/g)) {
     const name = match[1];
     if (name === undefined || seen.has(name)) continue;
     seen.add(name);
@@ -613,7 +623,22 @@ function shelvesOf(chart: AssistChart): string {
   return cleaned.join(", ");
 }
 
-function chartCell(index: number, chart: AssistChart, connections: readonly AssistConnection[]): string {
+function clickLine(chart: AssistChart, dashboards: readonly AssistDashboard[]): string {
+  const ids = chartClickIds(chart.name, chartClickFields(chart));
+  const id = chart.click?.publish === "metric" ? ids.metric : ids.dimension;
+  if (id === null) return "";
+  const targetId = chart.click?.dashboardId?.trim() ?? "";
+  if (targetId === "") return `click {{${id}}}`;
+  const named = dashboards.find((item) => item.id === targetId)?.name.trim() ?? "";
+  return named === "" ? `click {{${id}}}` : `click {{${id}}} opens "${quoteName(named)}"`;
+}
+
+function chartCell(
+  index: number,
+  chart: AssistChart,
+  connections: readonly AssistConnection[],
+  dashboards: readonly AssistDashboard[],
+): string {
   const query = chart.query?.trim() ?? "";
   const parts = [`${index}. chart "${quoteName(chart.name)}"`];
   const shape = chartShape(chart);
@@ -630,7 +655,10 @@ function chartCell(index: number, chart: AssistChart, connections: readonly Assi
   const named = chart.name.trim();
   const titled = chart.title?.trim() ?? "";
   const question = titled !== "" && titled !== named ? titled : named;
-  const lines = [parts.join(" | "), `question: ${quoteName(question)}`];
+  const lines = [parts.join(" | ")];
+  const click = clickLine(chart, dashboards);
+  if (click !== "") lines.push(click);
+  lines.push(`question: ${quoteName(question)}`);
   if (query !== "") lines.push(`trusted sql: ${oneLine(query, CELL_SQL_CAP)}`);
   return lines.join("\n");
 }
