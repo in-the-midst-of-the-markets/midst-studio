@@ -12,8 +12,8 @@
 | **Status** | Implemented & shipped |
 | **Database type id** | `duckdb` |
 | **Family** | SQL (`src/lib/db/providers/sql/duckdb/`) — embedded / file-based, like `sqlite` |
-| **Driver** | `@duckdb/node-api` 1.5.5-r.4 — a **native N-API binding**, not a pure-JS client. Four packages, ~70 MB of shared library per platform (§11) |
-| **Query language** | `sql` (DuckDB's own PostgreSQL-flavoured dialect; `version()` answered `v1.5.5`) |
+| **Driver** | `@duckdb/node-api` 1.5.6-r.2 — a **native N-API binding**, not a pure-JS client. Four packages, ~70 MB of shared library per platform (§11) |
+| **Query language** | `sql` (DuckDB's own PostgreSQL-flavoured dialect; `version()` answered `v1.5.6`) |
 | **Default port** | `null` — there is no network listener |
 | **Connection** | A **server-local file path** (or `:memory:`) — **not** a network endpoint |
 | **Connection string** | `false` (capability). DuckDB has no URI scheme, and inventing one would put a scheme on a field that only ever holds a path (§4.2) |
@@ -27,13 +27,13 @@
 | **Non-admin file access** | **Closed at statement level**: the editor handle opens `enable_external_access: 'false'`, read-write, for every non-admin role and for every role on a seed a non-admin role can use, so no statement reaches the network or a file other than the database's own and the handle's private temp directory, while that database stays editable and its path is still the connection's choice; an admin keeps full reach on an inline connection and on an admin-only seed, and the posture is server-derived from the session and the resolved connection, never the request body (§3.16, §14.3) |
 | **Maintenance** | `vacuum` and `analyze` (per table **and** global), `optimize` mapped onto `CHECKPOINT` (global only). `reindex`, `check` and `kill` are withheld — measured unsupported (§8) |
 | **Concurrency** | `singleWriterFile: true` — a **second process is refused even read-only** (§3.8) |
-| **Extensions** | Never installed or loaded implicitly: every handle opens with `autoinstall_known_extensions`, `autoload_known_extensions` and `allow_community_extensions` off, and a file that is not a DuckDB database is refused before the engine opens it; only DuckDB's signed extensions can load, `INSTALL` and `LOAD` in the admin editor are the way in, the denied posture refuses `INSTALL` and the `LOAD` of any extension that is not bundled (§3.14, §3.16), and the admin editor's remaining network reach is in §14.4 |
+| **Extensions** | Never installed or loaded implicitly: every handle opens with `autoinstall_known_extensions` and `autoload_known_extensions` off, and a file that is not a DuckDB database is refused before the engine opens it. The editor and the agent also keep `allow_community_extensions` off, so only DuckDB's signed extensions can load there; `INSTALL` and `LOAD` in the admin editor are the way in, and the denied posture refuses `INSTALL` and the `LOAD` of any extension that is not bundled (§3.14, §3.16). A saved join is the exception: it loads the signed `vss` extension and the community `duckpgq` extension from files cached for this engine's version and platform, then sets `enable_external_access` off before the statement runs |
 | **Unwritable file** | Opened `READ_ONLY` in the editor, so reads work and the engine refuses writes (§3.15) |
 | **Source** | [`src/lib/db/providers/sql/duckdb/`](../../src/lib/db/providers/sql/duckdb/) |
 | **Tests** | [`tests/integration/db/duckdb-provider.test.ts`](../../tests/integration/db/duckdb-provider.test.ts) |
 | **Tracking issue** | [#424 — the database coverage map](https://github.com/libredb/libredb-studio/issues/424) |
-| **Probed against** | DuckDB **v1.5.5** embedded through `@duckdb/node-api` **1.5.5-r.4**, under **Node 24.14.0** and **Bun 1.3.14**, on **2026-08-27** |
-| **Reproducible with** | `bun add @duckdb/node-api@1.5.5-r.4` — the engine ships inside the package, so there is no image to pull and no service in `database-compose.yml` (§11). Every statement quoted below was run against a two-schema fixture built from scratch; the integration test builds the same fixture in a temp directory |
+| **Probed against** | DuckDB **v1.5.6** embedded through `@duckdb/node-api` **1.5.6-r.2**. The statement-level measurements below were taken on v1.5.5 and the integration suite was re-run on v1.5.6 |
+| **Reproducible with** | `bun add @duckdb/node-api@1.5.6-r.2` — the engine ships inside the package, so there is no image to pull and no service in `database-compose.yml` (§11). Every statement quoted below was run against a two-schema fixture built from scratch; the integration test builds the same fixture in a temp directory |
 
 ---
 

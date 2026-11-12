@@ -408,6 +408,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  duckdb: {
+    rule: "sql is one read-only DuckDB statement. Rank a FLOAT array with array_cosine_distance and LIMIT. Walk edges with a recursive common-table expression. On a saved join, a numeric array column is FLOAT[n], and pagerank, weakly_connected_component, and local_clustering_coefficient read the property graph named saved. vss_join and vss_match compare two saved queries. No writes and no files.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   supabase: {
     rule: "sql is one read-only Postgres statement for this engine.",
     sample: SQL_SAMPLE,

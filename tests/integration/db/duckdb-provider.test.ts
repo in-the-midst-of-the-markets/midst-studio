@@ -6,10 +6,9 @@
  * embedded engine is that the engine is available in the test process, so a mock would
  * only prove that the mock agrees with itself.
  *
- * **Gate 4 pin: DuckDB v1.5.5 via @duckdb/node-api 1.5.5-r.4, measured 2026-08-27 on
- * Bun 1.3.14 and Node 24.14.0.** Every behaviour asserted below was probed live at
- * that version and recorded in `.duckdb-measured.md`; the version assertion in
- * "engine version" fails loudly if the pinned driver moves underneath these
+ * **Gate 4 pin: DuckDB v1.5.6 via @duckdb/node-api 1.5.6-r.2.** The behaviours below
+ * were probed on v1.5.5 (2026-08-27) and the suite was re-run on v1.5.6. The version
+ * assertion in "engine version" fails loudly if the pinned driver moves underneath these
  * expectations.
  *
  * The read-only section is the one that carries real weight. `access_mode: 'READ_ONLY'`
@@ -86,7 +85,7 @@ import {
 // Helpers
 // ============================================================================
 
-const PINNED_VERSION = "v1.5.5";
+const PINNED_VERSION = "v1.5.6";
 
 /**
  * The scratch directory every fixture in this file lives in, created HERE rather than in

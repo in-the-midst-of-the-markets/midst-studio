@@ -5,6 +5,8 @@ import { resolveSqlGrammar } from "@/lib/sql/grammar";
 import { rowsWithNonFiniteWords } from "@/lib/non-finite";
 import type { DatabaseConnection, QueryPagination, QueryResult } from "@/lib/types";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
+import { joinExtensionFiles } from "@/lib/saved-join/extensions";
+import { linkedQueryNames, propertyGraphSql, type GraphColumnTable } from "@/lib/saved-join/graph";
 import {
   SAVED_JOIN_LIMITS,
   SAVED_JOIN_MAX_TABLES,
@@ -48,10 +50,12 @@ export interface SavedJoinRun {
   limits?: SavedJoinLimits;
 }
 
-type ColumnType = "BOOLEAN" | "BIGINT" | "DOUBLE" | "VARCHAR";
+type ColumnType = "BOOLEAN" | "BIGINT" | "DOUBLE" | "VARCHAR" | `FLOAT[${number}]`;
 
 interface ParsedJoin {
   tables: string[];
+  /** The statement calls pagerank or another DuckPGQ table function. */
+  graph: boolean;
 }
 
 function quoteIdent(name: string): string {
@@ -86,7 +90,23 @@ function columnType(values: readonly unknown[]): ColumnType {
   return chosen ?? "VARCHAR";
 }
 
+function numericArrayLength(value: unknown): number | null {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 2048) return null;
+  if (!parsed.every((item) => typeof item === "number" && Number.isFinite(item))) return null;
+  return parsed.length;
+}
+
 function valueType(value: unknown): ColumnType | null {
+  const length = numericArrayLength(value);
+  if (length !== null) return `FLOAT[${length}]`;
   if (typeof value === "boolean") return "BOOLEAN";
   if (typeof value === "bigint") return "BIGINT";
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -99,6 +119,12 @@ function valueType(value: unknown): ColumnType | null {
 
 function bindValue(value: unknown, type: ColumnType): string | number | bigint | boolean | null {
   if (value === null || value === undefined) return null;
+  if (type.startsWith("FLOAT[")) {
+    const length = numericArrayLength(value);
+    if (length === null) return null;
+    const parsed = typeof value === "string" ? (JSON.parse(value) as unknown[]) : (value as unknown[]);
+    return JSON.stringify(parsed);
+  }
   if (type === "BOOLEAN") return value === true;
   if (type === "BIGINT") return typeof value === "bigint" ? value : Math.trunc(Number(value));
   if (type === "DOUBLE") return Number(value);
@@ -142,14 +168,71 @@ const HIDDEN_SQL_FUNCTIONS = new Set(["json_execute_serialized_sql", "query", "q
  */
 const JOIN_TABLE_SCHEMAS = new Set(["", "main", "saved"]);
 
-function collectTables(node: unknown, tables: string[], ctes: Set<string>): void {
+/** DuckPGQ table functions. Their string arguments name the vertex table, not a file. */
+const GRAPH_TABLE_FUNCTIONS = new Set(["pagerank", "weakly_connected_component", "local_clustering_coefficient"]);
+
+/**
+ * Vector table functions. The first column-reference arguments are saved-query IDs.
+ * `vss_join` takes two tables, `vss_match` takes the table it searches.
+ */
+const VECTOR_TABLE_FUNCTIONS = new Set(["vss_join", "vss_match"]);
+
+interface JoinScan {
+  tables: string[];
+  /** Names a graph or vector function mentioned. A label that is not a saved query is ignored. */
+  mentions: string[];
+  graph: boolean;
+}
+
+function functionRecord(node: Record<string, unknown>): Record<string, unknown> | null {
+  return isRecord(node.function) ? node.function : null;
+}
+
+function functionName(node: Record<string, unknown>): string | null {
+  const fn = functionRecord(node);
+  return fn !== null && typeof fn.function_name === "string" ? fn.function_name.toLowerCase() : null;
+}
+
+function collectFunctionTables(node: Record<string, unknown>, mentions: string[]): void {
+  const name = functionName(node);
+  const fn = functionRecord(node);
+  if (name === null || fn === null || !Array.isArray(fn.children)) return;
+  if (GRAPH_TABLE_FUNCTIONS.has(name)) {
+    for (const child of fn.children) {
+      if (!isRecord(child) || child.type !== "VALUE_CONSTANT" || !isRecord(child.value)) continue;
+      const value = child.value.value;
+      if (typeof value === "string" && savedQueryTableIdError(value) === null) mentions.push(value);
+    }
+    return;
+  }
+  if (!VECTOR_TABLE_FUNCTIONS.has(name)) return;
+  const tableArgs = name === "vss_match" ? 1 : 2;
+  let seen = 0;
+  for (const child of fn.children) {
+    if (seen >= tableArgs) return;
+    if (!isRecord(child) || child.type !== "COLUMN_REF" || !Array.isArray(child.column_names)) continue;
+    seen += 1;
+    const table = child.column_names.length === 1 ? child.column_names[0] : null;
+    if (typeof table === "string") mentions.push(table);
+  }
+}
+
+function collectTables(node: unknown, tables: string[], ctes: Set<string>, scan: JoinScan): void {
   if (Array.isArray(node)) {
-    for (const entry of node) collectTables(entry, tables, ctes);
+    for (const entry of node) collectTables(entry, tables, ctes, scan);
     return;
   }
   if (!isRecord(node)) return;
-  if (node.type === "TABLE_FUNCTION" || node.type === "SHOW_REF") {
+  if (node.type === "SHOW_REF") {
     throw new SavedJoinError("A saved join can only read saved queries by their ID.");
+  }
+  if (node.type === "TABLE_FUNCTION") {
+    const name = functionName(node);
+    if (name === null || (!GRAPH_TABLE_FUNCTIONS.has(name) && !VECTOR_TABLE_FUNCTIONS.has(name))) {
+      throw new SavedJoinError("A saved join can only read saved queries by their ID.");
+    }
+    if (GRAPH_TABLE_FUNCTIONS.has(name)) scan.graph = true;
+    collectFunctionTables(node, scan.mentions);
   }
   if (node.type === "FUNCTION" && typeof node.function_name === "string") {
     const name = node.function_name.toLowerCase();
@@ -177,10 +260,10 @@ function collectTables(node: unknown, tables: string[], ctes: Set<string>): void
     const isCte = schemaKey === "" && ctes.has(table.toLowerCase());
     if (!isCte) tables.push(table);
   }
-  for (const value of Object.values(node)) collectTables(value, tables, ctes);
+  for (const value of Object.values(node)) collectTables(value, tables, ctes, scan);
 }
 
-async function parseJoin(client: DuckDBClient, sql: string): Promise<ParsedJoin> {
+async function parseJoin(client: DuckDBClient, sql: string, saved: readonly SavedJoinSource[]): Promise<ParsedJoin> {
   const grammar = resolveSqlGrammar("duckdb");
   if (countCodeStatements(sql, grammar) !== 1) {
     throw new SavedJoinError(
@@ -218,8 +301,10 @@ async function parseJoin(client: DuckDBClient, sql: string): Promise<ParsedJoin>
   }
   const ctes = new Set<string>();
   collectCteNames(statements[0].node, ctes);
-  const tables: string[] = [];
-  collectTables(statements[0].node, tables, ctes);
+  const scan: JoinScan = { tables: [], mentions: [], graph: false };
+  collectTables(statements[0].node, scan.tables, ctes, scan);
+  const known = new Set(saved.map((entry) => entry.name.toLowerCase()));
+  const tables = [...scan.tables, ...scan.mentions.filter((name) => known.has(name.toLowerCase()))];
   const unique: string[] = [];
   const seen = new Set<string>();
   for (const table of tables) {
@@ -242,7 +327,7 @@ async function parseJoin(client: DuckDBClient, sql: string): Promise<ParsedJoin>
     const idError = savedQueryTableIdError(table);
     if (idError !== null) throw new SavedJoinError(idError);
   }
-  return { tables: unique };
+  return { tables: unique, graph: scan.graph };
 }
 
 function matchSource(tableName: string, saved: readonly SavedJoinSource[]): SavedJoinSource {
@@ -263,7 +348,7 @@ function matchSource(tableName: string, saved: readonly SavedJoinSource[]): Save
   throw new SavedJoinError(`There is no saved query with the ID "${tableName}".`);
 }
 
-async function loadTable(client: DuckDBClient, table: string, sheet: SavedJoinTable): Promise<void> {
+async function loadTable(client: DuckDBClient, table: string, sheet: SavedJoinTable): Promise<ColumnType[]> {
   if (sheet.fields.length === 0) {
     throw new SavedJoinError(`Saved query "${table}" returned no columns, so there is nothing to join.`);
   }
@@ -274,7 +359,7 @@ async function loadTable(client: DuckDBClient, table: string, sheet: SavedJoinTa
   // explicitly: `SELECT * FROM orders` inside `saved.orders` would bind the view to itself.
   const name = `${quoteIdent("main")}.${quoteIdent(table)}`;
   await client.run(`CREATE TABLE ${name} (${columns})`);
-  const placeholders = sheet.fields.map(() => "?").join(", ");
+  const placeholders = types.map((type) => (type.startsWith("FLOAT[") ? `?::${type}` : "?")).join(", ");
   const insert = `INSERT INTO ${name} VALUES (${placeholders})`;
   for (const row of sheet.rows) {
     const values = sheet.fields.map((field, index) => bindValue(row[field], types[index] ?? "VARCHAR"));
@@ -282,6 +367,7 @@ async function loadTable(client: DuckDBClient, table: string, sheet: SavedJoinTa
     await client.run(insert, values);
   }
   await client.run(`CREATE VIEW ${quoteIdent("saved")}.${quoteIdent(table)} AS SELECT * FROM ${name}`);
+  return types;
 }
 
 function pageOf(
@@ -318,11 +404,30 @@ function assertEngineLimits(limits: SavedJoinLimits): void {
   }
 }
 
+async function indexVectors(
+  client: DuckDBClient,
+  table: string,
+  fields: readonly string[],
+  types: readonly ColumnType[],
+): Promise<void> {
+  if (!client.loadedExtensions.includes("vss")) return;
+  for (const [index, field] of fields.entries()) {
+    const type = types[index] ?? "VARCHAR";
+    if (!type.startsWith("FLOAT[")) continue;
+    const indexName = quoteIdent(`hnsw_${table}_${field}`);
+    // oxlint-disable-next-line no-await-in-loop -- one connection builds one index, then the next.
+    await client.run(
+      `CREATE INDEX ${indexName} ON ${quoteIdent("main")}.${quoteIdent(table)} USING HNSW (${quoteIdent(field)}) WITH (metric = 'cosine')`,
+    );
+  }
+}
+
 /**
  * Run each saved query the statement names, load the rows into a private DuckDB, and run the statement.
  *
- * The handle opens with external access off, the same posture a non-admin DuckDB editor uses, so the
- * statement cannot read a file or the network. It is closed before this returns, including on failure.
+ * The handle loads `vss` and `duckpgq` when those builds exist for this DuckDB, then turns external
+ * access off before the statement runs, so the statement still cannot read a file or the network.
+ * It is closed before this returns, including on failure.
  */
 export async function runSavedJoin(
   input: SavedJoinRun,
@@ -331,7 +436,13 @@ export async function runSavedJoin(
   const started = Date.now();
   assertEngineLimits(limits);
   throwIfStopped(input.signal, limits);
-  const client = await openDuckDBClient(":memory:", { readOnly: false, denyExternalAccess: true });
+  const extensions = await joinExtensionFiles(input.signal);
+  throwIfStopped(input.signal, limits);
+  const client = await openDuckDBClient(":memory:", {
+    readOnly: false,
+    denyExternalAccess: extensions.signed.length === 0 && extensions.community.length === 0,
+    joinExtensions: extensions.signed.length === 0 && extensions.community.length === 0 ? undefined : extensions,
+  });
   const stop = (): void => client.interrupt();
   input.signal.addEventListener("abort", stop);
   try {
@@ -340,13 +451,16 @@ export async function runSavedJoin(
     await client.run(`SET threads = ${limits.threads}`);
     let parsed: ParsedJoin;
     try {
-      parsed = await parseJoin(client, input.sql);
+      parsed = await parseJoin(client, input.sql, input.saved);
     } catch (error) {
       if (input.signal.aborted) throwIfStopped(input.signal, limits);
       throw error;
     }
     await client.run("CREATE SCHEMA saved");
-    for (const table of parsed.tables) {
+    const loaded: GraphColumnTable[] = [];
+    const typesByTable = new Map<string, ColumnType[]>();
+    const loadedNames = new Set<string>();
+    const loadNamed = async (table: string): Promise<void> => {
       throwIfStopped(input.signal, limits);
       const source = matchSource(table, input.saved);
       if (source.connection === null && source.connectionId === undefined) {
@@ -356,7 +470,6 @@ export async function runSavedJoin(
       }
       let sheet: SavedJoinTable;
       try {
-        // oxlint-disable-next-line no-await-in-loop -- each saved query runs after the one before it, under the one memory limit.
         sheet = await input.runSource(source, input.signal);
       } catch (error) {
         if (input.signal.aborted) throwIfStopped(input.signal, limits);
@@ -367,8 +480,39 @@ export async function runSavedJoin(
       if (sheet.rows.length > limits.maxSourceRows) {
         throw new SavedJoinError(sourceRowLimitMessage(source.name, limits.maxSourceRows));
       }
-      // oxlint-disable-next-line no-await-in-loop -- the private database loads one saved query after another.
-      await loadTable(client, table, sheet);
+      const types = await loadTable(client, source.name, sheet);
+      loaded.push({ name: source.name, fields: sheet.fields });
+      typesByTable.set(source.name, types);
+      loadedNames.add(source.name.toLowerCase());
+    };
+    for (const table of parsed.tables) {
+      // oxlint-disable-next-line no-await-in-loop -- each saved query runs after the one before it, under the one memory limit.
+      await loadNamed(table);
+    }
+    if (parsed.graph) {
+      const available = input.saved.map((entry) => entry.name);
+      let grew = true;
+      while (grew && loaded.length < SAVED_JOIN_MAX_TABLES) {
+        grew = false;
+        for (const table of [...loaded]) {
+          for (const partner of linkedQueryNames(table.fields, available)) {
+            if (loadedNames.has(partner.toLowerCase()) || loaded.length >= SAVED_JOIN_MAX_TABLES) continue;
+            // oxlint-disable-next-line no-await-in-loop -- a foreign key loads its target after the table that points at it.
+            await loadNamed(partner);
+            grew = true;
+          }
+        }
+      }
+      if (client.loadedExtensions.includes("duckpgq")) {
+        for (const statement of propertyGraphSql(loaded)) {
+          // oxlint-disable-next-line no-await-in-loop -- the graph is a schema, then one table per edge, then the graph.
+          await client.run(statement);
+        }
+      }
+    }
+    for (const table of loaded) {
+      // oxlint-disable-next-line no-await-in-loop -- each FLOAT array column gets its own cosine index.
+      await indexVectors(client, table.name, table.fields, typesByTable.get(table.name) ?? []);
     }
     throwIfStopped(input.signal, limits);
     let result: Awaited<ReturnType<DuckDBClient["run"]>>;

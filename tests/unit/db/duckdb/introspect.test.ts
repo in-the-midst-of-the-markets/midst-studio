@@ -68,6 +68,7 @@ function stubClient(
   return {
     path: "/tmp/stub.duckdb",
     readOnly: false,
+    loadedExtensions: [],
     // No introspection reader ends a transaction, so a stub that answered anything
     // else here would be describing a call these tests never make.
     async endOpenTransaction(): Promise<boolean> {

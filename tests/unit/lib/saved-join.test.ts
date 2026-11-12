@@ -601,6 +601,90 @@ describe("runSavedJoin", () => {
     ).rejects.toThrow("cancelled");
   });
 
+  test("stores a numeric array as a vector and ranks it", async () => {
+    const docs: SavedJoinTable = {
+      fields: ["id", "embedding"],
+      rows: [
+        { id: 1, embedding: [1, 0] },
+        { id: 2, embedding: [0, 1] },
+        { id: 3, embedding: "[1, 1]" },
+      ],
+    };
+    const ranked = await runSavedJoin({
+      sql: "SELECT id FROM saved.docs ORDER BY array_cosine_distance(embedding, [1, 0]::FLOAT[2]) LIMIT 1",
+      saved: [source("docs")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ docs }),
+    });
+    expect(Number(ranked.rows[0]?.id)).toBe(1);
+  });
+
+  test("pagerank reads the graph built from a src/dst table and a foreign key", async () => {
+    const person: SavedJoinTable = {
+      fields: ["id", "name"],
+      rows: [
+        { id: 1, name: "Ada" },
+        { id: 2, name: "Grace" },
+      ],
+    };
+    const knows: SavedJoinTable = {
+      fields: ["src", "dst"],
+      rows: [{ src: 1, dst: 2 }],
+    };
+    const orders: SavedJoinTable = {
+      fields: ["id", "customer_id"],
+      rows: [{ id: 1, customer_id: 10 }],
+    };
+    const customers: SavedJoinTable = {
+      fields: ["id", "email"],
+      rows: [{ id: 10, email: "ada@example.com" }],
+    };
+    const rank = await runSavedJoin({
+      sql: "SELECT * FROM pagerank('saved', 'person', 'knows')",
+      saved: [source("person"), source("knows")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ person, knows }),
+    });
+    expect(rank.rowCount).toBe(2);
+
+    const linked = await runSavedJoin({
+      sql: "SELECT * FROM pagerank('saved', 'orders', 'orders_customer_id')",
+      saved: [source("orders"), source("customers")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ orders, customers }),
+    });
+    expect(linked.rowCount).toBeGreaterThan(0);
+  });
+
+  test("vss_join compares two saved queries by their vectors", async () => {
+    const needle: SavedJoinTable = {
+      fields: ["id", "embedding"],
+      rows: [{ id: 1, embedding: [1, 0] }],
+    };
+    const haystack: SavedJoinTable = {
+      fields: ["id", "embedding"],
+      rows: [
+        { id: 7, embedding: [0, 1] },
+        { id: 8, embedding: [1, 0] },
+      ],
+    };
+    const matched = await runSavedJoin({
+      sql: "SELECT * FROM vss_join(needle, haystack, embedding, embedding, 1)",
+      saved: [source("needle"), source("haystack")],
+      page,
+      signal,
+      limits,
+      runSource: sheets({ needle, haystack }),
+    });
+    expect(matched.rowCount).toBe(1);
+  });
+
   test("a join that runs past its deadline is stopped", async () => {
     await expect(
       runSavedJoin({
