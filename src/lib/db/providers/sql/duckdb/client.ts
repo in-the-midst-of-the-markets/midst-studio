@@ -46,7 +46,7 @@
 import type { DuckDBConnection, DuckDBInstance } from "@duckdb/node-api";
 import * as fs from "fs";
 import * as os from "os";
-import { join } from "path";
+import { isAbsolute, join } from "path";
 import { ConnectionError } from "../../../errors";
 import { keyRowsByPosition } from "../../../utils/positional-rows";
 import { assertRegularFilesOrMissing, readRegularFileStart } from "../../../utils/regular-file";
@@ -107,6 +107,11 @@ export interface DuckDBClient {
   /** Ask the engine to abandon whatever this connection is running. */
   interrupt(): void;
   close(): void;
+  /**
+   * Extensions this handle loaded before it closed external access.
+   * Empty on the editor and the agent. The saved join names `vss` and `duckpgq`.
+   */
+  readonly loadedExtensions: readonly string[];
 }
 
 export interface DuckDBOpenOptions {
@@ -132,6 +137,15 @@ export interface DuckDBOpenOptions {
    * with full reach leaves it unset.
    */
   denyExternalAccess?: boolean;
+  /**
+   * The saved-join handle. The files are loaded, then `enable_external_access` is turned off,
+   * before the handle is returned. A community file is what turns `allow_community_extensions`
+   * on, and only for this open. The editor and the agent leave this unset.
+   */
+  joinExtensions?: {
+    readonly signed: readonly string[];
+    readonly community: readonly string[];
+  };
 }
 
 // ============================================================================
@@ -389,8 +403,43 @@ function openConfig(options: DuckDBOpenOptions, privateTempDir: string | null): 
   if (options.readOnly || options.unwritableFile) config.access_mode = "READ_ONLY";
   // Must precede `enable_external_access` below: once that is off the engine refuses a temp_directory.
   if (privateTempDir !== null) config.temp_directory = privateTempDir;
-  if (options.readOnly || options.denyExternalAccess) config.enable_external_access = "false";
+  // The saved join loads its extensions first and closes external access afterwards. Setting the
+  // flag here would refuse that LOAD. A community extension is the only reason the community
+  // flag is on, and it stays off for every other handle.
+  if (options.joinExtensions !== undefined && options.joinExtensions.community.length > 0) {
+    config.allow_community_extensions = "true";
+  }
+  if ((options.readOnly || options.denyExternalAccess) && options.joinExtensions === undefined) {
+    config.enable_external_access = "false";
+  }
   return config;
+}
+
+function extensionName(file: string): string {
+  const base = file.split(/[/\\]/).pop() ?? "";
+  return base.endsWith(".duckdb_extension") ? base.slice(0, -".duckdb_extension".length) : base;
+}
+
+function assertExtensionFile(file: string): void {
+  if (isAbsolute(file) && file.endsWith(".duckdb_extension") && !file.includes("'") && !file.includes("\0")) return;
+  throw new ConnectionError("DuckDB extension path is not a file this server can load.", "duckdb");
+}
+
+/**
+ * Load the saved join's extensions, then close external access before the handle is used.
+ * The lock is the same one the denied editor opens with. Doing it after LOAD is what lets a
+ * signed `vss` and a community `duckpgq` be present while the statement still cannot read a file.
+ */
+async function loadJoinExtensions(connection: DuckDBConnection, files: readonly string[]): Promise<readonly string[]> {
+  const loaded: string[] = [];
+  for (const file of files) {
+    assertExtensionFile(file);
+    // oxlint-disable-next-line no-await-in-loop -- one connection loads one extension, then the next.
+    await connection.run(`LOAD '${file}'`);
+    loaded.push(extensionName(file));
+  }
+  await connection.run("SET enable_external_access = false");
+  return loaded;
 }
 
 /**
@@ -474,8 +523,11 @@ export async function openDuckDBClient(path: string, options: DuckDBOpenOptions)
   // A handle with external access off gets a private temp directory, so its spill files and its
   // `allowed_directories` allow-list are its own rather than the process-wide `<cwd>/.tmp` a
   // `:memory:` handle would otherwise share. The full-reach editor keeps the engine default.
+  const lockAfterLoad = options.joinExtensions !== undefined;
   const privateTempDir =
-    options.readOnly === true || options.denyExternalAccess === true ? await makePrivateTempDirectory(path) : null;
+    options.readOnly === true || options.denyExternalAccess === true || lockAfterLoad
+      ? await makePrivateTempDirectory(path)
+      : null;
 
   let instance: DuckDBInstance;
   let connection: DuckDBConnection;
@@ -488,9 +540,24 @@ export async function openDuckDBClient(path: string, options: DuckDBOpenOptions)
     throw describeOpenFailure(error, path, options.readOnly);
   }
 
+  let loadedExtensions: readonly string[] = [];
+  if (lockAfterLoad && options.joinExtensions !== undefined) {
+    const files = [...options.joinExtensions.signed, ...options.joinExtensions.community];
+    try {
+      loadedExtensions = await loadJoinExtensions(connection, files);
+    } catch (error) {
+      connection.disconnectSync();
+      instance.closeSync();
+      if (privateTempDir !== null) fs.rmSync(privateTempDir, { recursive: true, force: true });
+      const message = error instanceof Error ? error.message : String(error);
+      throw new ConnectionError(message, "duckdb");
+    }
+  }
+
   return {
     path,
     readOnly: options.readOnly,
+    loadedExtensions,
     async run(sql: string, params?: unknown[]): Promise<DuckDBStatementResult> {
       // `runAndReadAll(sql, undefined)` and `runAndReadAll(sql)` are not the same call
       // to the binding, so the parameterless form is issued as such.

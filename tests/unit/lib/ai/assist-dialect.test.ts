@@ -46,6 +46,8 @@ describe("assistStatementRule", () => {
     expect(assistStatementRule("supabase")).toContain("Postgres");
     expect(assistStatementRule("redshift")).toContain("Amazon Redshift");
     expect(assistStatementRule("cockroach")).toContain("CockroachDB");
+    expect(assistStatementRule("duckdb")).toContain("array_cosine_distance");
+    expect(assistStatementRule("duckdb")).toContain("pagerank");
     expect(assistStatementRule("mixpanel")).toContain("Mixpanel");
     expect(assistStatementRule("paypal")).toContain("PayPal");
     expect(assistStatementRule("excel")).toContain("Excel");
