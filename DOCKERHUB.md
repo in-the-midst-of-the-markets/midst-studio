@@ -20,7 +20,7 @@
 
 > 📖 **Full documentation, source, and issues:** <https://github.com/libredb/libredb-studio>
 
-Query **Qdrant, Weaviate, Oxia, S3-compatible object storage and Kubernetes** from your browser, with AI query assistance, RBAC and OIDC SSO.
+Query **Qdrant, Weaviate, Oxia, S3-compatible object storage and Kubernetes** from your browser.
 
 ---
 
@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Sixty-five external engines share one interface.
-The sixty-sixth row is the embedded LibreDB store: it ships inside the image.
+Sixty-six external engines share one interface.
+The sixty-seventh row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -174,6 +174,7 @@ The sixty-sixth row is the embedded LibreDB store: it ships inside the image.
 | **PayPal** | none, HTTP | Read-only REST lists: transactions, balances, invoices, disputes, products, plans and payouts |
 | **Microsoft Excel** | none, HTTP | Read-only workbook: worksheets on Microsoft Graph, the first row names the fields |
 | **Google Sheets** | none, HTTP | Read-only spreadsheet: worksheets on the Sheets API, the first row names the fields |
+| **Mixpanel** | none, HTTP | Read-only lists |
 | **Amazon Redshift** | `pg` | Redshift SQL on the PostgreSQL wire, port 5439 |
 | **LibreDB** | `@libredb/libredb` | The embedded key-value store, for a database with nothing to install |
 
@@ -182,7 +183,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-seven further engines speak a wire protocol of one of the sixty-five drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-seven further engines speak a wire protocol of one of the sixty-six drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

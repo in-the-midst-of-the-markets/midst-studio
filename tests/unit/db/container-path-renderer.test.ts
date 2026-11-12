@@ -121,6 +121,7 @@ const ENGINES = [
   "src/lib/db/providers/sql/dynamics/index.ts",
   "src/lib/db/providers/sql/googleads/index.ts",
   "src/lib/db/providers/sql/microsoftads/index.ts",
+  "src/lib/db/providers/sql/mixpanel/index.ts",
   "src/lib/db/providers/sql/pipedrive/index.ts",
   "src/lib/db/providers/sql/tiktokads/index.ts",
   "src/lib/db/providers/sql/metaads/index.ts",

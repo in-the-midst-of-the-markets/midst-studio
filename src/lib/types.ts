@@ -93,6 +93,10 @@ export type DatabaseType =
   // worksheet. A service-account key is exchanged only at oauth2.googleapis.com. The
   // access token is sent only to sheets.googleapis.com.
   | "googlesheets"
+  // Mixpanel. The Query API and the annotations API, read-only. One SELECT is one
+  // list. A service account secret is sent only to mixpanel.com, eu.mixpanel.com,
+  // or in.mixpanel.com.
+  | "mixpanel"
   | "bigquery"
   | "snowflake"
   | "mysql"

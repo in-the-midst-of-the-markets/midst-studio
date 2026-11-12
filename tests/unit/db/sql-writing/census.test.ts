@@ -108,6 +108,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   paypal: "sql/paypal/sql-writing",
   excel: "sql/excel/sql-writing",
   googlesheets: "sql/googlesheets/sql-writing",
+  mixpanel: "sql/mixpanel/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

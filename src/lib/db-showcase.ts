@@ -172,6 +172,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   excel: 63,
   googlesheets: 64,
   redshift: 65,
+  mixpanel: 66,
 };
 
 /**

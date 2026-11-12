@@ -64,6 +64,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   tiktokads: "business-api.tiktok.com",
   metaads: "graph.facebook.com",
   paypal: "api-m.paypal.com",
+  mixpanel: "mixpanel.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -124,6 +125,13 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
     ...unconnected("googlesheets"),
     password: "census-secret",
     schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  },
+  // The shared password is six characters, and the shared database is not a project id.
+  mixpanel: {
+    ...unconnected("mixpanel"),
+    user: "service-account",
+    password: "census-secret",
+    database: "1234567",
   },
   supabase: unconnected("supabase"),
   mysql: unconnected("mysql"),

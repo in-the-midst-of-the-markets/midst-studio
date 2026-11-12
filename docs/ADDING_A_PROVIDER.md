@@ -322,7 +322,7 @@ never off the kind id.
 definition text.** `readObjectSource?` is declared optional on `DatabaseProvider` in
 `src/lib/db/types.ts` for that reason: a provider with no source-bearing kind can never reach the
 method, so requiring it would put an unreachable throw in each. Eleven shipped providers are exactly
-that case and say so in their own docs, `bigquery`, `druid`, `influxdb`, `influxdb3`, `libredb`, `neo4j`, `modbus`, `snmp`, `questdb`, `redshift`, `airtable`, `hubspot`, `stripe`, `clarity`, `googleanalytics`, `quickbooks`, `odoo`, `shopify`, `notion`, `xero`, `intercom`, `dynamics`, `googleads` , `microsoftads`, `pipedrive`, `tiktokads`, `metaads`, `paypal`, `excel` and `googlesheets`. If yours is a fifteenth, declare `hasSource` on no kind, write no method, and add your type-id to
+that case and say so in their own docs, `bigquery`, `druid`, `influxdb`, `influxdb3`, `libredb`, `neo4j`, `modbus`, `snmp`, `questdb`, `redshift`, `airtable`, `hubspot`, `stripe`, `clarity`, `googleanalytics`, `quickbooks`, `odoo`, `shopify`, `notion`, `xero`, `intercom`, `dynamics`, `googleads` , `microsoftads`, `pipedrive`, `tiktokads`, `metaads`, `paypal`, `excel`, `googlesheets` and `mixpanel`. If yours is a fifteenth, declare `hasSource` on no kind, write no method, and add your type-id to
 the committed ABSTAINER list in `tests/isolated/object-source-declarations.test.ts` beside those twelve.
 Do NOT write the method answering an empty document, an empty string or any other neutral value: the
 pairing fails by name on a method with no source-bearing kind, and an empty text is a RAISE

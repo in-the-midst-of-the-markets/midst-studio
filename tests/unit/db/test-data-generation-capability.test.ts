@@ -39,6 +39,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   paypal: false,
   excel: false,
   googlesheets: false,
+  mixpanel: false,
   supabase: false,
   mysql: true,
   sqlite: true,

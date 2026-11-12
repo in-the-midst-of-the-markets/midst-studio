@@ -154,6 +154,7 @@ const SeedDatabaseType = z.enum([
   "paypal",
   "excel",
   "googlesheets",
+  "mixpanel",
 ]);
 
 export const SeedDefaultsSchema = z.object({

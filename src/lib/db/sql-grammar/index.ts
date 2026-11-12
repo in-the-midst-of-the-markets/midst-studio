@@ -48,6 +48,7 @@ import { METAADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/metaads/sql-grammar"
 import { PAYPAL_SQL_GRAMMAR } from "@/lib/db/providers/sql/paypal/sql-grammar";
 import { EXCEL_SQL_GRAMMAR } from "@/lib/db/providers/sql/excel/sql-grammar";
 import { GOOGLESHEETS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googlesheets/sql-grammar";
+import { MIXPANEL_SQL_GRAMMAR } from "@/lib/db/providers/sql/mixpanel/sql-grammar";
 import { POSTGRES_SQL_GRAMMAR } from "@/lib/db/providers/sql/postgres-sql-grammar";
 import { SUPABASE_SQL_GRAMMAR } from "@/lib/db/providers/sql/supabase/sql-grammar";
 import { PROMETHEUS_SQL_GRAMMAR } from "@/lib/db/providers/timeseries/prometheus/sql-grammar";
@@ -125,6 +126,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   paypal: PAYPAL_SQL_GRAMMAR,
   excel: EXCEL_SQL_GRAMMAR,
   googlesheets: GOOGLESHEETS_SQL_GRAMMAR,
+  mixpanel: MIXPANEL_SQL_GRAMMAR,
   supabase: SUPABASE_SQL_GRAMMAR,
   prometheus: PROMETHEUS_SQL_GRAMMAR,
   qdrant: QDRANT_SQL_GRAMMAR,
