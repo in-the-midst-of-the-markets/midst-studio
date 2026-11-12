@@ -19,6 +19,7 @@ import { QDRANT_CONSOLE, QDRANT_ROUTES } from "@/lib/db/providers/vector/qdrant/
 import { QDRANT_REFUSED_CLASSES, qdrantStatementLanguage } from "@/lib/db/providers/vector/qdrant/labels";
 import { WEAVIATE_CONSOLE, WEAVIATE_ROUTES } from "@/lib/db/providers/vector/weaviate/routes";
 import { WEAVIATE_REFUSED_CLASSES, weaviateStatementLanguage } from "@/lib/db/providers/vector/weaviate/labels";
+import { translateShopifyql } from "@/lib/db/providers/sql/shopify/translate";
 import { embedProbeText } from "@/lib/embeddings/placeholder";
 
 const SQL_RULE = "sql is one read-only statement for this engine.";
@@ -185,6 +186,16 @@ const MILVUS_TEMPLATES = templatesOf(MILVUS_CONSOLE, MILVUS_ROUTES);
 const QDRANT_TEMPLATES = templatesOf(QDRANT_CONSOLE, QDRANT_ROUTES);
 const WEAVIATE_TEMPLATES = templatesOf(WEAVIATE_CONSOLE, WEAVIATE_ROUTES);
 
+/** ShopifyQL is a read only when the provider would send it. A SELECT is not one. */
+function shopifyRead(sql: string): boolean {
+  try {
+    translateShopifyql(sql);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const WEAVIATE_RULE = [
   "Do not write SQL. The editor refuses SELECT.",
   "A near-vector search is one line POST /v1/search/CompanyProfile/near-vector and then one JSON object:",
@@ -286,11 +297,11 @@ const DIALECTS: Record<string, Dialect> = {
     read: () => null,
   },
   shopify: {
-    rule: "sql is one read-only ShopifyQL query. It starts with FROM and uses SHOW or VISUALIZE. No writes.",
-    sample: SQL_SAMPLE,
-    values: SQL_VALUES,
-    sql: true,
-    read: () => null,
+    rule: "sql is one read-only ShopifyQL query. It starts with FROM and uses SHOW or VISUALIZE. Do not write SELECT. No writes.",
+    sample: "FROM sales SHOW total_sales",
+    values: "Write the ShopifyQL values in the query. Do not write a SQL placeholder and do not write SELECT.",
+    sql: false,
+    read: shopifyRead,
   },
   notion: {
     rule: "sql is one read-only SELECT of one Notion database. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins.",
@@ -378,6 +389,20 @@ const DIALECTS: Record<string, Dialect> = {
   },
   mixpanel: {
     rule: "sql is one read-only SELECT of one Mixpanel list, such as event. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins, no COUNT.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
+  redshift: {
+    rule: "sql is one read-only SELECT for Amazon Redshift. Page with LIMIT. Do not call pg_backend_pid or pg_total_relation_size, and do not read pg_catalog.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
+  cockroach: {
+    rule: "sql is one read-only SELECT for CockroachDB. Page with LIMIT. Do not call pg_backend_pid, pg_total_relation_size, or pg_postmaster_start_time, and do not read pg_catalog, crdb_internal, or pg_extension.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,
     sql: true,

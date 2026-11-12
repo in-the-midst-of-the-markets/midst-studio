@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { isAssistRead } from "@/lib/ai/assist-language";
 import {
   assistAllowsSql,
   assistNativeRead,
@@ -6,6 +7,9 @@ import {
   assistStatementRule,
   assistValueRule,
 } from "@/lib/ai/assist-dialect";
+import { parseAssistPlan } from "@/lib/ai/assist-plan";
+import { buildEditorMessages } from "@/lib/ai/editor-prompt";
+import { SAAS_PICKER_TYPES } from "@/lib/db/connection-form";
 
 const KNN = `POST company_profiles/_search
 {"query":{"knn":{"description_embedding":{"vector": {{radiators}}, "k": 10}}}}`;
@@ -38,7 +42,14 @@ describe("assistStatementRule", () => {
     expect(assistStatementRule("quickbooks")).toContain("one entity");
     expect(assistStatementRule("odoo")).toContain("one model");
     expect(assistStatementRule("shopify")).toContain("ShopifyQL");
+    expect(assistStatementRule("shopify")).toContain("Do not write SELECT");
     expect(assistStatementRule("supabase")).toContain("Postgres");
+    expect(assistStatementRule("redshift")).toContain("Amazon Redshift");
+    expect(assistStatementRule("cockroach")).toContain("CockroachDB");
+    expect(assistStatementRule("mixpanel")).toContain("Mixpanel");
+    expect(assistStatementRule("paypal")).toContain("PayPal");
+    expect(assistStatementRule("excel")).toContain("Excel");
+    expect(assistStatementRule("googlesheets")).toContain("Google Sheets");
   });
 });
 
@@ -53,6 +64,9 @@ describe("assistSampleSql", () => {
       "one read request in this engine's language, and the vector value is {{search:car}}",
     );
     expect(assistSampleSql("airtable")).toBe("one read-only SELECT with LIMIT 200");
+    expect(assistSampleSql("shopify")).toBe("FROM sales SHOW total_sales");
+    expect(assistSampleSql("redshift")).toBe("one read-only SELECT with LIMIT 200");
+    expect(assistSampleSql("cockroach")).toBe("one read-only SELECT with LIMIT 200");
     expect(assistSampleSql("")).toBe("one read-only SELECT with LIMIT 200");
   });
 });
@@ -71,6 +85,9 @@ describe("assistValueRule", () => {
     expect(assistAllowsSql("weaviate")).toBe(false);
     expect(assistAllowsSql("milvus")).toBe(false);
     expect(assistAllowsSql("qdrant")).toBe(false);
+    expect(assistAllowsSql("shopify")).toBe(false);
+    expect(assistAllowsSql("redshift")).toBe(true);
+    expect(assistAllowsSql("cockroach")).toBe(true);
     expect(assistAllowsSql("")).toBe(true);
     expect(assistValueRule("")).toContain("{{region:east|east,west,north}}");
   });
@@ -134,7 +151,50 @@ describe("assistNativeRead", () => {
     expect(assistNativeRead("googleanalytics", "SELECT 1")).toBeNull();
     expect(assistNativeRead("quickbooks", "SELECT 1")).toBeNull();
     expect(assistNativeRead("odoo", "SELECT 1")).toBeNull();
-    expect(assistNativeRead("shopify", "SELECT 1")).toBeNull();
+    expect(assistNativeRead("shopify", "FROM sales SHOW total_sales")).toBe(true);
+    expect(assistNativeRead("shopify", "SELECT 1")).toBe(false);
+    expect(assistNativeRead("shopify", "DELETE FROM sales")).toBe(false);
+    expect(assistNativeRead("shopify", "FROM sales SHOW total_sales; FROM fees SHOW x")).toBe(false);
+    expect(assistNativeRead("shopify", "")).toBe(false);
     expect(assistNativeRead("supabase", "SELECT 1")).toBeNull();
+    expect(assistNativeRead("redshift", "SELECT 1")).toBeNull();
+    expect(assistNativeRead("cockroach", "SELECT 1")).toBeNull();
+  });
+});
+
+const IDE_ENGINES = [...SAAS_PICKER_TYPES, "airtable", "supabase", "redshift", "cockroach"] as const;
+const GENERIC_RULE = "sql is one read-only statement for this engine.";
+
+function readFor(type: string): string {
+  return type === "shopify" ? "FROM sales SHOW total_sales" : "SELECT 1";
+}
+
+describe("the IDE chat", () => {
+  test("keeps a read for every SaaS connector and the new SQL databases", () => {
+    for (const type of IDE_ENGINES) {
+      const rule = assistStatementRule(type);
+      expect(rule).not.toBe(GENERIC_RULE);
+      const sql = readFor(type);
+      expect(isAssistRead(sql, type)).toBe(true);
+      expect(isAssistRead("DELETE FROM t", type)).toBe(false);
+      const prompt = buildEditorMessages({
+        databaseType: type,
+        questionBlock: "q",
+        schemaBlock: "schema",
+        historyBlock: "",
+        editorBlock: "",
+      });
+      expect(prompt[0]?.content).toContain(`The connected engine is ${type}`);
+      expect(prompt[0]?.content).toContain(rule);
+      const plan = parseAssistPlan(
+        JSON.stringify({
+          explanation: "ok",
+          queries: [{ title: "Query", connection: "c", sql, chart: null }],
+        }),
+        type,
+      );
+      expect(plan.queries).toEqual([expect.objectContaining({ sql })]);
+    }
+    expect(isAssistRead("SELECT 1", "shopify")).toBe(false);
   });
 });
