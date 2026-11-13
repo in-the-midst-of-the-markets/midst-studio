@@ -60,8 +60,12 @@ import {
   type AssistSavedPick,
 } from "@/lib/ai/assist-saved";
 import {
+  ASSIST_SCHEDULE_DAILY_SECONDS,
+  ASSIST_SCHEDULE_DEFAULT_MINUTE,
+  assistDateKey,
   assistScheduleLabel,
   draftAssistSchedule,
+  nextAssistRunDelayMs,
   readAssistScheduleSnapshot,
   subscribeAssistSchedules,
   writeAssistSchedules,
@@ -69,7 +73,6 @@ import {
   type AssistScheduleEvery,
 } from "@/lib/ai/assist-schedule";
 import { readAssistRankings, type AssistRankings } from "@/lib/ai/assist-model-rank";
-import { refreshDelayMs } from "@/lib/charts/chart-refresh";
 import { queryFilterShape, queryIdentity } from "@/lib/charts/query-filters";
 import { connectionForAssistQuery, rebindAssistCard, runAssistQuery } from "@/lib/ai/assist-query";
 import { loadAssistSchema } from "@/lib/ai/assist-schema";
@@ -622,7 +625,11 @@ export function AiAssist() {
   const schedules = useSyncExternalStore(subscribeAssistSchedules, readAssistScheduleSnapshot, () => EMPTY_SCHEDULES);
   const attachedLive = attached.filter((item) => savedCatalog.some((pick) => pick.id === item.id));
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [scheduleEvery, setScheduleEvery] = useState<AssistScheduleEvery>("hourly");
+  const [scheduleEvery, setScheduleEvery] = useState<AssistScheduleEvery>("daily");
+  const [scheduleMinute, setScheduleMinute] = useState(ASSIST_SCHEDULE_DEFAULT_MINUTE);
+  const [scheduleDay, setScheduleDay] = useState(() => assistDateKey(new Date()));
+  const [scheduleYear, setScheduleYear] = useState(() => new Date().getFullYear());
+  const [scheduleMonth, setScheduleMonth] = useState(() => new Date().getMonth());
   const [scheduleNote, setScheduleNote] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -682,23 +689,45 @@ export function AiAssist() {
     pinToEnd(threadRef.current);
   }, [turns.length]);
 
-  // Each saved prompt waits out its interval, then runs again. Sources are read
-  // at that moment, so the queries run against whatever they say now.
+  // Each saved prompt waits until its next time, then runs again. A daily clock
+  // time waits for that minute, then repeats every day. Sources are read at that
+  // moment, so the queries run against whatever they say now.
   useEffect(() => {
-    const handles = schedules.map((schedule) => {
-      const delay = refreshDelayMs(schedule.seconds);
-      if (delay === null) return 0;
-      return window.setInterval(() => {
+    let stopped = false;
+    const handles: Array<{ kind: "interval" | "timeout"; id: number }> = [];
+    const remember = (kind: "interval" | "timeout", id: number) => {
+      handles.push({ kind, id });
+    };
+    for (const schedule of schedules) {
+      const run = () => {
+        if (stopped) return;
         const sources = schedule.sourceIds.flatMap((id) => {
           const pick = assistSavedPicks(storage.getSavedQueries()).find((item) => item.id === id);
           return pick === undefined ? [] : [pick];
         });
         if (schedule.prompt.trim() === "" && sources.length === 0) return;
         void sendRef.current?.({ prompt: schedule.prompt, sources });
-      }, delay);
-    });
+      };
+      const wait = nextAssistRunDelayMs(schedule, new Date()) ?? schedule.seconds * 1000;
+      if (schedule.minuteOfDay === undefined) {
+        remember("interval", window.setInterval(run, wait) as unknown as number);
+        continue;
+      }
+      remember(
+        "timeout",
+        window.setTimeout(() => {
+          run();
+          if (stopped) return;
+          remember("interval", window.setInterval(run, ASSIST_SCHEDULE_DAILY_SECONDS * 1000) as unknown as number);
+        }, wait) as unknown as number,
+      );
+    }
     return () => {
-      for (const handle of handles) window.clearInterval(handle);
+      stopped = true;
+      for (const handle of handles) {
+        if (handle.kind === "interval") window.clearInterval(handle.id);
+        else window.clearTimeout(handle.id);
+      }
     };
   }, [schedules]);
 
@@ -1015,6 +1044,8 @@ export function AiAssist() {
       sourceIds: attachedLive.map((pick) => pick.id),
       every: scheduleEvery,
       existing: schedules.length,
+      minuteOfDay: scheduleMinute,
+      startsOn: scheduleDay,
     });
     if (!made.ok) {
       setScheduleNote(made.error);
@@ -1378,7 +1409,9 @@ export function AiAssist() {
                     const label = assistScheduleLabel(schedule, savedCatalog);
                     return (
                       <li key={schedule.id} className="flex items-center justify-between gap-2 text-xs text-fg">
-                        <span className="min-w-0 truncate">{label}</span>
+                        <span className="min-w-0 truncate" title={label}>
+                          {label}
+                        </span>
                         <button
                           type="button"
                           aria-label={`Remove ${label}`}
@@ -1419,6 +1452,16 @@ export function AiAssist() {
                   },
                   every: scheduleEvery,
                   onEvery: setScheduleEvery,
+                  minuteOfDay: scheduleMinute,
+                  onMinute: setScheduleMinute,
+                  startsOn: scheduleDay,
+                  onStartsOn: setScheduleDay,
+                  year: scheduleYear,
+                  month: scheduleMonth,
+                  onMonth: (year, month) => {
+                    setScheduleYear(year);
+                    setScheduleMonth(month);
+                  },
                   onSave: saveSchedule,
                   note: scheduleNote,
                 }}

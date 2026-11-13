@@ -3,7 +3,8 @@
  *
  * The prompt and the saved-query sources are copied when the schedule is saved.
  * Each run reads those sources again, so a query that changed, or rows that
- * changed, are what the next answer sees. A schedule repeats hourly or daily.
+ * changed, are what the next answer sees. A schedule repeats hourly, or daily
+ * at a clock time chosen on the calendar.
  */
 
 import { ASSIST_TEXT_CAP } from "@/lib/ai/assist-plan";
@@ -13,6 +14,9 @@ export const ASSIST_SCHEDULE_KEY = "libredb_ai_assist_schedules";
 export const ASSIST_SCHEDULE_CAP = 8;
 export const ASSIST_SCHEDULE_HOURLY_SECONDS = 60 * 60;
 export const ASSIST_SCHEDULE_DAILY_SECONDS = 24 * 60 * 60;
+/** 9:00 in the morning. The calendar opens here. */
+export const ASSIST_SCHEDULE_DEFAULT_MINUTE = 9 * 60;
+const MINUTES_PER_DAY = 24 * 60;
 
 export type AssistScheduleEvery = "hourly" | "daily";
 
@@ -21,7 +25,21 @@ export interface AssistSchedule {
   readonly prompt: string;
   readonly sourceIds: readonly string[];
   readonly seconds: number;
+  /** Local minutes after midnight. A daily schedule with a clock time keeps one. */
+  readonly minuteOfDay?: number;
+  /** Local calendar day `YYYY-MM-DD` the daily clock time may start. */
+  readonly startsOn?: string;
 }
+
+/** One day drawn on the month grid. */
+export interface AssistCalendarCell {
+  readonly key: string;
+  readonly day: number;
+  readonly inMonth: boolean;
+}
+
+/** Start times on the half hour, midnight through 11:30 PM. */
+export const ASSIST_START_TIMES: readonly number[] = Array.from({ length: 48 }, (_, index) => index * 30);
 
 interface ScheduleStore {
   getItem(key: string): string | null;
@@ -68,6 +86,148 @@ export function readAssistInterval(text: string): AssistIntervalRead {
   return { ok: false, error: "Choose hourly or daily." };
 }
 
+/** `YYYY-MM-DD` for a local calendar day, or null when it is not one. */
+export function readAssistDate(value: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+  if (match === null) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+/** The local calendar day of `date`. */
+export function assistDateKey(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** "9:00 AM". Minutes outside a day are not a time. */
+export function assistMinuteLabel(minute: number): string {
+  const rounded = Math.floor(minute);
+  const hour = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${String(mins).padStart(2, "0")} ${suffix}`;
+}
+
+/** "Friday, November 13, 2026" for a calendar key. */
+export function assistDayLabel(key: string): string {
+  const day = readAssistDate(key);
+  if (day === null) return key;
+  const year = Number(day.slice(0, 4));
+  const month = Number(day.slice(5, 7));
+  const date = Number(day.slice(8, 10));
+  return new Date(year, month - 1, date).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** "November 2026". */
+export function assistMonthLabel(year: number, monthIndex: number): string {
+  return new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+/** The month `by` steps away. January minus one is the previous December. */
+export function shiftAssistMonth(year: number, monthIndex: number, by: number): { year: number; month: number } {
+  const date = new Date(year, monthIndex + by, 1);
+  return { year: date.getFullYear(), month: date.getMonth() };
+}
+
+/**
+ * Six weeks for one month, Sunday through Saturday.
+ * Days from the neighboring months fill the first and last weeks.
+ */
+export function assistCalendarCells(year: number, monthIndex: number): AssistCalendarCell[] {
+  const first = new Date(year, monthIndex, 1);
+  const start = new Date(year, monthIndex, 1 - first.getDay());
+  const cells: AssistCalendarCell[] = [];
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() + index);
+    cells.push({
+      key: assistDateKey(date),
+      day: date.getDate(),
+      inMonth: date.getMonth() === monthIndex,
+    });
+  }
+  return cells;
+}
+
+function nextClock(now: Date, hour: number, minute: number): Date {
+  const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+  if (candidate.getTime() <= now.getTime()) {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, hour, minute, 0, 0);
+  }
+  return candidate;
+}
+
+/**
+ * How long until this schedule should run.
+ * Hourly, and a daily schedule saved before clock times, wait out their interval.
+ * A daily clock time waits until that minute, on its start day or the next one after `now`.
+ */
+export function nextAssistRunDelayMs(
+  schedule: Pick<AssistSchedule, "seconds" | "minuteOfDay" | "startsOn">,
+  now: Date,
+): number | null {
+  const seconds = Math.floor(schedule.seconds);
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const minute = schedule.minuteOfDay;
+  if (assistScheduleEvery(seconds) !== "daily" || minute === undefined) return seconds * 1000;
+  const rounded = Math.floor(minute);
+  if (!Number.isFinite(rounded) || rounded < 0 || rounded >= MINUTES_PER_DAY) return seconds * 1000;
+  const hour = Math.floor(rounded / 60);
+  const mins = rounded % 60;
+  const startKey = schedule.startsOn === undefined ? null : readAssistDate(schedule.startsOn);
+  if (startKey !== null) {
+    const year = Number(startKey.slice(0, 4));
+    const month = Number(startKey.slice(5, 7));
+    const day = Number(startKey.slice(8, 10));
+    const first = new Date(year, month - 1, day, hour, mins, 0, 0);
+    if (first.getTime() > now.getTime()) return first.getTime() - now.getTime();
+  }
+  return nextClock(now, hour, mins).getTime() - now.getTime();
+}
+
+function clockOf(
+  every: AssistScheduleEvery,
+  minuteOfDay: number | undefined,
+  startsOn: string | undefined,
+): { minuteOfDay?: number; startsOn?: string } | { error: string } | undefined {
+  if (every !== "daily" || minuteOfDay === undefined) return undefined;
+  const minute = Math.floor(minuteOfDay);
+  if (!Number.isFinite(minuteOfDay) || minute < 0 || minute >= MINUTES_PER_DAY) {
+    return { error: "Choose a time." };
+  }
+  if (startsOn === undefined || startsOn.trim() === "") return { minuteOfDay: minute };
+  const day = readAssistDate(startsOn);
+  if (day === null) return { error: "Choose a day." };
+  return { minuteOfDay: minute, startsOn: day };
+}
+
+/** A stored clock time. A broken time or day is left out instead of failing the schedule. */
+function storedClock(
+  every: AssistScheduleEvery,
+  minuteOfDay: number | undefined,
+  startsOn: string | undefined,
+): { minuteOfDay?: number; startsOn?: string } | undefined {
+  const clock = clockOf(every, minuteOfDay, startsOn);
+  if (clock === undefined || "error" in clock) {
+    if (every !== "daily" || minuteOfDay === undefined) return undefined;
+    const minute = Math.floor(minuteOfDay);
+    if (!Number.isFinite(minuteOfDay) || minute < 0 || minute >= MINUTES_PER_DAY) return undefined;
+    return { minuteOfDay: minute };
+  }
+  return clock;
+}
+
 /**
  * One schedule from the prompt on screen, the sources added to it, and the interval.
  * A prompt or a source is enough. Neither is not.
@@ -78,12 +238,16 @@ export function draftAssistSchedule(input: {
   readonly sourceIds: readonly string[];
   readonly every: string;
   readonly existing: number;
+  readonly minuteOfDay?: number;
+  readonly startsOn?: string;
 }): AssistScheduleDraft {
   if (input.existing >= ASSIST_SCHEDULE_CAP) {
     return { ok: false, error: `${ASSIST_SCHEDULE_CAP} schedules are the most this page keeps.` };
   }
   const interval = readAssistInterval(input.every);
   if (!interval.ok) return interval;
+  const clock = clockOf(assistScheduleEvery(interval.seconds), input.minuteOfDay, input.startsOn);
+  if (clock !== undefined && "error" in clock) return { ok: false, error: clock.error };
   const prompt = clipPrompt(input.prompt);
   const sourceIds = sourceIdsOf(input.sourceIds);
   if (prompt === "" && sourceIds.length === 0) {
@@ -91,7 +255,13 @@ export function draftAssistSchedule(input: {
   }
   return {
     ok: true,
-    schedule: { id: input.id.trim() || "schedule", prompt, sourceIds, seconds: interval.seconds },
+    schedule: {
+      id: input.id.trim() || "schedule",
+      prompt,
+      sourceIds,
+      seconds: interval.seconds,
+      ...clock,
+    },
   };
 }
 
@@ -105,7 +275,10 @@ function scheduleOf(value: unknown): AssistSchedule | null {
   const seconds = "seconds" in value && typeof value.seconds === "number" ? Math.floor(value.seconds) : 0;
   if (prompt === "" && sourceIds.length === 0) return null;
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
-  return { id, prompt, sourceIds, seconds: secondsFor(assistScheduleEvery(seconds)) };
+  const every = assistScheduleEvery(seconds);
+  const rawMinute = "minuteOfDay" in value && typeof value.minuteOfDay === "number" ? value.minuteOfDay : undefined;
+  const rawDay = "startsOn" in value && typeof value.startsOn === "string" ? value.startsOn : undefined;
+  return { id, prompt, sourceIds, seconds: secondsFor(every), ...storedClock(every, rawMinute, rawDay) };
 }
 
 /** Schedules kept in this browser. A broken record is left out. */
@@ -171,6 +344,20 @@ export function assistScheduleLabel(
   const first = schedule.prompt.split("\n")[0]?.trim() ?? "";
   const lead = first === "" ? "Saved sources" : first;
   const extra = names.length === 0 ? "" : ` · ${names.join(", ")}`;
-  const cadence = assistScheduleEvery(schedule.seconds) === "daily" ? "Daily" : "Hourly";
-  return `${lead}${extra} · ${cadence}`;
+  return `${lead}${extra} · ${cadenceOf(schedule, assistDateKey(new Date()))}`;
+}
+
+function cadenceOf(schedule: AssistSchedule, today: string): string {
+  if (assistScheduleEvery(schedule.seconds) !== "daily") return "Hourly";
+  if (schedule.minuteOfDay === undefined) return "Daily";
+  const time = `Daily at ${assistMinuteLabel(schedule.minuteOfDay)}`;
+  const day = schedule.startsOn === undefined ? null : readAssistDate(schedule.startsOn);
+  if (day !== null && day > today) {
+    const year = Number(day.slice(0, 4));
+    const month = Number(day.slice(5, 7));
+    const date = Number(day.slice(8, 10));
+    const short = new Date(year, month - 1, date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return `${time} · ${short}`;
+  }
+  return time;
 }
