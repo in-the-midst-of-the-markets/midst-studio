@@ -3,7 +3,8 @@
 import { ArrowUp, Calendar, Plus, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type Ref } from "react";
 import { createPortal } from "react-dom";
-import type { AssistScheduleEvery } from "@/lib/ai/assist-schedule";
+import { AssistScheduleCalendar } from "@/components/ai-assist/AssistScheduleCalendar";
+import { ASSIST_START_TIMES, assistMinuteLabel, type AssistScheduleEvery } from "@/lib/ai/assist-schedule";
 
 /** One saved query the plus menu can attach. */
 export interface AssistSavedChoice {
@@ -12,12 +13,19 @@ export interface AssistSavedChoice {
   readonly detail: string;
 }
 
-/** The calendar beside the plus button. */
+/** The calendar beside the plus button. Daily runs pick a day and a start time. */
 export interface AssistScheduleControl {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly every: AssistScheduleEvery;
   readonly onEvery: (every: AssistScheduleEvery) => void;
+  readonly minuteOfDay: number;
+  readonly onMinute: (minute: number) => void;
+  readonly startsOn: string;
+  readonly onStartsOn: (day: string) => void;
+  readonly year: number;
+  readonly month: number;
+  readonly onMonth: (year: number, month: number) => void;
   readonly onSave: () => void;
   readonly note: string | null;
 }
@@ -63,6 +71,11 @@ export function AssistPromptBox({
   const [scheduleAnchor, setScheduleAnchor] = useState<MenuAnchor | null>(null);
   const choices = savedChoices ?? [];
   const canAdd = savedChoices !== undefined && onToggleSaved !== undefined;
+  const saveOnEnter = (event: { key: string; preventDefault: () => void }) => {
+    if (schedule === undefined || event.key !== "Enter") return;
+    event.preventDefault();
+    schedule.onSave();
+  };
   const selected = new Set(selectedSavedIds ?? []);
   const attached = choices.filter((choice) => selected.has(choice.id));
 
@@ -253,10 +266,37 @@ export function AssistPromptBox({
                           maxHeight: scheduleAnchor.maxHeight,
                           width: SCHEDULE_WIDTH,
                         }}
-                        className="fixed z-50 flex flex-col gap-2 overflow-y-auto rounded-lg border border-hairline bg-raised p-2 shadow-md"
+                        className="fixed z-50 flex flex-col gap-2 overflow-y-auto rounded-lg border border-hairline bg-raised p-3 shadow-md"
                       >
-                        <label className="flex items-center gap-1 text-xs text-fg-muted">
-                          Every
+                        {schedule.every === "daily" && (
+                          <AssistScheduleCalendar
+                            year={schedule.year}
+                            month={schedule.month}
+                            selected={schedule.startsOn}
+                            onSelect={schedule.onStartsOn}
+                            onMonth={schedule.onMonth}
+                          />
+                        )}
+                        {schedule.every === "daily" && (
+                          <label className="flex items-center justify-between gap-2 text-xs text-fg-muted">
+                            Start time
+                            <select
+                              aria-label="Start time"
+                              value={String(schedule.minuteOfDay)}
+                              onChange={(event) => schedule.onMinute(Number(event.target.value))}
+                              onKeyDown={saveOnEnter}
+                              className="h-7 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
+                            >
+                              {ASSIST_START_TIMES.map((minute) => (
+                                <option key={minute} value={String(minute)}>
+                                  {assistMinuteLabel(minute)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+                        <label className="flex items-center justify-between gap-2 text-xs text-fg-muted">
+                          Repeat
                           <select
                             aria-label="Schedule interval"
                             value={schedule.every}
@@ -264,15 +304,11 @@ export function AssistPromptBox({
                               const next = event.target.value;
                               if (next === "hourly" || next === "daily") schedule.onEvery(next);
                             }}
-                            onKeyDown={(event) => {
-                              if (event.key !== "Enter") return;
-                              event.preventDefault();
-                              schedule.onSave();
-                            }}
+                            onKeyDown={saveOnEnter}
                             className="h-7 rounded border border-hairline-strong bg-canvas px-2 text-xs text-fg"
                           >
-                            <option value="hourly">Hourly</option>
                             <option value="daily">Daily</option>
+                            <option value="hourly">Hourly</option>
                           </select>
                         </label>
                         <div className="flex items-center gap-2">
@@ -323,7 +359,7 @@ interface MenuAnchor {
 }
 
 const MENU_WIDTH = 256;
-const SCHEDULE_WIDTH = 320;
+const SCHEDULE_WIDTH = 336;
 const MENU_GAP = 8;
 
 /**

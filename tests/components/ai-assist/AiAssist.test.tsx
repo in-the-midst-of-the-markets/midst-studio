@@ -4,7 +4,16 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { setupChartCodeMonacoMock } from "../../helpers/mock-monaco";
 import { ASSIST_TRANSCRIPT_KEY } from "@/lib/ai/assist-history";
-import { ASSIST_SCHEDULE_KEY } from "@/lib/ai/assist-schedule";
+import {
+  ASSIST_SCHEDULE_DAILY_SECONDS,
+  ASSIST_SCHEDULE_KEY,
+  assistCalendarCells,
+  assistDateKey,
+  assistDayLabel,
+  assistMinuteLabel,
+  assistMonthLabel,
+  nextAssistRunDelayMs,
+} from "@/lib/ai/assist-schedule";
 import { readAssistSettings, writeAssistSettings } from "@/lib/ai/assist-settings";
 import type { AssistChartChoice } from "@/lib/ai/assist-chart";
 import type { AssistChart } from "@/lib/ai/assist-plan";
@@ -3132,16 +3141,43 @@ describe("AiAssist page", () => {
   });
 
   test("runs a scheduled prompt on its interval and can remove it", async () => {
-    const queued: Array<{ fn: () => void; ms: number }> = [];
-    const realSet = window.setInterval;
-    const realClear = window.clearInterval;
+    const timeouts: Array<{ fn: () => void; ms: number }> = [];
+    const intervals: Array<{ fn: () => void; ms: number }> = [];
+    const fakeTimeouts = new Set<number>();
+    const fakeIntervals = new Set<number>();
+    let nextTimer = 1_000_000;
+    const realTimeout = window.setTimeout;
+    const realInterval = window.setInterval;
+    const realClearTimeout = window.clearTimeout;
+    const realClearInterval = window.clearInterval;
+    window.setTimeout = ((fn: TimerHandler, ms?: number, ...rest: unknown[]) => {
+      if (typeof fn === "function" && Number(ms) >= 60_000) {
+        const id = nextTimer++;
+        fakeTimeouts.add(id);
+        timeouts.push({ fn, ms: Number(ms) });
+        return id as unknown as ReturnType<typeof setTimeout>;
+      }
+      return realTimeout(fn, ms as number, ...(rest as []));
+    }) as typeof window.setTimeout;
     window.setInterval = ((fn: () => void, ms?: number) => {
-      queued.push({ fn, ms: Number(ms) });
-      return queued.length;
+      const id = nextTimer++;
+      fakeIntervals.add(id);
+      intervals.push({ fn, ms: Number(ms) });
+      return id as unknown as ReturnType<typeof setInterval>;
     }) as typeof window.setInterval;
-    window.clearInterval = (() => {}) as typeof window.clearInterval;
+    window.clearTimeout = ((id?: number) => {
+      if (id !== undefined && fakeTimeouts.delete(id)) return;
+      realClearTimeout(id);
+    }) as typeof window.clearTimeout;
+    window.clearInterval = ((id?: number) => {
+      if (id !== undefined && fakeIntervals.delete(id)) return;
+      realClearInterval(id);
+    }) as typeof window.clearInterval;
     try {
       saveConnection();
+      const now = new Date();
+      const ahead = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+      const minute = Math.floor((ahead.getHours() * 60) / 30) * 30;
       const view = render(<AiAssist />);
       fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
       fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
@@ -3152,33 +3188,66 @@ describe("AiAssist page", () => {
       expect(view.getByRole("button", { name: /^Schedule$/ })).toBeTruthy();
       fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "" } });
       fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      expect(view.getByRole("table", { name: assistMonthLabel(now.getFullYear(), now.getMonth()) })).toBeTruthy();
+      fireEvent.click(view.getByRole("button", { name: "Previous month" }));
+      const earlier = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      expect(
+        view.getByRole("table", { name: assistMonthLabel(earlier.getFullYear(), earlier.getMonth()) }),
+      ).toBeTruthy();
+      fireEvent.click(view.getByRole("button", { name: "Next month" }));
+      const cells = assistCalendarCells(now.getFullYear(), now.getMonth());
+      const otherDay = cells.find((cell) => cell.inMonth && cell.key !== assistDateKey(now));
+      const outside = cells.find((cell) => !cell.inMonth);
+      if (otherDay === undefined || outside === undefined) throw new Error("calendar is missing a day");
+      fireEvent.click(view.getByRole("button", { name: assistDayLabel(otherDay.key) }));
+      expect(view.getByRole("button", { name: assistDayLabel(otherDay.key) }).getAttribute("aria-pressed")).toBe(
+        "true",
+      );
+      fireEvent.click(view.getByRole("button", { name: assistDayLabel(outside.key) }));
+      expect(view.getByRole("button", { name: assistDayLabel(outside.key) }).getAttribute("aria-pressed")).toBe("true");
       fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
       expect(view.getByText("Write a prompt or add a source.")).toBeTruthy();
       fireEvent.change(view.getByLabelText("How can I help?"), { target: { value: "What changed?" } });
-      fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
+      fireEvent.change(view.getByLabelText("Start time"), { target: { value: String(minute) } });
+      fireEvent.keyDown(view.getByLabelText("Start time"), { key: "a" });
+      fireEvent.keyDown(view.getByLabelText("Start time"), { key: "Enter" });
       expect(view.queryByRole("button", { name: "Save schedule" })).toBeNull();
-      expect(view.getByText("What changed? · Hourly")).toBeTruthy();
+      const dailyLabel = `What changed? · Daily at ${assistMinuteLabel(minute)}`;
+      expect(view.getByText(dailyLabel, { exact: false })).toBeTruthy();
+      const dailyWait = nextAssistRunDelayMs(
+        { seconds: ASSIST_SCHEDULE_DAILY_SECONDS, minuteOfDay: minute, startsOn: outside.key },
+        new Date(),
+      );
+      expect(Math.abs((timeouts.at(-1)?.ms ?? 0) - (dailyWait ?? 0))).toBeLessThan(2_000);
       fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
+      expect(view.getByRole("table")).toBeTruthy();
+      fireEvent.change(view.getByLabelText("Schedule interval"), { target: { value: "hourly" } });
+      expect(view.queryByRole("table")).toBeNull();
       fireEvent.change(view.getByLabelText("Schedule interval"), { target: { value: "weekly" } });
       expect((view.getByLabelText("Schedule interval") as HTMLSelectElement).value).toBe("hourly");
-      fireEvent.change(view.getByLabelText("Schedule interval"), { target: { value: "daily" } });
       fireEvent.keyDown(view.getByLabelText("Schedule interval"), { key: "Enter" });
-      expect(view.queryByRole("button", { name: "Save schedule" })).toBeNull();
-      expect(view.getByText("What changed? · Daily")).toBeTruthy();
+      expect(view.getByText("What changed? · Hourly")).toBeTruthy();
+      expect(intervals.at(-1)?.ms).toBe(3_600_000);
       expect(planPosts()).toHaveLength(0);
       const before = planPosts().length;
-      const run = queued.at(-1);
-      expect(run?.ms).toBe(86_400_000);
+      const run = timeouts.at(-1);
       await act(async () => {
         run?.fn();
       });
       expect(await view.findAllByText("What changed?")).toBeTruthy();
       await waitFor(() => expect(planPosts().length).toBeGreaterThan(before));
-      fireEvent.click(view.getByRole("button", { name: "Remove What changed? · Daily" }));
-      expect(view.queryByText("What changed? · Daily")).toBeNull();
+      expect(intervals.at(-1)?.ms).toBe(ASSIST_SCHEDULE_DAILY_SECONDS * 1000);
+      fireEvent.click(
+        view.getByRole("button", { name: `Remove ${view.getByText(dailyLabel, { exact: false }).textContent}` }),
+      );
+      expect(view.queryByText(dailyLabel, { exact: false })).toBeNull();
+      view.unmount();
+      run?.fn();
     } finally {
-      window.setInterval = realSet;
-      window.clearInterval = realClear;
+      window.setTimeout = realTimeout;
+      window.setInterval = realInterval;
+      window.clearTimeout = realClearTimeout;
+      window.clearInterval = realClearInterval;
     }
   });
 
@@ -3224,7 +3293,8 @@ describe("AiAssist page", () => {
       fireEvent.click(view.getByRole("menuitem", { name: "Saved query" }));
       fireEvent.click(view.getByRole("menuitemcheckbox", { name: /Orders/ }));
       fireEvent.click(view.getByRole("button", { name: /^Schedule$/ }));
-      expect((view.getByLabelText("Schedule interval") as HTMLSelectElement).value).toBe("hourly");
+      expect((view.getByLabelText("Schedule interval") as HTMLSelectElement).value).toBe("daily");
+      fireEvent.change(view.getByLabelText("Schedule interval"), { target: { value: "hourly" } });
       fireEvent.click(view.getByRole("button", { name: "Save schedule" }));
       expect(view.getByText("Saved sources · Orders · Hourly")).toBeTruthy();
       const stored = JSON.parse(localStorage.getItem("libredb_saved_queries") ?? "[]") as { query: string }[];

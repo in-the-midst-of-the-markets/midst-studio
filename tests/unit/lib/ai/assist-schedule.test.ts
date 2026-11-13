@@ -5,14 +5,24 @@ import { ASSIST_SAVED_LIST_CAP } from "@/lib/ai/assist-saved";
 import {
   ASSIST_SCHEDULE_CAP,
   ASSIST_SCHEDULE_DAILY_SECONDS,
+  ASSIST_SCHEDULE_DEFAULT_MINUTE,
   ASSIST_SCHEDULE_HOURLY_SECONDS,
   ASSIST_SCHEDULE_KEY,
+  ASSIST_START_TIMES,
+  assistCalendarCells,
+  assistDateKey,
+  assistDayLabel,
+  assistMinuteLabel,
+  assistMonthLabel,
   assistScheduleEvery,
   assistScheduleLabel,
   draftAssistSchedule,
+  nextAssistRunDelayMs,
+  readAssistDate,
   readAssistInterval,
   readAssistScheduleSnapshot,
   readAssistSchedules,
+  shiftAssistMonth,
   subscribeAssistSchedules,
   writeAssistSchedules,
   type AssistSchedule,
@@ -112,12 +122,51 @@ describe("assist schedules", () => {
         { id: "day", prompt: "Tomorrow", seconds: 90_000 },
         { id: "bad", prompt: "no", seconds: 0 },
         { prompt: "missing id", seconds: 60 },
+        {
+          id: "morning",
+          prompt: "Standup",
+          seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+          minuteOfDay: 540.8,
+          startsOn: "2026-11-20",
+        },
+        {
+          id: "broken-day",
+          prompt: "Later",
+          seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+          minuteOfDay: 600,
+          startsOn: "2026-02-29",
+        },
+        {
+          id: "broken-time",
+          prompt: "Never",
+          seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+          minuteOfDay: 24 * 60,
+          startsOn: "2026-11-20",
+        },
+        { id: "hourly-clock", prompt: "Often", seconds: ASSIST_SCHEDULE_HOURLY_SECONDS, minuteOfDay: 60 },
       ]),
     );
     expect(readAssistSchedules(store)).toEqual([
       { id: "s1", prompt: "What changed?", sourceIds: [], seconds: ASSIST_SCHEDULE_HOURLY_SECONDS },
       { id: "sources", prompt: "", sourceIds: ["q1"], seconds: ASSIST_SCHEDULE_HOURLY_SECONDS },
       { id: "day", prompt: "Tomorrow", sourceIds: [], seconds: ASSIST_SCHEDULE_DAILY_SECONDS },
+      {
+        id: "morning",
+        prompt: "Standup",
+        sourceIds: [],
+        seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+        minuteOfDay: 540,
+        startsOn: "2026-11-20",
+      },
+      {
+        id: "broken-day",
+        prompt: "Later",
+        sourceIds: [],
+        seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+        minuteOfDay: 600,
+      },
+      { id: "broken-time", prompt: "Never", sourceIds: [], seconds: ASSIST_SCHEDULE_DAILY_SECONDS },
+      { id: "hourly-clock", prompt: "Often", sourceIds: [], seconds: ASSIST_SCHEDULE_HOURLY_SECONDS },
     ]);
     const extra = Array.from({ length: ASSIST_SCHEDULE_CAP + 1 }, (_, index) => schedule({ id: `s${index}` }));
     writeAssistSchedules(extra, store);
@@ -147,5 +196,146 @@ describe("assist schedules", () => {
       assistScheduleLabel(schedule({ prompt: "   \nMore", sourceIds: ["q1", "gone"] }), [{ id: "q1", name: "Orders" }]),
     ).toBe("Saved sources · Orders · Hourly");
     expect(assistScheduleLabel(schedule({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS }), [])).toBe("What changed? · Daily");
+    expect(
+      assistScheduleLabel(
+        schedule({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS, minuteOfDay: ASSIST_SCHEDULE_DEFAULT_MINUTE }),
+        [],
+      ),
+    ).toBe("What changed? · Daily at 9:00 AM");
+    expect(
+      assistScheduleLabel(
+        schedule({
+          seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+          minuteOfDay: 15 * 60 + 30,
+          startsOn: "2099-06-15",
+        }),
+        [],
+      ),
+    ).toBe("What changed? · Daily at 3:30 PM · Jun 15");
+    expect(
+      assistScheduleLabel(
+        schedule({
+          seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+          minuteOfDay: 0,
+          startsOn: "2000-01-01",
+        }),
+        [],
+      ),
+    ).toBe("What changed? · Daily at 12:00 AM");
+    expect(assistMinuteLabel(12 * 60)).toBe("12:00 PM");
+  });
+
+  test("picks a day and a start time on the calendar", () => {
+    expect(readAssistDate("")).toBeNull();
+    expect(readAssistDate("2026-02-29")).toBeNull();
+    expect(readAssistDate("2026-11-31")).toBeNull();
+    expect(readAssistDate(" 2026-11-13 ")).toBe("2026-11-13");
+    expect(assistDayLabel("nope")).toBe("nope");
+    expect(assistDayLabel("2026-11-13")).toBe("Friday, November 13, 2026");
+    expect(assistMonthLabel(2026, 10)).toBe("November 2026");
+    expect(shiftAssistMonth(2026, 0, -1)).toEqual({ year: 2025, month: 11 });
+    expect(shiftAssistMonth(2026, 11, 1)).toEqual({ year: 2027, month: 0 });
+    const cells = assistCalendarCells(2026, 10);
+    expect(cells).toHaveLength(42);
+    expect(cells[0]?.key).toBe(assistDateKey(new Date(2026, 10, 1 - new Date(2026, 10, 1).getDay())));
+    expect(cells.filter((cell) => cell.inMonth)).toHaveLength(30);
+    expect(ASSIST_START_TIMES[0]).toBe(0);
+    expect(ASSIST_START_TIMES[18]).toBe(ASSIST_SCHEDULE_DEFAULT_MINUTE);
+    expect(ASSIST_START_TIMES).toHaveLength(48);
+
+    const morning = new Date(2026, 10, 13, 8, 0, 0, 0);
+    const atNine = {
+      seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+      minuteOfDay: ASSIST_SCHEDULE_DEFAULT_MINUTE,
+      startsOn: "2026-11-13",
+    };
+    expect(nextAssistRunDelayMs(atNine, morning)).toBe(60 * 60 * 1000);
+    expect(nextAssistRunDelayMs(atNine, new Date(2026, 10, 13, 10, 0, 0, 0))).toBe(23 * 60 * 60 * 1000);
+    expect(nextAssistRunDelayMs(atNine, new Date(2026, 10, 13, 9, 0, 0, 0))).toBe(ASSIST_SCHEDULE_DAILY_SECONDS * 1000);
+    expect(nextAssistRunDelayMs({ ...atNine, startsOn: "2026-11-20" }, morning)).toBe(
+      new Date(2026, 10, 20, 9, 0, 0, 0).getTime() - morning.getTime(),
+    );
+    expect(nextAssistRunDelayMs({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS, minuteOfDay: 9 * 60 }, morning)).toBe(
+      60 * 60 * 1000,
+    );
+    expect(
+      nextAssistRunDelayMs({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS, minuteOfDay: 9 * 60, startsOn: "nope" }, morning),
+    ).toBe(60 * 60 * 1000);
+    expect(nextAssistRunDelayMs({ seconds: ASSIST_SCHEDULE_HOURLY_SECONDS }, morning)).toBe(
+      ASSIST_SCHEDULE_HOURLY_SECONDS * 1000,
+    );
+    expect(nextAssistRunDelayMs({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS }, morning)).toBe(
+      ASSIST_SCHEDULE_DAILY_SECONDS * 1000,
+    );
+    expect(nextAssistRunDelayMs({ seconds: ASSIST_SCHEDULE_DAILY_SECONDS, minuteOfDay: -1 }, morning)).toBe(
+      ASSIST_SCHEDULE_DAILY_SECONDS * 1000,
+    );
+    expect(nextAssistRunDelayMs({ seconds: 0 }, morning)).toBeNull();
+    expect(nextAssistRunDelayMs({ seconds: Number.NaN }, morning)).toBeNull();
+
+    expect(
+      draftAssistSchedule({
+        id: "s1",
+        prompt: "Standup",
+        sourceIds: [],
+        every: "daily",
+        existing: 0,
+        minuteOfDay: 24 * 60,
+        startsOn: "2026-11-13",
+      }),
+    ).toEqual({ ok: false, error: "Choose a time." });
+    expect(
+      draftAssistSchedule({
+        id: "s1",
+        prompt: "Standup",
+        sourceIds: [],
+        every: "daily",
+        existing: 0,
+        minuteOfDay: Number.NaN,
+      }),
+    ).toEqual({ ok: false, error: "Choose a time." });
+    expect(
+      draftAssistSchedule({
+        id: "s1",
+        prompt: "Standup",
+        sourceIds: [],
+        every: "daily",
+        existing: 0,
+        minuteOfDay: 9 * 60,
+        startsOn: "2026-11-31",
+      }),
+    ).toEqual({ ok: false, error: "Choose a day." });
+    expect(
+      draftAssistSchedule({
+        id: "s1",
+        prompt: "Standup",
+        sourceIds: [],
+        every: "daily",
+        existing: 0,
+        minuteOfDay: 9 * 60,
+        startsOn: "2026-11-13",
+      }),
+    ).toEqual({
+      ok: true,
+      schedule: {
+        id: "s1",
+        prompt: "Standup",
+        sourceIds: [],
+        seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
+        minuteOfDay: 9 * 60,
+        startsOn: "2026-11-13",
+      },
+    });
+    const open = draftAssistSchedule({
+      id: "s1",
+      prompt: "Standup",
+      sourceIds: [],
+      every: "daily",
+      existing: 0,
+      minuteOfDay: 9 * 60,
+      startsOn: "  ",
+    });
+    expect(open.ok).toBe(true);
+    if (open.ok) expect(open.schedule.startsOn).toBeUndefined();
   });
 });
