@@ -847,6 +847,7 @@ const FIELD_CHECKLIST: Record<ConnectionField, true> = {
   securityMode: true,
   serverCertificateThumbprint: true,
   registerMap: true,
+  apiCatalog: true,
   hostKeyFingerprint: true,
 };
 const EVERY_FIELD = Object.keys(FIELD_CHECKLIST) as ConnectionField[];

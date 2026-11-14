@@ -105,7 +105,7 @@ function resourceIssue(value: unknown, seen: Set<string>): string | null {
 
 /** The catalog text a connection may store, or the reason it may not. The secret is not part of it. */
 export function restCatalogIssue(raw: string | undefined): string | null {
-  if (raw === undefined || raw.trim() === "") return "Add a resource and draw a line from the API to it.";
+  if (raw === undefined || raw.trim() === "") return "Add at least one resource.";
   if (raw.length > REST_CATALOG_LIMIT) return "This API's resource list is too long.";
   let parsed: unknown;
   try {
@@ -123,7 +123,7 @@ export function restCatalogIssue(raw: string | undefined): string | null {
       return "Name the header the secret is sent in.";
     }
   }
-  if (parsed.resources.length < 1) return "Add a resource and draw a line from the API to it.";
+  if (parsed.resources.length < 1) return "Add at least one resource.";
   if (parsed.resources.length > REST_RESOURCE_CAP) return "One API can have at most 24 resources.";
   const seen = new Set<string>();
   for (const resource of parsed.resources) {

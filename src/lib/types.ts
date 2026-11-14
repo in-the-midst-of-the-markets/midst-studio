@@ -756,9 +756,9 @@ export interface DatabaseConnection {
    * Custom API only: the resource list, as the JSON document the provider parses. It names how the
    * secret is sent and each GET path that becomes a table. The secret itself stays in `password`.
    *
-   * The connection dialog has no box for it, so `FIELD_OWNERSHIP` marks it preserved: editing the
-   * hostname or the secret must not drop the list. A seed of any other type that carries it is
-   * refused, because no other provider reads it.
+   * The connection dialog draws it, and `FIELD_OWNERSHIP` marks it edited, so clearing the box
+   * drops the list. A seed of any other type that carries it is refused, because no other provider
+   * reads it.
    */
   apiCatalog?: string;
 }

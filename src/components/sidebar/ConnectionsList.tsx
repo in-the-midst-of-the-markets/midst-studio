@@ -1,6 +1,5 @@
 import React, { useCallback, useState } from "react";
 import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal } from "lucide-react";
-import { withBasePath } from "@/lib/config/base-path";
 import { DatabaseConnection } from "@/lib/types";
 import { isCrossDbJoins } from "@/lib/saved-join/connection";
 import { applyConnectionOrder } from "@/lib/connection-order";
@@ -78,14 +77,6 @@ function SearchMarketplaceButton({ onClick, fullWidth }: { onClick: () => void; 
   return (
     <Button variant="outline" size="sm" className={fullWidth ? "h-7 w-full text-xs" : "h-7 text-xs"} onClick={onClick}>
       Search Marketplace
-    </Button>
-  );
-}
-
-function ConnectApisLink({ fullWidth }: { fullWidth?: boolean }) {
-  return (
-    <Button variant="outline" size="sm" className={fullWidth ? "h-7 w-full text-xs" : "h-7 text-xs"} asChild>
-      <a href={withBasePath("/connect")}>Connect APIs</a>
     </Button>
   );
 }
@@ -291,7 +282,6 @@ export const ConnectionsList = React.memo(function ConnectionsList({
       {onSearchMarketplace && (listed.length > 0 || emptyMessage === null) && (
         <div className="px-2 mb-3 flex flex-col gap-2">
           <SearchMarketplaceButton onClick={onSearchMarketplace} fullWidth />
-          <ConnectApisLink fullWidth />
         </div>
       )}
       {pinned.map((connection) => (
@@ -337,7 +327,6 @@ export const ConnectionsList = React.memo(function ConnectionsList({
                             </Button>
                           )}
                           {onSearchMarketplace && <SearchMarketplaceButton onClick={onSearchMarketplace} />}
-                          {onSearchMarketplace && <ConnectApisLink />}
                         </div>
                       )}
                     </div>

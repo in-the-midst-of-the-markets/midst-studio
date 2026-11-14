@@ -50,6 +50,8 @@ export const FIELD_PROMPTS: Readonly<Record<ConnectionField, { readonly label: s
     serverCertificateThumbprint: { label: "Server certificate thumbprint", input: "text" },
     // A multi-line box in the web dialog.
     registerMap: { label: "Register map", input: "none" },
+    // The web dialog draws this as a document. The extension asks it as one line of that same JSON.
+    apiCatalog: { label: "Resources", input: "text" },
     hostKeyFingerprint: { label: "Host key fingerprint", input: "text" },
   });
 

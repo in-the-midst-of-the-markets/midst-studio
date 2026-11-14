@@ -53,6 +53,7 @@ describe("FIELD_PROMPTS", () => {
       securityMode: "Security mode",
       serverCertificateThumbprint: "Server certificate thumbprint",
       registerMap: "Register map",
+      apiCatalog: "Resources",
       hostKeyFingerprint: "Host key fingerprint",
     });
   });

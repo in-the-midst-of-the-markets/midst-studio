@@ -10,7 +10,7 @@ A connection the user defines for an HTTPS API this app does not already ship. O
 | Secret | At least 8 characters, with no newline. Bearer sends `Authorization: Bearer`. Basic sends `Authorization: Basic` of the username and the secret. A header sends the secret under the header name they chose. |
 | Resource list | Stored on the connection as `apiCatalog`. Each resource has a name, a path that starts with `/`, and an optional rows path such as `data`. |
 
-The Connect APIs board at `/connect` is where the list is written. The connection dialog can change the hostname and the secret and keeps the list.
+The connection dialog writes the list. It is a JSON document: `auth` is `bearer`, `header`, or `basic`, and each resource has a `name`, a `path`, and a `rows` path. A header also names `headerName`. The secret is not part of the document.
 
 ## Query
 

@@ -75,6 +75,8 @@ export type ConnectionField =
   // Modbus only: the register map, a JSON document rather than a word, drawn as a text area. The
   // protocol answers no discovery request, so this is the only thing that can name a point.
   | "registerMap"
+  // Custom API only: the resource list, a JSON document the provider parses. The secret is not in it.
+  | "apiCatalog"
   // NETCONF only: the device's SSH host key fingerprint, pasted from `ssh-keygen -lf`. A field of
   // its own rather than `serverCertificateThumbprint`: a host key is not a certificate, the two
   // are checked by different code, and one box for both would carry a label that is wrong half
@@ -310,6 +312,15 @@ const CONNECTION_FIELD_DESCRIPTOR_ROWS = {
     icon: "database",
     control: { kind: "textarea", rows: 6 },
   },
+  // Saved byte for byte: the provider parses the document and its refusals name what was written.
+  apiCatalog: {
+    slot: "body",
+    save: "nonEmpty",
+    label: "Resources",
+    placeholder: "",
+    icon: "database",
+    control: { kind: "textarea", rows: 6 },
+  },
   // An empty mode is not saved, so the provider's own default, SignAndEncrypt, applies.
   securityMode: {
     slot: "body",
@@ -491,7 +502,7 @@ const CONNECTION_FIELD_ROWS = {
   excel: ["user", "password", "database", "schema"],
   googlesheets: ["password", "schema"],
   mixpanel: ["host", "user", "password", "database"],
-  customapi: ["host", "user", "password"],
+  customapi: ["host", "user", "password", "apiCatalog"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
