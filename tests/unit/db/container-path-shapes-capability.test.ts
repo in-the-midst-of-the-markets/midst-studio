@@ -54,7 +54,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   excel: "exact",
   googlesheets: "exact",
   mixpanel: "exact",
-  rest: "exact",
+  customapi: "exact",
   supabase: "exact",
   mysql: "exact",
   sqlite: "exact",

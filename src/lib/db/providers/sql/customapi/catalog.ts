@@ -76,7 +76,7 @@ export function restHostIssue(raw: string): string | null {
 /** The hostname `restHostIssue` accepted, with a leading https:// removed. */
 export function restHost(raw: string): string {
   const issue = restHostIssue(raw);
-  if (issue !== null) throw new DatabaseConfigError(issue, "rest");
+  if (issue !== null) throw new DatabaseConfigError(issue, "customapi");
   let host = raw.trim().replace(/^https:\/\//i, "");
   if (host.endsWith("/")) host = host.slice(0, -1);
   return host.toLowerCase();
@@ -136,7 +136,7 @@ export function restCatalogIssue(raw: string | undefined): string | null {
 /** The catalog `restCatalogIssue` accepted. */
 export function readRestCatalog(raw: string | undefined): RestCatalog {
   const issue = restCatalogIssue(raw);
-  if (issue !== null) throw new DatabaseConfigError(issue, "rest");
+  if (issue !== null) throw new DatabaseConfigError(issue, "customapi");
   const parsed = JSON.parse(raw ?? "") as {
     auth: RestAuth;
     headerName?: string;
@@ -159,7 +159,7 @@ const SECRET_ISSUE = "Add the secret. It is sent as a header, never in the URL."
 /** The secret a custom API sends, with no newline that could become a second header. */
 export function restSecret(raw: string | undefined): string {
   const secret = raw?.trim() ?? "";
-  if (secret.length < 8 || /[\r\n]/.test(secret)) throw new DatabaseConfigError(SECRET_ISSUE, "rest");
+  if (secret.length < 8 || /[\r\n]/.test(secret)) throw new DatabaseConfigError(SECRET_ISSUE, "customapi");
   return secret;
 }
 
@@ -167,7 +167,7 @@ export function restSecret(raw: string | undefined): string {
 export function restBasicUser(raw: string | undefined): string {
   const user = raw?.trim() ?? "";
   if (user === "" || /[\r\n:]/.test(user)) {
-    throw new DatabaseConfigError("Add the username for basic authentication.", "rest");
+    throw new DatabaseConfigError("Add the username for basic authentication.", "customapi");
   }
   return user;
 }

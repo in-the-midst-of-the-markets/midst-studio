@@ -189,13 +189,13 @@ describe("api board", () => {
     expect(apiConnectionIssue(ready(emptyApiBoard()))).toBe("Add a resource and draw a line from the API to it.");
     const unlinked = unlinkApiResource(board, "api::res-1");
     expect(apiConnectionIssue(unlinked)).toBe("Add a resource and draw a line from the API to it.");
-    expect(connectionFromBoard(unlinked, 5)).toMatchObject({ id: "invalid", type: "rest" });
+    expect(connectionFromBoard(unlinked, 5)).toMatchObject({ id: "invalid", type: "customapi" });
 
     const saved = connectionFromBoard({ ...board, api: { ...board.api, host: "https://api.example.com/" } }, 40);
     expect(saved).toMatchObject({
       id: "custom-40",
       name: "Acme",
-      type: "rest",
+      type: "customapi",
       host: "api.example.com",
       password: "super-secret",
     });

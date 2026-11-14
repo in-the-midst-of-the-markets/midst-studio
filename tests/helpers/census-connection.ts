@@ -65,7 +65,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   metaads: "graph.facebook.com",
   paypal: "api-m.paypal.com",
   mixpanel: "mixpanel.com",
-  rest: "api.example.com",
+  customapi: "api.example.com",
 };
 
 const unconnected = (type: DatabaseType): DatabaseConnection =>
@@ -134,8 +134,8 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
     password: "census-secret",
     database: "1234567",
   },
-  rest: {
-    ...unconnected("rest"),
+  customapi: {
+    ...unconnected("customapi"),
     host: "api.example.com",
     password: "census-secret",
     apiCatalog: '{"auth":"bearer","headerName":"X-API-Key","resources":[{"name":"items","path":"/items","rows":""}]}',

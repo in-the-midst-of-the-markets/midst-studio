@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, rest, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, rest, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1614,7 +1614,7 @@ describe("createDatabaseProvider", () => {
         schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
       mixpanel: { host: "mixpanel.com", user: "service-account", password: "census-secret", database: "1234567" },
-      rest: {
+      customapi: {
         host: "api.example.com",
         password: "census-secret",
         apiCatalog:
@@ -1713,7 +1713,7 @@ describe("createDatabaseProvider", () => {
         schema: "1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       },
       mixpanel: { host: "mixpanel.com", user: "service-account", password: "census-secret", database: "1234567" },
-      rest: {
+      customapi: {
         host: "api.example.com",
         password: "census-secret",
         apiCatalog:
@@ -1736,6 +1736,8 @@ describe("createDatabaseProvider", () => {
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
       "cockroach",
       "couchbase",
+      // No cancel: a custom API read is one GET, and the API has nothing that stops it.
+      "customapi",
       "db2",
       "druid",
       // No cancel: a Dynamics read is one OData request, and the Web API has nothing that stops it.
@@ -1798,8 +1800,6 @@ describe("createDatabaseProvider", () => {
       "redis",
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
       "redshift",
-      // No cancel: a custom API read is one GET, and the API has nothing that stops it.
-      "rest",
       // No cancel either, and the reason is UDP's: a Get is one datagram out and one back, with
       // nothing in RFC 3416 that stops one in flight. A read is bounded instead, by the walk's
       // budget and by what one datagram can carry (#1721).

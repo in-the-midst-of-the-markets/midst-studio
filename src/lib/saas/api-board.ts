@@ -11,7 +11,9 @@ import {
   restHostIssue,
   REST_RESOURCE_CAP,
   type RestAuth,
-} from "@/lib/db/providers/sql/rest/catalog";
+} from "@/lib/db/providers/sql/customapi/catalog";
+
+export type { RestAuth };
 
 export const API_BOARD_KEY = "libredb_api_board";
 export const API_BOARD_CAP = REST_RESOURCE_CAP;
@@ -291,7 +293,7 @@ export function connectionFromBoard(board: ApiBoard, now = Date.now()): Database
     return {
       id: "invalid",
       name: "invalid",
-      type: "rest",
+      type: "customapi",
       createdAt: new Date(0),
     };
   }
@@ -302,7 +304,7 @@ export function connectionFromBoard(board: ApiBoard, now = Date.now()): Database
   return {
     id: `custom-${now}`,
     name,
-    type: "rest",
+    type: "customapi",
     host: restHost(board.api.host),
     ...(board.api.auth === "basic" ? { user: board.api.user.trim() } : {}),
     password: board.api.secret.trim(),

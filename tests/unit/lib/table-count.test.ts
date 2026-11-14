@@ -72,7 +72,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   excel: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   googlesheets: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   mixpanel: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
-  rest: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  customapi: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   supabase: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   mysql: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   sqlite: 'SELECT COUNT(*) AS row_count\nFROM "Order""Items";',

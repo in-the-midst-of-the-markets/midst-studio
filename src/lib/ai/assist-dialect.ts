@@ -397,7 +397,7 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
-  rest: {
+  customapi: {
     rule: "sql is one read-only SELECT of one resource the user named, such as items. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins, no COUNT.",
     sample: SQL_SAMPLE,
     values: SQL_VALUES,

@@ -96,7 +96,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   excel: "every-code-semicolon",
   googlesheets: "every-code-semicolon",
   mixpanel: "every-code-semicolon",
-  rest: "every-code-semicolon",
+  customapi: "every-code-semicolon",
   supabase: "every-code-semicolon",
 };
 

@@ -30,8 +30,8 @@ import {
   writeApiBoard,
   type ApiBoard,
   type ApiResourceNode,
+  type RestAuth,
 } from "@/lib/saas/api-board";
-import type { RestAuth } from "@/lib/db/providers/sql/rest/catalog";
 import { storage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 

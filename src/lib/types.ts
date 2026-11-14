@@ -99,7 +99,7 @@ export type DatabaseType =
   | "mixpanel"
   // A custom HTTPS API the user defined. One SELECT is one GET of a path they named.
   // The secret is sent only to that hostname, as a header, and never in the URL.
-  | "rest"
+  | "customapi"
   | "bigquery"
   | "snowflake"
   | "mysql"

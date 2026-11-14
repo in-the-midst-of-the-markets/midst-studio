@@ -8,7 +8,7 @@ import {
   restHost,
   restHostIssue,
   restSecret,
-} from "@/lib/db/providers/sql/rest/catalog";
+} from "@/lib/db/providers/sql/customapi/catalog";
 
 const resource = { name: "items", path: "/v1/items", rows: "data.items" };
 

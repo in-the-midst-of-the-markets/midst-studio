@@ -106,7 +106,7 @@ const EXPECTED_COLUMN_KINDS: Readonly<Record<DatabaseType, readonly string[]>> =
   excel: ["table"],
   googlesheets: ["table"],
   mixpanel: ["table"],
-  rest: ["table"],
+  customapi: ["table"],
   supabase: ["table", "view", "materialized_view", "sequence"],
   mysql: ["table", "view"],
   oracle: ["table", "view", "materialized_view"],

@@ -491,7 +491,7 @@ const CONNECTION_FIELD_ROWS = {
   excel: ["user", "password", "database", "schema"],
   googlesheets: ["password", "schema"],
   mixpanel: ["host", "user", "password", "database"],
-  rest: ["host", "user", "password"],
+  customapi: ["host", "user", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -629,7 +629,7 @@ const NETCONF_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
  * Custom API: the resource list. Only that provider reads `apiCatalog`, so a seed of another type that carries one
  * would be listed as a defined API and be nothing of the kind. Refused at load by name, as the Modbus map is.
  */
-const REST_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
+const CUSTOMAPI_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
   fields: Object.freeze(["apiCatalog"] as const),
   kind: "each",
   refusal: (field: string) =>
@@ -669,7 +669,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   excel: null,
   googlesheets: null,
   mixpanel: null,
-  rest: REST_SEED_ONLY_FIELDS,
+  customapi: CUSTOMAPI_SEED_ONLY_FIELDS,
   supabase: null,
   mysql: null,
   sqlite: null,

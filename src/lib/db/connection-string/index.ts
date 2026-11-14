@@ -52,7 +52,7 @@ import { PAYPAL_CONNECTION_STRING } from "@/lib/db/providers/sql/paypal/connecti
 import { EXCEL_CONNECTION_STRING } from "@/lib/db/providers/sql/excel/connection-string";
 import { GOOGLESHEETS_CONNECTION_STRING } from "@/lib/db/providers/sql/googlesheets/connection-string";
 import { MIXPANEL_CONNECTION_STRING } from "@/lib/db/providers/sql/mixpanel/connection-string";
-import { REST_CONNECTION_STRING } from "@/lib/db/providers/sql/rest/connection-string";
+import { CUSTOMAPI_CONNECTION_STRING } from "@/lib/db/providers/sql/customapi/connection-string";
 import { POSTGRES_CONNECTION_STRING } from "@/lib/db/providers/sql/postgres-connection-string";
 import { SUPABASE_CONNECTION_STRING } from "@/lib/db/providers/sql/supabase/connection-string";
 import { PROMETHEUS_CONNECTION_STRING } from "@/lib/db/providers/timeseries/prometheus/connection-string";
@@ -129,7 +129,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   excel: EXCEL_CONNECTION_STRING,
   googlesheets: GOOGLESHEETS_CONNECTION_STRING,
   mixpanel: MIXPANEL_CONNECTION_STRING,
-  rest: REST_CONNECTION_STRING,
+  customapi: CUSTOMAPI_CONNECTION_STRING,
   supabase: SUPABASE_CONNECTION_STRING,
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,

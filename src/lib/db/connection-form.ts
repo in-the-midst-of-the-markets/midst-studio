@@ -795,13 +795,13 @@ export const CONNECTION_FORM: {
       database: "The numeric project id. It is sent as project_id on that same host.",
     },
   },
-  rest: {
+  customapi: {
     label: "Custom API",
     defaultPort: "",
     showConnectionStringToggle: false,
     showSslPanel: false,
     showSshTunnel: false,
-    connectionFields: CONNECTION_FIELDS.rest,
+    connectionFields: CONNECTION_FIELDS.customapi,
     fieldLabels: {
       host: "Hostname",
       user: "Username",
@@ -1956,7 +1956,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "netconf",
   "weaviate",
   "questdb",
-  "rest",
+  "customapi",
   "hubspot",
   "stripe",
   "clarity",

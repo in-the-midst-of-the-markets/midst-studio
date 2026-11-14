@@ -50,7 +50,7 @@ function formatRestIdentifier(segment: string): string {
 }
 
 /** How a custom API's statement text is read. */
-export const REST_SQL_GRAMMAR: SqlGrammarSpec = {
+export const CUSTOMAPI_SQL_GRAMMAR: SqlGrammarSpec = {
   grammar: REST_GRAMMAR,
   readsSqlText: true,
   redaction: { kind: "sql", nameQuote: '"' },

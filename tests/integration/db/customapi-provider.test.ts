@@ -9,12 +9,12 @@ import {
 import type { NodeRequest, NodeTransport, NodeTransportOptions } from "@/lib/db/http/node-transport";
 import { TransportError } from "@/lib/db/http/node-transport";
 import { API_ANSWER_LIMIT } from "@/lib/db/http/pinned-api-host";
-import { RestProvider } from "@/lib/db/providers/sql/rest";
-import { REST_CONNECTION_STRING } from "@/lib/db/providers/sql/rest/connection-string";
-import { REST_EXECUTION_UI } from "@/lib/db/providers/sql/rest/execution-ui";
-import { REST_MIGRATION_DDL } from "@/lib/db/providers/sql/rest/migration-ddl";
-import { REST_SQL_GRAMMAR } from "@/lib/db/providers/sql/rest/sql-grammar";
-import { REST_SQL_WRITING } from "@/lib/db/providers/sql/rest/sql-writing";
+import { RestProvider } from "@/lib/db/providers/sql/customapi";
+import { CUSTOMAPI_CONNECTION_STRING } from "@/lib/db/providers/sql/customapi/connection-string";
+import { CUSTOMAPI_EXECUTION_UI } from "@/lib/db/providers/sql/customapi/execution-ui";
+import { CUSTOMAPI_MIGRATION_DDL } from "@/lib/db/providers/sql/customapi/migration-ddl";
+import { CUSTOMAPI_SQL_GRAMMAR } from "@/lib/db/providers/sql/customapi/sql-grammar";
+import { CUSTOMAPI_SQL_WRITING } from "@/lib/db/providers/sql/customapi/sql-writing";
 import type { DatabaseConnection } from "@/lib/types";
 
 const SECRET = "super-secret-value";
@@ -70,7 +70,7 @@ function connection(patch: Partial<DatabaseConnection> = {}): DatabaseConnection
   return {
     id: "api",
     name: "Acme",
-    type: "rest",
+    type: "customapi",
     host: "api.example.com",
     password: SECRET,
     apiCatalog: catalog(),
@@ -81,16 +81,16 @@ function connection(patch: Partial<DatabaseConnection> = {}): DatabaseConnection
 
 describe("RestProvider", () => {
   test("quotes a name the way the editor completes it", () => {
-    const formatSegment = REST_SQL_GRAMMAR.completion.formatSegment;
-    const readQuoted = REST_SQL_GRAMMAR.completion.readQuotedQualifier;
+    const formatSegment = CUSTOMAPI_SQL_GRAMMAR.completion.formatSegment;
+    const readQuoted = CUSTOMAPI_SQL_GRAMMAR.completion.readQuotedQualifier;
     if (formatSegment == null || readQuoted == null) throw new Error("Custom API completion is missing a quoter");
     expect(formatSegment('a"b')).toBe('"a""b"');
     expect(readQuoted('"a""b".')).toBe('a"b');
     expect(readQuoted("items.")).toBeUndefined();
-    expect(REST_SQL_WRITING.placeholder).toBeNull();
-    expect(REST_CONNECTION_STRING.scheme).toBeNull();
-    expect(REST_EXECUTION_UI.consentDeadline).toBeNull();
-    expect(REST_MIGRATION_DDL.tableDdl).toBe("refused");
+    expect(CUSTOMAPI_SQL_WRITING.placeholder).toBeNull();
+    expect(CUSTOMAPI_CONNECTION_STRING.scheme).toBeNull();
+    expect(CUSTOMAPI_EXECUTION_UI.consentDeadline).toBeNull();
+    expect(CUSTOMAPI_MIGRATION_DDL.tableDdl).toBe("refused");
   });
 
   test("refuses a host, a secret, or a catalog that cannot be queried", () => {
@@ -263,7 +263,7 @@ describe("RestProvider", () => {
       { status: 500, body: { message: "" } },
       { status: 500, body: { message: `bad ${SECRET}` } },
       { throw: new TransportError("unreachable", `down ${SECRET}`) },
-      { throw: new QueryError("kept", "rest") },
+      { throw: new QueryError("kept", "customapi") },
       { throw: new Error(`down ${SECRET}`) },
       { throw: "boom" },
     ]);

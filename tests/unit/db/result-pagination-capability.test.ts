@@ -87,7 +87,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   excel: true,
   googlesheets: true,
   mixpanel: true,
-  rest: true,
+  customapi: true,
   supabase: true,
   mysql: true,
   sqlite: true,

@@ -59,7 +59,7 @@ import { uniqueFieldNames } from "@/lib/db/utils/result-fields";
 import { listedRows, translateListedSql, type ListedProduct, type ListedSelect } from "../listed-select";
 import { readRestCatalog, restBasicUser, restHost, restSecret, type RestCatalog, type RestResource } from "./catalog";
 
-const PROVIDER = "rest" as const;
+const PROVIDER = "customapi" as const;
 const MAX_SOCKETS = 4;
 const CONTAINER_NAME = "api";
 const ROW_CAP = 200;

@@ -227,7 +227,12 @@ describe("custom API editor", () => {
       user?: string;
     }>;
     const connection = saved.find((item) => item.name === "Acme");
-    expect(connection).toMatchObject({ type: "rest", host: "api.example.com", password: "super-secret", name: "Acme" });
+    expect(connection).toMatchObject({
+      type: "customapi",
+      host: "api.example.com",
+      password: "super-secret",
+      name: "Acme",
+    });
     expect(connection?.user).toBeUndefined();
     const catalog = JSON.parse(connection?.apiCatalog ?? "") as { auth: string; resources: unknown[] };
     expect(catalog.auth).toBe("bearer");
