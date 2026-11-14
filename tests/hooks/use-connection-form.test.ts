@@ -4835,8 +4835,9 @@ describe("the form's values and setters by field, for the dialog's one field ren
 });
 
 describe("the form's first engine", () => {
-  test("is the picker's first engine, with that engine's port", () => {
-    expect(CONNECTION_FORM_DEFAULTS.type).toBe(CONNECTION_PICKER_ORDER[0] as DatabaseType);
+  test("opens on postgres, while the picker leads with Airtable, and uses that engine's port", () => {
+    expect(CONNECTION_FORM_DEFAULTS.type).toBe("postgres");
+    expect(CONNECTION_PICKER_ORDER[0]).toBe("airtable");
     expect(CONNECTION_FORM_DEFAULTS.port).toBe(CONNECTION_FORM[CONNECTION_FORM_DEFAULTS.type].defaultPort);
   });
 });

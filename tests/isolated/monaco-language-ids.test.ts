@@ -74,7 +74,6 @@ import { describe, expect, test } from "bun:test";
 import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
 import { createDatabaseProvider } from "@/lib/db/factory";
 import { declaredKinds } from "@/lib/db/object-kinds";
-import type { DatabaseConnection } from "@/lib/db/types";
 import { CYPHER_LANGUAGE_ID } from "@/lib/db/providers/graph/neo4j/editor-syntax";
 import { ETCD_LANGUAGE_ID } from "@/lib/db/providers/keyvalue/etcd/editor-syntax";
 import { FIRESTORE_LANGUAGE_ID } from "@/lib/db/providers/document/firestore/editor-syntax";
@@ -82,6 +81,7 @@ import { INFLUXQL_LANGUAGE_ID } from "@/lib/db/providers/timeseries/influxdb/inf
 import { KUBECTL_LANGUAGE_ID } from "@/lib/db/providers/platform/kubernetes/editor-syntax";
 import { PROMQL_LANGUAGE_ID } from "@/lib/db/providers/timeseries/prometheus/editor-syntax";
 import type { DatabaseType } from "@/lib/types";
+import { CENSUS_CONNECTION } from "../helpers/census-connection";
 import { SOURCE_PART_FALLBACK_LANGUAGE } from "../helpers/object-surface-conformance";
 
 /**
@@ -159,23 +159,10 @@ const core = extractCoreLanguageIds(
     .join("\n"),
 );
 
-/** The unconnected connection shape the census uses, for the same reason: nothing here dials. */
-const unconnected = (type: DatabaseType): DatabaseConnection =>
-  ({
-    id: "language-guard",
-    name: "language-guard",
-    type,
-    host: "127.0.0.1",
-    port: 1,
-    database: "language_guard",
-    user: "language_guard",
-    password: "language_guard",
-    filePath: ":memory:",
-    url: "http://127.0.0.1:1",
-    connectionString: "mongodb://127.0.0.1:1/language_guard",
-    localDataCenter: "datacenter1",
-    createdAt: new Date(0),
-  }) as DatabaseConnection;
+/**
+ * The census connection, rather than a second loopback fixture. A pinned SaaS host and the custom
+ * API both refuse 127.0.0.1, so a private copy of the fixture cannot construct those providers.
+ */
 
 /**
  * The flavour a MariaDB server is measured as, which is the derived fact the provider stores
@@ -226,11 +213,9 @@ async function everyDeclaredSourceLanguage(): Promise<
 > {
   const found: { readonly where: string; readonly language: string }[] = [];
   for (const type of [...EXTERNAL_DATABASE_TYPES, "libredb"] as readonly DatabaseType[]) {
-    // Db2 reads a stored connection string at construction and refuses one that is not db2://
-    // (#786), so it is built without the shared MongoDB string.
-    const built = await createDatabaseProvider(
-      type === "db2" ? { ...unconnected(type), connectionString: undefined } : unconnected(type),
-    );
+    // The shared census connection already clears Db2's stored string (#786) and names a host
+    // each pinned provider accepts, including a public host for the custom API.
+    const built = await createDatabaseProvider(CENSUS_CONNECTION[type]);
     const provider = type === MARIADB_CAPABLE_TYPE ? withMeasuredMariaDBFlavour(built) : built;
     for (const kind of declaredKinds(provider.getCapabilities())) {
       if (kind.sourceLanguage !== undefined) found.push({ where: `${type}/${kind.id}`, language: kind.sourceLanguage });
@@ -362,7 +347,9 @@ describe("the installed editor's language ids", () => {
     // 146 with that pair, and 148 since Sparkplug B's two kinds joined (#1720): a node and a device
     // each declare `json`, the payload this provider decodes a birth certificate into. 149 since Weaviate's
     // collection joined (#1566), declaring `json`, the two-part Source of its schema and its state.
-    expect(declared).toHaveLength(149);
+    // 154 measured once this walk uses the shared census connection, which can construct every
+    // pinned host. Custom API declares no source language.
+    expect(declared).toHaveLength(154);
 
     const unregistered = declared.filter((entry) => !registered.has(entry.language));
     // Named, so a failure says which kind on which engine declared what, rather than false. This

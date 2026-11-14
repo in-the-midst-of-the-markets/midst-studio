@@ -176,6 +176,8 @@ describe("the classification is exhaustive by construction", () => {
         // authentication at all, so there is nothing here to leak, and masking a document would
         // stop the person who wrote it from fixing it.
         "registerMap",
+        // The custom API resource list. A document of paths, so `public`; the secret stays in password.
+        "apiCatalog",
       ].sort(),
     );
   });

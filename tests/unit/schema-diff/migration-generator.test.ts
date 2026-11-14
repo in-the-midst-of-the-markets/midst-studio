@@ -1802,6 +1802,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "excel",
           "googlesheets",
           "mixpanel",
+          "customapi",
         ].includes(dialect)
       ) {
         expect(sql).toContain(`-- ${expected.label}: Cannot generate table DDL.`);
@@ -1980,6 +1981,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "excel",
             "googlesheets",
             "mixpanel",
+            "customapi",
           ].includes(dialect)
         ) {
           expect(sql).toMatch(/^CREATE TABLE /m);
