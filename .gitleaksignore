@@ -194,3 +194,9 @@ eb6b696af19d6b6ac7b53406bbd4201fb0890058:tests/fixtures/s3/captures/silo-2026-10
 # check that does run the DDL draws a random password instead, so the literal
 # authenticates nothing.
 173d9679af01674d83d53ec9e22b453a88b8a4ab:tests/unit/governance-fixture-ddl.test.ts:generic-api-key:28
+
+# The query-generator parity digest for the custom API provider, on 584f855c.
+# It is the SHA-256 of that provider's generator answers, the same digest the
+# Mixpanel row already carries. The rule matches because the key is
+# "provider customapi" beside a hex string. The value authenticates nothing.
+584f855c9d6210c97bc6895175637bf1930b2510:tests/fixtures/query-generators/generator-corpus.json:generic-api-key:24
