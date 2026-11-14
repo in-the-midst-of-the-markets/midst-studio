@@ -19,7 +19,7 @@ import type { SqlWritingSpec } from "@/lib/db/sql-writing/types";
  * The API does not bind parameters, so `placeholder` is null and `query()`
  * refuses a parameter list. The connection is read-only.
  */
-export const REST_SQL_WRITING: SqlWritingSpec = {
+export const CUSTOMAPI_SQL_WRITING: SqlWritingSpec = {
   escapeLiteral: literalStandard,
   unescapeLiteral: unquoteStandard,
   quoteIdentifier: identifierDoubleQuoted,

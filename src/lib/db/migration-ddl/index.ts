@@ -54,7 +54,7 @@ import { PAYPAL_MIGRATION_DDL } from "@/lib/db/providers/sql/paypal/migration-dd
 import { EXCEL_MIGRATION_DDL } from "@/lib/db/providers/sql/excel/migration-ddl";
 import { GOOGLESHEETS_MIGRATION_DDL } from "@/lib/db/providers/sql/googlesheets/migration-ddl";
 import { MIXPANEL_MIGRATION_DDL } from "@/lib/db/providers/sql/mixpanel/migration-ddl";
-import { REST_MIGRATION_DDL } from "@/lib/db/providers/sql/rest/migration-ddl";
+import { CUSTOMAPI_MIGRATION_DDL } from "@/lib/db/providers/sql/customapi/migration-ddl";
 import { POSTGRES_MIGRATION_DDL } from "@/lib/db/providers/sql/postgres-migration-ddl";
 import { SUPABASE_MIGRATION_DDL } from "@/lib/db/providers/sql/supabase/migration-ddl";
 import { ELASTICSEARCH_MIGRATION_DDL } from "@/lib/db/providers/sql/search/elasticsearch-migration-ddl";
@@ -133,7 +133,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   excel: EXCEL_MIGRATION_DDL,
   googlesheets: GOOGLESHEETS_MIGRATION_DDL,
   mixpanel: MIXPANEL_MIGRATION_DDL,
-  rest: REST_MIGRATION_DDL,
+  customapi: CUSTOMAPI_MIGRATION_DDL,
   supabase: SUPABASE_MIGRATION_DDL,
   prometheus: PROMETHEUS_MIGRATION_DDL,
   qdrant: QDRANT_MIGRATION_DDL,

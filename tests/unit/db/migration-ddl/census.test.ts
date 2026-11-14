@@ -70,7 +70,7 @@ const PLACEMENT: Record<DatabaseType, string> = {
   excel: "sql/excel/migration-ddl",
   googlesheets: "sql/googlesheets/migration-ddl",
   mixpanel: "sql/mixpanel/migration-ddl",
-  rest: "sql/rest/migration-ddl",
+  customapi: "sql/customapi/migration-ddl",
   supabase: "sql/supabase/migration-ddl",
   duckdb: "sql/duckdb/migration-ddl",
   libsql: "sql/libsql/migration-ddl",
@@ -138,7 +138,7 @@ const REFUSED: DatabaseType[] = [
   "excel",
   "googlesheets",
   "mixpanel",
-  "rest",
+  "customapi",
 ];
 
 const ids = Object.keys(MIGRATION_DDL) as DatabaseType[];

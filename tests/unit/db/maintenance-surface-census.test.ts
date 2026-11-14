@@ -97,7 +97,7 @@ const EXPECTED: Readonly<Record<DatabaseType, SurfaceRow>> = {
   excel: NONE,
   googlesheets: NONE,
   mixpanel: NONE,
-  rest: NONE,
+  customapi: NONE,
   supabase: { tabs: "analyze,vacuum,reindex", tree: "analyze+vacuum(vacuum)", outsideMaintenanceType: "" },
   mysql: { tabs: "analyze,optimize,check", tree: "analyze+vacuum(optimize)", outsideMaintenanceType: "" },
   sqlite: { tabs: "analyze,reindex", tree: "analyze", outsideMaintenanceType: "" },

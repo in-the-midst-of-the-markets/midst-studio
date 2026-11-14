@@ -8,7 +8,7 @@ import {
   restHost,
   restHostIssue,
   restSecret,
-} from "@/lib/db/providers/sql/rest/catalog";
+} from "@/lib/db/providers/sql/customapi/catalog";
 
 const resource = { name: "items", path: "/v1/items", rows: "data.items" };
 
@@ -55,8 +55,8 @@ describe("custom API catalog", () => {
   });
 
   test("refuses a catalog that is not a resource list", () => {
-    expect(restCatalogIssue(undefined)).toBe("Add a resource and draw a line from the API to it.");
-    expect(restCatalogIssue("  ")).toBe("Add a resource and draw a line from the API to it.");
+    expect(restCatalogIssue(undefined)).toBe("Add at least one resource.");
+    expect(restCatalogIssue("  ")).toBe("Add at least one resource.");
     expect(restCatalogIssue("x".repeat(REST_CATALOG_LIMIT + 1))).toBe("This API's resource list is too long.");
     expect(restCatalogIssue("{")).toBe("This API's resource list could not be read.");
     expect(restCatalogIssue("[]")).toBe("This API's resource list could not be read.");
@@ -72,9 +72,7 @@ describe("custom API catalog", () => {
     expect(
       restCatalogIssue(JSON.stringify({ auth: "header", headerName: "Authorization", resources: [resource] })),
     ).toBe("Name the header the secret is sent in.");
-    expect(restCatalogIssue(JSON.stringify({ auth: "bearer", resources: [] }))).toBe(
-      "Add a resource and draw a line from the API to it.",
-    );
+    expect(restCatalogIssue(JSON.stringify({ auth: "bearer", resources: [] }))).toBe("Add at least one resource.");
     const many = Array.from({ length: 25 }, (_, index) => ({ name: `item${index}`, path: `/i${index}`, rows: "" }));
     expect(restCatalogIssue(JSON.stringify({ auth: "bearer", resources: many }))).toBe(
       "One API can have at most 24 resources.",

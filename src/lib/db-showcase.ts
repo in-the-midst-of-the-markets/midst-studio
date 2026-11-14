@@ -175,7 +175,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   cockroach: 66,
   mixpanel: 67,
   // Last. A hostname and a resource list the user wrote, behind the shipped connectors.
-  rest: 68,
+  customapi: 68,
 };
 
 /**

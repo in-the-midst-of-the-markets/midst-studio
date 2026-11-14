@@ -695,7 +695,7 @@ describe("MCP_EXPOSABLE (#1089)", () => {
       "excel",
       "googlesheets",
       "mixpanel",
-      "rest",
+      "customapi",
       "supabase",
       "etcd",
       "oxia",

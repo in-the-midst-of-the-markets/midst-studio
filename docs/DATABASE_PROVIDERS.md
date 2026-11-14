@@ -344,7 +344,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Microsoft Excel | `excel` | SQL (Microsoft Graph, one workbook, read-only) | [providers/excel.md](./providers/excel.md) |
 | Google Sheets | `googlesheets` | SQL (Sheets API, one spreadsheet, read-only) | [providers/googlesheets.md](./providers/googlesheets.md) |
 | Mixpanel | `mixpanel` | SQL (Query API, one project, read-only) | [providers/mixpanel.md](./providers/mixpanel.md) |
-| Custom API | `rest` | SQL (HTTPS GET, read-only) | [providers/rest.md](./providers/rest.md) |
+| Custom API | `customapi` | SQL (HTTPS GET, read-only) | [providers/customapi.md](./providers/customapi.md) |
 | LibreDB | `libredb` | Embedded (key-value) | [providers/libredb.md](./providers/libredb.md) |
 
 ## Core Interface

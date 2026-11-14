@@ -72,7 +72,7 @@ const sectionOf = (type: DatabaseType): string => {
 
 describe("each provider document's Connection string subsection", () => {
   test("covers every engine the registry has a row for", () => {
-    expect(ENGINES).toHaveLength(68);
+    expect(ENGINES).toHaveLength(69);
   });
 
   for (const type of ENGINES) {
@@ -125,8 +125,9 @@ describe("each provider document's Connection string subsection", () => {
     });
   }
 
-  test("only opcua, elasticsearch, modbus and netconf declare seed-only fields, so the subsections above name them", () => {
+  test("only customapi, opcua, elasticsearch, modbus and netconf declare seed-only fields, so the subsections above name them", () => {
     expect(ENGINES.filter((type) => SEED_ONLY_FIELDS[type] !== null).sort()).toEqual([
+      "customapi",
       "elasticsearch",
       "modbus",
       "netconf",

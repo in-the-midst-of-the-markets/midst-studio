@@ -55,6 +55,8 @@
  *
  * `createNodeTransport` takes two of these on request, the 101 refusal as `refusesUpgrade` and the link-local
  * refusal as `refusesLinkLocal`, both off when absent, so a provider that does not ask keeps the behaviour it had.
+ * `refusesPrivate`, also off when absent, refuses a private, loopback, or link-local destination whatever
+ * DB_HTTP_BLOCK_PRIVATE_HOSTS says. A provider whose user names the host asks for it.
  * It also takes `reportsUnreachable`, off when absent, which the byte transport does not: a deadline that fires
  * before the socket connected is then kind "unreachable", naming host, port and the seconds waited.
  *
@@ -113,6 +115,12 @@ export interface NodeTransportOptions {
    * transport is built, and every socket is opened through a lookup that checks the address it dials.
    */
   readonly refusesLinkLocal?: boolean;
+  /**
+   * Text transport only, off when absent: never reach a private, loopback, or link-local address, whatever
+   * DB_HTTP_BLOCK_PRIVATE_HOSTS says. A literal is refused when the transport is built, and every socket is opened
+   * through a lookup that checks the address it dials.
+   */
+  readonly refusesPrivate?: boolean;
   /**
    * Text transport only, off when absent: fail a 101 answer at once as a network failure and destroy its socket, as
    * the byte transport does, rather than leave the request waiting for its deadline.
@@ -232,9 +240,12 @@ export interface RequestSigner {
   sign(input: SigningInput): Readonly<Record<string, string>>;
 }
 
-/** The byte transport always refuses link-local addresses and a 101 answer, so it takes neither option. */
+/**
+ * The byte transport always refuses link-local addresses and a 101 answer, so it takes neither option. It does not
+ * take `refusesPrivate` either: a local object store stays reachable unless the flag is on.
+ */
 export interface NodeByteTransportOptions
-  extends Omit<NodeTransportOptions, "refusesLinkLocal" | "refusesUpgrade" | "reportsUnreachable"> {
+  extends Omit<NodeTransportOptions, "refusesLinkLocal" | "refusesPrivate" | "refusesUpgrade" | "reportsUnreachable"> {
   /** Absent: no response header is returned and `headers` is []. */
   readonly responseHeaders?: ResponseHeaderSelection;
   /** Absent: the request is sent unsigned, with no Authorization header, which the connection headers never carry. */
@@ -1197,6 +1208,8 @@ interface ConnectionRules {
    * DB_HTTP_BLOCK_PRIVATE_HOSTS alone limits where it connects.
    */
   readonly refusesLinkLocal: boolean;
+  /** Text factory only, when its caller asks: refuse every non-public destination whatever the flag says. */
+  readonly refusesPrivate?: boolean;
   /** The connection's headers as checked: lowerCased for the text factory, checkedConnectionHeaders for the byte one. */
   readonly headersOf: (headers: Readonly<Record<string, string>>) => Readonly<Record<string, string>>;
 }
@@ -1211,7 +1224,7 @@ interface ConnectionRules {
 function connectionOf<A>(
   options: NodeTransportOptions,
   address: (origin: HttpOrigin) => A,
-  { refusesLinkLocal, reportsUnreachable, headersOf }: ConnectionRules,
+  { refusesLinkLocal, refusesPrivate, reportsUnreachable, headersOf }: ConnectionRules,
 ): Connection<A> {
   const { origin, tls, maxSockets } = options;
   if (!isPositiveInteger(maxSockets)) throw new DatabaseConfigError(INVALID_MAX_SOCKETS);
@@ -1225,7 +1238,7 @@ function connectionOf<A>(
   // guard on, its check and then the link-local check, so the guard's sentence wins where both refuse; with it off,
   // linkLocalRefusingLookup (byte transport design 3.9). Without refusesLinkLocal the guard's lookup is kept alone.
   // socketEgress holds that rule, so a socket dial outside this transport applies the same one.
-  const lookup = socketEgress(origin.host, { refusesLinkLocal });
+  const lookup = socketEgress(origin.host, { refusesLinkLocal, refusesPrivate });
   const addressed = address(origin);
   const connectionHeaders = headersOf(options.headers);
   const requestHeaderNames = requestHeaderNamesOf(options.requestHeaderNames, connectionHeaders);
@@ -1314,6 +1327,7 @@ function redirectRefusal(answer: IncomingMessage, status: number, requestUrl: st
 export function createNodeTransport(options: NodeTransportOptions): NodeTransport {
   // Read once and checked before anything else, so a refused value builds nothing.
   const refusesLinkLocal = optedIn(options.refusesLinkLocal, "refusesLinkLocal");
+  const refusesPrivate = optedIn(options.refusesPrivate, "refusesPrivate");
   const refusesUpgrade = optedIn(options.refusesUpgrade, "refusesUpgrade");
   const reportsUnreachable = optedIn(options.reportsUnreachable, "reportsUnreachable");
   const {
@@ -1323,6 +1337,7 @@ export function createNodeTransport(options: NodeTransportOptions): NodeTranspor
     coreSettings,
   } = connectionOf(options, (origin) => new URL(endpointUrl(origin, "/")).origin, {
     refusesLinkLocal,
+    refusesPrivate,
     reportsUnreachable,
     headersOf: lowerCased,
   });

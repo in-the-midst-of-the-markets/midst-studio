@@ -71,7 +71,10 @@ describe(".gitleaksignore", () => {
     // This number is the point of the test: a suppression is a decision someone
     // has to make on purpose, so both a line silently dropped and a line
     // silently added land here as a failing diff rather than as nothing.
-    expect(contentLines).toHaveLength(78);
+    // The custom API query-generator digest, on 584f855c, is the SHA-256 of that
+    // provider's generator answers. The same digest already sits on the Mixpanel
+    // row. The scanner matches it because the key is "provider customapi".
+    expect(contentLines).toHaveLength(79);
   });
 
   test("every non-comment, non-blank line is a well-formed fingerprint", () => {

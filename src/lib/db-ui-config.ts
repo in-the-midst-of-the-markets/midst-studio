@@ -153,7 +153,7 @@ export const DB_UI_CONFIG: {
   googlesheets: branded(CONNECTION_FORM.googlesheets, GoogleSheetsIcon, "text-hue-lime bg-hue-lime/10"),
   mixpanel: branded(CONNECTION_FORM.mixpanel, MixpanelIcon, "text-hue-mauve bg-hue-mauve/10"),
   // Olive is Sparkplug's text colour; the tint keeps this mark distinct from that one.
-  rest: branded(CONNECTION_FORM.rest, RestIcon, "text-hue-olive bg-hue-olive/15"),
+  customapi: branded(CONNECTION_FORM.customapi, RestIcon, "text-hue-olive bg-hue-olive/15"),
   mysql: branded(CONNECTION_FORM.mysql, MySQLIcon, "text-hue-amber"),
   sqlite: branded(CONNECTION_FORM.sqlite, SQLiteIcon, "text-hue-cyan"),
   // DuckDB's own mark is a bright yellow (#FFF000), and `hue-yellow` is already

@@ -1,6 +1,6 @@
-resolveSqlGrammar("rest") => {"hash":"code","bracket":"subscript","blockComment":"flat","alternateQuoting":false,"doubleSlashComment":false,"backslashAlwaysEscapes":false,"script":{"blocks":"none","separatorLine":null,"unit":"statement"},"trailingLimitClauses":[],"formatterLanguage":"mysql","completionWords":{"keywords":["SELECT","FROM","WHERE","AND","ORDER BY","ASC","DESC","LIMIT","OFFSET","LIKE","IS NULL","IS NOT NULL"],"functions":[],"lists":"only","snippets":[{"label":"SELECT","insertText":"SELECT id\nFROM items\nLIMIT ${1:100}"}]},"completionClauses":{"column":["SELECT","WHERE","ORDER BY"],"table":["FROM"]}}
-readsSqlText("rest") => true
-hashRunIsAmbiguous(resolveSqlGrammar("rest")) => false
+resolveSqlGrammar("customapi") => {"hash":"code","bracket":"subscript","blockComment":"flat","alternateQuoting":false,"doubleSlashComment":false,"backslashAlwaysEscapes":false,"script":{"blocks":"none","separatorLine":null,"unit":"statement"},"trailingLimitClauses":[],"formatterLanguage":"mysql","completionWords":{"keywords":["SELECT","FROM","WHERE","AND","ORDER BY","ASC","DESC","LIMIT","OFFSET","LIKE","IS NULL","IS NOT NULL"],"functions":[],"lists":"only","snippets":[{"label":"SELECT","insertText":"SELECT id\nFROM items\nLIMIT ${1:100}"}]},"completionClauses":{"column":["SELECT","WHERE","ORDER BY"],"table":["FROM"]}}
+readsSqlText("customapi") => true
+hashRunIsAmbiguous(resolveSqlGrammar("customapi")) => false
 readSqlSpan walk("SELECT 1 # c\nFROM t") => [["whitespace",6,7],["whitespace",8,9],["whitespace",10,11],["whitespace",12,13],["whitespace",17,18]]
 splitStatements("SELECT 1 # c\nFROM t") => [{"sql":"SELECT 1 # c\nFROM t","startLine":0,"start":0,"end":19}]
 readSqlSpan walk("SELECT a[1], [x]]y] FROM t") => [["whitespace",6,7],["subscript",8,11],["whitespace",12,13],["subscript",13,16],["whitespace",19,20],["whitespace",24,25]]
@@ -23,29 +23,29 @@ readSqlSpan walk("BEGIN NULL; END;\n/\nSELECT 1") => [["whitespace",5,6],["white
 splitStatements("BEGIN NULL; END;\n/\nSELECT 1") => [{"sql":"BEGIN NULL","startLine":0,"start":0,"end":10},{"sql":"END","startLine":0,"start":12,"end":15},{"sql":"/\nSELECT 1","startLine":1,"start":17,"end":27}]
 readSqlSpan walk("SELECT 1 -- x\rDROP TABLE t") => [["whitespace",6,7],["whitespace",8,9],["line-comment",9,26]]
 splitStatements("SELECT 1 -- x\rDROP TABLE t") => [{"sql":"SELECT 1 -- x\rDROP TABLE t","startLine":0,"start":0,"end":26}]
-resolveUpdateTarget("SELECT id, note FROM products", "rest") => {"kind":"table","table":"products"}
-resolveUpdateTarget("SELECT id FROM products --x", "rest") => {"kind":"table","table":"products"}
-resolveUpdateTarget("SELECT id FROM products -- x", "rest") => {"kind":"table","table":"products"}
-resolveUpdateTarget("SELECT id, (PIVOT orders ON k USING max(note)) FROM products", "rest") => {"kind":"table","table":"products"}
-resolveUpdateTarget("SELECT id, coalesce(show, '') FROM products", "rest") => {"kind":"table","table":"products"}
-resolveUpdateTarget("SELECT id FROM products MINUS SELECT id FROM orders", "rest") => {"kind":"refused","reason":"This query reads from more than one place, so the row's table cannot be told apart"}
-resolveUpdateTarget("SELECT id FROM a UNION SELECT id FROM b", "rest") => {"kind":"refused","reason":"This result combines more than one query, so there is no single table to write to"}
-resolveUpdateTarget("SELECT id FROM products WHERE qty <> 5-- zz UNION SELECT id FROM zord", "rest") => {"kind":"table","table":"products"}
-selectsPlainColumn("SELECT id, note FROM products", "note", "rest") => true
-redactStatement("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "rest") => {"statement":"SELECT * FROM \"Users\" WHERE name = ? AND id = ?","statement_fingerprint":"156452582961be9e818b0b1c0c165cb7dcf0393926a233118370cbf875e9891b"}
-maskCredentials("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "rest") => "SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42"
-redactStatement("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "rest") => {"statement":"SELECT ?, [b] FROM t WHERE x = ? ?","statement_fingerprint":"70f52d8b40f218938e60b0b272bfce25bdc33c40a1d775c63b01322244ba3d15"}
-maskCredentials("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "rest") => "SELECT `a`, [b] FROM t WHERE x = 'y' -- note"
-redactStatement("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "rest") => {"statement":"{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}","statement_fingerprint":"472d33795baa2c7ab5205ab4f362f0dbffb059fd3ad137c6b9d8cdeb5634a141"}
-maskCredentials("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "rest") => "{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}"
-redactStatement("GET user:1", "rest") => {"statement":"GET user:?","statement_fingerprint":"246c39d2717b5c7218496cb5b7362d1d7966164411958bcebc9854f208af8031"}
-maskCredentials("GET user:1", "rest") => "GET user:1"
-redactStatement("SET k \"v\"", "rest") => {"statement":"SET k \"v\"","statement_fingerprint":"4e0073cffd105dac4cff1d6977160d3e0ddd7d99a38458c82880204bf72f692d"}
-maskCredentials("SET k \"v\"", "rest") => "SET k \"v\""
-redactStatement("SELECT 'postgres://u:p@h/db' # x", "rest") => {"statement":"SELECT ? # x","statement_fingerprint":"02d9117283ee88aee444252ba6af0e47e863d96ad1fefe919ae8c9ab22d2c31c"}
-maskCredentials("SELECT 'postgres://u:p@h/db' # x", "rest") => "SELECT 'postgres://[REDACTED]@h/db' # x"
-redactStatement("CREATE USER a IDENTIFIED BY secret", "rest") => {"statement":"CREATE USER a IDENTIFIED BY ?","statement_fingerprint":"76d4ced0796794c87e00191b8053e439b92034a904ae32d6431a74e37403c4ec"}
-maskCredentials("CREATE USER a IDENTIFIED BY secret", "rest") => "CREATE USER a IDENTIFIED BY [REDACTED]"
+resolveUpdateTarget("SELECT id, note FROM products", "customapi") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products --x", "customapi") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products -- x", "customapi") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id, (PIVOT orders ON k USING max(note)) FROM products", "customapi") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id, coalesce(show, '') FROM products", "customapi") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products MINUS SELECT id FROM orders", "customapi") => {"kind":"refused","reason":"This query reads from more than one place, so the row's table cannot be told apart"}
+resolveUpdateTarget("SELECT id FROM a UNION SELECT id FROM b", "customapi") => {"kind":"refused","reason":"This result combines more than one query, so there is no single table to write to"}
+resolveUpdateTarget("SELECT id FROM products WHERE qty <> 5-- zz UNION SELECT id FROM zord", "customapi") => {"kind":"table","table":"products"}
+selectsPlainColumn("SELECT id, note FROM products", "note", "customapi") => true
+redactStatement("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "customapi") => {"statement":"SELECT * FROM \"Users\" WHERE name = ? AND id = ?","statement_fingerprint":"156452582961be9e818b0b1c0c165cb7dcf0393926a233118370cbf875e9891b"}
+maskCredentials("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "customapi") => "SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42"
+redactStatement("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "customapi") => {"statement":"SELECT ?, [b] FROM t WHERE x = ? ?","statement_fingerprint":"70f52d8b40f218938e60b0b272bfce25bdc33c40a1d775c63b01322244ba3d15"}
+maskCredentials("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "customapi") => "SELECT `a`, [b] FROM t WHERE x = 'y' -- note"
+redactStatement("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "customapi") => {"statement":"{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}","statement_fingerprint":"472d33795baa2c7ab5205ab4f362f0dbffb059fd3ad137c6b9d8cdeb5634a141"}
+maskCredentials("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "customapi") => "{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}"
+redactStatement("GET user:1", "customapi") => {"statement":"GET user:?","statement_fingerprint":"246c39d2717b5c7218496cb5b7362d1d7966164411958bcebc9854f208af8031"}
+maskCredentials("GET user:1", "customapi") => "GET user:1"
+redactStatement("SET k \"v\"", "customapi") => {"statement":"SET k \"v\"","statement_fingerprint":"4e0073cffd105dac4cff1d6977160d3e0ddd7d99a38458c82880204bf72f692d"}
+maskCredentials("SET k \"v\"", "customapi") => "SET k \"v\""
+redactStatement("SELECT 'postgres://u:p@h/db' # x", "customapi") => {"statement":"SELECT ? # x","statement_fingerprint":"02d9117283ee88aee444252ba6af0e47e863d96ad1fefe919ae8c9ab22d2c31c"}
+maskCredentials("SELECT 'postgres://u:p@h/db' # x", "customapi") => "SELECT 'postgres://[REDACTED]@h/db' # x"
+redactStatement("CREATE USER a IDENTIFIED BY secret", "customapi") => {"statement":"CREATE USER a IDENTIFIED BY ?","statement_fingerprint":"76d4ced0796794c87e00191b8053e439b92034a904ae32d6431a74e37403c4ec"}
+maskCredentials("CREATE USER a IDENTIFIED BY secret", "customapi") => "CREATE USER a IDENTIFIED BY [REDACTED]"
 completions[plain]("SELECT * FROM ") => [["Order\"Items","\"Order\"\"Items\""],["public.select","\"public\".\"select\""],["users","\"users\""]]
 completions[plain]("SELECT * FROM public.se") => [["public.select","\"public\".\"select\""]]
 completions[plain]("SELECT \"Order\"\"Items\".") => [["qty","qty"]]

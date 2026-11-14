@@ -165,7 +165,7 @@ describe("docs/MCP.md", () => {
         "excel",
         "googlesheets",
         "mixpanel",
-        "rest",
+        "customapi",
         "supabase",
         "etcd",
         "oxia",

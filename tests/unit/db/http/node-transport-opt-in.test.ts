@@ -104,6 +104,73 @@ describe("refusesLinkLocal", () => {
   });
 });
 
+describe("refusesPrivate", () => {
+  const PRIVATE =
+    "Invalid host: this connection never reaches a private, loopback, or link-local address, whatever DB_HTTP_BLOCK_PRIVATE_HOSTS says";
+
+  test.each(["127.0.0.1", "10.0.0.5", "[::1]", "169.254.169.254", "100.100.100.200"])(
+    "%s is refused when the transport is built, with the guard off",
+    (host) => {
+      delete process.env[FLAG];
+      const error = refusal(() => build(toHost(host, { refusesPrivate: true })));
+      expect(error).toBeInstanceOf(DatabaseConfigError);
+      expect(error.message).toBe(PRIVATE);
+    },
+  );
+
+  test("with the guard on, a private literal still gets the private-host sentence", () => {
+    process.env[FLAG] = "true";
+    expect(refusal(() => build(toHost("10.0.0.5", { refusesPrivate: true }))).message).toBe(PRIVATE);
+  });
+
+  test("a public name builds, with the guard off", () => {
+    delete process.env[FLAG];
+    expect(() => build(toHost("api.example.com", { refusesPrivate: true }))).not.toThrow();
+  });
+
+  test.each([undefined, false])("set to %p, loopback still builds", (value) => {
+    delete process.env[FLAG];
+    expect(() => build(toHost("127.0.0.1", value === undefined ? {} : { refusesPrivate: value }))).not.toThrow();
+  });
+
+  test("a name that resolves to loopback is refused at the lookup, and nothing is accepted", async () => {
+    delete process.env[FLAG];
+    const listener = await rawHttpListener(() => rawAnswer("200 OK", ["content-length: 2"], "ok"));
+    const origin = httpOrigin("http", "localhost", listener.port);
+    const transport = build({ origin, tls: null, maxSockets: 1, headers: {}, refusesPrivate: true });
+    let error: unknown;
+    try {
+      await transport.request({
+        method: "GET",
+        url: endpointUrl(origin, "/ok"),
+        signal: AbortSignal.timeout(5000),
+        maxResponseBytes: 1024,
+      });
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(DatabaseConfigError);
+    expect((error as Error).message).toBe(PRIVATE);
+    expect((error as Error).message).not.toContain("127.0.0.1");
+    expect(listener.accepted()).toBe(0);
+  });
+
+  test.each([["true"], [1], [null]])("set to %p, which is not true or false, is refused by name", (value) => {
+    const error = refusal(() =>
+      build(toHost("api.example.com", { refusesPrivate: value } as unknown as Partial<NodeTransportOptions>)),
+    );
+    expect(error).toBeInstanceOf(DatabaseConfigError);
+    expect(error.message).toBe("Invalid refusesPrivate: expected true or false");
+  });
+
+  test("the byte transport does not take the option, so loopback still builds", () => {
+    delete process.env[FLAG];
+    expect(() =>
+      createNodeByteTransport({ ...toHost("127.0.0.1"), ...({ refusesPrivate: true } as object) }),
+    ).not.toThrow();
+  });
+});
+
 describe("refusesUpgrade", () => {
   const SWITCHED =
     "The server switched the connection to another protocol, and this transport reads HTTP only, so the response was not read";

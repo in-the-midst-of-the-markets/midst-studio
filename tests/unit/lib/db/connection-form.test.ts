@@ -66,7 +66,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   excel: true,
   googlesheets: true,
   mixpanel: true,
-  rest: true,
+  customapi: true,
   supabase: true,
   mysql: true,
   sqlite: true,
@@ -391,7 +391,6 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "netconf",
       "weaviate",
       "questdb",
-      "rest",
       "hubspot",
       "stripe",
       "clarity",
@@ -412,6 +411,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "excel",
       "googlesheets",
       "mixpanel",
+      "customapi",
     ]);
   });
 
@@ -441,6 +441,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "excel",
       "googlesheets",
       "mixpanel",
+      "customapi",
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");

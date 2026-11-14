@@ -135,14 +135,21 @@ export function guardedNodeOptions(hostname: string | null | undefined): Pick<Re
 
 export const LINK_LOCAL_HOST =
   "Invalid host: this connection never reaches a link-local address or AWS's IPv6 instance metadata address, whatever DB_HTTP_BLOCK_PRIVATE_HOSTS says";
+export const PRIVATE_HOST =
+  "Invalid host: this connection never reaches a private, loopback, or link-local address, whatever DB_HTTP_BLOCK_PRIVATE_HOSTS says";
 export const UNUSABLE_ANSWER = "Invalid host: the name did not resolve to a usable IP address";
 
 /**
- * The three sentences of the shared egress refusal. A provider that wraps its own failures passes a DatabaseConfigError
+ * The sentences of the shared egress refusal. A provider that wraps its own failures passes a DatabaseConfigError
  * whose message is one of these through unchanged, so the user reads the guard's own words. The invalid-flag sentence
  * is not among them: it is a configuration fault of the server, not a refused destination.
  */
-export const EGRESS_REFUSAL_SENTENCES: ReadonlySet<string> = new Set([BLOCKED_HOST, LINK_LOCAL_HOST, UNUSABLE_ANSWER]);
+export const EGRESS_REFUSAL_SENTENCES: ReadonlySet<string> = new Set([
+  BLOCKED_HOST,
+  LINK_LOCAL_HOST,
+  PRIVATE_HOST,
+  UNUSABLE_ANSWER,
+]);
 
 /**
  * The addresses a byte transport never reaches, whatever DB_HTTP_BLOCK_PRIVATE_HOSTS says (byte transport design 3.9):
@@ -200,6 +207,38 @@ export function assertNoLinkLocalDnsAnswer(addresses: readonly LookupAddress[]):
 export const linkLocalRefusingLookup: LookupFunction = checkedLookup(assertNoLinkLocalDnsAnswer);
 
 /**
+ * Refuses a private, loopback, or link-local answer, or an answer that is not a usable address. Used when a connection
+ * names its own host, so the flag that keeps a local object store reachable does not apply.
+ */
+export function assertNoPrivateDnsAnswer(addresses: readonly LookupAddress[]): void {
+  if (
+    addresses.length === 0 ||
+    addresses.some(({ address, family }) => (family !== 4 && family !== 6) || isIP(address) !== family)
+  ) {
+    throw new DatabaseConfigError(UNUSABLE_ANSWER);
+  }
+  if (addresses.some(({ address, family }) => isBlocked(address, family) || isLinkLocal(address, family))) {
+    throw new DatabaseConfigError(PRIVATE_HOST);
+  }
+}
+
+/** Resolves and pins the answer, refusing every non-public address whatever the flag says. */
+export const privateHostLookup: LookupFunction = checkedLookup(assertNoPrivateDnsAnswer);
+
+/**
+ * A literal the blocked list holds, a link-local literal the blocked list does not (the NAT64 form of 169.254.0.0/16),
+ * or an IPv6 literal with a zone index. A name passes.
+ */
+function assertPrivateLiteral(host: string): void {
+  const address = host.startsWith("[") && host.endsWith("]") ? host.slice(1, -1) : host;
+  if (address.includes("%")) throw new DatabaseConfigError(PRIVATE_HOST);
+  const family = isIP(address);
+  if (family !== 0 && (isBlocked(address, family) || isLinkLocal(address, family))) {
+    throw new DatabaseConfigError(PRIVATE_HOST);
+  }
+}
+
+/**
  * The byte transport's lookup with DB_HTTP_BLOCK_PRIVATE_HOSTS on: both checks on every answer, the guard's first, so
  * its sentence wins where both refuse, a zoned address such as fe80::1%lo included.
  */
@@ -212,12 +251,25 @@ export const guardedLinkLocalRefusingLookup: LookupFunction = checkedLookup((add
  * The egress rule for one socket dial to `host`, which may be an IPv6 literal with or without its brackets. The literal
  * checks run first, because an IP literal never reaches a lookup: with DB_HTTP_BLOCK_PRIVATE_HOSTS on the guard's, which
  * also refuses an empty host, and then with `refusesLinkLocal` the link-local check whatever the flag says, so the
- * guard's sentence wins where both refuse. The answer is the lookup the socket dials through, which checks the address
- * it dials and hands that address to the socket: both checks with the flag on and `refusesLinkLocal`, the link-local
- * one alone with the flag off, the guard's alone without `refusesLinkLocal`, and undefined, the runtime's own lookup,
- * with neither.
+ * guard's sentence wins where both refuse. With `refusesPrivate` every non-public destination is refused whatever the
+ * flag says, and the flag is still read so an invalid value fails closed. The answer is the lookup the socket dials
+ * through, which checks the address it dials and hands that address to the socket: both checks with the flag on and
+ * `refusesLinkLocal`, the link-local one alone with the flag off, the guard's alone without `refusesLinkLocal`,
+ * `privateHostLookup` with `refusesPrivate`, and undefined, the runtime's own lookup, with neither.
  */
-export function socketEgress(host: string, rules: { readonly refusesLinkLocal: boolean }): LookupFunction | undefined {
+export function socketEgress(
+  host: string,
+  rules: { readonly refusesLinkLocal: boolean; readonly refusesPrivate?: boolean },
+): LookupFunction | undefined {
+  // A connection that names its own host refuses every non-public destination, whatever the flag says. The flag is
+  // still read, so a value that is neither on nor off fails closed here too.
+  if (rules.refusesPrivate === true) {
+    guardedNodeOptions("example.com");
+    if (host === "") throw new DatabaseConfigError(BLOCKED_HOST);
+    assertPrivateLiteral(host);
+    assertNotLinkLocalLiteral(host);
+    return privateHostLookup;
+  }
   const { lookup: guardLookup } = guardedNodeOptions(host);
   if (!rules.refusesLinkLocal) return guardLookup;
   assertNotLinkLocalLiteral(host);

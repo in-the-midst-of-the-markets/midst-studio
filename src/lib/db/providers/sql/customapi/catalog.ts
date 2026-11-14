@@ -76,7 +76,7 @@ export function restHostIssue(raw: string): string | null {
 /** The hostname `restHostIssue` accepted, with a leading https:// removed. */
 export function restHost(raw: string): string {
   const issue = restHostIssue(raw);
-  if (issue !== null) throw new DatabaseConfigError(issue, "rest");
+  if (issue !== null) throw new DatabaseConfigError(issue, "customapi");
   let host = raw.trim().replace(/^https:\/\//i, "");
   if (host.endsWith("/")) host = host.slice(0, -1);
   return host.toLowerCase();
@@ -105,7 +105,7 @@ function resourceIssue(value: unknown, seen: Set<string>): string | null {
 
 /** The catalog text a connection may store, or the reason it may not. The secret is not part of it. */
 export function restCatalogIssue(raw: string | undefined): string | null {
-  if (raw === undefined || raw.trim() === "") return "Add a resource and draw a line from the API to it.";
+  if (raw === undefined || raw.trim() === "") return "Add at least one resource.";
   if (raw.length > REST_CATALOG_LIMIT) return "This API's resource list is too long.";
   let parsed: unknown;
   try {
@@ -123,7 +123,7 @@ export function restCatalogIssue(raw: string | undefined): string | null {
       return "Name the header the secret is sent in.";
     }
   }
-  if (parsed.resources.length < 1) return "Add a resource and draw a line from the API to it.";
+  if (parsed.resources.length < 1) return "Add at least one resource.";
   if (parsed.resources.length > REST_RESOURCE_CAP) return "One API can have at most 24 resources.";
   const seen = new Set<string>();
   for (const resource of parsed.resources) {
@@ -136,7 +136,7 @@ export function restCatalogIssue(raw: string | undefined): string | null {
 /** The catalog `restCatalogIssue` accepted. */
 export function readRestCatalog(raw: string | undefined): RestCatalog {
   const issue = restCatalogIssue(raw);
-  if (issue !== null) throw new DatabaseConfigError(issue, "rest");
+  if (issue !== null) throw new DatabaseConfigError(issue, "customapi");
   const parsed = JSON.parse(raw ?? "") as {
     auth: RestAuth;
     headerName?: string;
@@ -159,7 +159,7 @@ const SECRET_ISSUE = "Add the secret. It is sent as a header, never in the URL."
 /** The secret a custom API sends, with no newline that could become a second header. */
 export function restSecret(raw: string | undefined): string {
   const secret = raw?.trim() ?? "";
-  if (secret.length < 8 || /[\r\n]/.test(secret)) throw new DatabaseConfigError(SECRET_ISSUE, "rest");
+  if (secret.length < 8 || /[\r\n]/.test(secret)) throw new DatabaseConfigError(SECRET_ISSUE, "customapi");
   return secret;
 }
 
@@ -167,7 +167,7 @@ export function restSecret(raw: string | undefined): string {
 export function restBasicUser(raw: string | undefined): string {
   const user = raw?.trim() ?? "";
   if (user === "" || /[\r\n:]/.test(user)) {
-    throw new DatabaseConfigError("Add the username for basic authentication.", "rest");
+    throw new DatabaseConfigError("Add the username for basic authentication.", "customapi");
   }
   return user;
 }

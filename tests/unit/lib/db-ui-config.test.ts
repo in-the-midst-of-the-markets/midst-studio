@@ -152,7 +152,7 @@ const ALL_TYPES: DatabaseType[] = [
   "excel",
   "googlesheets",
   "mixpanel",
-  "rest",
+  "customapi",
 ];
 
 describe("db-ui-config", () => {
@@ -399,6 +399,7 @@ describe("db-ui-config", () => {
       expect(refusing.sort()).toEqual([
         "bigquery",
         "clarity",
+        "customapi",
         "dynamics",
         "excel",
         "firestore",
@@ -417,7 +418,6 @@ describe("db-ui-config", () => {
         "pipedrive",
         "quickbooks",
         "rabbitmq",
-        "rest",
         "shopify",
         "snmp",
         "snowflake",
@@ -455,6 +455,7 @@ describe("db-ui-config", () => {
         "airtable",
         "bigquery",
         "clarity",
+        "customapi",
         "dynamics",
         "excel",
         "firestore",
@@ -473,7 +474,6 @@ describe("db-ui-config", () => {
         "paypal",
         "pipedrive",
         "quickbooks",
-        "rest",
         "shopify",
         "snmp",
         "snowflake",
@@ -847,6 +847,7 @@ const FIELD_CHECKLIST: Record<ConnectionField, true> = {
   securityMode: true,
   serverCertificateThumbprint: true,
   registerMap: true,
+  apiCatalog: true,
   hostKeyFingerprint: true,
 };
 const EVERY_FIELD = Object.keys(FIELD_CHECKLIST) as ConnectionField[];
@@ -1178,7 +1179,7 @@ describe("declared connection-field copy (#1085)", () => {
       "excel",
       "googlesheets",
       "mixpanel",
-      "rest",
+      "customapi",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1791,7 +1792,7 @@ describe("db-showcase", () => {
         // Last, a product-analytics API, in the SAAS Connectors group.
         "mixpanel",
         // Last. A hostname and a resource list the user wrote.
-        "rest",
+        "customapi",
       ]);
     });
   });
@@ -2044,7 +2045,7 @@ describe("the Snowflake entry", () => {
       "metaads",
       "paypal",
       "mixpanel",
-      "rest",
+      "customapi",
     ]);
   });
 
