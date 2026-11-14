@@ -17,13 +17,18 @@ export default function MarketplacePage() {
           <span className="text-sm text-fg-secondary">Marketplace</span>
         </header>
         <div className="mx-auto w-full max-w-4xl flex-1 px-6 pt-8 pb-16">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back to the editor
-          </Link>
+          <div className="flex items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm text-fg-muted transition-colors hover:text-fg"
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to the editor
+            </Link>
+            <Link href="/connect" className="text-sm text-fg-muted transition-colors hover:text-fg">
+              Connect APIs
+            </Link>
+          </div>
           <div className="mt-6">
             <Marketplace />
           </div>
