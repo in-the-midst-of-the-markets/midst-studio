@@ -324,6 +324,12 @@ export const SeedConnectionSchema = z
      * resolved from a reference.
      */
     registerMap: z.string().optional(),
+    /**
+     * Custom API only: the resource list, the JSON document the provider parses, saved byte for byte. Declared for
+     * the reason skipObjectScan is: zod strips an undeclared key in silence, and a seeded connection without its list
+     * has no path to read. Not a secret: the token stays in `password`.
+     */
+    apiCatalog: z.string().optional(),
     // And the three OPC UA fields the dialog has no box for: why, at SEED_ONLY_FIELDS.opcua in src/lib/db/connection-fields.ts.
     securityPolicyUri: z.string().optional(),
     clientCertificatePath: z.string().optional(),

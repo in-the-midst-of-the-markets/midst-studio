@@ -126,6 +126,9 @@ export const CONNECTION_FIELDS: Record<keyof DatabaseConnection, FieldClass> = {
   // all, so there is nothing here to leak. Storing it `secret` would also mask it in the dialog, and a
   // document nobody can read is a document nobody can correct.
   registerMap: "public",
+  // The custom API resource list. The secret it is sent with is `password`, classified above. The list
+  // names paths, not credentials, and storing it as a secret would hide the document the user has to edit.
+  apiCatalog: "public",
 };
 
 export const SSL_FIELDS: Record<keyof SSLConfig, FieldClass> = {

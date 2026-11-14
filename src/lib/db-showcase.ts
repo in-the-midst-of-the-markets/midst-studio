@@ -174,6 +174,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   redshift: 65,
   cockroach: 66,
   mixpanel: 67,
+  // Last. A hostname and a resource list the user wrote, behind the shipped connectors.
+  rest: 68,
 };
 
 /**

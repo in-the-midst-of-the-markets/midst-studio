@@ -86,6 +86,7 @@ button "Modbus"
 button "NETCONF"
 button "Weaviate"
 button "QuestDB"
+button "Custom API"
 label[for=host] "Host"
 input#host type=none placeholder="localhost" describedby=none
 input#port type=none placeholder=none describedby=none

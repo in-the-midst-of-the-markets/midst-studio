@@ -107,6 +107,8 @@ const FIELD_OWNERSHIP: Record<keyof DatabaseConnection, FieldOwnership> = {
   seedId: "preserved",
   agentUser: "preserved",
   agentPassword: "preserved",
+  // The custom API resource list has no box. Editing the hostname or the secret must hand it back.
+  apiCatalog: "preserved",
 };
 
 const SSL_OWNERSHIP: Record<keyof SSLConfig, FieldOwnership> = {

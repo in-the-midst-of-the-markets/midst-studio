@@ -795,6 +795,29 @@ export const CONNECTION_FORM: {
       database: "The numeric project id. It is sent as project_id on that same host.",
     },
   },
+  rest: {
+    label: "Custom API",
+    defaultPort: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.rest,
+    fieldLabels: {
+      host: "Hostname",
+      user: "Username",
+      password: "Secret",
+    },
+    fieldPlaceholders: {
+      host: "api.example.com",
+      user: "account",
+      password: "secret",
+    },
+    fieldHints: {
+      host: "The secret is sent only to this hostname, over HTTPS, and never to a private or link-local address.",
+      user: "Used only for basic authentication. Leave it empty for a bearer token or a header.",
+      password: "The secret. Studio sends it as a header and does not put it in the URL.",
+    },
+  },
   googlesheets: {
     label: "Google Sheets",
     defaultPort: "",
@@ -1933,6 +1956,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "netconf",
   "weaviate",
   "questdb",
+  "rest",
   "hubspot",
   "stripe",
   "clarity",

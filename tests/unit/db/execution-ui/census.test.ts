@@ -59,6 +59,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "excel",
     "googlesheets",
     "mixpanel",
+    "rest",
     "redshift",
     "cockroach",
     "libsql",

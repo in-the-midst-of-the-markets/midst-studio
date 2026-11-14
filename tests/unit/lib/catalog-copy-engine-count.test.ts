@@ -165,6 +165,9 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-eight": 68,
   // Two past the registry once CockroachDB joined it.
   "sixty-nine": 69,
+  // Two past the registry once Custom API joined it.
+  seventy: 70,
+  "seventy-one": 71,
 };
 
 /**
