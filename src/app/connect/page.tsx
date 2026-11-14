@@ -25,8 +25,9 @@ export default function ConnectPage() {
           </Link>
           <h1 className="mt-4 text-2xl font-medium text-fg">Connect APIs</h1>
           <p className="mt-1 max-w-2xl text-sm text-fg-secondary">
-            Drag a service onto the board, fill in its token, and save it as a connection. Draw a line when one API
-            feeds another. Tokens stay in this browser until you save.
+            Build a connection to an API this app does not already ship. Name its hostname, how the secret is sent, and
+            each GET path. Draw a line from the API to a resource to include it, then save. The secret stays in this
+            browser until you save, and a query sends it only to that hostname.
           </p>
           <div className="mt-6">
             <SaasFlowEditor />

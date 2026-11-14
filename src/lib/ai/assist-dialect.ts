@@ -397,6 +397,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  rest: {
+    rule: "sql is one read-only SELECT of one resource the user named, such as items. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins, no COUNT.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   redshift: {
     rule: "sql is one read-only SELECT for Amazon Redshift. Page with LIMIT. Do not call pg_backend_pid or pg_total_relation_size, and do not read pg_catalog.",
     sample: SQL_SAMPLE,

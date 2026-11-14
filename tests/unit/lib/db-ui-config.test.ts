@@ -152,6 +152,7 @@ const ALL_TYPES: DatabaseType[] = [
   "excel",
   "googlesheets",
   "mixpanel",
+  "rest",
 ];
 
 describe("db-ui-config", () => {
@@ -416,6 +417,7 @@ describe("db-ui-config", () => {
         "pipedrive",
         "quickbooks",
         "rabbitmq",
+        "rest",
         "shopify",
         "snmp",
         "snowflake",
@@ -471,6 +473,7 @@ describe("db-ui-config", () => {
         "paypal",
         "pipedrive",
         "quickbooks",
+        "rest",
         "shopify",
         "snmp",
         "snowflake",
@@ -1175,6 +1178,7 @@ describe("declared connection-field copy (#1085)", () => {
       "excel",
       "googlesheets",
       "mixpanel",
+      "rest",
       "libsql",
       // The labels and hints the dialog chose by type id until these entries declared them (engine contract, row 8).
       "mongodb",
@@ -1786,6 +1790,8 @@ describe("db-showcase", () => {
         "cockroach",
         // Last, a product-analytics API, in the SAAS Connectors group.
         "mixpanel",
+        // Last. A hostname and a resource list the user wrote.
+        "rest",
       ]);
     });
   });
@@ -2038,6 +2044,7 @@ describe("the Snowflake entry", () => {
       "metaads",
       "paypal",
       "mixpanel",
+      "rest",
     ]);
   });
 

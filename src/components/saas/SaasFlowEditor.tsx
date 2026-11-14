@@ -14,35 +14,37 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { CONNECTION_FORM } from "@/lib/db/connection-form";
 import {
-  SAAS_DRAG_MIME,
-  connectionFromNode,
-  describeSaasFlow,
-  draftSaasNode,
-  linkSaasNodes,
-  moveSaasNode,
-  readSaasBoard,
-  removeSaasNode,
-  renameSaasNode,
-  saasConnectionIssue,
-  saasNodeFields,
-  saasPalette,
-  setSaasField,
-  unlinkSaasNodes,
-  writeSaasBoard,
-  type SaasFlowBoard,
-  type SaasFlowNode,
-} from "@/lib/saas/flow-board";
+  API_DRAG_MIME,
+  addApiResource,
+  apiConnectionIssue,
+  connectionFromBoard,
+  describeApiFlows,
+  linkApiResource,
+  moveApiNode,
+  readApiBoard,
+  removeApiResource,
+  setApiResource,
+  setApiSettings,
+  unlinkApiResource,
+  writeApiBoard,
+  type ApiBoard,
+  type ApiResourceNode,
+} from "@/lib/saas/api-board";
+import type { RestAuth } from "@/lib/db/providers/sql/rest/catalog";
 import { storage } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 interface ApiNodeData extends Record<string, unknown> {
   label: string;
-  name: string;
+  detail: string;
 }
 
-function ApiNode({ data, selected }: NodeProps<Node<ApiNodeData>>) {
+function boardStore(): Storage | undefined {
+  return typeof localStorage === "undefined" ? undefined : localStorage;
+}
+
+function FlowNode({ data, selected }: NodeProps<Node<ApiNodeData>>) {
   return (
     <div
       className={cn(
@@ -52,60 +54,42 @@ function ApiNode({ data, selected }: NodeProps<Node<ApiNodeData>>) {
     >
       <Handle type="target" position={Position.Left} />
       <div className="text-sm font-medium text-fg">{data.label}</div>
-      <div className="truncate text-xs text-fg-muted">{data.name}</div>
+      <div className="truncate text-xs text-fg-muted">{data.detail}</div>
       <Handle type="source" position={Position.Right} />
     </div>
   );
 }
 
-const nodeTypes: NodeTypes = { api: ApiNode };
+const nodeTypes: NodeTypes = { api: FlowNode, resource: FlowNode };
+
+const inputClass = "h-8 rounded border border-hairline-strong bg-canvas px-2 text-sm text-fg";
 
 /**
- * Drag a SaaS API onto the board, fill in its token, and save it as a connection.
- * A line means one API's data feeds another.
+ * Define an API this app does not already ship: a hostname, how the secret is
+ * sent, and the GET paths that become tables. A line includes a resource in the
+ * saved connection.
  */
 export function SaasFlowEditor() {
-  const [board, setBoard] = useState<SaasFlowBoard>(() =>
-    readSaasBoard(typeof localStorage === "undefined" ? undefined : localStorage),
-  );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [note, setNote] = useState<string | null>(null);
   const dragged = useRef(false);
-  const selected = board.nodes.find((node) => node.id === selectedId) ?? null;
-  const needle = query.trim().toLowerCase();
-  const palette = saasPalette().filter((item) => item.label.toLowerCase().includes(needle));
+  const [board, setBoard] = useState<ApiBoard>(() => readApiBoard(boardStore()));
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    writeSaasBoard(localStorage, board);
+    const store = boardStore();
+    if (store !== undefined) writeApiBoard(store, board);
   }, [board]);
 
-  const addNode = (type: string, x: number, y: number) => {
-    const made = draftSaasNode({ type, x, y, existing: board.nodes });
-    if (!made.ok) {
-      setNote(made.error);
-      return;
-    }
-    setBoard({ ...board, nodes: [...board.nodes, made.node] });
-    setSelectedId(made.node.id);
-    setNote(null);
-  };
-
-  const onDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    dragged.current = false;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    addNode(event.dataTransfer.getData(SAAS_DRAG_MIME), event.clientX - bounds.left, event.clientY - bounds.top);
-  };
+  const selected = board.nodes.find((node) => node.id === selectedId) ?? null;
 
   const onNodesChange = (changes: NodeChange<Node<ApiNodeData>>[]) => {
     setBoard((current) => {
       let next = current;
       for (const change of changes) {
         if (change.type === "position" && change.position !== undefined) {
-          next = moveSaasNode(next, change.id, change.position.x, change.position.y);
-        } else if (change.type === "remove") {
-          next = removeSaasNode(next, change.id);
+          next = moveApiNode(next, change.id, change.position.x, change.position.y);
+        } else if (change.type === "remove" && change.id !== "api") {
+          next = removeApiResource(next, change.id);
         }
       }
       return next;
@@ -114,94 +98,174 @@ export function SaasFlowEditor() {
 
   const onConnect = (connection: Connection) => {
     if (connection.source === null || connection.target === null) return;
-    const linked = linkSaasNodes(board, connection.source, connection.target);
-    if (!linked.ok) {
-      setNote(linked.error);
-      return;
-    }
-    setBoard(linked.board);
+    setBoard((current) => linkApiResource(current, connection.source ?? "", connection.target ?? ""));
     setNote(null);
   };
 
-  const saveConnection = (node: SaasFlowNode) => {
-    const issue = saasConnectionIssue(node);
+  const onDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (event.dataTransfer.getData(API_DRAG_MIME) !== "resource") return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setBoard((current) => addApiResource(current, event.clientX - bounds.left, event.clientY - bounds.top));
+  };
+
+  const save = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const issue = apiConnectionIssue(board);
     if (issue !== null) {
       setNote(issue);
       return;
     }
-    storage.saveConnection(connectionFromNode(node));
-    setNote(`Saved ${node.name.trim() || CONNECTION_FORM[node.type].label}. It is in your connections.`);
+    const connection = connectionFromBoard(board);
+    storage.saveConnection(connection);
+    setNote(`Saved ${connection.name}. It is in your connections.`);
   };
+
+  const flows = describeApiFlows(board);
+  const nodes = [
+    {
+      id: "api",
+      type: "api",
+      position: { x: board.api.x, y: board.api.y },
+      selected: selectedId === "api",
+      data: { label: board.api.name.trim() || "New API", detail: board.api.host.trim() || "Hostname" },
+    },
+    ...board.nodes.map((node) => ({
+      id: node.id,
+      type: "resource",
+      position: { x: node.x, y: node.y },
+      selected: node.id === selectedId,
+      data: { label: node.name.trim() || "Resource", detail: node.path.trim() || "/path" },
+    })),
+  ];
 
   return (
     <div className="flex min-h-[640px] flex-col gap-3 lg:flex-row">
-      <aside className="flex w-full shrink-0 flex-col gap-2 lg:w-56">
-        <label className="text-xs text-fg-muted">
-          APIs
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filter"
-            className="mt-1 h-8 w-full rounded border border-hairline-strong bg-canvas px-2 text-sm text-fg"
-          />
-        </label>
-        <div className="flex max-h-80 flex-col gap-1 overflow-y-auto lg:max-h-none">
-          {palette.length === 0 && <p className="px-1 text-xs text-fg-muted">No matching API.</p>}
-          {palette.map((item) => (
-            <button
-              key={item.type}
-              type="button"
-              draggable
-              onDragStart={(event) => {
-                dragged.current = true;
-                event.dataTransfer.setData(SAAS_DRAG_MIME, item.type);
-                event.dataTransfer.effectAllowed = "move";
-              }}
-              onClick={() => {
-                if (dragged.current) {
-                  dragged.current = false;
-                  return;
-                }
-                addNode(item.type, 48 + board.nodes.length * 28, 48 + board.nodes.length * 28);
-              }}
-              className="rounded-lg border border-hairline bg-raised px-3 py-2 text-left text-sm text-fg hover:bg-fill-subtle"
+      <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-72">
+        <form
+          id="api-settings"
+          className="flex flex-col gap-3 rounded-lg border border-hairline bg-raised p-3"
+          onSubmit={save}
+        >
+          <h2 className="text-sm font-medium text-fg">API</h2>
+          <label className="flex flex-col gap-1 text-xs text-fg-muted">
+            Name
+            <input
+              aria-label="API name"
+              value={board.api.name}
+              onChange={(event) => setBoard(setApiSettings(board, { name: event.target.value }))}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-fg-muted">
+            Hostname
+            <input
+              aria-label="Hostname"
+              value={board.api.host}
+              placeholder="api.example.com"
+              autoComplete="off"
+              onChange={(event) => setBoard(setApiSettings(board, { host: event.target.value }))}
+              className={inputClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-fg-muted">
+            Authentication
+            <select
+              aria-label="Authentication"
+              value={board.api.auth}
+              onChange={(event) => setBoard(setApiSettings(board, { auth: event.target.value as RestAuth }))}
+              className={inputClass}
             >
-              {item.label}
-            </button>
-          ))}
-        </div>
+              <option value="bearer">Bearer token</option>
+              <option value="header">API key header</option>
+              <option value="basic">Basic</option>
+            </select>
+          </label>
+          {board.api.auth === "header" && (
+            <label className="flex flex-col gap-1 text-xs text-fg-muted">
+              Header name
+              <input
+                aria-label="Header name"
+                value={board.api.headerName}
+                autoComplete="off"
+                onChange={(event) => setBoard(setApiSettings(board, { headerName: event.target.value }))}
+                className={inputClass}
+              />
+            </label>
+          )}
+          {board.api.auth === "basic" && (
+            <label className="flex flex-col gap-1 text-xs text-fg-muted">
+              Username
+              <input
+                aria-label="Username"
+                value={board.api.user}
+                autoComplete="off"
+                onChange={(event) => setBoard(setApiSettings(board, { user: event.target.value }))}
+                className={inputClass}
+              />
+            </label>
+          )}
+          <label className="flex flex-col gap-1 text-xs text-fg-muted">
+            Secret
+            <input
+              aria-label="Secret"
+              type="password"
+              value={board.api.secret}
+              autoComplete="off"
+              onChange={(event) => setBoard(setApiSettings(board, { secret: event.target.value }))}
+              className={inputClass}
+            />
+          </label>
+          <button type="submit" className="rounded-full bg-brand-solid px-3 py-1.5 text-xs font-medium text-white">
+            Save connection
+          </button>
+        </form>
+        <button
+          type="button"
+          draggable
+          onDragStart={(event) => {
+            dragged.current = true;
+            event.dataTransfer.setData(API_DRAG_MIME, "resource");
+            event.dataTransfer.effectAllowed = "move";
+          }}
+          onClick={() => {
+            if (dragged.current) {
+              dragged.current = false;
+              return;
+            }
+            setBoard((current) => addApiResource(current, 220, 48 + current.nodes.length * 28));
+          }}
+          className="rounded-lg border border-hairline bg-raised px-3 py-2 text-left text-sm text-fg hover:bg-fill-subtle"
+        >
+          Resource
+        </button>
+        <p className="text-xs text-fg-muted">
+          Drag a resource onto the board. A line from the API includes it. The secret stays in this browser until you
+          save, and it is sent only to that hostname.
+        </p>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
         <ul aria-label="Data flows" className="flex flex-col gap-1">
-          {board.edges.length === 0 && (
-            <li className="text-xs text-fg-muted">Draw a line from one API to another when its data feeds the next.</li>
+          {flows.length === 0 && (
+            <li className="text-xs text-fg-muted">Draw a line from the API to a resource to include it.</li>
           )}
-          {board.edges.map((edge) => {
-            const label = describeSaasFlow(edge, board.nodes);
-            return (
-              <li key={edge.id} className="flex items-center justify-between gap-2 text-xs text-fg">
-                <span>{label}</span>
-                <button
-                  type="button"
-                  aria-label={`Remove line ${label}`}
-                  onClick={() => setBoard(unlinkSaasNodes(board, edge.id))}
-                  className="rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
-                >
-                  Remove
-                </button>
-              </li>
-            );
-          })}
+          {flows.map((flow) => (
+            <li key={flow.id} className="flex items-center justify-between gap-2 text-xs text-fg">
+              <span>{flow.label}</span>
+              <button
+                type="button"
+                aria-label={`Remove line ${flow.label}`}
+                onClick={() => setBoard(unlinkApiResource(board, flow.id))}
+                className="rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
         </ul>
         <ReactFlow
-          nodes={board.nodes.map((node) => ({
-            id: node.id,
-            type: "api",
-            position: { x: node.x, y: node.y },
-            selected: node.id === selectedId,
-            data: { label: CONNECTION_FORM[node.type].label, name: node.name },
-          }))}
-          edges={board.edges.map((edge) => ({ id: edge.id, source: edge.source, target: edge.target }))}
+          nodes={nodes}
+          edges={board.edges.map((edge) => ({ id: edge.id, source: "api", target: edge.target }))}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onConnect={onConnect}
@@ -218,62 +282,75 @@ export function SaasFlowEditor() {
           <Controls />
         </ReactFlow>
       </div>
-      <aside className="w-full shrink-0 lg:w-72">
+      <aside className="w-full shrink-0 lg:w-64">
         {selected === null ? (
-          <p className="text-sm text-fg-muted">Choose an API, or drag one onto the board.</p>
+          <p className="text-sm text-fg-muted">Choose a resource to name its path.</p>
         ) : (
-          <form
-            className="flex flex-col gap-3 rounded-lg border border-hairline bg-raised p-3"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              saveConnection(selected);
+          <ResourceForm
+            board={board}
+            resource={selected}
+            onChange={setBoard}
+            onRemove={() => {
+              setBoard(removeApiResource(board, selected.id));
+              setSelectedId(null);
+              setNote(null);
             }}
-          >
-            <h2 className="text-sm font-medium text-fg">{CONNECTION_FORM[selected.type].label}</h2>
-            <label className="flex flex-col gap-1 text-xs text-fg-muted">
-              Name
-              <input
-                aria-label="Connection name"
-                value={selected.name}
-                onChange={(event) => setBoard(renameSaasNode(board, selected.id, event.target.value))}
-                className="h-8 rounded border border-hairline-strong bg-canvas px-2 text-sm text-fg"
-              />
-            </label>
-            {saasNodeFields(selected.type).map((field) => (
-              <label key={field.field} className="flex flex-col gap-1 text-xs text-fg-muted">
-                {field.label}
-                <input
-                  aria-label={field.label}
-                  type={field.secret ? "password" : "text"}
-                  value={selected.values[field.field] ?? ""}
-                  placeholder={field.placeholder}
-                  autoComplete="off"
-                  onChange={(event) => setBoard(setSaasField(board, selected.id, field.field, event.target.value))}
-                  className="h-8 rounded border border-hairline-strong bg-canvas px-2 text-sm text-fg"
-                />
-                {field.hint !== undefined && <span>{field.hint}</span>}
-              </label>
-            ))}
-            <div className="flex items-center gap-2">
-              <button type="submit" className="rounded-full bg-brand-solid px-3 py-1.5 text-xs font-medium text-white">
-                Save connection
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setBoard(removeSaasNode(board, selected.id));
-                  setSelectedId(null);
-                  setNote(null);
-                }}
-                className="rounded px-2 py-1 text-xs text-fg-muted hover:bg-fill-subtle"
-              >
-                Remove from board
-              </button>
-            </div>
-          </form>
+          />
         )}
         {note !== null && <output className="mt-2 block text-xs text-fg-muted">{note}</output>}
       </aside>
+    </div>
+  );
+}
+
+function ResourceForm({
+  board,
+  resource,
+  onChange,
+  onRemove,
+}: {
+  board: ApiBoard;
+  resource: ApiResourceNode;
+  onChange: (board: ApiBoard) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-hairline bg-raised p-3">
+      <h2 className="text-sm font-medium text-fg">Resource</h2>
+      <label className="flex flex-col gap-1 text-xs text-fg-muted">
+        Name
+        <input
+          aria-label="Resource name"
+          value={resource.name}
+          onChange={(event) => onChange(setApiResource(board, resource.id, { name: event.target.value }))}
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-fg-muted">
+        Path
+        <input
+          aria-label="Path"
+          value={resource.path}
+          placeholder="/v1/orders"
+          autoComplete="off"
+          onChange={(event) => onChange(setApiResource(board, resource.id, { path: event.target.value }))}
+          className={inputClass}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-fg-muted">
+        Rows path
+        <input
+          aria-label="Rows path"
+          value={resource.rows}
+          placeholder="data"
+          autoComplete="off"
+          onChange={(event) => onChange(setApiResource(board, resource.id, { rows: event.target.value }))}
+          className={inputClass}
+        />
+      </label>
+      <button type="button" onClick={onRemove} className="rounded px-2 py-1 text-xs text-fg-muted hover:bg-fill-subtle">
+        Remove from board
+      </button>
     </div>
   );
 }

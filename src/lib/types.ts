@@ -97,6 +97,9 @@ export type DatabaseType =
   // list. A service account secret is sent only to mixpanel.com, eu.mixpanel.com,
   // or in.mixpanel.com.
   | "mixpanel"
+  // A custom HTTPS API the user defined. One SELECT is one GET of a path they named.
+  // The secret is sent only to that hostname, as a header, and never in the URL.
+  | "rest"
   | "bigquery"
   | "snowflake"
   | "mysql"
@@ -749,6 +752,15 @@ export interface DatabaseConnection {
    * dialog answer the same way. Read by no other engine.
    */
   registerMap?: string;
+  /**
+   * Custom API only: the resource list, as the JSON document the provider parses. It names how the
+   * secret is sent and each GET path that becomes a table. The secret itself stays in `password`.
+   *
+   * The connection dialog has no box for it, so `FIELD_OWNERSHIP` marks it preserved: editing the
+   * hostname or the secret must not drop the list. A seed of any other type that carries it is
+   * refused, because no other provider reads it.
+   */
+  apiCatalog?: string;
 }
 
 export interface ForeignKeySchema {

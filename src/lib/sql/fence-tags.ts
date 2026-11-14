@@ -60,6 +60,8 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   googlesheets: true,
   // A ```mixpanel block holds one read-only SELECT of one Mixpanel list, sent to the Query API.
   mixpanel: true,
+  // A ```rest block holds one read-only SELECT of one resource the user named.
+  rest: true,
   mysql: true,
   sqlite: true,
   // A block tagged `libsql` holds SQLite's own dialect: same tokenizer, same

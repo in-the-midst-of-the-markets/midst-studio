@@ -146,6 +146,9 @@ export function projectSeedConnection(conn: SeedConnection, userRoles: string[])
     // Modbus's register map, copied for the reason skipObjectScan is: dropped here, a seeded connection would have no
     // map, so the console and agent mode would refuse every named-point read for a map the file did carry.
     registerMap: conn.registerMap,
+    // The custom API resource list, copied for the reason skipObjectScan is: dropped here, a seeded connection would
+    // have no path to read, so the console would refuse every statement for a list the file did carry.
+    apiCatalog: conn.apiCatalog,
     // And the three with no dialog box, copied for the same reason: dropped here, a deployment
     // that mounted a client certificate would dial with a freshly generated one instead, which
     // a server holding a trust list refuses with BadSecurityChecksFailed.

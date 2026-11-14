@@ -142,6 +142,9 @@ const CONNECTION_RELEVANCE: Record<keyof DatabaseConnection, FieldRelevance> = {
   // filters names the cluster defines, this document DEFINES them: `volts` is one address under one map
   // and another under the next.
   registerMap: "resolution",
+  // Which resources a custom API reads, and how its secret is sent. Two copies differing only here do not
+  // answer the same statement, so a run may not be started on the seed's id.
+  apiCatalog: "resolution",
   // Whether a Db2 connection may connect with no TLS at all (#786): like every transport field
   // below, it decides whether, and how, the connection connects.
   allowInsecureAuth: "resolution",

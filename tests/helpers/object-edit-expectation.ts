@@ -153,6 +153,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "excel",
   "googlesheets",
   "mixpanel",
+  // Every route is a GET the user named. Object edit is not generated for a custom API.
+  "rest",
   // The tree shows Postgres source. Object edit is not declared on this type-id, which docs/providers/supabase.md names.
   "supabase",
 ] as const);

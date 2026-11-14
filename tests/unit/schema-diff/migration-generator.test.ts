@@ -1109,6 +1109,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     excel: "engine-has-no-foreign-key",
     googlesheets: "engine-has-no-foreign-key",
     mixpanel: "engine-has-no-foreign-key",
+    rest: "engine-has-no-foreign-key",
     supabase: "key-follows-in-an-alter",
     mysql: "key-follows-in-an-alter",
     oracle: "key-follows-in-an-alter",
@@ -1302,6 +1303,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   mixpanel: {
     label: "Mixpanel",
     reason: "Mixpanel object changes are not generated here; this connection is read-only.",
+  },
+  rest: {
+    label: "Custom API",
+    reason: "Custom API object changes are not generated here; this connection is read-only.",
   },
   supabase: "has-own-branch",
   mysql: "has-own-branch",
@@ -1847,6 +1852,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   excel: false,
   googlesheets: false,
   mixpanel: false,
+  rest: false,
   supabase: "BEGIN;",
   mysql: "BEGIN;",
   // Measured live via @duckdb/node-api 1.5.5-r.4 (DuckDB v1.5.5, in-process, no server

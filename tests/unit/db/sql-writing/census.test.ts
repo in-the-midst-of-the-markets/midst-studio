@@ -110,6 +110,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   excel: "sql/excel/sql-writing",
   googlesheets: "sql/googlesheets/sql-writing",
   mixpanel: "sql/mixpanel/sql-writing",
+  rest: "sql/rest/sql-writing",
   supabase: "sql/supabase/sql-writing",
   sqlite: "sql/sqlite-sql-writing",
   trino: "sql/trino/sql-writing",

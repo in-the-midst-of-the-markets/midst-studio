@@ -118,6 +118,7 @@ const SOURCE_DECLARATIONS: Readonly<Record<DatabaseType, readonly string[]>> = O
   excel: [],
   googlesheets: [],
   mixpanel: [],
+  rest: [],
   // The Postgres kinds, shown on a Supabase connection. Object edit is not declared on this type-id.
   supabase: ["view/pgsql", "materialized_view/pgsql", "function/pgsql", "procedure/pgsql", "trigger/pgsql"],
   // The MySQL branch only. MariaDB's two extra kinds are asserted separately, because an

@@ -81,7 +81,7 @@ export type ConnectionField =
   // the time.
   | "hostKeyFingerprint";
 /** A field a seed file may carry that no connection dialog draws: a deployment fact, named by a file path or a URI. */
-export type SeedOnlyField = "securityPolicyUri" | "clientCertificatePath" | "clientPrivateKeyPath";
+export type SeedOnlyField = "securityPolicyUri" | "clientCertificatePath" | "clientPrivateKeyPath" | "apiCatalog";
 
 /**
  * The fields the connection dialog draws either in the open or behind its Advanced accordion, as the engine's
@@ -491,6 +491,7 @@ const CONNECTION_FIELD_ROWS = {
   excel: ["user", "password", "database", "schema"],
   googlesheets: ["password", "schema"],
   mixpanel: ["host", "user", "password", "database"],
+  rest: ["host", "user", "password"],
   supabase: ["host", "port", "user", "password", "database"],
   mysql: ["host", "port", "user", "password", "database"],
   sqlite: ["database"],
@@ -624,6 +625,18 @@ const NETCONF_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
  * Modbus: the register map. Only the Modbus provider reads `registerMap`, so a seed of another type that carries one
  * would be listed as mapped and be nothing of the kind. Refused at load by name, as the NETCONF pin is.
  */
+/**
+ * Custom API: the resource list. Only that provider reads `apiCatalog`, so a seed of another type that carries one
+ * would be listed as a defined API and be nothing of the kind. Refused at load by name, as the Modbus map is.
+ */
+const REST_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
+  fields: Object.freeze(["apiCatalog"] as const),
+  kind: "each",
+  refusal: (field: string) =>
+    `${field} is a custom API only: no other engine's provider reads it, so this connection would be listed as carrying it and would not. Remove ${field} from this connection.`,
+  projectionRefusal: null,
+});
+
 const MODBUS_SEED_ONLY_FIELDS: SeedOnlyFields = Object.freeze({
   fields: Object.freeze(["registerMap"] as const),
   kind: "each",
@@ -656,6 +669,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   excel: null,
   googlesheets: null,
   mixpanel: null,
+  rest: REST_SEED_ONLY_FIELDS,
   supabase: null,
   mysql: null,
   sqlite: null,
