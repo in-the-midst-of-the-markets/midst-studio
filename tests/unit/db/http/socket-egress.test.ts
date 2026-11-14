@@ -12,13 +12,17 @@ import { connect as netConnect, type LookupFunction } from "node:net";
 import { connect as tlsConnect } from "node:tls";
 import { DatabaseConfigError } from "@/lib/db/errors";
 import {
+  assertNoPrivateDnsAnswer,
   assertPublicDnsAnswers,
   BLOCKED_HOST,
   guardedLinkLocalRefusingLookup,
   LINK_LOCAL_HOST,
   linkLocalRefusingLookup,
+  PRIVATE_HOST,
+  privateHostLookup,
   publicAddressLookup,
   socketEgress,
+  UNUSABLE_ANSWER,
 } from "@/lib/db/http/egress-policy";
 import { nodeTlsConnectOptions, nodeTlsMaterial } from "@/lib/db/http/node-transport";
 import {
@@ -139,6 +143,119 @@ describe("a literal is checked before any lookup is chosen", () => {
     const error = refusal(() => socketEgress("db.example.test", { refusesLinkLocal: true }));
     expect(error).toBeInstanceOf(DatabaseConfigError);
     expect(error.message).toBe("Invalid DB_HTTP_BLOCK_PRIVATE_HOSTS: expected true or false");
+  });
+});
+
+describe("refusesPrivate", () => {
+  test.each(["on", "off"] as const)("flag %s: a public name dials through the private-host lookup", (state) => {
+    flag(state);
+    expect(socketEgress("api.example.com", { refusesLinkLocal: true, refusesPrivate: true })).toBe(privateHostLookup);
+    expect(socketEgress("db.example.test", { refusesLinkLocal: false, refusesPrivate: true })).toBe(privateHostLookup);
+  });
+
+  test.each([
+    "10.0.0.5",
+    "127.0.0.1",
+    "::1",
+    "[::1]",
+    "[fd00::7]",
+    "192.168.1.1",
+    "172.16.0.1",
+    "100.64.0.1",
+    "100.100.100.200",
+    "169.254.169.254",
+    "fe80::1",
+    "[fe80::1]",
+    "fe80::1%eth0",
+    "[fe80::1%eth0]",
+    "[::ffff:127.0.0.1]",
+    "[::ffff:10.0.0.5]",
+  ])("flag off: %s is refused with the private-host sentence", (host) => {
+    flag("off");
+    const error = refusal(() => socketEgress(host, { refusesLinkLocal: true, refusesPrivate: true }));
+    expect(error).toBeInstanceOf(DatabaseConfigError);
+    expect(error.message).toBe(PRIVATE_HOST);
+  });
+
+  test("flag on: a private literal still gets the private-host sentence, not the flag's", () => {
+    flag("on");
+    expect(refusal(() => socketEgress("10.0.0.5", { refusesLinkLocal: false, refusesPrivate: true })).message).toBe(
+      PRIVATE_HOST,
+    );
+  });
+
+  test.each(["on", "off"] as const)("flag %s: an empty host is refused before a lookup", (state) => {
+    flag(state);
+    expect(refusal(() => socketEgress("", { refusesLinkLocal: true, refusesPrivate: true })).message).toBe(
+      BLOCKED_HOST,
+    );
+  });
+
+  test("a public literal dials through the private-host lookup", () => {
+    flag("off");
+    expect(socketEgress("8.8.8.8", { refusesLinkLocal: true, refusesPrivate: true })).toBe(privateHostLookup);
+    expect(socketEgress("[2606:4700::1111]", { refusesLinkLocal: false, refusesPrivate: true })).toBe(
+      privateHostLookup,
+    );
+  });
+
+  test("a NAT64 metadata literal is refused with the private-host sentence", () => {
+    flag("off");
+    expect(
+      refusal(() => socketEgress("[64:ff9b::a9fe:a9fe]", { refusesLinkLocal: true, refusesPrivate: true })).message,
+    ).toBe(PRIVATE_HOST);
+  });
+
+  test("an invalid flag fails closed before the private-host check", () => {
+    process.env[FLAG] = "maybe";
+    expect(refusal(() => socketEgress("10.0.0.5", { refusesLinkLocal: true, refusesPrivate: true })).message).toBe(
+      "Invalid DB_HTTP_BLOCK_PRIVATE_HOSTS: expected true or false",
+    );
+  });
+
+  test("set to false, a private literal keeps the flag-off lookup", () => {
+    flag("off");
+    expect(socketEgress("10.0.0.5", { refusesLinkLocal: true, refusesPrivate: false })).toBe(linkLocalRefusingLookup);
+  });
+});
+
+describe("assertNoPrivateDnsAnswer", () => {
+  test.each([
+    ["a private address", [{ address: "10.0.0.5", family: 4 }]],
+    ["loopback", [{ address: "127.0.0.1", family: 4 }]],
+    [
+      "a public answer beside a private one",
+      [
+        { address: "8.8.8.8", family: 4 },
+        { address: "192.168.0.1", family: 4 },
+      ],
+    ],
+    ["a zoned address", [{ address: "2606:4700::1%eth0", family: 6 }]],
+    ["a NAT64 metadata address the blocked list does not hold", [{ address: "64:ff9b::a9fe:a9fe", family: 6 }]],
+  ] as const)("refuses %s with the private-host sentence", (_label, addresses) => {
+    const error = refusal(() => assertNoPrivateDnsAnswer(addresses));
+    expect(error).toBeInstanceOf(DatabaseConfigError);
+    expect(error.message).toBe(PRIVATE_HOST);
+  });
+
+  test.each([
+    ["an empty answer", []],
+    ["an IPv4 address marked family 6", [{ address: "8.8.8.8", family: 6 }]],
+    ["an IPv6 address marked family 4", [{ address: "2606:4700::1", family: 4 }]],
+    ["an unknown family", [{ address: "8.8.8.8", family: 5 }]],
+  ] as const)("refuses %s with the usable-address sentence", (_label, addresses) => {
+    const error = refusal(() => assertNoPrivateDnsAnswer(addresses));
+    expect(error).toBeInstanceOf(DatabaseConfigError);
+    expect(error.message).toBe(UNUSABLE_ANSWER);
+  });
+
+  test("passes a public answer", () => {
+    expect(() =>
+      assertNoPrivateDnsAnswer([
+        { address: "8.8.8.8", family: 4 },
+        { address: "2606:4700::1111", family: 6 },
+      ]),
+    ).not.toThrow();
   });
 });
 

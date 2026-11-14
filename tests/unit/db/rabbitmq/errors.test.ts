@@ -417,7 +417,7 @@ describe("the boundary", () => {
   test("an own error and every shared egress refusal pass through unchanged", () => {
     const own = E.queryError("mine");
     expect(E.rabbitmqBoundary(own, at)).toBe(own);
-    expect(EVERY_EGRESS_SENTENCE.length).toBe(3);
+    expect(EVERY_EGRESS_SENTENCE.length).toBe(4);
     for (const sentence of EVERY_EGRESS_SENTENCE) {
       const egress = new DatabaseConfigError(sentence);
       expect(E.rabbitmqBoundary(egress, at)).toBe(egress);

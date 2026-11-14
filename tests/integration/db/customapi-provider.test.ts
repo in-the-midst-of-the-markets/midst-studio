@@ -170,6 +170,7 @@ describe("RestProvider", () => {
     expect(wire.requests[0]?.url.includes(SECRET)).toBe(false);
     expect(wire.options[0]).toMatchObject({
       refusesLinkLocal: true,
+      refusesPrivate: true,
       refusesUpgrade: true,
       maxSockets: 4,
       origin: { scheme: "https", host: "api.example.com", port: 443 },

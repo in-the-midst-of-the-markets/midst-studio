@@ -3,9 +3,10 @@
  *
  * The user names a public HTTPS host and the GET paths that become tables. One
  * SELECT reads one of those paths. The secret is sent only to that host, as a
- * header, and never in the URL. A redirect is not followed. Writes are refused
- * before a request. There is no queryReadOnly: agent mode does not speak this
- * dialect.
+ * header, and never in the URL. A redirect is not followed. A private, loopback,
+ * or link-local address is refused even when the name looks public. Writes are
+ * refused before a request. There is no queryReadOnly: agent mode does not speak
+ * this dialect.
  */
 import { SQLBaseProvider } from "../sql-base";
 import {
@@ -436,6 +437,7 @@ export class RestProvider extends SQLBaseProvider {
       maxSockets: MAX_SOCKETS,
       headers: this.headers(secret),
       refusesLinkLocal: true,
+      refusesPrivate: true,
       refusesUpgrade: true,
     });
     return this.data;

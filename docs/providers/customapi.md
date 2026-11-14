@@ -6,7 +6,7 @@ A connection the user defines for an HTTPS API this app does not already ship. O
 
 | Field | Role |
 | --- | --- |
-| Hostname | A public hostname, such as `api.example.com`. `https://` may be pasted and is removed. Plain HTTP, an IP address, and a private or link-local name are refused. |
+| Hostname | A public hostname, such as `api.example.com`. `https://` may be pasted and is removed. Plain HTTP, an IP address, and a private or link-local name are refused. A name that resolves to a private, loopback, or link-local address is refused too. |
 | Secret | At least 8 characters, with no newline. Bearer sends `Authorization: Bearer`. Basic sends `Authorization: Basic` of the username and the secret. A header sends the secret under the header name they chose. |
 | Resource list | Stored on the connection as `apiCatalog`. Each resource has a name, a path that starts with `/`, and an optional rows path such as `data`. |
 
@@ -20,4 +20,4 @@ One read-only SELECT of one resource. `WHERE`, `ORDER BY`, `LIMIT` and `OFFSET` 
 
 ## What this connection does not do
 
-It does not call an arbitrary URL. The path is a relative path on the saved hostname. It does not send the secret to any other host, and it does not follow a redirect. It does not open a private, loopback, or link-local address. Agent mode does not write statements for it.
+It does not call an arbitrary URL. The path is a relative path on the saved hostname. It does not send the secret to any other host, and it does not follow a redirect. It does not open a private, loopback, or link-local address, including when a public-looking name resolves to one. Agent mode does not write statements for it.
