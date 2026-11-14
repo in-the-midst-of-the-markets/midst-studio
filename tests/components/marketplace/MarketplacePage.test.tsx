@@ -25,7 +25,7 @@ describe("/marketplace", () => {
     expect(screen.queryByRole("link", { name: "Connect APIs" })).toBeNull();
     expect(await screen.findByRole("heading", { name: "Marketplace" })).not.toBeNull();
     expect(
-      screen.getByText("No databases are listed yet. A connection you add in the editor is not listed here."),
+      await screen.findByText("No databases are listed yet. A connection you add in the editor is not listed here."),
     ).not.toBeNull();
   });
 });
