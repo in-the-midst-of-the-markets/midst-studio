@@ -145,12 +145,15 @@ describe("the formatters", () => {
     expect(() => formatterForLanguage("sql")?.("SELECT $1 FROM @stage t", resolveSqlGrammar("snowflake"))).toThrow();
   });
 
-  test("every dialect but Snowflake formats SQL exactly as before", () => {
+  test("every dialect whose formatter language is not Snowflake formats SQL exactly as before", () => {
     const typed = "select a, b from t where a = 1 group by 1 qualify x = 1 order by 2";
     const sql = formatterForLanguage("sql");
     const before = sql?.(typed);
-    for (const type of SHIPPED_DATABASE_TYPES.filter((t) => t !== "snowflake")) {
-      expect(sql?.(typed, resolveSqlGrammar(type)), type).toBe(before);
+    for (const type of SHIPPED_DATABASE_TYPES) {
+      const grammar = resolveSqlGrammar(type);
+      // Snowflake's language is the one that treats QUALIFY as its own clause. SAP HANA uses it too.
+      if (grammar.formatterLanguage === "snowflake") continue;
+      expect(sql?.(typed, grammar), type).toBe(before);
     }
   });
 

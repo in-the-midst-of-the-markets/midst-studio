@@ -184,6 +184,8 @@ keywords:
   - mixpanel
   # One keyword, like mixpanel above: `customapi` is the type-id. The dialog calls it Custom API.
   - customapi
+  # One keyword, like customapi above: `saphana` is the type-id. The dialog calls it SAP HANA.
+  - saphana
   - web-ide
 maintainers:
   - name: cevheri

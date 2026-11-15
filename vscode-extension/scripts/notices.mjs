@@ -117,8 +117,10 @@ function allowed(id, license, isAllowed) {
 
 /** The package's own licence and notice files, else its text in VENDORED_LICENSES, else a refusal naming both. */
 function licenceTexts(dir, manifest, id, workingDir) {
-  const files = readdirSync(dir)
-    .filter((file) => LICENCE_FILE.test(file))
+  // A name such as LICENSES can be a directory (hdb ships one beside LICENSE). Only files are text.
+  const files = readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && LICENCE_FILE.test(entry.name))
+    .map((entry) => entry.name)
     .sort(compare);
   if (files.length > 0) return files.map((file) => section(file, readFileSync(join(dir, file), "utf8"))).join("");
   const vendored = `${manifest.name.replace("/", "__")}@${manifest.version}.txt`;

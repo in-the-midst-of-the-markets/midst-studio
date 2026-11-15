@@ -8,7 +8,7 @@ No live HANA server was available while this provider was written. The statement
 
 ## SQL grammar
 
-[`src/lib/db/providers/sql/saphana/sql-grammar.ts`](../../src/lib/db/providers/sql/saphana/sql-grammar.ts) declares `SAPHANA_SQL_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
+[`src/lib/db/providers/sql/saphana/sql-grammar.ts`](../../src/lib/db/providers/sql/saphana/sql-grammar.ts) declares `SAPHANA_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
 
 Comments are `--` and `/* */`. `#` is code. `//` is not a comment. Names are double-quoted. An unquoted name is uppercased by the server.
 

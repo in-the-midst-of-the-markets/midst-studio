@@ -111,7 +111,7 @@ Every one of those tags is published on three bases, and the suffix is appended 
 ## Supported databases
 
 Sixty-nine external engines share one interface.
-The sixty-ninth row is the embedded LibreDB store: it ships inside the image.
+The seventieth row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
