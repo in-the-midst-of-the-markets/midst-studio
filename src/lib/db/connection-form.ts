@@ -1986,6 +1986,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
 /**
  * Engines the connection dialog groups under SAAS Connectors. Everything else in
  * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
+ * Custom API is in this list and is also drawn at the end of Databases.
  * The dialog draws a label before each group; clicking the label hides it.
  */
 export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
@@ -2019,7 +2020,8 @@ export interface ConnectionPickerCategory {
 
 /**
  * SAAS Connectors first, so HubSpot, Stripe, Clarity and Google Analytics are on screen when the dialog opens.
- * Databases follow. The dialog hides a group when its label is clicked.
+ * Databases follow. Custom API is the last button in both groups: one type id, chosen from either list.
+ * The dialog hides a group when its label is clicked.
  */
 export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
   const saas = new Set<string>(SAAS_PICKER_TYPES);
@@ -2029,6 +2031,9 @@ export function connectionPickerCategories(): readonly ConnectionPickerCategory[
     if (saas.has(type)) connectors.push(type);
     else databases.push(type);
   }
+  // The last SAAS connector is Custom API. The Databases group ends with the same button.
+  const shared = connectors.at(-1);
+  if (shared !== undefined && !databases.includes(shared)) databases.push(shared);
   return [
     { label: "SAAS Connectors", types: connectors },
     { label: "Databases", types: databases },

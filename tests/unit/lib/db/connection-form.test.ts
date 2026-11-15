@@ -115,6 +115,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   sparkplug: true,
   questdb: true,
   redshift: true,
+  cockroach: true,
 };
 
 /**
@@ -348,6 +349,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "supabase",
       "postgres",
       "redshift",
+      "cockroach",
       "mysql",
       "sqlite",
       "oracle",
@@ -445,7 +447,9 @@ describe("CONNECTION_PICKER_ORDER", () => {
     ]);
     expect(databases[0]).toBe("airtable");
     expect(databases[1]).toBe("supabase");
-    expect([...databases, ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);
+    expect(databases.at(-1)).toBe("customapi");
+    expect(saas.at(-1)).toBe("customapi");
+    expect([...databases.slice(0, -1), ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);
   });
 
   test("puts the four v0 engines in part 2 criterion 2's order", () => {

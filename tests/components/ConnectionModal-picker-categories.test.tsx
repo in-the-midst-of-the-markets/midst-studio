@@ -25,6 +25,7 @@ describe("connection picker categories", () => {
     expect(saas.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Airtable" })).toBeDefined();
+    expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(2);
     expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
@@ -36,6 +37,7 @@ describe("connection picker categories", () => {
     expect(databases.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByRole("button", { name: "PostgreSQL" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Airtable" })).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
@@ -55,12 +57,18 @@ describe("connection picker categories", () => {
     const quickbooksAt = order.indexOf("QuickBooksOnline");
     const odooAt = order.indexOf("Odoo");
     const airtableAt = order.indexOf("Airtable");
+    const customAt = order.flatMap((name, index) => (name === "CustomAPI" ? [index] : []));
     expect(stripeAt).toBeGreaterThan(-1);
     expect(clarityAt).toBeGreaterThan(stripeAt);
     expect(analyticsAt).toBeGreaterThan(clarityAt);
     expect(quickbooksAt).toBeGreaterThan(analyticsAt);
     expect(odooAt).toBeGreaterThan(quickbooksAt);
     expect(airtableAt).toBeGreaterThan(odooAt);
+    const questdbAt = order.lastIndexOf("QuestDB");
+    expect(customAt).toHaveLength(2);
+    expect(customAt[0] ?? -1).toBeLessThan(airtableAt);
+    expect(order[(customAt[0] ?? -1) + 1]).toBe("Databases");
+    expect(customAt[1]).toBe(questdbAt + 1);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("false");
@@ -72,6 +80,7 @@ describe("connection picker categories", () => {
     expect(screen.queryByRole("button", { name: "Odoo" })).toBeNull();
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
+    expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(1);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("true");

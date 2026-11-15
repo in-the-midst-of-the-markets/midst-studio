@@ -12,6 +12,8 @@ A connection the user defines for an HTTPS API this app does not already ship. O
 
 The connection dialog writes the list. It is a JSON document: `auth` is `bearer`, `header`, or `basic`, and each resource has a `name`, a `path`, and a `rows` path. A header also names `headerName`. The secret is not part of the document.
 
+The Custom API button is the last one under SAAS Connectors and the last one under Databases. Both buttons choose this type.
+
 ## SQL grammar
 
 [`src/lib/db/providers/sql/customapi/sql-grammar.ts`](../../src/lib/db/providers/sql/customapi/sql-grammar.ts) declares `CUSTOMAPI_SQL_GRAMMAR`, whose `grammar` is `REST_GRAMMAR`. `readsSqlText` is `true`. Redaction is `sql` with `"` as its name quote.
