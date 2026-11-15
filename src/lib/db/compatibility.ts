@@ -133,6 +133,9 @@ const SHIPPED: Readonly<Record<DatabaseType, true>> = Object.freeze({
   // QuestDB: its own provider, doc and integration test, on the PostgreSQL wire at port 8812.
   // Not a postgres relative: that provider's query-id probe calls pg_backend_pid(), which QuestDB has not.
   questdb: true,
+  // SAP HANA: its own provider, doc and integration test, through the pure JavaScript `hdb` client
+  // on port 30015 (443 with TLS for HANA Cloud).
+  saphana: true,
   // Amazon Redshift: its own provider, doc and integration test, on the PostgreSQL wire at port 5439.
   // Not a postgres relative: that provider's query-id probe calls pg_backend_pid().
   redshift: true,
@@ -269,6 +272,8 @@ const EXTERNAL: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   databend: true,
   // A server the user already runs, reached over QuestDB's PostgreSQL wire protocol on port 8812.
   questdb: true,
+  // A server the user already runs, reached through the pure JavaScript `hdb` client on port 30015.
+  saphana: true,
   // A cluster the user already runs, reached over Amazon Redshift's PostgreSQL wire protocol on port 5439.
   redshift: true,
   // A cluster the user already runs, reached over CockroachDB's PostgreSQL wire protocol on port 26257.
@@ -406,6 +411,8 @@ export const READ_ONLY_ENFORCED: Record<DatabaseType, boolean> = Object.freeze({
   databend: false,
   // No read-only mode: the provider sends the statement the editor holds.
   questdb: false,
+  // No read-only mode: the provider sends the statement the editor holds. A server would execute a write.
+  saphana: false,
   // No read-only mode: the provider sends the statement the editor holds. A cluster would execute a write.
   redshift: false,
   // No read-only mode: the provider sends the statement the editor holds. A cluster would execute a write.
@@ -523,6 +530,7 @@ export const READS_FILE_ACCESS_POSTURE: Readonly<Record<DatabaseType, boolean>> 
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,
@@ -610,6 +618,7 @@ export const SINGLE_WRITER_FILE: Readonly<Record<DatabaseType, boolean>> = Objec
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,
@@ -714,6 +723,8 @@ export const MCP_EXPOSABLE: Readonly<Record<DatabaseType, boolean>> = Object.fre
   databend: true,
   // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
   questdb: true,
+  // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
+  saphana: true,
   // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
   redshift: true,
   // Offered for the metadata tools. The provider implements no queryReadOnly, so run_read_query does not serve it.
@@ -885,6 +896,8 @@ export const MCP_STATEMENT_READ: Readonly<Record<DatabaseType, boolean>> = Objec
   // No agent statement path, so MCP read stays closed.
   questdb: false,
   // No agent statement path, so MCP read stays closed.
+  saphana: false,
+  // No agent statement path, so MCP read stays closed.
   redshift: false,
   // No agent statement path, so MCP read stays closed.
   cockroach: false,
@@ -990,6 +1003,7 @@ export const CONNECTION_FORM_URI_MODE: Readonly<Record<DatabaseType, boolean>> =
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,
@@ -1084,6 +1098,7 @@ export const CONNECTION_STRING_ACCEPTED: Readonly<Record<DatabaseType, boolean>>
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,
@@ -1173,6 +1188,7 @@ export const OPENS_LOCAL_FILE: Readonly<Record<DatabaseType, boolean>> = Object.
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,
@@ -1262,6 +1278,7 @@ export const OPENS_SERVER_LEVEL_WITHOUT_DATABASE: Readonly<Record<DatabaseType, 
   oxia: false,
   databend: false,
   questdb: false,
+  saphana: false,
   redshift: false,
   cockroach: false,
   s3: false,

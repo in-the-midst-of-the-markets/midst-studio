@@ -181,6 +181,29 @@ declare module "oracledb" {
  * thing that can check the call. It names exactly the surface this repo uses and nothing more, which
  * is why a later `generate(...)` would not compile rather than quietly working.
  */
+/**
+ * `hdb` (SAP node-hdb) ships no type declarations. This names the surface the SAP HANA
+ * session uses: `createClient`, `connect`, `exec` and `end`.
+ */
+declare module "hdb" {
+  interface HdbClient {
+    connect(callback: (error: Error | null) => void): void;
+    exec(sql: string, callback: (error: Error | null, result: unknown) => void): void;
+    end(): void;
+  }
+  function createClient(options: {
+    host?: string;
+    port?: number;
+    user?: string;
+    password?: string;
+    useTLS?: boolean;
+    rejectUnauthorized?: boolean;
+    ca?: string;
+    cert?: string;
+    key?: string;
+  }): HdbClient;
+}
+
 declare module "mqtt-packet/parser.js" {
   /** What a parser instance does: fed bytes, it emits `packet` and `error`. */
   interface MqttPacketParser {

@@ -446,6 +446,8 @@ const GRAMMAR_COVERAGE: Record<DatabaseType, "established" | "default"> = {
   druid: "established",
   // QuestDB's own grammar object. Comments are `--` and `/* */`; `#` is code and `//` is not a comment.
   questdb: "established",
+  // SAP HANA's own grammar object. Comments are `--` and `/* */`; `#` is code and `//` is not a comment.
+  saphana: "established",
   redshift: "established",
   libredb: "default",
   // Not SQL at all - see SQL_TEXT_COVERAGE below.
@@ -870,6 +872,7 @@ const SQL_TEXT_COVERAGE: Record<DatabaseType, boolean> = {
   // SQL, and the statement text IS what the editor sends to `POST /v1/query`; the provider extends SQLBaseProvider.
   databend: true,
   questdb: true,
+  saphana: true,
   redshift: true,
   bigquery: true,
   // SQL, and the statement text IS what the provider submits; it extends SQLBaseProvider.

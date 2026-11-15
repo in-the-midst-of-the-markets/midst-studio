@@ -92,6 +92,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   // The same, and more plainly: there is no packet this provider can send that writes (#1720).
   sparkplug: false,
   questdb: false,
+  saphana: false,
   redshift: false,
 });
 

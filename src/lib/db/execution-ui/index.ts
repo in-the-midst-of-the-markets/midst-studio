@@ -6,6 +6,7 @@ import { DATABEND_EXECUTION_UI } from "@/lib/db/providers/sql/databend/execution
 import { DB2_EXECUTION_UI } from "@/lib/db/providers/sql/db2/execution-ui";
 import { DRUID_EXECUTION_UI } from "@/lib/db/providers/sql/druid/execution-ui";
 import { QUESTDB_EXECUTION_UI } from "@/lib/db/providers/sql/questdb/execution-ui";
+import { SAPHANA_EXECUTION_UI } from "@/lib/db/providers/sql/saphana/execution-ui";
 import { REDSHIFT_EXECUTION_UI } from "@/lib/db/providers/sql/redshift/execution-ui";
 import { COCKROACH_EXECUTION_UI } from "@/lib/db/providers/sql/cockroach/execution-ui";
 import { DUCKDB_EXECUTION_UI } from "@/lib/db/providers/sql/duckdb/execution-ui";
@@ -134,6 +135,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   prometheus: PROMETHEUS_EXECUTION_UI,
   qdrant: QDRANT_EXECUTION_UI,
   questdb: QUESTDB_EXECUTION_UI,
+  saphana: SAPHANA_EXECUTION_UI,
   redshift: REDSHIFT_EXECUTION_UI,
   cockroach: COCKROACH_EXECUTION_UI,
   rabbitmq: RABBITMQ_EXECUTION_UI,

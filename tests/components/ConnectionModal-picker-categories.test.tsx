@@ -68,7 +68,8 @@ describe("connection picker categories", () => {
     expect(customAt).toHaveLength(2);
     expect(customAt[0] ?? -1).toBeLessThan(airtableAt);
     expect(order[(customAt[0] ?? -1) + 1]).toBe("Databases");
-    expect(customAt[1]).toBe(questdbAt + 1);
+    expect(order[questdbAt + 1]).toBe("SAPHANA");
+    expect(customAt[1]).toBe(questdbAt + 2);
 
     fireEvent.click(saas);
     expect(saas.getAttribute("aria-expanded")).toBe("false");

@@ -517,6 +517,8 @@ const CONNECTION_FIELD_ROWS = {
   clickhouse: ["host", "port", "user", "password", "database", "connectionString"],
   druid: ["host", "port", "user", "password"],
   questdb: ["host", "port", "user", "password", "database"],
+  // `database` is the current schema (`SET SCHEMA`), not a catalog session.
+  saphana: ["host", "port", "user", "password", "database"],
   redshift: ["host", "port", "user", "password", "database"],
   cockroach: ["host", "port", "user", "password", "database"],
   elasticsearch: ["host", "port", "user", "password", "apiKeyId", "apiKeySecret"],
@@ -695,6 +697,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   clickhouse: null,
   druid: null,
   questdb: null,
+  saphana: null,
   redshift: null,
   cockroach: null,
   elasticsearch: ELASTICSEARCH_SEED_ONLY_FIELDS,

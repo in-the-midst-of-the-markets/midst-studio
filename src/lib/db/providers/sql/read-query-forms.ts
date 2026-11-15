@@ -164,6 +164,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   oxia: null,
   databend: null,
   questdb: null,
+  saphana: null,
   redshift: null,
   cockroach: null,
   airtable: null,

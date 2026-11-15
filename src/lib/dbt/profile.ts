@@ -79,6 +79,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   snmp: unsupported,
   sparkplug: unsupported,
   questdb: unsupported,
+  saphana: unsupported,
   redshift: unsupported,
   cockroach: unsupported,
 };

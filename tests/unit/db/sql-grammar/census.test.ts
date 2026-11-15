@@ -42,6 +42,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "druid",
     "duckdb",
     "questdb",
+    "saphana",
     "airtable",
     "supabase",
     "hubspot",

@@ -87,6 +87,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   spark: "sql/spark/sql-writing",
   sparkplug: "industrial/sparkplug/sql-writing",
   questdb: "sql/questdb/sql-writing",
+  saphana: "sql/saphana/sql-writing",
   redshift: "sql/redshift/sql-writing",
   cockroach: "sql/cockroach/sql-writing",
   airtable: "sql/airtable/sql-writing",
