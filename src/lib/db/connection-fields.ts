@@ -549,6 +549,8 @@ const CONNECTION_FIELD_ROWS = {
     "schema",
     "role",
   ],
+  // `database` is the catalog and `schema` is the schema. `warehouse` is the SQL warehouse id.
+  databricks: ["host", "port", "password", "warehouse", "database", "schema"],
   spark: ["host", "port", "password", "database", "schema"],
   s3: ["host", "port", "user", "password", "database", "region", "allowInsecureAuth"],
   kubernetes: ["host", "port", "password", "database", "namespaces", "apiPath", "tlsServerName"],
@@ -717,6 +719,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   databend: null,
   bigquery: null,
   snowflake: null,
+  databricks: null,
   spark: null,
   s3: null,
   kubernetes: null,

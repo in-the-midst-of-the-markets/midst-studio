@@ -115,6 +115,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   sparkplug: true,
   questdb: true,
   saphana: true,
+  databricks: true,
   redshift: true,
   cockroach: true,
 };

@@ -54,6 +54,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "questdb",
   // No kind declares `hasSource`: SAP HANA tables are not edited as source, which docs/providers/saphana.md names.
   "saphana",
+  // No kind declares `hasSource`: Databricks SQL tables are not edited as source, which docs/providers/databricks.md names.
+  "databricks",
   "redshift",
   // No kind declares `hasSource`: CockroachDB tables are not edited as source, which docs/providers/cockroach.md names.
   "cockroach",

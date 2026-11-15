@@ -3,6 +3,7 @@ import { CASSANDRA_EXECUTION_UI } from "@/lib/db/providers/sql/cassandra/executi
 import { CLICKHOUSE_EXECUTION_UI } from "@/lib/db/providers/sql/clickhouse/execution-ui";
 import { COUCHBASE_EXECUTION_UI } from "@/lib/db/providers/document/couchbase/execution-ui";
 import { DATABEND_EXECUTION_UI } from "@/lib/db/providers/sql/databend/execution-ui";
+import { DATABRICKS_EXECUTION_UI } from "@/lib/db/providers/sql/databricks/execution-ui";
 import { DB2_EXECUTION_UI } from "@/lib/db/providers/sql/db2/execution-ui";
 import { DRUID_EXECUTION_UI } from "@/lib/db/providers/sql/druid/execution-ui";
 import { QUESTDB_EXECUTION_UI } from "@/lib/db/providers/sql/questdb/execution-ui";
@@ -83,6 +84,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   clickhouse: CLICKHOUSE_EXECUTION_UI,
   couchbase: COUCHBASE_EXECUTION_UI,
   databend: DATABEND_EXECUTION_UI,
+  databricks: DATABRICKS_EXECUTION_UI,
   db2: DB2_EXECUTION_UI,
   druid: DRUID_EXECUTION_UI,
   duckdb: DUCKDB_EXECUTION_UI,

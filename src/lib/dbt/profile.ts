@@ -80,6 +80,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   sparkplug: unsupported,
   questdb: unsupported,
   saphana: unsupported,
+  databricks: unsupported,
   redshift: unsupported,
   cockroach: unsupported,
 };

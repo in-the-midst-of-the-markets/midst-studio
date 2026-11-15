@@ -650,6 +650,26 @@ export const RedshiftIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A warehouse roof, drawn for Studio. Not the Databricks mark. */
+export const DatabricksIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 10 L12 4 L20 10" />
+    <path d="M6 10 V19" />
+    <path d="M12 10 V19" />
+    <path d="M18 10 V19" />
+    <path d="M4 19 H20" />
+  </svg>
+);
+
 /** Column bars for SAP HANA, drawn for Studio. Not the vendor mark. */
 export const SapHanaIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

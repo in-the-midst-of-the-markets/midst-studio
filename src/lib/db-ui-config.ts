@@ -20,6 +20,7 @@ import {
   DruidIcon,
   QuestDbIcon,
   SapHanaIcon,
+  DatabricksIcon,
   RedshiftIcon,
   CockroachIcon,
   ElasticsearchIcon,
@@ -253,6 +254,9 @@ export const DB_UI_CONFIG: {
   // blue-tinted neutral, joined the identity palette with this entry: mist-700 in light and mist-400 in dark leave
   // both closest pairs where they were (tests/unit/theme-accent-contrast.test.ts).
   snowflake: branded(CONNECTION_FORM.snowflake, SnowflakeIcon, "text-hue-mist"),
+  // A warehouse roof drawn for Studio, never the company's logo. Orange is already a hue; the
+  // background step is this entry's own, so the class string stays unique.
+  databricks: branded(CONNECTION_FORM.databricks, DatabricksIcon, "text-hue-orange bg-hue-orange/15"),
   // A stage DAG drawn for Studio, never the Apache Spark logo.
   // Every chromatic hue, every `-alt` step, `mist` and `slate` were already an engine's, so `taupe`, the warm neutral
   // nearest Spark's orange mark, joined the identity palette with this entry: taupe-700 in light and taupe-400 in dark

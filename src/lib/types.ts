@@ -102,6 +102,10 @@ export type DatabaseType =
   | "customapi"
   | "bigquery"
   | "snowflake"
+  // Databricks SQL, on its own session through the statement execution API
+  // (`POST /api/2.0/sql/statements`) on the workspace host. Not a Spark connection
+  // and not a Snowflake connection. The access token is a bearer header.
+  | "databricks"
   | "mysql"
   | "sqlite"
   | "mongodb"

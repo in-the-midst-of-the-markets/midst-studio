@@ -21,6 +21,7 @@ import { CASSANDRA_SQL_WRITING } from "@/lib/db/providers/sql/cassandra/sql-writ
 import { CLICKHOUSE_SQL_WRITING } from "@/lib/db/providers/sql/clickhouse/sql-writing";
 import { COCKROACH_SQL_WRITING } from "@/lib/db/providers/sql/cockroach/sql-writing";
 import { DATABEND_SQL_WRITING } from "@/lib/db/providers/sql/databend/sql-writing";
+import { DATABRICKS_SQL_WRITING } from "@/lib/db/providers/sql/databricks/sql-writing";
 import { DB2_SQL_WRITING } from "@/lib/db/providers/sql/db2/sql-writing";
 import { DRUID_SQL_WRITING } from "@/lib/db/providers/sql/druid/sql-writing";
 import { QUESTDB_SQL_WRITING } from "@/lib/db/providers/sql/questdb/sql-writing";
@@ -88,6 +89,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   cockroach: COCKROACH_SQL_WRITING,
   couchbase: COUCHBASE_SQL_WRITING,
   databend: DATABEND_SQL_WRITING,
+  databricks: DATABRICKS_SQL_WRITING,
   db2: DB2_SQL_WRITING,
   druid: DRUID_SQL_WRITING,
   duckdb: DUCKDB_SQL_WRITING,

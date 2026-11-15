@@ -58,6 +58,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   postgres: "sql",
   bigquery: null,
   snowflake: null,
+  databricks: null,
   spark: null,
   mysql: "sql",
   sqlite: "sql",

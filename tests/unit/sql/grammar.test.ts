@@ -448,6 +448,9 @@ const GRAMMAR_COVERAGE: Record<DatabaseType, "established" | "default"> = {
   questdb: "established",
   // SAP HANA's own grammar object. Comments are `--` and `/* */`; `#` is code and `//` is not a comment.
   saphana: "established",
+  // Databricks SQL's own grammar object, read from the public reference. A live warehouse was not measured.
+  // Comments are `--` and a block comment; `#` is code and `//` is not a comment.
+  databricks: "established",
   redshift: "established",
   libredb: "default",
   // Not SQL at all - see SQL_TEXT_COVERAGE below.
@@ -873,6 +876,8 @@ const SQL_TEXT_COVERAGE: Record<DatabaseType, boolean> = {
   databend: true,
   questdb: true,
   saphana: true,
+  // SQL, and the statement text IS what the provider submits; it extends SQLBaseProvider.
+  databricks: true,
   redshift: true,
   bigquery: true,
   // SQL, and the statement text IS what the provider submits; it extends SQLBaseProvider.

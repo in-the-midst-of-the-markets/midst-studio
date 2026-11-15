@@ -38,6 +38,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "cassandra",
     "clickhouse",
     "databend",
+    "databricks",
     "db2",
     "druid",
     "duckdb",

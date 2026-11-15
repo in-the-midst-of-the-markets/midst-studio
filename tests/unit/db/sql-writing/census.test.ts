@@ -50,6 +50,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   clickhouse: "sql/clickhouse/sql-writing",
   couchbase: "document/couchbase/sql-writing",
   databend: "sql/databend/sql-writing",
+  databricks: "sql/databricks/sql-writing",
   db2: "sql/db2/sql-writing",
   druid: "sql/druid/sql-writing",
   duckdb: "sql/duckdb/sql-writing",

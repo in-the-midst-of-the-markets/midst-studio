@@ -34,6 +34,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "cassandra",
     "clickhouse",
     "databend",
+    "databricks",
     "db2",
     "druid",
     "duckdb",

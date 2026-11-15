@@ -178,6 +178,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   customapi: 68,
   // Last, behind Custom API: an in-memory database on its own client, and the newest name.
   saphana: 69,
+  // A SQL warehouse on the statement execution API, behind SAP HANA.
+  databricks: 70,
 };
 
 /**

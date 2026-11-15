@@ -4,6 +4,7 @@ import { CLICKHOUSE_SQL_GRAMMAR } from "@/lib/db/providers/sql/clickhouse/sql-gr
 import { COCKROACH_SQL_GRAMMAR } from "@/lib/db/providers/sql/cockroach/sql-grammar";
 import { COUCHBASE_SQL_GRAMMAR } from "@/lib/db/providers/document/couchbase/sql-grammar";
 import { DATABEND_SQL_GRAMMAR } from "@/lib/db/providers/sql/databend/sql-grammar";
+import { DATABRICKS_SQL_GRAMMAR } from "@/lib/db/providers/sql/databricks/sql-grammar";
 import { DB2_SQL_GRAMMAR } from "@/lib/db/providers/sql/db2/sql-grammar";
 import { DRUID_SQL_GRAMMAR } from "@/lib/db/providers/sql/druid/sql-grammar";
 import { DUCKDB_SQL_GRAMMAR } from "@/lib/db/providers/sql/duckdb/sql-grammar";
@@ -84,6 +85,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   cockroach: COCKROACH_SQL_GRAMMAR,
   couchbase: COUCHBASE_SQL_GRAMMAR,
   databend: DATABEND_SQL_GRAMMAR,
+  databricks: DATABRICKS_SQL_GRAMMAR,
   db2: DB2_SQL_GRAMMAR,
   druid: DRUID_SQL_GRAMMAR,
   duckdb: DUCKDB_SQL_GRAMMAR,

@@ -91,6 +91,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   sparkplug: null,
   questdb: null,
   saphana: null,
+  databricks: null,
   redshift: null,
 };
 

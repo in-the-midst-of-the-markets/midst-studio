@@ -100,6 +100,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   druid: true,
   questdb: true,
   saphana: true,
+  databricks: true,
   redshift: true,
   trino: true,
   couchbase: true,

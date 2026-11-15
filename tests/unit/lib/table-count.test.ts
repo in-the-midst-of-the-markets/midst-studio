@@ -145,6 +145,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   sparkplug: null,
   questdb: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   saphana: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  databricks: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   redshift: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
 });
 
