@@ -1086,6 +1086,15 @@ export const CONNECTION_FORM: {
     connectionFields: CONNECTION_FIELDS.questdb,
     fieldPlaceholders: { user: "admin", database: "qdb" },
   },
+  saphana: {
+    label: "SAP HANA",
+    // The indexserver port for instance 00. HANA Cloud is 443, and that port opens with TLS.
+    defaultPort: "30015",
+    // No URI convention to paste. A postgresql:// string belongs to the PostgreSQL type.
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.saphana,
+    fieldPlaceholders: { database: "SCHEMA" },
+  },
   elasticsearch: {
     label: "Elasticsearch",
     // 9200 for both products and both schemes: a TLS deployment serves HTTPS on the
@@ -1960,6 +1969,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "netconf",
   "weaviate",
   "questdb",
+  "saphana",
   "hubspot",
   "stripe",
   "clarity",

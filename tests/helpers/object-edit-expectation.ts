@@ -52,6 +52,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "db2",
   "druid",
   "questdb",
+  // No kind declares `hasSource`: SAP HANA tables are not edited as source, which docs/providers/saphana.md names.
+  "saphana",
   "redshift",
   // No kind declares `hasSource`: CockroachDB tables are not edited as source, which docs/providers/cockroach.md names.
   "cockroach",

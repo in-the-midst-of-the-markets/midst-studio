@@ -6,6 +6,7 @@ import { DATABEND_CONNECTION_STRING } from "@/lib/db/providers/sql/databend/conn
 import { DB2_CONNECTION_STRING } from "@/lib/db/providers/sql/db2/connection-string";
 import { DRUID_CONNECTION_STRING } from "@/lib/db/providers/sql/druid/connection-string";
 import { QUESTDB_CONNECTION_STRING } from "@/lib/db/providers/sql/questdb/connection-string";
+import { SAPHANA_CONNECTION_STRING } from "@/lib/db/providers/sql/saphana/connection-string";
 import { REDSHIFT_CONNECTION_STRING } from "@/lib/db/providers/sql/redshift/connection-string";
 import { COCKROACH_CONNECTION_STRING } from "@/lib/db/providers/sql/cockroach/connection-string";
 import { DUCKDB_CONNECTION_STRING } from "@/lib/db/providers/sql/duckdb/connection-string";
@@ -134,6 +135,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   prometheus: PROMETHEUS_CONNECTION_STRING,
   qdrant: QDRANT_CONNECTION_STRING,
   questdb: QUESTDB_CONNECTION_STRING,
+  saphana: SAPHANA_CONNECTION_STRING,
   redshift: REDSHIFT_CONNECTION_STRING,
   cockroach: COCKROACH_CONNECTION_STRING,
   rabbitmq: RABBITMQ_CONNECTION_STRING,

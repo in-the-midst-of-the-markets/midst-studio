@@ -149,7 +149,7 @@ npx @libredb/studio
 
 </div>
 
-PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Amazon Redshift, CockroachDB and Custom API
+PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · DuckDB · MongoDB · Redis · Couchbase · Firestore · ClickHouse · Apache Druid · Elasticsearch · OpenSearch · Trino · BigQuery · Databend · Snowflake · Apache Spark · Apache Cassandra · Prometheus · Apache Kafka · etcd · Neo4j · Milvus · Qdrant · Weaviate · InfluxDB (InfluxQL) · InfluxDB 3 (SQL) · Oxia · S3-compatible object storage · Kubernetes · MQTT · RabbitMQ · OPC UA · MTConnect · Modbus · NETCONF · SNMP · QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Amazon Redshift, CockroachDB, Custom API and SAP HANA
 
 <div dir="rtl" align="right">
 
@@ -226,6 +226,7 @@ PostgreSQL · MySQL · Oracle · Db2 LUW · SQL Server · SQLite · libSQL · Du
 | **QuestDB** | `pg` (PostgreSQL wire protocol, port 8812) | QuestDB SQL. Not a PostgreSQL connection: that provider asks for `pg_backend_pid()` on every run, which QuestDB has no function for. Tables come from `tables()` and columns from `table_columns()` |
 | **Amazon Redshift** | `pg` (PostgreSQL wire protocol, port 5439) | Redshift SQL. Not a PostgreSQL connection: that provider asks for `pg_backend_pid()` on every run, which this provider never sends. Tables and columns come from `information_schema` |
 | **CockroachDB** | `pg` (PostgreSQL wire protocol, port 26257) | CockroachDB SQL. Not a PostgreSQL connection: that provider asks for `pg_backend_pid()` on every run, which this provider never sends. Tables and columns come from `information_schema`. Schemas `crdb_internal` and `pg_extension` are hidden |
+| **SAP HANA** | `hdb` (pure JavaScript client, port 30015; 443 with TLS for HANA Cloud) | SAP HANA SQL. The catalog is `SYS.TABLES` and `SYS.TABLE_COLUMNS`. `SYS`, `SYSTEM` and `_SYS*` schemas stay hidden unless the connection names one |
 | **Redis** | `ioredis` | <span dir="rtl">command editor، keys explorer، INFO پر مبنی monitoring</span> |
 
 <div dir="rtl" align="right">

@@ -64,6 +64,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   clickhouse: "exact",
   druid: "exact",
   questdb: "exact",
+  saphana: "exact",
   redshift: "exact",
   cassandra: "exact",
   mongodb: "exact",

@@ -87,6 +87,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   oxia: "oxiacli",
   databend: null,
   questdb: null,
+  saphana: null,
   redshift: null,
   cockroach: null,
   airtable: null,

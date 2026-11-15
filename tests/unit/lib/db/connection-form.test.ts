@@ -114,6 +114,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   snmp: true,
   sparkplug: true,
   questdb: true,
+  saphana: true,
   redshift: true,
   cockroach: true,
 };
@@ -393,6 +394,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "netconf",
       "weaviate",
       "questdb",
+      "saphana",
       "hubspot",
       "stripe",
       "clarity",

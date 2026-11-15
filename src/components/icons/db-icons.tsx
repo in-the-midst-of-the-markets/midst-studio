@@ -650,6 +650,25 @@ export const RedshiftIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Column bars for SAP HANA, drawn for Studio. Not the vendor mark. */
+export const SapHanaIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M6 18 V8" />
+    <path d="M12 18 V5" />
+    <path d="M18 18 V11" />
+    <path d="M4 18 H20" />
+  </svg>
+);
+
 /** A Q for QuestDB, drawn for Studio. Not the vendor mark. */
 export const QuestDbIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

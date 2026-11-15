@@ -176,6 +176,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   mixpanel: 67,
   // Last. A hostname and a resource list the user wrote, behind the shipped connectors.
   customapi: 68,
+  // Last, behind Custom API: an in-memory database on its own client, and the newest name.
+  saphana: 69,
 };
 
 /**

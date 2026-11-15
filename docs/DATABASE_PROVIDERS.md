@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Sixty-nine type-ids are supported by sixty-seven provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Seventy type-ids are supported by sixty-eight provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -320,6 +320,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | SNMP | `snmp` | Device (managed objects over UDP, read-only) | [providers/snmp.md](./providers/snmp.md) |
 | Sparkplug B | `sparkplug` | Industrial (one MQTT broker, read-only) | [providers/sparkplug.md](./providers/sparkplug.md) |
 | QuestDB | `questdb` | SQL (time series, PostgreSQL wire protocol, port 8812) | [providers/questdb.md](./providers/questdb.md) |
+| SAP HANA | `saphana` | SQL (SAP HANA SQL, pure JavaScript client, port 30015) | [providers/saphana.md](./providers/saphana.md) |
 | Amazon Redshift | `redshift` | SQL (warehouse, PostgreSQL wire protocol, port 5439) | [providers/redshift.md](./providers/redshift.md) |
 | CockroachDB | `cockroach` | SQL (PostgreSQL wire protocol, port 26257) | [providers/cockroach.md](./providers/cockroach.md) |
 | Airtable | `airtable` | SQL (the Web API) | [providers/airtable.md](./providers/airtable.md) |

@@ -128,6 +128,7 @@ const ALL_TYPES: DatabaseType[] = [
   "snmp",
   "sparkplug",
   "questdb",
+  "saphana",
   "redshift",
   "cockroach",
   "airtable",
@@ -1793,6 +1794,8 @@ describe("db-showcase", () => {
         "mixpanel",
         // Last. A hostname and a resource list the user wrote.
         "customapi",
+        // Last, behind Custom API: an in-memory database on its own client, and the newest name.
+        "saphana",
       ]);
     });
   });

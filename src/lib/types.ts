@@ -121,6 +121,9 @@ export type DatabaseType =
   // that one issues `SELECT pg_backend_pid()` when a run carries a query id, and QuestDB
   // has no such function.
   | "questdb"
+  // SAP HANA, on its own session through the pure JavaScript `hdb` client (port 30015,
+  // or 443 with TLS for HANA Cloud). Not a `postgres` connection.
+  | "saphana"
   // Amazon Redshift, on its own PostgreSQL wire session (port 5439). Not the `postgres`
   // provider: that one issues `SELECT pg_backend_pid()` when a run carries a query id,
   // and it reads sizes from `pg_total_relation_size`.

@@ -44,6 +44,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | ClickHouse | `clickhouse` | SQL | none (HTTP interface) | SQL | [clickhouse.md](./clickhouse.md) |
 | Apache Druid | `druid` | SQL (analytics) | none (HTTP: SQL endpoint) | SQL (Calcite) | [druid.md](./druid.md) |
 | QuestDB | `questdb` | SQL (time series) | `pg` (PostgreSQL wire, port 8812) | SQL (QuestDB) | [questdb.md](./questdb.md) |
+| SAP HANA | `saphana` | SQL | `hdb` (pure JavaScript, port 30015) | SQL (SAP HANA) | [saphana.md](./saphana.md) |
 | Amazon Redshift | `redshift` | SQL (warehouse) | `pg` (PostgreSQL wire, port 5439) | SQL (Redshift) | [redshift.md](./redshift.md) |
 | CockroachDB | `cockroach` | SQL | `pg` (PostgreSQL wire, port 26257) | SQL (PostgreSQL) | [cockroach.md](./cockroach.md) |
 | Elasticsearch | `elasticsearch` | SQL (search) | none (HTTP: `_sql` + REST) | SQL (Elasticsearch SQL) | [elasticsearch.md](./elasticsearch.md) |

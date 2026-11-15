@@ -84,6 +84,14 @@ describe("renderNotices", () => {
     assert.ok(text.includes("Beta notice text"), text);
   });
 
+  it("reads LICENSE and skips a LICENSES directory beside it", () => {
+    addPackage("hdb", "Apache-2.0", { LICENSE: "HDB Apache text" });
+    mkdirSync(join(repo, "node_modules", "hdb", "LICENSES"));
+    const text = notices("hdb");
+    assert.ok(text.includes("HDB Apache text"), text);
+    assert.equal(text.includes("\nLICENSES:"), false, text);
+  });
+
   it("reads LICENCE.md and COPYING too", () => {
     addPackage("gamma", "ISC", { "LICENCE.md": "Gamma licence text", COPYING: "Gamma copying text" });
     const text = renderNotices([metafile("../node_modules/gamma/index.js")], wd);
