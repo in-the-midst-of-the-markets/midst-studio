@@ -140,8 +140,13 @@ export async function renderFormGolden(type: DatabaseType): Promise<string> {
         onTestConnection={async () => ({ success: true })}
       />,
     );
-    const [picker, ...others] = buttonsNamed(DB_UI_CONFIG[type].label);
-    if (picker === undefined || others.length > 0) throw new Error(`not exactly one ${type} picker button drawn`);
+    const named = buttonsNamed(DB_UI_CONFIG[type].label);
+    const picker = named[0];
+    // Custom API is the last button in both groups, so the dialog draws it twice. Either one selects it.
+    const expected = type === "customapi" ? 2 : 1;
+    if (picker === undefined || named.length !== expected) {
+      throw new Error(`expected ${expected} ${type} picker button(s), drew ${named.length}`);
+    }
     fireEvent.click(picker);
     lines.push("== discrete", ...dialogLines());
 
