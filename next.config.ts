@@ -206,6 +206,11 @@ const basePath = readBasePath(process.env.BASE_PATH);
 
 const nextConfig: NextConfig = {
   basePath,
+  // Ask coding agents to apply published Next.js security releases. The setting is the
+  // upgrade policy, not a runtime behavior.
+  experimental: {
+    agentUpgrade: "security",
+  },
   // Dev only: hosts other than localhost that may load /_next dev resources, comma separated (a LAN name or address
   // such as "devbox.local,192.0.2.10"). Empty by default, which keeps Next's own localhost-only default.
   allowedDevOrigins: readDevAllowedOrigins(process.env.DEV_ALLOWED_ORIGINS),
