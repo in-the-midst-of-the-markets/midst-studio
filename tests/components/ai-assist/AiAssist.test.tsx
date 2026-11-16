@@ -705,6 +705,67 @@ describe("ChartWithEditor", () => {
     expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
   });
 
+  test("prefix and suffix in the chart code format the drawn values, and a rerun keeps the title", () => {
+    const view = render(
+      <ChartWithEditor
+        title="Revenue"
+        sql="SELECT month, revenue FROM orders"
+        result={barResult}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const current = JSON.parse((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value) as {
+      yAxis: { axisLabel: { prefix: string; suffix: string } };
+      tooltip: { suffix: string };
+      title: { text: string };
+    };
+    current.yAxis.axisLabel.prefix = "$";
+    current.tooltip.suffix = "%";
+    current.title.text = "Edited";
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify(current) },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    const drawn = (): {
+      title: { text: string };
+      yAxis: { axisLabel: { formatter?: (value: unknown) => string } };
+      tooltip: { formatter?: (params: unknown) => string };
+      series?: unknown;
+    } => {
+      const option = charts.at(-1)?.setOption.mock.calls.at(-1)?.[0];
+      if (option === undefined) throw new Error("expected a chart");
+      return option as {
+        title: { text: string };
+        yAxis: { axisLabel: { formatter?: (value: unknown) => string } };
+        tooltip: { formatter?: (params: unknown) => string };
+        series?: unknown;
+      };
+    };
+    expect(drawn().yAxis.axisLabel.formatter?.(2)).toBe("$2");
+    expect(drawn().tooltip.formatter?.({ seriesName: "revenue", value: 2 })).toBe("revenue: 2%");
+    expect(drawn().title.text).toBe("Edited");
+    view.rerender(
+      <ChartWithEditor
+        title="cost by region"
+        sql="SELECT region, cost FROM sales"
+        result={{ ...barResult, rows: [{ month: "Feb", revenue: 99 }] }}
+        error={null}
+        chart={barChart}
+        running={false}
+        onSqlChange={() => {}}
+        onRun={() => {}}
+      />,
+    );
+    expect(drawn().title.text).toBe("Edited");
+    expect(JSON.stringify(drawn().series)).toContain("99");
+    expect(view.getByRole("heading", { name: "Edited" })).toBeTruthy();
+  });
+
   test("title textStyle changes the heading, and a rerun drops values out of the code", () => {
     const view = render(
       <ChartWithEditor
@@ -1624,7 +1685,7 @@ describe("AiAssist page", () => {
     fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "DELETE FROM orders" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
     expect(await view.findByText("AI Assist only runs read-only queries.")).toBeTruthy();
-    expect(view.getByRole("heading", { name: "DELETE FROM orders" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Query" }));
     fireEvent.change(view.getByLabelText("SQL editor"), { target: { value: "SELECT region, cost FROM sales" } });
     fireEvent.click(view.getByRole("button", { name: "Run" }));
@@ -1637,7 +1698,7 @@ describe("AiAssist page", () => {
         ),
       ).toBe(true),
     );
-    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     expect(view.queryByText("Revenue by month")).toBeNull();
   });
 
@@ -1888,7 +1949,7 @@ describe("AiAssist page", () => {
         ),
       ).toBe(true),
     );
-    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     fireEvent.click(view.getByRole("button", { name: "Change type, Line, Basic" }));
     fireEvent.click(within(view.getByRole("group", { name: "Chart types" })).getByRole("button", { name: "Line" }));
     fireEvent.click(
@@ -1903,7 +1964,7 @@ describe("AiAssist page", () => {
     expect(await view.findByText("Cost is separate.")).toBeTruthy();
     expect(await view.findByRole("heading", { name: "Spend" })).toBeTruthy();
     expect(view.queryByRole("heading", { name: "Revenue again" })).toBeNull();
-    expect(view.getByRole("heading", { name: "cost by region" })).toBeTruthy();
+    expect(view.getByRole("heading", { name: "Revenue" })).toBeTruthy();
     expect(view.getByRole("button", { name: "Change type, Line, Area" })).toBeTruthy();
     expect(view.queryByText("replaced")).toBeNull();
     expect((view.getAllByLabelText("SQL editor")[0] as HTMLTextAreaElement).value).toBe(

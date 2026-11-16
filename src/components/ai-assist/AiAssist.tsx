@@ -49,7 +49,7 @@ import {
 } from "@/lib/ai/assist-plan";
 import { ASSIST_RESULT_CAP, explanationWithResults, readAssistResults } from "@/lib/ai/assist-reading";
 import { assistRunnableStatement } from "@/lib/ai/assist-language";
-import { suggestAssistChart, titleAfterEdit, type AssistChartChoice } from "@/lib/ai/assist-chart";
+import { suggestAssistChart, type AssistChartChoice } from "@/lib/ai/assist-chart";
 import { openAssistChart } from "@/lib/ai/assist-graph-chart";
 import {
   assistSavedAsk,
@@ -807,14 +807,11 @@ export function AiAssist() {
         ...turn,
         cards: turn.cards.map((card) => {
           if (card.id !== id) return card;
-          const title = titleAfterEdit(card.title, card.titledSql, sql);
           return {
             ...card,
             sql,
-            title,
             titledSql: sql,
             locked: queryFilterShape(sql) !== queryFilterShape(card.modelSql),
-            chart: title !== card.title && card.chart !== null ? { ...card.chart, caption: "" } : card.chart,
             running: true,
             error: null,
           };

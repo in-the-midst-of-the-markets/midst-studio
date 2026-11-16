@@ -462,6 +462,65 @@ describe("QueryChart", () => {
     expect((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value).toContain('"bar"');
   });
 
+  test("prefix and suffix in the chart code format the drawn values", () => {
+    const view = render(React.createElement(QueryChart, { result: sales }));
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const current = JSON.parse((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value) as {
+      yAxis: { axisLabel: { prefix: string; suffix: string } };
+      tooltip: { prefix: string; suffix: string };
+    };
+    current.yAxis.axisLabel.prefix = "$";
+    current.yAxis.axisLabel.suffix = "k";
+    current.tooltip.suffix = "%";
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify(current) },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    const option = charts.at(-1)?.option as {
+      yAxis: { axisLabel: { formatter?: (value: unknown) => string } };
+      tooltip: { formatter?: (params: unknown) => string };
+    };
+    expect(option.yAxis.axisLabel.formatter?.(2)).toBe("$2k");
+    expect(option.tooltip.formatter?.({ seriesName: "total", value: 2 })).toBe("total: 2%");
+  });
+
+  test("a new result keeps the chart title and replaces the series values", () => {
+    const view = render(React.createElement(QueryChart, { result: sales }));
+    fireEvent.click(view.getByRole("button", { name: "Bar" }));
+    fireEvent.click(view.getByRole("button", { name: "Basic" }));
+    fireEvent.click(view.getByRole("button", { name: "Code" }));
+    const current = JSON.parse((view.getByRole("textbox", { name: "Chart code" }) as HTMLTextAreaElement).value) as {
+      title: { text: string };
+    };
+    current.title.text = "Edited";
+    fireEvent.change(view.getByRole("textbox", { name: "Chart code" }), {
+      target: { value: JSON.stringify(current) },
+    });
+    fireEvent.click(view.getByRole("button", { name: "Chart" }));
+    const drawn = (): { title: { text: string }; series: { data: unknown }[] } => {
+      const chart = charts.at(-1);
+      if (chart === undefined) throw new Error("expected a chart");
+      return chart.option as { title: { text: string }; series: { data: unknown }[] };
+    };
+    expect(drawn().title.text).toBe("Edited");
+    expect(drawn().series[0]?.data).toEqual([1, 2]);
+    view.rerender(
+      React.createElement(QueryChart, {
+        result: resultOf(
+          ["region", "total"],
+          [
+            { region: "north", total: 9 },
+            { region: "south", total: 4 },
+          ],
+        ),
+      }),
+    );
+    expect(drawn().title.text).toBe("Edited");
+    expect(drawn().series[0]?.data).toEqual([9, 4]);
+  });
+
   test("does not draw a tooltip color that breaks out of the arrow style", () => {
     const view = render(React.createElement(QueryChart, { result: sales }));
     fireEvent.click(view.getByRole("button", { name: "Bar" }));
