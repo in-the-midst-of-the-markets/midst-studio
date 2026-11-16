@@ -38,6 +38,7 @@ import { STRIPE_SQL_GRAMMAR } from "@/lib/db/providers/sql/stripe/sql-grammar";
 import { CLARITY_SQL_GRAMMAR } from "@/lib/db/providers/sql/clarity/sql-grammar";
 import { GOOGLEANALYTICS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googleanalytics/sql-grammar";
 import { QUICKBOOKS_SQL_GRAMMAR } from "@/lib/db/providers/sql/quickbooks/sql-grammar";
+import { CIN7_SQL_GRAMMAR } from "@/lib/db/providers/sql/cin7/sql-grammar";
 import { ODOO_SQL_GRAMMAR } from "@/lib/db/providers/sql/odoo/sql-grammar";
 import { SHOPIFY_SQL_GRAMMAR } from "@/lib/db/providers/sql/shopify/sql-grammar";
 import { NOTION_SQL_GRAMMAR } from "@/lib/db/providers/sql/notion/sql-grammar";
@@ -122,6 +123,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   clarity: CLARITY_SQL_GRAMMAR,
   googleanalytics: GOOGLEANALYTICS_SQL_GRAMMAR,
   quickbooks: QUICKBOOKS_SQL_GRAMMAR,
+  cin7: CIN7_SQL_GRAMMAR,
   odoo: ODOO_SQL_GRAMMAR,
   shopify: SHOPIFY_SQL_GRAMMAR,
   notion: NOTION_SQL_GRAMMAR,

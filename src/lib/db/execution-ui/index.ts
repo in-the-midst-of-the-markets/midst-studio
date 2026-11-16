@@ -41,6 +41,7 @@ import { STRIPE_EXECUTION_UI } from "@/lib/db/providers/sql/stripe/execution-ui"
 import { CLARITY_EXECUTION_UI } from "@/lib/db/providers/sql/clarity/execution-ui";
 import { GOOGLEANALYTICS_EXECUTION_UI } from "@/lib/db/providers/sql/googleanalytics/execution-ui";
 import { QUICKBOOKS_EXECUTION_UI } from "@/lib/db/providers/sql/quickbooks/execution-ui";
+import { CIN7_EXECUTION_UI } from "@/lib/db/providers/sql/cin7/execution-ui";
 import { ODOO_EXECUTION_UI } from "@/lib/db/providers/sql/odoo/execution-ui";
 import { SHOPIFY_EXECUTION_UI } from "@/lib/db/providers/sql/shopify/execution-ui";
 import { NOTION_EXECUTION_UI } from "@/lib/db/providers/sql/notion/execution-ui";
@@ -121,6 +122,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   clarity: CLARITY_EXECUTION_UI,
   googleanalytics: GOOGLEANALYTICS_EXECUTION_UI,
   quickbooks: QUICKBOOKS_EXECUTION_UI,
+  cin7: CIN7_EXECUTION_UI,
   odoo: ODOO_EXECUTION_UI,
   shopify: SHOPIFY_EXECUTION_UI,
   notion: NOTION_EXECUTION_UI,

@@ -1571,6 +1571,40 @@ describe("SaaS connector suggestions", () => {
     expect(items("s", "shopify").map((item) => item.label)).toContain("FROM");
   });
 
+  test("Cin7 Core offers its lists, filters and statements it can run", () => {
+    const labels = (line: string) => items(line, "cin7").map((item) => item.label);
+    const empty = labels("");
+    expect(empty).toContain("Stock on hand");
+    expect(empty).toContain("Open sales");
+    expect(empty).toContain("Open purchases");
+    expect(empty).toContain("Count");
+    expect(empty).not.toContain("JOIN");
+    expect(empty).not.toContain("ORDER BY");
+    expect(labels("FROM ")).toEqual(expect.arrayContaining(["Product", "Stock", "Sale", "Purchase"]));
+    expect(labels("FROM ")).not.toContain("SELECT");
+    expect(labels("FROM S")).toEqual(expect.arrayContaining(["Sale", "Stock", "Supplier"]));
+    expect(labels("FROM S")).not.toContain("Product");
+    const whereItems = items("SELECT SKU FROM Sale WHERE ", "cin7");
+    const where = whereItems.map((item) => item.label);
+    expect(where).toContain("Search");
+    expect(where).toContain("'ORDERED'");
+    expect(where).toContain("'AUTHORISED'");
+    expect(whereItems.find((item) => item.label === "'ORDERED'")?.detail).toBe("Filter");
+    expect(labels("SELECT ")).toContain("SKU");
+    expect(labels("SELECT ")).not.toContain("'ORDERED'");
+    const stock: SchemaCompletionCache = {
+      tableItems: [{ label: "Stock", labelLower: "stock", columnNames: "SKU, OnHand" }],
+      columnMap: new Map([
+        ["stock", [{ label: "OnHand", labelLower: "onhand", type: "double", isPrimary: false, tableName: "Stock" }]],
+      ]),
+      allColumns: new Map(),
+    };
+    const dotted = items("SELECT OnHand FROM Stock WHERE SKU = 'ABC' AND Stock.", "cin7", stock).map(
+      (item) => item.label,
+    );
+    expect(dotted).toContain("OnHand");
+  });
+
   test("Google Analytics offers a quoted date inside WHERE and not in the select list", () => {
     const where = items("SELECT country FROM report WHERE ", "googleanalytics").map((item) => item.label);
     expect(where).toContain("'7daysAgo'");

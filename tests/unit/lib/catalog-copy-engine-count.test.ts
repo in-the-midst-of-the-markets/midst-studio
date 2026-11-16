@@ -174,6 +174,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "seventy-three": 73,
   // Two past the registry once Stardog joined it.
   "seventy-four": 74,
+  // Two past the registry once Cin7 Core joined it.
+  "seventy-five": 75,
 };
 
 /**

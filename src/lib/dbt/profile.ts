@@ -22,6 +22,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   clarity: unsupported,
   googleanalytics: unsupported,
   quickbooks: unsupported,
+  cin7: unsupported,
   odoo: unsupported,
   shopify: unsupported,
   notion: unsupported,

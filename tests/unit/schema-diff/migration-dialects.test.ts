@@ -23,6 +23,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   clarity: null,
   googleanalytics: null,
   quickbooks: null,
+  cin7: null,
   odoo: null,
   shopify: null,
   notion: null,

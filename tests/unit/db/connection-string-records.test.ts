@@ -172,6 +172,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "clarity",
       "googleanalytics",
       "quickbooks",
+      "cin7",
       "odoo",
       "shopify",
       "notion",

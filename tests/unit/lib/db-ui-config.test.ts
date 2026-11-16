@@ -141,6 +141,7 @@ const ALL_TYPES: DatabaseType[] = [
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "cin7",
   "odoo",
   "shopify",
   "notion",
@@ -402,6 +403,7 @@ describe("db-ui-config", () => {
       const refusing = ALL_TYPES.filter((type) => !offersSshTunnel(type));
       expect(refusing.sort()).toEqual([
         "bigquery",
+        "cin7",
         "clarity",
         "customapi",
         "databricks",
@@ -461,6 +463,7 @@ describe("db-ui-config", () => {
       expect(ALL_TYPES.filter((type) => !offersSslPanel(type)).sort()).toEqual([
         "airtable",
         "bigquery",
+        "cin7",
         "clarity",
         "customapi",
         "databricks",
@@ -1185,6 +1188,7 @@ describe("declared connection-field copy (#1085)", () => {
       "clarity",
       "googleanalytics",
       "quickbooks",
+      "cin7",
       "odoo",
       "shopify",
       "notion",
@@ -1823,6 +1827,8 @@ describe("db-showcase", () => {
         "salesforce",
         // Last, behind Salesforce: a knowledge graph reached over SPARQL.
         "stardog",
+        // Last, behind Stardog: an inventory account on the External API.
+        "cin7",
       ]);
     });
   });
@@ -2063,6 +2069,7 @@ describe("the Snowflake entry", () => {
       "clarity",
       "googleanalytics",
       "quickbooks",
+      "cin7",
       "odoo",
       "shopify",
       "notion",

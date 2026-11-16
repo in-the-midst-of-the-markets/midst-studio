@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Seventy-three type-ids are supported by seventy-one provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Seventy-four type-ids are supported by seventy-two provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -333,6 +333,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Microsoft Clarity | `clarity` | SQL (the Clarity Data Export API, read-only) | [providers/clarity.md](./providers/clarity.md) |
 | Google Analytics | `googleanalytics` | SQL (the GA4 Data API, read-only) | [providers/googleanalytics.md](./providers/googleanalytics.md) |
 | QuickBooks Online | `quickbooks` | SQL (the QuickBooks Online query API, read-only) | [providers/quickbooks.md](./providers/quickbooks.md) |
+| Cin7 Core | `cin7` | SQL (the Cin7 Core External API, read-only) | [providers/cin7.md](./providers/cin7.md) |
 | Odoo | `odoo` | SQL (the Odoo JSON-2 API, read-only) | [providers/odoo.md](./providers/odoo.md) |
 | Shopify | `shopify` | ShopifyQL (the Admin API shopifyqlQuery field, read-only) | [providers/shopify.md](./providers/shopify.md) |
 | Notion | `notion` | SQL (the Notion data-source query API, read-only) | [providers/notion.md](./providers/notion.md) |

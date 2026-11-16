@@ -183,6 +183,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   // A CRM org on the REST query API, behind Databricks SQL.
   salesforce: 71,
   stardog: 72,
+  // An inventory account on the External API, behind the knowledge graph.
+  cin7: 73,
 };
 
 /**

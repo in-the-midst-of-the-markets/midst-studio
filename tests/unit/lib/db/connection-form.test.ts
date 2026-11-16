@@ -53,6 +53,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   clarity: true,
   googleanalytics: true,
   quickbooks: true,
+  cin7: true,
   odoo: true,
   shopify: true,
   notion: true,
@@ -421,6 +422,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "excel",
       "googlesheets",
       "mixpanel",
+      // Last, behind Mixpanel: an inventory account on the External API.
+      "cin7",
       "customapi",
     ]);
   });
@@ -452,6 +455,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "excel",
       "googlesheets",
       "mixpanel",
+      "cin7",
       "customapi",
     ]);
     expect(databases[0]).toBe("airtable");

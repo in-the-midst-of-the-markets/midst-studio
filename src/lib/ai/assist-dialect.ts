@@ -306,6 +306,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  cin7: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one Cin7 Core table. Combine filters with AND. Page with LIMIT. OFFSET must be a multiple of LIMIT.",
+    sample: "SELECT SKU, Name FROM Product WHERE SKU = 'ABC' LIMIT 100",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,
