@@ -105,10 +105,13 @@ describe("ShipBobProvider", () => {
       }
       throw new Error("expected a refusal");
     };
-    expect(refused({ ...connection, host: "files.shipbob.com" }, "files.shipbob.com")).toMatch(/api.shipbob.com/);
-    expect(refused({ ...connection, host: "evil.example" }, "evil.example")).toMatch(/shipbob.com/);
-    expect(refused({ ...connection, host: "https://user:secret@api.shipbob.com" }, "secret")).toMatch(/shipbob.com/);
-    expect(refused({ ...connection, host: "api.shipbob.com:8443" }, "8443")).toMatch(/shipbob.com/);
+    const underShipBob = "The API host must be a host under shipbob.com. The access token is sent only there.";
+    expect(refused({ ...connection, host: "files.shipbob.com" }, "files.shipbob.com")).toBe(
+      "The API host must be api.shipbob.com or sandbox-api.shipbob.com. The access token is sent only there.",
+    );
+    expect(refused({ ...connection, host: "evil.example" }, "evil.example")).toBe(underShipBob);
+    expect(refused({ ...connection, host: "https://user:secret@api.shipbob.com" }, "secret")).toBe(underShipBob);
+    expect(refused({ ...connection, host: "api.shipbob.com:8443" }, "8443")).toBe(underShipBob);
     expect(refused({ ...connection, password: "  " }, TOKEN)).toMatch(/required/);
     expect(refused({ ...connection, password: "has space" }, "has space")).toMatch(/printable/);
     expect(refused({ ...connection, password: "a".repeat(1025) }, "a".repeat(1025))).toMatch(/printable/);

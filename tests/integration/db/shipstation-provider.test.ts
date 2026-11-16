@@ -102,9 +102,10 @@ describe("ShipStationProvider", () => {
     expect(refused({ ...connection, host: "api.shipstation.com" }, "v2.shipstation.com")).toBe(
       "The API host must be ssapi.shipstation.com. The API secret is sent only there.",
     );
-    expect(refused({ ...connection, host: "evil.example" }, "evil.example")).toMatch(/shipstation.com/);
-    expect(refused({ ...connection, host: "https://user:secret@ssapi.shipstation.com" }, "secret")).toMatch(
-      /shipstation.com/,
+    const underShipStation = "The API host must be a host under shipstation.com. The access token is sent only there.";
+    expect(refused({ ...connection, host: "evil.example" }, "evil.example")).toBe(underShipStation);
+    expect(refused({ ...connection, host: "https://user:secret@ssapi.shipstation.com" }, "secret")).toBe(
+      underShipStation,
     );
     expect(refused({ ...connection, user: "  " }, KEY)).toMatch(/required/);
     expect(refused({ ...connection, password: "" }, SECRET)).toMatch(/required/);
