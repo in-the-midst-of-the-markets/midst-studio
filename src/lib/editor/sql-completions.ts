@@ -535,7 +535,7 @@ export function registerSQLCompletionProvider(
       const bareName = (name: string) =>
         /^[A-Za-z_][\w$]*$/.test(name) || (dottedWord && /^[A-Za-z_][\w$]*(?:\.[A-Za-z_][\w$]*)+$/.test(name));
       const asWritten = (name: string) => (bareName(name) ? name : formatSegment(name));
-      const tableItem = (table: SchemaTableItem, insertText: string, tableRange: Monaco.IRange) => ({
+      const tableItem = (table: SchemaTableItem, insertText: string, tableRange: Monaco.IRange, rank = "2") => ({
         // It still filters on the table's own name.
         ...(table.labelQualified && insertText.includes(".") && insertText !== table.label
           ? { label: [...(table.container ?? []), table.segment ?? table.label].join("."), filterText: table.label }
@@ -547,7 +547,7 @@ export function registerSQLCompletionProvider(
         // took read as an empty table (#1397).
         detail: table.rowCount === undefined ? "Table" : `Table (${table.rowCount} rows)`,
         documentation: table.columnNames,
-        sortText: "2" + table.label,
+        sortText: rank + table.label,
       });
 
       // A typed qualifier that names a CONTAINER (`sales.`, `e2e_other.`, `demo.`) offers that
@@ -598,7 +598,9 @@ export function registerSQLCompletionProvider(
                     : table.qualify && table.container && table.segment !== undefined
                       ? formatPath([...table.container, table.segment])
                       : ownFormat !== null
-                        ? table.label.split(".").map(ownFormat).join(".")
+                        ? table.label.includes("://") || table.label.startsWith("urn:")
+                          ? ownFormat(table.label)
+                          : table.label.split(".").map(ownFormat).join(".")
                         : table.label,
                   { ...range, startColumn: range.startColumn - qualifier.length },
                 ),
@@ -704,13 +706,23 @@ export function registerSQLCompletionProvider(
         (clause?.name === "INTO" || clause?.name === "TABLE" || clause?.name === "USING") &&
         clause.rest.split("(").length > clause.rest.split(")").length;
       // Any other unclosed `(` after a table clause holds a table function's arguments or a subquery: no table position.
+      // A word such as SPARQL `a` names a class even though the clause around it names columns.
+      const tableAfter = grammar.completionClauses?.tableAfter ?? [];
+      const afterTableWord =
+        tableAfter.length > 0 &&
+        new RegExp(
+          `\\b(?:${tableAfter.map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\s+[\\w<]*$`,
+          "i",
+        ).test(textBeforeCursor);
       const isTableContext =
-        clause !== undefined &&
-        tableClauses.has(clause.name) &&
-        clause.rest.split("(").length === clause.rest.split(")").length;
+        afterTableWord ||
+        (clause !== undefined &&
+          tableClauses.has(clause.name) &&
+          clause.rest.split("(").length === clause.rest.split(")").length);
       // Right after FROM/JOIN/INTO/UPDATE/TABLE only a name can stand. Read on the raw text, where a
       // quoted table name is still there.
-      const atNameSlot = isTableContext && /^\s*[\w$]*$/.test(text.slice(offset - clause.rest.length, offset));
+      const atNameSlot =
+        isTableContext && clause !== undefined && /^\s*[\w$]*$/.test(text.slice(offset - clause.rest.length, offset));
       const isColumnContext =
         !isTableContext &&
         (inList ||
@@ -772,7 +784,9 @@ export function registerSQLCompletionProvider(
       // Tables and the statement's CTEs, except where only a column can stand. A SELECT list that names
       // no source yet still offers them: typed left to right, nothing else reaches a table there.
       if (!isColumnContext || (clause?.name === "SELECT" && scope.sources.length === 0)) {
-        suggestions.push(...tableSuggestions);
+        suggestions.push(
+          ...tableSuggestions.map((item) => (afterTableWord ? { ...item, sortText: "00" + String(item.label) } : item)),
+        );
         for (const cte of scope.ctes) {
           if (!shouldFilter || cte.toLowerCase().startsWith(prefix)) {
             suggestions.push({
@@ -836,7 +850,8 @@ export function registerSQLCompletionProvider(
               range,
               detail: owners.length > 1 ? `Column (${col.type}) · ${owners.join(", ")}` : `Column (${col.type})`,
               // In scope, columns rank above keywords; otherwise below everything else.
-              sortText: (inScope ? "00" : "4") + col.label,
+              // A prefix that already names the column ranks it above the keyword that shares those letters.
+              sortText: (inScope || (prefix.length > 0 && col.labelLower.startsWith(prefix)) ? "00" : "4") + col.label,
             });
           }
         }
@@ -859,6 +874,37 @@ export function registerSQLCompletionProvider(
                 ? "CTE"
                 : `Source ${source.name?.join(".")}`,
             sortText: "01" + qualifier,
+          });
+        }
+      }
+
+      // An empty editor on a SQL engine offers a query of each table the tree already holds, using that
+      // table's own columns. A dialect whose list is the subset it runs keeps its own snippets instead.
+      if (
+        grammar.completionWords?.lists !== "only" &&
+        clause === undefined &&
+        textBeforeCursor.trim() === "" &&
+        !atNameSlot
+      ) {
+        for (const table of schemaCompletionCache.tableItems.slice(0, 6)) {
+          const names = (table.columnNames ?? "")
+            .split(",")
+            .map((name) => name.trim())
+            .filter((name) => name !== "")
+            .slice(0, 4);
+          const columns = names.length === 0 ? "*" : names.map((name) => asWritten(name)).join(", ");
+          const from =
+            table.segment !== undefined && table.container && table.qualify
+              ? formatPath([...table.container, table.segment])
+              : asWritten(table.label);
+          suggestions.push({
+            label: `Query ${table.label}`,
+            kind: monaco.languages.CompletionItemKind.Snippet,
+            insertText: `SELECT ${columns}\nFROM ${from}\nLIMIT 100`,
+            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+            range,
+            detail: "Query this table",
+            sortText: "00" + table.label,
           });
         }
       }

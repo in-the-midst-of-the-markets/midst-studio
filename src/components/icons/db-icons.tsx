@@ -1055,6 +1055,33 @@ export const Db2Icon: React.FC<IconProps> = ({ className, ...props }) => (
  * graph in its plainest form, which is what Neo4j stores and what stays identifiable at the 14px the
  * connection list draws. The edges stop at each circle's outline, so no line crosses a node.
  */
+/**
+ * Stardog: a hub and three spokes, drawn for Studio. Not the Stardog mark.
+ *
+ * One node in the middle and three around it, the shape of a class and the properties that
+ * point at it, which is what the tree lists. The spokes stop at each circle.
+ */
+export const StardogIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="2.4" />
+    <circle cx="5.5" cy="6" r="1.6" />
+    <circle cx="18.5" cy="6" r="1.6" />
+    <circle cx="12" cy="19.2" r="1.6" />
+    <path d="M9.9 10.3 6.8 7.3" />
+    <path d="M14.1 10.3 17.2 7.3" />
+    <path d="M12 14.4v3.2" />
+  </svg>
+);
+
 export const Neo4jIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg
     viewBox="0 0 24 24"

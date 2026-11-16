@@ -130,6 +130,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "hubspot",
   // No kind declares `hasSource`: Salesforce objects are not edited as source, which docs/providers/salesforce.md names.
   "salesforce",
+  // No kind declares `hasSource`: a Stardog class is not edited as source, which docs/providers/stardog.md names.
+  "stardog",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "stripe",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.

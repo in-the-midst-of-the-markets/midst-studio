@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1815,6 +1815,8 @@ describe("createDatabaseProvider", () => {
       "shopify",
       "snmp",
       "sparkplug",
+      // No cancel: a Stardog read is one SPARQL request, and the query API has nothing that stops it.
+      "stardog",
       // No cancel: a Stripe read is one API request, and the API has nothing that stops it.
       "stripe",
       // No cancel: a TikTok Ads read is one GET, and the Marketing API has nothing that stops it.

@@ -36,6 +36,7 @@ import { OXIA_CONNECTION_STRING } from "@/lib/db/providers/keyvalue/oxia/connect
 import { AIRTABLE_CONNECTION_STRING } from "@/lib/db/providers/sql/airtable/connection-string";
 import { HUBSPOT_CONNECTION_STRING } from "@/lib/db/providers/sql/hubspot/connection-string";
 import { SALESFORCE_CONNECTION_STRING } from "@/lib/db/providers/sql/salesforce/connection-string";
+import { STARDOG_CONNECTION_STRING } from "@/lib/db/providers/sql/stardog/connection-string";
 import { STRIPE_CONNECTION_STRING } from "@/lib/db/providers/sql/stripe/connection-string";
 import { CLARITY_CONNECTION_STRING } from "@/lib/db/providers/sql/clarity/connection-string";
 import { GOOGLEANALYTICS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleanalytics/connection-string";
@@ -115,6 +116,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   airtable: AIRTABLE_CONNECTION_STRING,
   hubspot: HUBSPOT_CONNECTION_STRING,
   salesforce: SALESFORCE_CONNECTION_STRING,
+  stardog: STARDOG_CONNECTION_STRING,
   stripe: STRIPE_CONNECTION_STRING,
   clarity: CLARITY_CONNECTION_STRING,
   googleanalytics: GOOGLEANALYTICS_CONNECTION_STRING,

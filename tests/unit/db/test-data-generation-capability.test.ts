@@ -22,6 +22,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   airtable: false,
   hubspot: false,
   salesforce: false,
+  stardog: false,
   stripe: false,
   clarity: false,
   googleanalytics: false,

@@ -469,6 +469,7 @@ const CONNECTION_FIELD_ROWS = {
   // Token in `password`. The API host is optional and defaults to api.hubapi.com.
   hubspot: ["host", "password"],
   salesforce: ["host", "password"],
+  stardog: ["host", "port", "user", "password", "database", "allowInsecureAuth"],
   // Secret key in `password`. The host must be api.stripe.com; an empty field uses that host.
   stripe: ["host", "password"],
   // Data Export token in `password`. The host must be www.clarity.ms; an empty field uses that host.
@@ -667,6 +668,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   airtable: null,
   hubspot: null,
   salesforce: null,
+  stardog: null,
   stripe: null,
   clarity: null,
   googleanalytics: null,

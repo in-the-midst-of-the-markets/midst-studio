@@ -36,6 +36,7 @@ import { OXIA_EXECUTION_UI } from "@/lib/db/providers/keyvalue/oxia/execution-ui
 import { AIRTABLE_EXECUTION_UI } from "@/lib/db/providers/sql/airtable/execution-ui";
 import { HUBSPOT_EXECUTION_UI } from "@/lib/db/providers/sql/hubspot/execution-ui";
 import { SALESFORCE_EXECUTION_UI } from "@/lib/db/providers/sql/salesforce/execution-ui";
+import { STARDOG_EXECUTION_UI } from "@/lib/db/providers/sql/stardog/execution-ui";
 import { STRIPE_EXECUTION_UI } from "@/lib/db/providers/sql/stripe/execution-ui";
 import { CLARITY_EXECUTION_UI } from "@/lib/db/providers/sql/clarity/execution-ui";
 import { GOOGLEANALYTICS_EXECUTION_UI } from "@/lib/db/providers/sql/googleanalytics/execution-ui";
@@ -115,6 +116,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   airtable: AIRTABLE_EXECUTION_UI,
   hubspot: HUBSPOT_EXECUTION_UI,
   salesforce: SALESFORCE_EXECUTION_UI,
+  stardog: STARDOG_EXECUTION_UI,
   stripe: STRIPE_EXECUTION_UI,
   clarity: CLARITY_EXECUTION_UI,
   googleanalytics: GOOGLEANALYTICS_EXECUTION_UI,

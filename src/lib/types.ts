@@ -217,6 +217,10 @@ export type DatabaseType =
   // with none, the server's home database is used. Every write is refused before it is sent,
   // whatever `readOnly` says.
   | "neo4j"
+  // Stardog. A knowledge graph queried in SPARQL over the HTTP protocol. The editor offers
+  // the read-only words a SELECT or ASK can use, and classes after `a`. The connection is a
+  // host, a database, a user and a password. This connection does not write.
+  | "stardog"
   // Milvus (vector-family spec 5). A vector database read over its gRPC API by a client of this repository's own,
   // the first member of the `vector/` family. Its editor text is Milvus's own `POST /v2/vectordb/<route>` request
   // with one JSON body, so it declares `queryLanguage: "json"` with a `queryDialect` of its own. The connection is

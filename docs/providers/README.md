@@ -11,6 +11,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Supabase | `supabase` | SQL | `pg` | SQL (PostgreSQL) | [supabase.md](./supabase.md) |
 | HubSpot | `hubspot` | SQL (CRM) | none (HTTP: the HubSpot CRM API) | SQL (a subset translated to the CRM API) | [hubspot.md](./hubspot.md) |
 | Salesforce | `salesforce` | SQL (CRM) | none (HTTP: the Salesforce REST query API) | SQL (a read-only subset translated to SOQL) | [salesforce.md](./salesforce.md) |
+| Stardog | `stardog` | SQL (SPARQL) | none (HTTP: the SPARQL protocol) | SPARQL SELECT and ASK, read-only | [stardog.md](./stardog.md) |
 | Stripe | `stripe` | SQL (payments) | none (HTTP: the Queries and Reports API) | Sigma SQL and REPORT, read-only | [stripe.md](./stripe.md) |
 | Microsoft Clarity | `clarity` | SQL (product analytics) | none (HTTP: the Clarity Data Export API) | SQL (a read-only subset translated to the API) | [clarity.md](./clarity.md) |
 | Google Analytics | `googleanalytics` | SQL (product analytics) | none (HTTP: the Google Analytics Data API) | SQL (a read-only subset translated to the API) | [googleanalytics.md](./googleanalytics.md) |

@@ -1091,6 +1091,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     airtable: "engine-has-no-foreign-key",
     hubspot: "engine-has-no-foreign-key",
     salesforce: "engine-has-no-foreign-key",
+    stardog: "engine-has-no-foreign-key",
     stripe: "engine-has-no-foreign-key",
     clarity: "engine-has-no-foreign-key",
     googleanalytics: "engine-has-no-foreign-key",
@@ -1234,6 +1235,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   salesforce: {
     label: "Salesforce",
     reason: "Salesforce object changes are not generated here; create the field in Salesforce.",
+  },
+  stardog: {
+    label: "Stardog",
+    reason: "Stardog class changes are not generated here; add the class in Stardog.",
   },
   stripe: {
     label: "Stripe",
@@ -1801,6 +1806,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "airtable",
           "hubspot",
           "salesforce",
+          "stardog",
           "stripe",
           "clarity",
           "googleanalytics",
@@ -1853,6 +1859,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   airtable: false,
   hubspot: false,
   salesforce: false,
+  stardog: false,
   stripe: false,
   clarity: false,
   googleanalytics: false,
@@ -1986,6 +1993,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "airtable",
             "hubspot",
             "salesforce",
+            "stardog",
             "stripe",
             "clarity",
             "googleanalytics",

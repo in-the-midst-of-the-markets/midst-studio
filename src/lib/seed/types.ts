@@ -140,6 +140,7 @@ const SeedDatabaseType = z.enum([
   "supabase",
   "hubspot",
   "salesforce",
+  "stardog",
   "stripe",
   "clarity",
   "googleanalytics",
