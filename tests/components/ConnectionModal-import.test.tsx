@@ -81,6 +81,7 @@ describe("ConnectionModal: a declared connection import", () => {
     declareOnPostgres();
     render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} />);
     expect(screen.getByTestId(CONNECTION_IMPORT_ACTION_ID)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "SQL" }));
     fireEvent.click(screen.getByText("MySQL"));
     expect(screen.queryByTestId(CONNECTION_IMPORT_ACTION_ID)).toBeNull();
   });
@@ -97,6 +98,7 @@ describe("ConnectionModal: a declared connection import", () => {
     fireEvent.change(screen.getByTestId("connection-import-text"), { target: { value: "postgres text" } });
     fireEvent.click(screen.getByTestId("connection-import-read"));
     expect(screen.getAllByTestId("connection-import-context")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "SQL" }));
     fireEvent.click(screen.getByText("MySQL"));
     expect(screen.queryByTestId("connection-import-context")).toBeNull();
     expect(screen.getByTestId(CONNECTION_IMPORT_ACTION_ID).textContent).toBe("Import a MySQL file");

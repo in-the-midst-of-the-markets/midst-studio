@@ -1090,13 +1090,17 @@ describe("ConnectionModal", () => {
 
   test("database type buttons render", () => {
     const props = createDefaultProps();
-    const { queryByText } = render(React.createElement(ConnectionModal, props));
+    const view = render(React.createElement(ConnectionModal, props));
 
-    expect(queryByText("PostgreSQL")).not.toBeNull();
-    expect(queryByText("MySQL")).not.toBeNull();
-    expect(queryByText("SQLite")).not.toBeNull();
-    expect(queryByText("MongoDB")).not.toBeNull();
-    expect(queryByText("Redis")).not.toBeNull();
+    expect(view.queryByText("PostgreSQL")).toBeNull();
+    expect(view.queryByText("MongoDB")).toBeNull();
+    fireEvent.click(view.getByRole("button", { name: "SQL" }));
+    fireEvent.click(view.getByRole("button", { name: "Documents" }));
+    expect(view.queryByText("PostgreSQL")).not.toBeNull();
+    expect(view.queryByText("MySQL")).not.toBeNull();
+    expect(view.queryByText("SQLite")).not.toBeNull();
+    expect(view.queryByText("MongoDB")).not.toBeNull();
+    expect(view.queryByText("Redis")).not.toBeNull();
   });
 
   // ── 6. Name input renders ──────────────────────────────────────────────────
@@ -1203,17 +1207,18 @@ describe("ConnectionModal", () => {
     expect(queryByTestId("paste-formats")).toBeNull();
   });
 
-  // ── 15. Environment selector renders ───────────────────────────────────────
+  // ── 15. The dialog does not ask for an environment ─────────────────────────
 
-  test("Environment selector renders with environment options", () => {
+  test("the new-connection dialog has no environment choices", () => {
     const props = createDefaultProps();
     const { queryByText } = render(React.createElement(ConnectionModal, props));
 
-    expect(queryByText("Environment")).not.toBeNull();
-    expect(queryByText("PROD")).not.toBeNull();
-    expect(queryByText("STAGING")).not.toBeNull();
-    expect(queryByText("DEV")).not.toBeNull();
-    expect(queryByText("LOCAL")).not.toBeNull();
+    expect(queryByText("Environment")).toBeNull();
+    expect(queryByText("PROD")).toBeNull();
+    expect(queryByText("STAGING")).toBeNull();
+    expect(queryByText("DEV")).toBeNull();
+    expect(queryByText("LOCAL")).toBeNull();
+    expect(queryByText("Other")).toBeNull();
   });
 
   // ── 17. SSL expanded shows SSL fields ───────────────────────────────────
@@ -1385,7 +1390,8 @@ describe("ConnectionModal", () => {
 
   test("clicking a different DB type card sets type, default port, and resets test result", () => {
     const props = createDefaultProps();
-    const { getByText } = render(React.createElement(ConnectionModal, props));
+    const { getByRole, getByText } = render(React.createElement(ConnectionModal, props));
+    fireEvent.click(getByRole("button", { name: "SQL" }));
 
     const mysqlButton = getByText("MySQL").closest("button");
     expect(mysqlButton).not.toBeNull();

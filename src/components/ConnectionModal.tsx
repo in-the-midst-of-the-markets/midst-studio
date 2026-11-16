@@ -6,13 +6,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  DatabaseConnection,
-  ConnectionEnvironment,
-  ENVIRONMENT_COLORS,
-  ENVIRONMENT_LABELS,
-  SSLMode,
-} from "@/lib/types";
+import { DatabaseConnection, SSLMode } from "@/lib/types";
 import {
   Database,
   Zap,
@@ -157,8 +151,6 @@ export function ConnectionModal({
     setConnectionString,
     mongoConnectionMode,
     setMongoConnectionMode,
-    environment,
-    setEnvironment,
     // Every other field, by name, for the one field renderer
     fieldValues,
     setFieldValue,
@@ -409,32 +401,10 @@ export function ConnectionModal({
             </div>
           )}
 
-          {/* Environment Selector */}
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-fg-muted">Environment</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              {(Object.keys(ENVIRONMENT_COLORS) as ConnectionEnvironment[]).map((env) => (
-                <button
-                  key={env}
-                  onClick={() => setEnvironment(env)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all border",
-                    environment === env
-                      ? "border-edge bg-fill text-fg"
-                      : "border-transparent text-fg-muted hover:text-fg-secondary hover:bg-fill",
-                  )}
-                >
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ENVIRONMENT_COLORS[env] }} />
-                  {env === "other" ? "Other" : ENVIRONMENT_LABELS[env]}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/*
-            Categories start collapsed, except the one that holds the selected engine. The label hides that
-            category's engines. The chosen engine stays selected while its category is hidden, and a second
-            click on the label shows it again.
+            Categories start collapsed, except the one that holds the selected engine. SQL stays collapsed
+            even then. The label hides that category's engines. The chosen engine stays selected while its
+            category is hidden, and a second click on the label shows it again.
           */}
           <div className="space-y-4">
             {connectionPickerCategories().map((category) => {

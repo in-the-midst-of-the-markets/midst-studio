@@ -139,6 +139,7 @@ describe("the OPC UA entry in the connection dialog", () => {
   /** The control: another engine draws neither field, so these two belong to this entry alone. */
   test("PostgreSQL draws no security mode and no certificate pin", () => {
     render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "SQL" }));
     fireEvent.click(screen.getByRole("button", { name: "PostgreSQL" }));
     expect(document.getElementById("securityMode")).toBeNull();
     expect(document.getElementById("serverCertificateThumbprint")).toBeNull();

@@ -39,6 +39,7 @@ describe("Test Connection's answer", () => {
       answer = resolve;
     });
     render(<ConnectionModal isOpen onClose={() => {}} onConnect={() => {}} onTestConnection={() => pending} />);
+    fireEvent.click(screen.getByRole("button", { name: "SQL" }));
     fireEvent.click(screen.getByRole("button", { name: "PostgreSQL" }));
     fireEvent.change(document.getElementById("host") as HTMLInputElement, { target: { value: "10.255.255.1" } });
 

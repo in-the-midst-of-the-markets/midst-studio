@@ -2331,6 +2331,7 @@ const PICKER_CATEGORY_MEMBERS: readonly ConnectionPickerCategory[] = [
 /**
  * The dialog's categories, SaaS first and databases after. Each category keeps picker order.
  * The dialog starts with every category collapsed except the one that holds the selected engine.
+ * SQL stays collapsed either way, because it is the long default list.
  */
 export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
   const rank = new Map(CONNECTION_PICKER_ORDER.map((type, index) => [type, index]));
@@ -2340,11 +2341,14 @@ export function connectionPickerCategories(): readonly ConnectionPickerCategory[
   }));
 }
 
-/** Category labels that start collapsed: every category except the one that contains `selected`. */
+/**
+ * Category labels that start collapsed: every category except the one that contains `selected`.
+ * SQL starts collapsed even when it contains `selected`.
+ */
 export function collapsedPickerLabels(selected: DatabaseType): ReadonlySet<string> {
   return new Set(
     connectionPickerCategories()
-      .filter((category) => !category.types.includes(selected))
+      .filter((category) => category.label === "SQL" || !category.types.includes(selected))
       .map((category) => category.label),
   );
 }

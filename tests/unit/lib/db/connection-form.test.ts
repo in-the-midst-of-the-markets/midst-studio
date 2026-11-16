@@ -475,8 +475,9 @@ describe("CONNECTION_PICKER_ORDER", () => {
     expect(categories.find((category) => category.label === "Observability")?.types).toEqual(["datadog"]);
     expect(categories.find((category) => category.label === "Custom")?.types).toEqual(["customapi"]);
     expect(categories.find((category) => category.label === "SQL")?.types[0]).toBe("supabase");
-    expect(collapsedPickerLabels("postgres").has("SQL")).toBe(false);
+    expect(collapsedPickerLabels("postgres").has("SQL")).toBe(true);
     expect(collapsedPickerLabels("postgres").has("Commerce")).toBe(true);
+    expect(collapsedPickerLabels("datadog").has("SQL")).toBe(true);
     expect(collapsedPickerLabels("datadog").has("Observability")).toBe(false);
   });
 

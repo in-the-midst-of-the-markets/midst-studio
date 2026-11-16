@@ -16,22 +16,27 @@ function openDialog(): void {
 }
 
 describe("connection picker categories", () => {
-  test("categories start collapsed except the selected engine, and a click opens one", () => {
+  test("categories start collapsed, including SQL, and a click opens one", () => {
     openDialog();
 
     const sql = screen.getByRole("button", { name: "SQL" });
     const commerce = screen.getByRole("button", { name: "Commerce" });
     const custom = screen.getByRole("button", { name: "Custom" });
-    expect(sql.getAttribute("aria-expanded")).toBe("true");
+    expect(sql.getAttribute("aria-expanded")).toBe("false");
     expect(commerce.getAttribute("aria-expanded")).toBe("false");
     expect(custom.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "PostgreSQL" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Supabase" })).toBeNull();
     expect(screen.queryByRole("button", { name: "HubSpot" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Stripe" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Airtable" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Custom API" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Datadog" })).toBeNull();
+
+    fireEvent.click(sql);
+    expect(sql.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
 
     fireEvent.click(sql);
     expect(sql.getAttribute("aria-expanded")).toBe("false");
