@@ -188,6 +188,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   amazonbusiness: 74,
   shipbob: 75,
   shipstation: 76,
+  crisp: 77,
 };
 
 /**

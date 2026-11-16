@@ -148,6 +148,7 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "shipbob",
   // No kind declares `hasSource`: ShipStation lists are not edited as source, which docs/providers/shipstation.md names.
   "shipstation",
+  "crisp",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "odoo",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.

@@ -57,6 +57,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   amazonbusiness: true,
   shipbob: true,
   shipstation: true,
+  crisp: true,
   odoo: true,
   shopify: true,
   notion: true,
@@ -430,6 +431,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "amazonbusiness",
       "shipbob",
       "shipstation",
+      "crisp",
       "customapi",
     ]);
   });
@@ -465,6 +467,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "amazonbusiness",
       "shipbob",
       "shipstation",
+      "crisp",
       "customapi",
     ]);
     expect(databases[0]).toBe("airtable");

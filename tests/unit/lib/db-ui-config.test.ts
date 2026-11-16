@@ -145,6 +145,7 @@ const ALL_TYPES: DatabaseType[] = [
   "amazonbusiness",
   "shipbob",
   "shipstation",
+  "crisp",
   "odoo",
   "shopify",
   "notion",
@@ -409,6 +410,7 @@ describe("db-ui-config", () => {
         "bigquery",
         "cin7",
         "clarity",
+        "crisp",
         "customapi",
         "databricks",
         "dynamics",
@@ -472,6 +474,7 @@ describe("db-ui-config", () => {
         "bigquery",
         "cin7",
         "clarity",
+        "crisp",
         "customapi",
         "databricks",
         "dynamics",
@@ -1201,6 +1204,7 @@ describe("declared connection-field copy (#1085)", () => {
       "amazonbusiness",
       "shipbob",
       "shipstation",
+      "crisp",
       "odoo",
       "shopify",
       "notion",
@@ -1845,6 +1849,7 @@ describe("db-showcase", () => {
         "amazonbusiness",
         "shipbob",
         "shipstation",
+        "crisp",
       ]);
     });
   });
@@ -2089,6 +2094,7 @@ describe("the Snowflake entry", () => {
       "amazonbusiness",
       "shipbob",
       "shipstation",
+      "crisp",
       "odoo",
       "shopify",
       "notion",

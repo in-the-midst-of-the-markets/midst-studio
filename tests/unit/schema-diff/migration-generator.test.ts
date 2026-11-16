@@ -1100,6 +1100,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     amazonbusiness: "engine-has-no-foreign-key",
     shipbob: "engine-has-no-foreign-key",
     shipstation: "engine-has-no-foreign-key",
+    crisp: "engine-has-no-foreign-key",
     odoo: "engine-has-no-foreign-key",
     shopify: "engine-has-no-foreign-key",
     notion: "engine-has-no-foreign-key",
@@ -1275,6 +1276,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   shipstation: {
     label: "ShipStation",
     reason: "ShipStation object changes are not generated here; this connection is read-only.",
+  },
+  crisp: {
+    label: "Crisp",
+    reason: "Crisp object changes are not generated here; this connection is read-only.",
   },
   odoo: {
     label: "Odoo",
@@ -1835,6 +1840,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "amazonbusiness",
           "shipbob",
           "shipstation",
+          "crisp",
           "odoo",
           "shopify",
           "notion",
@@ -1892,6 +1898,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   amazonbusiness: false,
   shipbob: false,
   shipstation: false,
+  crisp: false,
   odoo: false,
   shopify: false,
   notion: false,
@@ -2030,6 +2037,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "amazonbusiness",
             "shipbob",
             "shipstation",
+            "crisp",
             "odoo",
             "shopify",
             "notion",

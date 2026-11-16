@@ -42,6 +42,7 @@ import { CIN7_SQL_GRAMMAR } from "@/lib/db/providers/sql/cin7/sql-grammar";
 import { AMAZONBUSINESS_SQL_GRAMMAR } from "@/lib/db/providers/sql/amazonbusiness/sql-grammar";
 import { SHIPBOB_SQL_GRAMMAR } from "@/lib/db/providers/sql/shipbob/sql-grammar";
 import { SHIPSTATION_SQL_GRAMMAR } from "@/lib/db/providers/sql/shipstation/sql-grammar";
+import { CRISP_SQL_GRAMMAR } from "@/lib/db/providers/sql/crisp/sql-grammar";
 import { ODOO_SQL_GRAMMAR } from "@/lib/db/providers/sql/odoo/sql-grammar";
 import { SHOPIFY_SQL_GRAMMAR } from "@/lib/db/providers/sql/shopify/sql-grammar";
 import { NOTION_SQL_GRAMMAR } from "@/lib/db/providers/sql/notion/sql-grammar";
@@ -130,6 +131,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   amazonbusiness: AMAZONBUSINESS_SQL_GRAMMAR,
   shipbob: SHIPBOB_SQL_GRAMMAR,
   shipstation: SHIPSTATION_SQL_GRAMMAR,
+  crisp: CRISP_SQL_GRAMMAR,
   odoo: ODOO_SQL_GRAMMAR,
   shopify: SHOPIFY_SQL_GRAMMAR,
   notion: NOTION_SQL_GRAMMAR,

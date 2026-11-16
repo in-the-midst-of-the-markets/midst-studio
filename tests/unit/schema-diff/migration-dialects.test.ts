@@ -27,6 +27,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   amazonbusiness: null,
   shipbob: null,
   shipstation: null,
+  crisp: null,
   odoo: null,
   shopify: null,
   notion: null,

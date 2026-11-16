@@ -26,6 +26,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   amazonbusiness: unsupported,
   shipbob: unsupported,
   shipstation: unsupported,
+  crisp: unsupported,
   odoo: unsupported,
   shopify: unsupported,
   notion: unsupported,

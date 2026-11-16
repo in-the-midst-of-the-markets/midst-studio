@@ -180,7 +180,9 @@ const NUMERAL_WORDS: Record<string, number> = {
   "seventy-six": 76,
   // Two past the registry once ShipBob and ShipStation joined it.
   "seventy-seven": 77,
+  // Two past the registry once Crisp joined it.
   "seventy-eight": 78,
+  "seventy-nine": 79,
 };
 
 /**

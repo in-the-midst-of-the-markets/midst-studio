@@ -156,6 +156,7 @@ describe("docs/MCP.md", () => {
         "amazonbusiness",
         "shipbob",
         "shipstation",
+        "crisp",
         "odoo",
         "shopify",
         "notion",

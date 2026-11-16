@@ -486,6 +486,8 @@ const CONNECTION_FIELD_ROWS = {
   shipbob: ["host", "password", "database"],
   // An API key in `user` and an API secret in `password`. The host must be ssapi.shipstation.com.
   shipstation: ["host", "user", "password"],
+  // A website token identifier in `user`, the token key in `password`, and the workspace UUID in `database`. The host must be api.crisp.chat.
+  crisp: ["host", "user", "password", "database"],
   // An API key in `password`. The host must be a name under odoo.com.
   odoo: ["host", "password"],
   // An Admin API access token in `password`. The host must be a name under myshopify.com.
@@ -685,6 +687,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   amazonbusiness: null,
   shipbob: null,
   shipstation: null,
+  crisp: null,
   odoo: null,
   shopify: null,
   notion: null,
