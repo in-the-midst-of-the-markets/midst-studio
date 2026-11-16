@@ -1096,6 +1096,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     clarity: "engine-has-no-foreign-key",
     googleanalytics: "engine-has-no-foreign-key",
     quickbooks: "engine-has-no-foreign-key",
+    cin7: "engine-has-no-foreign-key",
     odoo: "engine-has-no-foreign-key",
     shopify: "engine-has-no-foreign-key",
     notion: "engine-has-no-foreign-key",
@@ -1255,6 +1256,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   quickbooks: {
     label: "QuickBooks Online",
     reason: "QuickBooks Online object changes are not generated here; this connection is read-only.",
+  },
+  cin7: {
+    label: "Cin7 Core",
+    reason: "Cin7 Core object changes are not generated here; this connection is read-only.",
   },
   odoo: {
     label: "Odoo",
@@ -1811,6 +1816,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "clarity",
           "googleanalytics",
           "quickbooks",
+          "cin7",
           "odoo",
           "shopify",
           "notion",
@@ -1864,6 +1870,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   clarity: false,
   googleanalytics: false,
   quickbooks: false,
+  cin7: false,
   odoo: false,
   shopify: false,
   notion: false,
@@ -1998,6 +2005,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "clarity",
             "googleanalytics",
             "quickbooks",
+            "cin7",
             "odoo",
             "shopify",
             "notion",

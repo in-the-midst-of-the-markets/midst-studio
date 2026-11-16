@@ -16,6 +16,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Microsoft Clarity | `clarity` | SQL (product analytics) | none (HTTP: the Clarity Data Export API) | SQL (a read-only subset translated to the API) | [clarity.md](./clarity.md) |
 | Google Analytics | `googleanalytics` | SQL (product analytics) | none (HTTP: the Google Analytics Data API) | SQL (a read-only subset translated to the API) | [googleanalytics.md](./googleanalytics.md) |
 | QuickBooks Online | `quickbooks` | SQL (accounting) | none (HTTP: the QuickBooks Online query API) | SQL (a read-only subset translated to the API) | [quickbooks.md](./quickbooks.md) |
+| Cin7 Core | `cin7` | SQL (inventory) | none (HTTP: the Cin7 Core External API) | SQL (a read-only subset translated to one list) | [cin7.md](./cin7.md) |
 | Odoo | `odoo` | SQL (business apps) | none (HTTP: the Odoo JSON-2 API) | SQL (a read-only subset translated to the API) | [odoo.md](./odoo.md) |
 | Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
 | Notion | `notion` | SQL (the data-source query API, read-only) | none (HTTP: the Notion API) | a SELECT subset, sent as a data-source query | [notion.md](./notion.md) |

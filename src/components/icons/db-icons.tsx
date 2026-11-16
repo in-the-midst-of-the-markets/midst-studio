@@ -325,6 +325,24 @@ export const NotionIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** Two stacked boxes, for a Cin7 Core account. Not the vendor mark. */
+export const Cin7Icon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 8l8-4 8 4-8 4-8-4z" />
+    <path d="M4 12l8 4 8-4" />
+    <path d="M4 16l8 4 8-4" />
+  </svg>
+);
+
 /** A ledger page, for a QuickBooks Online company. Not the vendor mark. */
 export const QuickBooksIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

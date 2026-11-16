@@ -99,6 +99,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   clarity: null,
   googleanalytics: null,
   quickbooks: null,
+  cin7: null,
   odoo: null,
   shopify: null,
   notion: null,

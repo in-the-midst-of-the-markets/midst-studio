@@ -43,6 +43,7 @@ import { STRIPE_MIGRATION_DDL } from "@/lib/db/providers/sql/stripe/migration-dd
 import { CLARITY_MIGRATION_DDL } from "@/lib/db/providers/sql/clarity/migration-ddl";
 import { GOOGLEANALYTICS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleanalytics/migration-ddl";
 import { QUICKBOOKS_MIGRATION_DDL } from "@/lib/db/providers/sql/quickbooks/migration-ddl";
+import { CIN7_MIGRATION_DDL } from "@/lib/db/providers/sql/cin7/migration-ddl";
 import { ODOO_MIGRATION_DDL } from "@/lib/db/providers/sql/odoo/migration-ddl";
 import { SHOPIFY_MIGRATION_DDL } from "@/lib/db/providers/sql/shopify/migration-ddl";
 import { NOTION_MIGRATION_DDL } from "@/lib/db/providers/sql/notion/migration-ddl";
@@ -126,6 +127,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   clarity: CLARITY_MIGRATION_DDL,
   googleanalytics: GOOGLEANALYTICS_MIGRATION_DDL,
   quickbooks: QUICKBOOKS_MIGRATION_DDL,
+  cin7: CIN7_MIGRATION_DDL,
   odoo: ODOO_MIGRATION_DDL,
   shopify: SHOPIFY_MIGRATION_DDL,
   notion: NOTION_MIGRATION_DDL,

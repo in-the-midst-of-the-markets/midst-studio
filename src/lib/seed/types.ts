@@ -145,6 +145,7 @@ const SeedDatabaseType = z.enum([
   "clarity",
   "googleanalytics",
   "quickbooks",
+  "cin7",
   "odoo",
   "shopify",
   "notion",

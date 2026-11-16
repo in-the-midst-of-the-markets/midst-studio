@@ -46,6 +46,11 @@ export type DatabaseType =
   // QuickBooks Online. The Accounting query API, read-only. One SELECT is one query
   // for a company. Rows are not copied into another database. This is not QuickBooks Desktop.
   | "quickbooks"
+  // Cin7 Core. The External API v2, read-only. One SELECT is one list of products,
+  // stock, sales, purchases, or a reference book. Rows are not copied into another
+  // database. This is not Cin7 Omni. The account id and application key are sent
+  // only to inventory.dearsystems.com.
+  | "cin7"
   // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
   // Rows are not copied into another database. The host must end in odoo.com.
   | "odoo"

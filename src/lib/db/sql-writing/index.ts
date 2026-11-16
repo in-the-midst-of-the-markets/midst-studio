@@ -40,6 +40,7 @@ import { STRIPE_SQL_WRITING } from "@/lib/db/providers/sql/stripe/sql-writing";
 import { CLARITY_SQL_WRITING } from "@/lib/db/providers/sql/clarity/sql-writing";
 import { GOOGLEANALYTICS_SQL_WRITING } from "@/lib/db/providers/sql/googleanalytics/sql-writing";
 import { QUICKBOOKS_SQL_WRITING } from "@/lib/db/providers/sql/quickbooks/sql-writing";
+import { CIN7_SQL_WRITING } from "@/lib/db/providers/sql/cin7/sql-writing";
 import { ODOO_SQL_WRITING } from "@/lib/db/providers/sql/odoo/sql-writing";
 import { SHOPIFY_SQL_WRITING } from "@/lib/db/providers/sql/shopify/sql-writing";
 import { NOTION_SQL_WRITING } from "@/lib/db/providers/sql/notion/sql-writing";
@@ -126,6 +127,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   clarity: CLARITY_SQL_WRITING,
   googleanalytics: GOOGLEANALYTICS_SQL_WRITING,
   quickbooks: QUICKBOOKS_SQL_WRITING,
+  cin7: CIN7_SQL_WRITING,
   odoo: ODOO_SQL_WRITING,
   shopify: SHOPIFY_SQL_WRITING,
   notion: NOTION_SQL_WRITING,

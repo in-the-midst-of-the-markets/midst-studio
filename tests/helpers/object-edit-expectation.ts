@@ -140,6 +140,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "googleanalytics",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "quickbooks",
+  // No kind declares `hasSource`: Cin7 Core lists are not edited as source, which docs/providers/cin7.md names.
+  "cin7",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "odoo",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.

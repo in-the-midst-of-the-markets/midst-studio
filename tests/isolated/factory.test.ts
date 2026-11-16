@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1585,6 +1585,7 @@ describe("createDatabaseProvider", () => {
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
       quickbooks: { host: "quickbooks.api.intuit.com" },
+      cin7: { host: "inventory.dearsystems.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
@@ -1685,6 +1686,7 @@ describe("createDatabaseProvider", () => {
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
       quickbooks: { host: "quickbooks.api.intuit.com" },
+      cin7: { host: "inventory.dearsystems.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
@@ -1801,6 +1803,8 @@ describe("createDatabaseProvider", () => {
       "questdb",
       // No cancel: a QuickBooks Online read is one GET, and the query API has nothing that stops it.
       "quickbooks",
+      // No cancel: a Cin7 Core read is one GET, and the list API has nothing that stops it.
+      "cin7",
       "redis",
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
       "redshift",

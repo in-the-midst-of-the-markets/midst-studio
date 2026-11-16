@@ -176,6 +176,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   clarity: null,
   googleanalytics: null,
   quickbooks: null,
+  cin7: null,
   odoo: null,
   shopify: null,
   notion: null,

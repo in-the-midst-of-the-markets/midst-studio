@@ -551,6 +551,26 @@ export const CONNECTION_FORM: {
       host: "The access token is sent only to analyticsdata.googleapis.com. A service-account key is sent only to oauth2.googleapis.com.",
     },
   },
+  cin7: {
+    label: "Cin7 Core",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.cin7,
+    fieldLabels: { password: "Application key", database: "Account ID", host: "API host" },
+    fieldPlaceholders: {
+      password: "Application key",
+      database: "704ef231-cd93-49c9-a201-26b4b5d0d35b",
+      host: "inventory.dearsystems.com",
+    },
+    fieldHints: {
+      password: "The API application key from Cin7 Core. It is sent only as a header.",
+      database: "The account id from the Cin7 Core API setup page. Each company has its own.",
+      host: "The account id and application key are sent only to inventory.dearsystems.com. Leave this empty to use that host.",
+    },
+  },
   quickbooks: {
     label: "QuickBooks Online",
     defaultPort: "",
@@ -2055,6 +2075,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "excel",
   "googlesheets",
   "mixpanel",
+  "cin7",
   "customapi",
 ]);
 
@@ -2086,6 +2107,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "excel",
   "googlesheets",
   "mixpanel",
+  "cin7",
   "customapi",
 ]);
 

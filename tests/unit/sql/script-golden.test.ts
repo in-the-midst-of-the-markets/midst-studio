@@ -83,6 +83,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   clarity: "every-code-semicolon",
   googleanalytics: "every-code-semicolon",
   quickbooks: "every-code-semicolon",
+  cin7: "every-code-semicolon",
   odoo: "every-code-semicolon",
   shopify: "every-code-semicolon",
   notion: "every-code-semicolon",

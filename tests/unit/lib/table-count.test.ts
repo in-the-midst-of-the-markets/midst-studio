@@ -59,6 +59,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   clarity: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   googleanalytics: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   quickbooks: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  cin7: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   odoo: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   shopify: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   notion: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
