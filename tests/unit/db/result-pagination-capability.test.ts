@@ -78,6 +78,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   amazonbusiness: true,
   shipbob: true,
   shipstation: true,
+  crisp: true,
   odoo: true,
   shopify: true,
   notion: true,

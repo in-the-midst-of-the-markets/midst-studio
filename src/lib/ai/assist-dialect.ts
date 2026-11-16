@@ -335,6 +335,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  crisp: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one Crisp list. Filters use = and AND. Conversation and people pages are 20 to 50 rows, and OFFSET must be a multiple of LIMIT. COUNT(*) is operators only.",
+    sample: "SELECT SessionId, State, Nickname, Email FROM Conversation WHERE FilterNotResolved = '1' LIMIT 20",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,

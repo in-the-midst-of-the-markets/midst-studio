@@ -47,6 +47,7 @@ import { CIN7_MIGRATION_DDL } from "@/lib/db/providers/sql/cin7/migration-ddl";
 import { AMAZONBUSINESS_MIGRATION_DDL } from "@/lib/db/providers/sql/amazonbusiness/migration-ddl";
 import { SHIPBOB_MIGRATION_DDL } from "@/lib/db/providers/sql/shipbob/migration-ddl";
 import { SHIPSTATION_MIGRATION_DDL } from "@/lib/db/providers/sql/shipstation/migration-ddl";
+import { CRISP_MIGRATION_DDL } from "@/lib/db/providers/sql/crisp/migration-ddl";
 import { ODOO_MIGRATION_DDL } from "@/lib/db/providers/sql/odoo/migration-ddl";
 import { SHOPIFY_MIGRATION_DDL } from "@/lib/db/providers/sql/shopify/migration-ddl";
 import { NOTION_MIGRATION_DDL } from "@/lib/db/providers/sql/notion/migration-ddl";
@@ -134,6 +135,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   amazonbusiness: AMAZONBUSINESS_MIGRATION_DDL,
   shipbob: SHIPBOB_MIGRATION_DDL,
   shipstation: SHIPSTATION_MIGRATION_DDL,
+  crisp: CRISP_MIGRATION_DDL,
   odoo: ODOO_MIGRATION_DDL,
   shopify: SHOPIFY_MIGRATION_DDL,
   notion: NOTION_MIGRATION_DDL,

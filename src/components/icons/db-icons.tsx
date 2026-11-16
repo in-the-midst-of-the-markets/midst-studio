@@ -360,6 +360,24 @@ export const ShipBobIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A chat bubble, for a Crisp workspace. Not the vendor mark. */
+export const CrispIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M5 6h14v9H8l-3 3V6z" />
+    <path d="M8 10h8" />
+    <path d="M8 13h5" />
+  </svg>
+);
+
 /** A labeled parcel, for a ShipStation account. Not the vendor mark. */
 export const ShipStationIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

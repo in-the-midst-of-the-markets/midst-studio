@@ -103,6 +103,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   amazonbusiness: null,
   shipbob: null,
   shipstation: null,
+  crisp: null,
   odoo: null,
   shopify: null,
   notion: null,

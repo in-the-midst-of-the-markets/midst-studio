@@ -1,8 +1,8 @@
 apiVersion: v2
 name: libredb-studio
-description: Web-based SQL IDE for cloud-native teams supporting seventy-six engines - PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core, Amazon Business, ShipBob and ShipStation
+description: Web-based SQL IDE for cloud-native teams supporting seventy-seven engines - PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core, Amazon Business, ShipBob, ShipStation and Crisp
 type: application
-version: 0.1.149
+version: 0.1.150
 appVersion: "1.2.0"
 kubeVersion: ">=1.26.0-0"
 home: https://github.com/libredb/libredb-studio

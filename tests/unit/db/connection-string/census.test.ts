@@ -53,6 +53,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "amazonbusiness",
     "shipbob",
     "shipstation",
+    "crisp",
     "odoo",
     "shopify",
     "notion",

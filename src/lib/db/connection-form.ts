@@ -649,6 +649,33 @@ export const CONNECTION_FORM: {
       host: "Leave this empty to use ssapi.shipstation.com. The V2 host is refused.",
     },
   },
+  crisp: {
+    label: "Crisp",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.crisp,
+    fieldLabels: {
+      user: "Token identifier",
+      password: "Token key",
+      database: "Workspace id",
+      host: "API host",
+    },
+    fieldPlaceholders: {
+      user: "token identifier",
+      password: "token key",
+      database: "42286ab3-b29a-4fde-8538-da0ae501d825",
+      host: "api.crisp.chat",
+    },
+    fieldHints: {
+      user: "The website token identifier. It is the username of the Basic credential.",
+      password: "The website token key. It is sent only to api.crisp.chat.",
+      database: "The workspace id, a UUID, from Settings, Workspace Settings, Setup Instructions.",
+      host: "Leave this empty to use api.crisp.chat. Any other host is refused.",
+    },
+  },
   quickbooks: {
     label: "QuickBooks Online",
     defaultPort: "",
@@ -2157,6 +2184,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "amazonbusiness",
   "shipbob",
   "shipstation",
+  "crisp",
   "customapi",
 ]);
 
@@ -2192,6 +2220,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "amazonbusiness",
   "shipbob",
   "shipstation",
+  "crisp",
   "customapi",
 ]);
 
