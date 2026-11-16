@@ -88,6 +88,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   shipbob: "every-code-semicolon",
   shipstation: "every-code-semicolon",
   crisp: "every-code-semicolon",
+  datadog: "every-code-semicolon",
   odoo: "every-code-semicolon",
   shopify: "every-code-semicolon",
   notion: "every-code-semicolon",

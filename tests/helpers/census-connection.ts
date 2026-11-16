@@ -58,6 +58,7 @@ const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   shipbob: "api.shipbob.com",
   shipstation: "ssapi.shipstation.com",
   crisp: "api.crisp.chat",
+  datadog: "api.datadoghq.com",
   odoo: "census.odoo.com",
   shopify: "census.myshopify.com",
   notion: "api.notion.com",
@@ -100,6 +101,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   shipstation: unconnected("shipstation"),
   // The shared database is the word "census", and a workspace id is a UUID.
   crisp: { ...unconnected("crisp"), database: "42286ab3-b29a-4fde-8538-da0ae501d825" },
+  datadog: unconnected("datadog"),
   odoo: unconnected("odoo"),
   shopify: unconnected("shopify"),
   notion: unconnected("notion"),

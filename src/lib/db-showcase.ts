@@ -189,6 +189,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   shipbob: 75,
   shipstation: 76,
   crisp: 77,
+  // Monitors, hosts and dashboards on the Datadog API, behind Crisp.
+  datadog: 78,
 };
 
 /**

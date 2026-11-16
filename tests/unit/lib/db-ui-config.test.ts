@@ -146,6 +146,7 @@ const ALL_TYPES: DatabaseType[] = [
   "shipbob",
   "shipstation",
   "crisp",
+  "datadog",
   "odoo",
   "shopify",
   "notion",
@@ -413,6 +414,7 @@ describe("db-ui-config", () => {
         "crisp",
         "customapi",
         "databricks",
+        "datadog",
         "dynamics",
         "excel",
         "firestore",
@@ -477,6 +479,7 @@ describe("db-ui-config", () => {
         "crisp",
         "customapi",
         "databricks",
+        "datadog",
         "dynamics",
         "excel",
         "firestore",
@@ -1205,6 +1208,7 @@ describe("declared connection-field copy (#1085)", () => {
       "shipbob",
       "shipstation",
       "crisp",
+      "datadog",
       "odoo",
       "shopify",
       "notion",
@@ -1850,6 +1854,7 @@ describe("db-showcase", () => {
         "shipbob",
         "shipstation",
         "crisp",
+        "datadog",
       ]);
     });
   });
@@ -2095,6 +2100,7 @@ describe("the Snowflake entry", () => {
       "shipbob",
       "shipstation",
       "crisp",
+      "datadog",
       "odoo",
       "shopify",
       "notion",

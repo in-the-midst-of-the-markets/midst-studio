@@ -46,6 +46,7 @@ import { AMAZONBUSINESS_CONNECTION_STRING } from "@/lib/db/providers/sql/amazonb
 import { SHIPBOB_CONNECTION_STRING } from "@/lib/db/providers/sql/shipbob/connection-string";
 import { SHIPSTATION_CONNECTION_STRING } from "@/lib/db/providers/sql/shipstation/connection-string";
 import { CRISP_CONNECTION_STRING } from "@/lib/db/providers/sql/crisp/connection-string";
+import { DATADOG_CONNECTION_STRING } from "@/lib/db/providers/sql/datadog/connection-string";
 import { ODOO_CONNECTION_STRING } from "@/lib/db/providers/sql/odoo/connection-string";
 import { SHOPIFY_CONNECTION_STRING } from "@/lib/db/providers/sql/shopify/connection-string";
 import { NOTION_CONNECTION_STRING } from "@/lib/db/providers/sql/notion/connection-string";
@@ -131,6 +132,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   shipbob: SHIPBOB_CONNECTION_STRING,
   shipstation: SHIPSTATION_CONNECTION_STRING,
   crisp: CRISP_CONNECTION_STRING,
+  datadog: DATADOG_CONNECTION_STRING,
   odoo: ODOO_CONNECTION_STRING,
   shopify: SHOPIFY_CONNECTION_STRING,
   notion: NOTION_CONNECTION_STRING,

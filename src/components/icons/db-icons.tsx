@@ -360,6 +360,23 @@ export const ShipBobIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A pulse in a rounded rectangle, for a Datadog organization. Not the vendor mark. */
+export const DatadogIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect x="3" y="5" width="18" height="14" rx="3" />
+    <path d="M6 14l2.5-4 2.5 3 2-5 2.5 6H18" />
+  </svg>
+);
+
 /** A chat bubble, for a Crisp workspace. Not the vendor mark. */
 export const CrispIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

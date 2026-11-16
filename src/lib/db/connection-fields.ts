@@ -488,6 +488,8 @@ const CONNECTION_FIELD_ROWS = {
   shipstation: ["host", "user", "password"],
   // A website token identifier in `user`, the token key in `password`, and the workspace UUID in `database`. The host must be api.crisp.chat.
   crisp: ["host", "user", "password", "database"],
+  // An API key in `user` and an application key in `password`. The host must be an official Datadog API host.
+  datadog: ["host", "user", "password"],
   // An API key in `password`. The host must be a name under odoo.com.
   odoo: ["host", "password"],
   // An Admin API access token in `password`. The host must be a name under myshopify.com.
@@ -688,6 +690,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   shipbob: null,
   shipstation: null,
   crisp: null,
+  datadog: null,
   odoo: null,
   shopify: null,
   notion: null,

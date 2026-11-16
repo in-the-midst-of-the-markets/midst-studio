@@ -21,6 +21,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | ShipBob | `shipbob` | SQL (fulfillment) | none (HTTP: the ShipBob API) | SQL (a read-only subset translated to one list) | [shipbob.md](./shipbob.md) |
 | ShipStation | `shipstation` | SQL (shipping) | none (HTTP: the ShipStation V1 API) | SQL (a read-only subset translated to one list) | [shipstation.md](./shipstation.md) |
 | Crisp | `crisp` | SQL (messaging) | none (HTTP: the Crisp REST API) | SQL (a read-only subset translated to one list) | [crisp.md](./crisp.md) |
+| Datadog | `datadog` | SQL (observability) | none (HTTP: the Datadog REST API) | SQL (a read-only subset translated to one list) | [datadog.md](./datadog.md) |
 | Odoo | `odoo` | SQL (business apps) | none (HTTP: the Odoo JSON-2 API) | SQL (a read-only subset translated to the API) | [odoo.md](./odoo.md) |
 | Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
 | Notion | `notion` | SQL (the data-source query API, read-only) | none (HTTP: the Notion API) | a SELECT subset, sent as a data-source query | [notion.md](./notion.md) |

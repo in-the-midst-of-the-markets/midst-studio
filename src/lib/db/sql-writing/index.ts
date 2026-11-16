@@ -45,6 +45,7 @@ import { AMAZONBUSINESS_SQL_WRITING } from "@/lib/db/providers/sql/amazonbusines
 import { SHIPBOB_SQL_WRITING } from "@/lib/db/providers/sql/shipbob/sql-writing";
 import { SHIPSTATION_SQL_WRITING } from "@/lib/db/providers/sql/shipstation/sql-writing";
 import { CRISP_SQL_WRITING } from "@/lib/db/providers/sql/crisp/sql-writing";
+import { DATADOG_SQL_WRITING } from "@/lib/db/providers/sql/datadog/sql-writing";
 import { ODOO_SQL_WRITING } from "@/lib/db/providers/sql/odoo/sql-writing";
 import { SHOPIFY_SQL_WRITING } from "@/lib/db/providers/sql/shopify/sql-writing";
 import { NOTION_SQL_WRITING } from "@/lib/db/providers/sql/notion/sql-writing";
@@ -136,6 +137,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   shipbob: SHIPBOB_SQL_WRITING,
   shipstation: SHIPSTATION_SQL_WRITING,
   crisp: CRISP_SQL_WRITING,
+  datadog: DATADOG_SQL_WRITING,
   odoo: ODOO_SQL_WRITING,
   shopify: SHOPIFY_SQL_WRITING,
   notion: NOTION_SQL_WRITING,

@@ -182,7 +182,9 @@ const NUMERAL_WORDS: Record<string, number> = {
   "seventy-seven": 77,
   // Two past the registry once Crisp joined it.
   "seventy-eight": 78,
+  // Two past the registry once Datadog joined it.
   "seventy-nine": 79,
+  eighty: 80,
 };
 
 /**

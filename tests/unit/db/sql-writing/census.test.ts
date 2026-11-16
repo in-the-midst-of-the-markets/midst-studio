@@ -104,6 +104,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   shipbob: "sql/shipbob/sql-writing",
   shipstation: "sql/shipstation/sql-writing",
   crisp: "sql/crisp/sql-writing",
+  datadog: "sql/datadog/sql-writing",
   odoo: "sql/odoo/sql-writing",
   shopify: "sql/shopify/sql-writing",
   notion: "sql/notion/sql-writing",

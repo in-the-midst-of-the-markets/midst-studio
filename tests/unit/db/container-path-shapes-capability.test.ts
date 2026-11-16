@@ -46,6 +46,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   shipbob: "exact",
   shipstation: "exact",
   crisp: "exact",
+  datadog: "exact",
   odoo: "exact",
   shopify: "exact",
   notion: "exact",
