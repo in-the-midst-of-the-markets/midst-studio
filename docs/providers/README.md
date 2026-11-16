@@ -18,6 +18,8 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | QuickBooks Online | `quickbooks` | SQL (accounting) | none (HTTP: the QuickBooks Online query API) | SQL (a read-only subset translated to the API) | [quickbooks.md](./quickbooks.md) |
 | Cin7 Core | `cin7` | SQL (inventory) | none (HTTP: the Cin7 Core External API) | SQL (a read-only subset translated to one list) | [cin7.md](./cin7.md) |
 | Amazon Business | `amazonbusiness` | SQL (buying) | none (HTTP: the Amazon Business API) | SQL (a read-only subset translated to one list) | [amazonbusiness.md](./amazonbusiness.md) |
+| ShipBob | `shipbob` | SQL (fulfillment) | none (HTTP: the ShipBob API) | SQL (a read-only subset translated to one list) | [shipbob.md](./shipbob.md) |
+| ShipStation | `shipstation` | SQL (shipping) | none (HTTP: the ShipStation V1 API) | SQL (a read-only subset translated to one list) | [shipstation.md](./shipstation.md) |
 | Odoo | `odoo` | SQL (business apps) | none (HTTP: the Odoo JSON-2 API) | SQL (a read-only subset translated to the API) | [odoo.md](./odoo.md) |
 | Shopify | `shopify` | SQL (commerce) | none (HTTP: the Shopify Admin API) | ShopifyQL, run through shopifyqlQuery | [shopify.md](./shopify.md) |
 | Notion | `notion` | SQL (the data-source query API, read-only) | none (HTTP: the Notion API) | a SELECT subset, sent as a data-source query | [notion.md](./notion.md) |

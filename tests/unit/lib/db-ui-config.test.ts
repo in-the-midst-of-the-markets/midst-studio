@@ -143,6 +143,8 @@ const ALL_TYPES: DatabaseType[] = [
   "quickbooks",
   "cin7",
   "amazonbusiness",
+  "shipbob",
+  "shipstation",
   "odoo",
   "shopify",
   "notion",
@@ -428,6 +430,8 @@ describe("db-ui-config", () => {
         "quickbooks",
         "rabbitmq",
         "salesforce",
+        "shipbob",
+        "shipstation",
         "shopify",
         "snmp",
         "snowflake",
@@ -489,6 +493,8 @@ describe("db-ui-config", () => {
         "pipedrive",
         "quickbooks",
         "salesforce",
+        "shipbob",
+        "shipstation",
         "shopify",
         "snmp",
         "snowflake",
@@ -1193,6 +1199,8 @@ describe("declared connection-field copy (#1085)", () => {
       "quickbooks",
       "cin7",
       "amazonbusiness",
+      "shipbob",
+      "shipstation",
       "odoo",
       "shopify",
       "notion",
@@ -1835,6 +1843,8 @@ describe("db-showcase", () => {
         "cin7",
         // Last, behind Cin7 Core: a buying account on the Amazon Business API.
         "amazonbusiness",
+        "shipbob",
+        "shipstation",
       ]);
     });
   });
@@ -2077,6 +2087,8 @@ describe("the Snowflake entry", () => {
       "quickbooks",
       "cin7",
       "amazonbusiness",
+      "shipbob",
+      "shipstation",
       "odoo",
       "shopify",
       "notion",

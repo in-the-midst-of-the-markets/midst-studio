@@ -57,6 +57,8 @@ export type DatabaseType =
   // Partner. The refresh token is sent only to api.amazon.com, and the access
   // token is sent only to a regional business-api.amazon.com host.
   | "amazonbusiness"
+  | "shipbob"
+  | "shipstation"
   // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
   // Rows are not copied into another database. The host must end in odoo.com.
   | "odoo"

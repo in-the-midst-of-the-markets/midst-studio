@@ -342,6 +342,43 @@ export const AmazonBusinessIcon: React.FC<IconProps> = ({ className, ...props })
   </svg>
 );
 
+/** A sealed carton, for a ShipBob fulfillment account. Not the vendor mark. */
+export const ShipBobIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M3 8l9-4 9 4-9 4-9-4z" />
+    <path d="M3 8v8l9 4 9-4V8" />
+    <path d="M12 12v8" />
+  </svg>
+);
+
+/** A labeled parcel, for a ShipStation account. Not the vendor mark. */
+export const ShipStationIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 7h10v10H4z" />
+    <path d="M14 10h6l-2 3h-4" />
+    <path d="M7 7V5h4v2" />
+    <path d="M6 12h6" />
+  </svg>
+);
+
 /** Two stacked boxes, for a Cin7 Core account. Not the vendor mark. */
 export const Cin7Icon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

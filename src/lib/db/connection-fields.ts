@@ -482,6 +482,10 @@ const CONNECTION_FIELD_ROWS = {
   cin7: ["host", "password", "database"],
   // LWA client id in `user`, client secret in `password`, refresh token in `database`, buyer email in `schema`.
   amazonbusiness: ["host", "user", "password", "database", "schema"],
+  // A personal access token in `password`, and an optional channel id in `database`. The host must be api.shipbob.com or sandbox-api.shipbob.com.
+  shipbob: ["host", "password", "database"],
+  // An API key in `user` and an API secret in `password`. The host must be ssapi.shipstation.com.
+  shipstation: ["host", "user", "password"],
   // An API key in `password`. The host must be a name under odoo.com.
   odoo: ["host", "password"],
   // An Admin API access token in `password`. The host must be a name under myshopify.com.
@@ -679,6 +683,8 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   quickbooks: null,
   cin7: null,
   amazonbusiness: null,
+  shipbob: null,
+  shipstation: null,
   odoo: null,
   shopify: null,
   notion: null,

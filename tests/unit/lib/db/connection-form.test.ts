@@ -55,6 +55,8 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   quickbooks: true,
   cin7: true,
   amazonbusiness: true,
+  shipbob: true,
+  shipstation: true,
   odoo: true,
   shopify: true,
   notion: true,
@@ -426,6 +428,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
       // Last, behind Mixpanel: an inventory account on the External API.
       "cin7",
       "amazonbusiness",
+      "shipbob",
+      "shipstation",
       "customapi",
     ]);
   });
@@ -459,6 +463,8 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "mixpanel",
       "cin7",
       "amazonbusiness",
+      "shipbob",
+      "shipstation",
       "customapi",
     ]);
     expect(databases[0]).toBe("airtable");

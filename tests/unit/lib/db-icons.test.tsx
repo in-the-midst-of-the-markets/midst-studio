@@ -37,6 +37,8 @@ import {
   SupabaseIcon,
   ShopifyIcon,
   AmazonBusinessIcon,
+  ShipBobIcon,
+  ShipStationIcon,
 } from "@/components/icons/db-icons";
 
 describe("db-icons", () => {
@@ -78,6 +80,8 @@ describe("db-icons", () => {
     { name: "SupabaseIcon", Component: SupabaseIcon },
     { name: "ShopifyIcon", Component: ShopifyIcon },
     { name: "AmazonBusinessIcon", Component: AmazonBusinessIcon },
+    { name: "ShipBobIcon", Component: ShipBobIcon },
+    { name: "ShipStationIcon", Component: ShipStationIcon },
   ];
 
   for (const { name, Component, brandAsset } of icons) {
