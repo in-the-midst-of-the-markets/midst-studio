@@ -51,6 +51,12 @@ export type DatabaseType =
   // database. This is not Cin7 Omni. The account id and application key are sent
   // only to inventory.dearsystems.com.
   | "cin7"
+  // Amazon Business. The buying API, read-only. One SELECT is one product search,
+  // one ASIN, one day of orders, the lines on those orders, or reconciliation
+  // transactions. Rows are not copied into another database. This is not Selling
+  // Partner. The refresh token is sent only to api.amazon.com, and the access
+  // token is sent only to a regional business-api.amazon.com host.
+  | "amazonbusiness"
   // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
   // Rows are not copied into another database. The host must end in odoo.com.
   | "odoo"

@@ -50,6 +50,7 @@ const FAMILIES: Readonly<Record<string, readonly string[]>> = {
     "googleanalytics",
     "quickbooks",
     "cin7",
+    "amazonbusiness",
     "odoo",
     "shopify",
     "notion",

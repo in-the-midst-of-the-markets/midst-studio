@@ -571,6 +571,36 @@ export const CONNECTION_FORM: {
       host: "The account id and application key are sent only to inventory.dearsystems.com. Leave this empty to use that host.",
     },
   },
+  amazonbusiness: {
+    label: "Amazon Business",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.amazonbusiness,
+    fieldLabels: {
+      user: "Client ID",
+      password: "Client secret",
+      database: "Refresh token",
+      schema: "Buyer email",
+      host: "API host",
+    },
+    fieldPlaceholders: {
+      user: "amzn1.application-oa2-client…",
+      password: "Client secret",
+      database: "Atzr|…",
+      schema: "buyer@company.com",
+      host: "na.business-api.amazon.com",
+    },
+    fieldHints: {
+      user: "The Login with Amazon client id for the Amazon Business app.",
+      password: "The LWA client secret. It is sent only to api.amazon.com, in the token request.",
+      database: "The LWA refresh token. It is sent only to api.amazon.com. One token is for one region.",
+      schema: "The buying user's email. Product search requires it. Orders and transactions do not.",
+      host: "The access token is sent only to na.business-api.amazon.com, eu.business-api.amazon.com, or jp.business-api.amazon.com. Leave this empty to use North America.",
+    },
+  },
   quickbooks: {
     label: "QuickBooks Online",
     defaultPort: "",
@@ -2076,6 +2106,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "googlesheets",
   "mixpanel",
   "cin7",
+  "amazonbusiness",
   "customapi",
 ]);
 
@@ -2108,6 +2139,7 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "googlesheets",
   "mixpanel",
   "cin7",
+  "amazonbusiness",
   "customapi",
 ]);
 

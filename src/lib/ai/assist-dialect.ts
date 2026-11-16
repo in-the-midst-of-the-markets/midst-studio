@@ -313,6 +313,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  amazonbusiness: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one Amazon Business list. Product search needs Keywords or ASIN. Orders need StartDate and EndDate at most 24 hours apart. Page with LIMIT. OFFSET for orders is a multiple of 100.",
+    sample: "SELECT ASIN, Title, Price FROM Product WHERE Keywords = 'paper' LIMIT 24",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,

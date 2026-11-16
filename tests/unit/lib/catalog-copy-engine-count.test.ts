@@ -176,6 +176,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   "seventy-four": 74,
   // Two past the registry once Cin7 Core joined it.
   "seventy-five": 75,
+  // Two past the registry once Amazon Business joined it.
+  "seventy-six": 76,
 };
 
 /**
