@@ -185,6 +185,7 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   stardog: 72,
   // An inventory account on the External API, behind the knowledge graph.
   cin7: 73,
+  amazonbusiness: 74,
 };
 
 /**

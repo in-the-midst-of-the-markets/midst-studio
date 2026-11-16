@@ -100,6 +100,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   googleanalytics: "sql/googleanalytics/sql-writing",
   quickbooks: "sql/quickbooks/sql-writing",
   cin7: "sql/cin7/sql-writing",
+  amazonbusiness: "sql/amazonbusiness/sql-writing",
   odoo: "sql/odoo/sql-writing",
   shopify: "sql/shopify/sql-writing",
   notion: "sql/notion/sql-writing",

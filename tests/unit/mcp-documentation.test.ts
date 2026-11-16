@@ -153,6 +153,7 @@ describe("docs/MCP.md", () => {
         "googleanalytics",
         "quickbooks",
         "cin7",
+        "amazonbusiness",
         "odoo",
         "shopify",
         "notion",

@@ -142,6 +142,7 @@ const ALL_TYPES: DatabaseType[] = [
   "googleanalytics",
   "quickbooks",
   "cin7",
+  "amazonbusiness",
   "odoo",
   "shopify",
   "notion",
@@ -402,6 +403,7 @@ describe("db-ui-config", () => {
       }
       const refusing = ALL_TYPES.filter((type) => !offersSshTunnel(type));
       expect(refusing.sort()).toEqual([
+        "amazonbusiness",
         "bigquery",
         "cin7",
         "clarity",
@@ -462,6 +464,7 @@ describe("db-ui-config", () => {
       }
       expect(ALL_TYPES.filter((type) => !offersSslPanel(type)).sort()).toEqual([
         "airtable",
+        "amazonbusiness",
         "bigquery",
         "cin7",
         "clarity",
@@ -1189,6 +1192,7 @@ describe("declared connection-field copy (#1085)", () => {
       "googleanalytics",
       "quickbooks",
       "cin7",
+      "amazonbusiness",
       "odoo",
       "shopify",
       "notion",
@@ -1829,6 +1833,8 @@ describe("db-showcase", () => {
         "stardog",
         // Last, behind Stardog: an inventory account on the External API.
         "cin7",
+        // Last, behind Cin7 Core: a buying account on the Amazon Business API.
+        "amazonbusiness",
       ]);
     });
   });
@@ -2070,6 +2076,7 @@ describe("the Snowflake entry", () => {
       "googleanalytics",
       "quickbooks",
       "cin7",
+      "amazonbusiness",
       "odoo",
       "shopify",
       "notion",

@@ -42,6 +42,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   googleanalytics: "exact",
   quickbooks: "exact",
   cin7: "exact",
+  amazonbusiness: "exact",
   odoo: "exact",
   shopify: "exact",
   notion: "exact",

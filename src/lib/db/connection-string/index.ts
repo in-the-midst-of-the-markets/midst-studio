@@ -42,6 +42,7 @@ import { CLARITY_CONNECTION_STRING } from "@/lib/db/providers/sql/clarity/connec
 import { GOOGLEANALYTICS_CONNECTION_STRING } from "@/lib/db/providers/sql/googleanalytics/connection-string";
 import { QUICKBOOKS_CONNECTION_STRING } from "@/lib/db/providers/sql/quickbooks/connection-string";
 import { CIN7_CONNECTION_STRING } from "@/lib/db/providers/sql/cin7/connection-string";
+import { AMAZONBUSINESS_CONNECTION_STRING } from "@/lib/db/providers/sql/amazonbusiness/connection-string";
 import { ODOO_CONNECTION_STRING } from "@/lib/db/providers/sql/odoo/connection-string";
 import { SHOPIFY_CONNECTION_STRING } from "@/lib/db/providers/sql/shopify/connection-string";
 import { NOTION_CONNECTION_STRING } from "@/lib/db/providers/sql/notion/connection-string";
@@ -123,6 +124,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   googleanalytics: GOOGLEANALYTICS_CONNECTION_STRING,
   quickbooks: QUICKBOOKS_CONNECTION_STRING,
   cin7: CIN7_CONNECTION_STRING,
+  amazonbusiness: AMAZONBUSINESS_CONNECTION_STRING,
   odoo: ODOO_CONNECTION_STRING,
   shopify: SHOPIFY_CONNECTION_STRING,
   notion: NOTION_CONNECTION_STRING,

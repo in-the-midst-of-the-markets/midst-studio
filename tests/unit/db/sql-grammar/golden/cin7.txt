@@ -1,0 +1,56 @@
+resolveSqlGrammar("cin7") => {"hash":"code","bracket":"subscript","blockComment":"flat","alternateQuoting":false,"doubleSlashComment":false,"backslashAlwaysEscapes":false,"script":{"blocks":"none","separatorLine":null,"unit":"statement"},"trailingLimitClauses":[],"formatterLanguage":"mysql","completionWords":{"keywords":["SELECT","FROM","WHERE","AND","AS","LIMIT","OFFSET","COUNT"],"functions":[],"lists":"only","snippets":[{"label":"Stock on hand","insertText":"SELECT ${1:SKU}, ${2:Name}, ${3:Location}, ${4:OnHand}, ${5:Available}\nFROM Stock\nWHERE SKU = '${6:ABC}'\nLIMIT ${7:100}"},{"label":"Open sales","insertText":"SELECT ${1:OrderNumber}, ${2:Customer}, ${3:Status}, ${4:InvoiceAmount}, ${5:PaidAmount}\nFROM Sale\nWHERE Status = '${6:ORDERED}'\nLIMIT ${7:100}"},{"label":"Open purchases","insertText":"SELECT ${1:OrderNumber}, ${2:Supplier}, ${3:Status}, ${4:InvoiceAmount}\nFROM Purchase\nWHERE OrderStatus = '${5:AUTHORISED}'\nLIMIT ${6:100}"},{"label":"Product","insertText":"SELECT ${1:SKU}, ${2:Name}, ${3:Category}, ${4:Brand}, ${5:AverageCost}\nFROM Product\nWHERE SKU = '${6:ABC}'\nLIMIT ${7:100}"},{"label":"Count","insertText":"SELECT COUNT(*) AS totalCount\nFROM ${1:Product}"}]},"completionClauses":{"column":["SELECT","WHERE"],"table":["FROM"],"values":{"FROM":{"words":["Product","Stock","Sale","Purchase","Customer","Supplier","Location","Category","Brand","Account","PaymentTerm","TaxRule","Unit"],"when":"any","detail":"List"},"SELECT":{"words":["Account","Allocated","Available","AverageCost","Barcode","Batch","Bin","Brand","Category","Class","Code","CombinedInvoiceStatus","CombinedPaymentStatus","CombinedReceivingStatus","CostingMethod","Currency","Customer","CustomerID","Discount","Duration","ExpiryDate","ExternalID","ID","InTransit","InvoiceAmount","InvoiceNumber","IsActive","IsDefault","IsDeprecated","Location","Method","Name","OnHand","OnOrder","OrderDate","OrderNumber","OrderStatus","PaidAmount","PaymentTerm","PriceTier1","SKU","SaleID","Status","StockOnHand","Supplier","SupplierID","TaxRule","Type","UOM"],"when":"any","detail":"Column"},"WHERE":{"words":["Account","Batch","Category","Code","CombinedInvoiceStatus","CombinedPackStatus","CombinedPickStatus","CombinedShippingStatus","CreditNoteStatus","ExternalID","ID","InvoiceStatus","IsActive","IsDefault","Location","Method","Name","OrderStatus","QuoteStatus","SKU","Search","Status","Type","UnstockStatus","'AUTHORISED'","'DRAFT'","'VOIDED'","'ORDERED'","'BACKORDERED'","'COMPLETED'","'INVOICED'","'PAID'","'UNPAID'"],"when":"any","detail":"Filter"}}}}
+readsSqlText("cin7") => true
+hashRunIsAmbiguous(resolveSqlGrammar("cin7")) => false
+readSqlSpan walk("SELECT 1 # c\nFROM t") => [["whitespace",6,7],["whitespace",8,9],["whitespace",10,11],["whitespace",12,13],["whitespace",17,18]]
+splitStatements("SELECT 1 # c\nFROM t") => [{"sql":"SELECT 1 # c\nFROM t","startLine":0,"start":0,"end":19}]
+readSqlSpan walk("SELECT a[1], [x]]y] FROM t") => [["whitespace",6,7],["subscript",8,11],["whitespace",12,13],["subscript",13,16],["whitespace",19,20],["whitespace",24,25]]
+splitStatements("SELECT a[1], [x]]y] FROM t") => [{"sql":"SELECT a[1], [x]]y] FROM t","startLine":0,"start":0,"end":26}]
+readSqlSpan walk("/* a /* b */ c */ SELECT 1") => [["block-comment",0,12],["whitespace",12,13],["whitespace",14,15],["whitespace",17,18],["whitespace",24,25]]
+splitStatements("/* a /* b */ c */ SELECT 1") => [{"sql":"/* a /* b */ c */ SELECT 1","startLine":0,"start":0,"end":26}]
+readSqlSpan walk("SELECT q'[it's]' FROM dual") => [["whitespace",6,7],["string",8,13],["string",15,26]]
+splitStatements("SELECT q'[it's]' FROM dual") => [{"sql":"SELECT q'[it's]' FROM dual","startLine":0,"start":0,"end":26}]
+readSqlSpan walk("SELECT 1 // c; DROP TABLE t") => [["whitespace",6,7],["whitespace",8,9],["whitespace",11,12],["whitespace",14,15],["whitespace",19,20],["whitespace",25,26]]
+splitStatements("SELECT 1 // c; DROP TABLE t") => [{"sql":"SELECT 1 // c","startLine":0,"start":0,"end":13},{"sql":"DROP TABLE t","startLine":0,"start":15,"end":27}]
+readSqlSpan walk("SELECT 'a\\'b'; SELECT 2") => [["whitespace",6,7],["string",7,23]]
+splitStatements("SELECT 'a\\'b'; SELECT 2") => [{"sql":"SELECT 'a\\'b'; SELECT 2","startLine":0,"start":0,"end":23}]
+readSqlSpan walk("SELECT $$x;$$, \"q\"\"n\", `b``t` FROM t") => [["whitespace",6,7],["dollar-string",7,13],["whitespace",14,15],["quoted-identifier",15,21],["whitespace",22,23],["quoted-identifier",23,29],["whitespace",29,30],["whitespace",34,35]]
+splitStatements("SELECT $$x;$$, \"q\"\"n\", `b``t` FROM t") => [{"sql":"SELECT $$x;$$, \"q\"\"n\", `b``t` FROM t","startLine":0,"start":0,"end":36}]
+readSqlSpan walk("CREATE TRIGGER tr AFTER INSERT ON t BEGIN SELECT 1; END; SELECT 2") => [["whitespace",6,7],["whitespace",14,15],["whitespace",17,18],["whitespace",23,24],["whitespace",30,31],["whitespace",33,34],["whitespace",35,36],["whitespace",41,42],["whitespace",48,49],["whitespace",51,52],["whitespace",56,57],["whitespace",63,64]]
+splitStatements("CREATE TRIGGER tr AFTER INSERT ON t BEGIN SELECT 1; END; SELECT 2") => [{"sql":"CREATE TRIGGER tr AFTER INSERT ON t BEGIN SELECT 1","startLine":0,"start":0,"end":50},{"sql":"END","startLine":0,"start":52,"end":55},{"sql":"SELECT 2","startLine":0,"start":57,"end":65}]
+readSqlSpan walk("SELECT 1\nGO\nSELECT 2") => [["whitespace",6,7],["whitespace",8,9],["whitespace",11,12],["whitespace",18,19]]
+splitStatements("SELECT 1\nGO\nSELECT 2") => [{"sql":"SELECT 1\nGO\nSELECT 2","startLine":0,"start":0,"end":20}]
+readSqlSpan walk("BEGIN NULL; END;\n/\nSELECT 1") => [["whitespace",5,6],["whitespace",11,12],["whitespace",16,17],["whitespace",18,19],["whitespace",25,26]]
+splitStatements("BEGIN NULL; END;\n/\nSELECT 1") => [{"sql":"BEGIN NULL","startLine":0,"start":0,"end":10},{"sql":"END","startLine":0,"start":12,"end":15},{"sql":"/\nSELECT 1","startLine":1,"start":17,"end":27}]
+readSqlSpan walk("SELECT 1 -- x\rDROP TABLE t") => [["whitespace",6,7],["whitespace",8,9],["line-comment",9,26]]
+splitStatements("SELECT 1 -- x\rDROP TABLE t") => [{"sql":"SELECT 1 -- x\rDROP TABLE t","startLine":0,"start":0,"end":26}]
+resolveUpdateTarget("SELECT id, note FROM products", "cin7") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products --x", "cin7") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products -- x", "cin7") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id, (PIVOT orders ON k USING max(note)) FROM products", "cin7") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id, coalesce(show, '') FROM products", "cin7") => {"kind":"table","table":"products"}
+resolveUpdateTarget("SELECT id FROM products MINUS SELECT id FROM orders", "cin7") => {"kind":"refused","reason":"This query reads from more than one place, so the row's table cannot be told apart"}
+resolveUpdateTarget("SELECT id FROM a UNION SELECT id FROM b", "cin7") => {"kind":"refused","reason":"This result combines more than one query, so there is no single table to write to"}
+resolveUpdateTarget("SELECT id FROM products WHERE qty <> 5-- zz UNION SELECT id FROM zord", "cin7") => {"kind":"table","table":"products"}
+selectsPlainColumn("SELECT id, note FROM products", "note", "cin7") => true
+redactStatement("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "cin7") => {"statement":"SELECT * FROM \"Users\" WHERE name = ? AND id = ?","statement_fingerprint":"156452582961be9e818b0b1c0c165cb7dcf0393926a233118370cbf875e9891b"}
+maskCredentials("SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42", "cin7") => "SELECT * FROM \"Users\" WHERE name = 'bob' AND id = 42"
+redactStatement("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "cin7") => {"statement":"SELECT ?, [b] FROM t WHERE x = ? ?","statement_fingerprint":"70f52d8b40f218938e60b0b272bfce25bdc33c40a1d775c63b01322244ba3d15"}
+maskCredentials("SELECT `a`, [b] FROM t WHERE x = 'y' -- note", "cin7") => "SELECT `a`, [b] FROM t WHERE x = 'y' -- note"
+redactStatement("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "cin7") => {"statement":"{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}","statement_fingerprint":"472d33795baa2c7ab5205ab4f362f0dbffb059fd3ad137c6b9d8cdeb5634a141"}
+maskCredentials("{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}", "cin7") => "{\"collection\":\"users\",\"operation\":\"find\",\"filter\":{\"name\":\"bob\"}}"
+redactStatement("GET user:1", "cin7") => {"statement":"GET user:?","statement_fingerprint":"246c39d2717b5c7218496cb5b7362d1d7966164411958bcebc9854f208af8031"}
+maskCredentials("GET user:1", "cin7") => "GET user:1"
+redactStatement("SET k \"v\"", "cin7") => {"statement":"SET k \"v\"","statement_fingerprint":"4e0073cffd105dac4cff1d6977160d3e0ddd7d99a38458c82880204bf72f692d"}
+maskCredentials("SET k \"v\"", "cin7") => "SET k \"v\""
+redactStatement("SELECT 'postgres://u:p@h/db' # x", "cin7") => {"statement":"SELECT ? # x","statement_fingerprint":"02d9117283ee88aee444252ba6af0e47e863d96ad1fefe919ae8c9ab22d2c31c"}
+maskCredentials("SELECT 'postgres://u:p@h/db' # x", "cin7") => "SELECT 'postgres://[REDACTED]@h/db' # x"
+redactStatement("CREATE USER a IDENTIFIED BY secret", "cin7") => {"statement":"CREATE USER a IDENTIFIED BY ?","statement_fingerprint":"76d4ced0796794c87e00191b8053e439b92034a904ae32d6431a74e37403c4ec"}
+maskCredentials("CREATE USER a IDENTIFIED BY secret", "cin7") => "CREATE USER a IDENTIFIED BY [REDACTED]"
+completions[plain]("SELECT * FROM ") => [["Order\"Items","\"Order\"\"Items\""],["public.select","\"public\".\"select\""],["users","\"users\""]]
+completions[plain]("SELECT * FROM public.se") => [["public.select","\"public\".\"select\""]]
+completions[plain]("SELECT \"Order\"\"Items\".") => [["qty","qty"]]
+completions[plain]("SELECT users.") => [["email","email"],["id","id"]]
+completions[quoted]("SELECT * FROM ") => [["Order\"Items","\"Order\"\"Items\""],["public.select","\"public\".\"select\""],["t","\"c0\".\"Order\"\"Items\""],["users","\"users\""]]
+completions[quoted]("SELECT * FROM public.se") => [["public.select","\"public\".\"select\""]]
+completions[quoted]("SELECT \"Order\"\"Items\".") => [["qty","qty"]]
+completions[quoted]("SELECT users.") => [["email","email"],["id","id"]]

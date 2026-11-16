@@ -1,8 +1,8 @@
 apiVersion: v2
 name: libredb-studio
-description: Web-based SQL IDE for cloud-native teams supporting seventy-three engines - PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog and Cin7 Core
+description: Web-based SQL IDE for cloud-native teams supporting seventy-four engines - PostgreSQL, Mixpanel, Amazon Redshift, CockroachDB, MySQL, SQLite, DuckDB, Oracle, Db2 LUW, SQL Server, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid, Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, libSQL, Prometheus, Apache Kafka, MQTT, RabbitMQ, etcd, Neo4j, Milvus, Qdrant, Weaviate, InfluxDB, InfluxDB 3, Oxia, Databend, S3-compatible object storage, Kubernetes, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core and Amazon Business
 type: application
-version: 0.1.147
+version: 0.1.148
 appVersion: "1.2.0"
 kubeVersion: ">=1.26.0-0"
 home: https://github.com/libredb/libredb-studio
@@ -149,6 +149,8 @@ keywords:
   - quickbooks
   # One keyword, like quickbooks above: `cin7` is the type-id. The dialog calls it Cin7 Core.
   - cin7
+  # One keyword, like cin7 above: `amazonbusiness` is the type-id. The dialog calls it Amazon Business.
+  - amazonbusiness
   - odoo
   - shopify
   - notion
@@ -449,6 +451,7 @@ annotations:
     - name: Source
       url: https://github.com/libredb/libredb-studio
   artifacthub.io/changes: |
+    - "Add the read-only Amazon Business connector: products, orders and reconciliation on the buying API"
     - "Add the read-only Cin7 Core connector: products, stock, sales and purchases on the External API"
     - "Add the read-only Google Sheets connector: one spreadsheet and its worksheets on the Sheets API"
     - "Add the Amazon Redshift connector: PostgreSQL wire protocol on port 5439, schemas and tables from information_schema"

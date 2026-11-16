@@ -480,6 +480,8 @@ const CONNECTION_FIELD_ROWS = {
   quickbooks: ["host", "password", "database"],
   // An application key in `password`, and the account id in `database`.
   cin7: ["host", "password", "database"],
+  // LWA client id in `user`, client secret in `password`, refresh token in `database`, buyer email in `schema`.
+  amazonbusiness: ["host", "user", "password", "database", "schema"],
   // An API key in `password`. The host must be a name under odoo.com.
   odoo: ["host", "password"],
   // An Admin API access token in `password`. The host must be a name under myshopify.com.
@@ -676,6 +678,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   googleanalytics: null,
   quickbooks: null,
   cin7: null,
+  amazonbusiness: null,
   odoo: null,
   shopify: null,
   notion: null,
