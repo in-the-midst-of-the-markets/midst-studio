@@ -1,5 +1,5 @@
 /**
- * The option a dashboard draws from chart code.
+ * The option a chart canvas draws from chart code.
  *
  * A title in that code is drawn on the plot. An empty title stays off it, and the
  * legend and grid keep the room the untitled chart uses.
@@ -146,7 +146,7 @@ export function withBlankAffixes(option: Record<string, unknown>): Record<string
   return next;
 }
 
-/** The option the dashboard canvas draws. */
+/** The option a chart canvas draws from chart code. */
 export function presentChartOption(
   option: Record<string, unknown>,
   untitled: Record<string, unknown>,

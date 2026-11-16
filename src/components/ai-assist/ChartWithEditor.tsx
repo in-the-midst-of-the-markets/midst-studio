@@ -7,6 +7,7 @@ import { ChartCodeEditor, useChartCode } from "@/components/charts/ChartCodeEdit
 import { ASSIST_CHART_CODE_CAP } from "@/lib/ai/assist-history";
 import { SaveChartButton } from "@/components/charts/SaveChartButton";
 import { chartSourceKey, stripChartValues } from "@/lib/charts/chart-code";
+import { presentChartOption } from "@/lib/charts/chart-present";
 import { chartTitleStyle, chartTitleText } from "@/lib/charts/chart-title";
 import { defaultFilterLooks, mergeFilterLooks, readFilterLooks, withFilterLooks } from "@/lib/charts/filter-look";
 import { chartSaveDraft } from "@/lib/charts/save-chart";
@@ -284,6 +285,10 @@ export function ChartWithEditor({
     const kept = code.persisted !== null && code.persisted.length <= ASSIST_CHART_CODE_CAP ? code.persisted : null;
     rememberRef.current?.(choice, kept);
   }, [choice, result, code.persisted]);
+  const drawnOption = useMemo(() => {
+    if (built === null) return null;
+    return presentChartOption(code.option ?? built.option, built.option);
+  }, [built, code.option]);
   const looks = mergeFilterLooks(filterLooks, readFilterLooks(code.editedOption));
   const savedLook = built === null ? undefined : withFilterLooks(stripChartValues(code.option ?? built.option), looks);
   const codeTitle = chartTitleText(code.option);
@@ -508,13 +513,10 @@ export function ChartWithEditor({
                   />
                 </div>
               )}
-              {!running && built !== null && (
+              {!running && built !== null && drawnOption !== null && (
                 <div className="flex min-h-0 flex-1 flex-col">
                   <div className="min-h-0 flex-1">
-                    <AssistChartCanvas
-                      option={code.option ?? built.option}
-                      notes={code.option === null ? built.notes : []}
-                    />
+                    <AssistChartCanvas option={drawnOption} notes={code.option === null ? built.notes : []} />
                   </div>
                 </div>
               )}
