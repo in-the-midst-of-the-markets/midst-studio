@@ -141,8 +141,8 @@ export async function renderFormGolden(type: DatabaseType): Promise<string> {
         onTestConnection={async () => ({ success: true })}
       />,
     );
-    // The dialog opens with every category collapsed except the one holding the default engine. A golden
-    // for another engine opens that engine's category first, which is the click a person makes.
+    // The dialog opens with the categories collapsed, including SQL when it holds the default engine. A golden
+    // opens that engine's category first, which is the click a person makes.
     const category = connectionPickerCategories().find((entry) => entry.types.includes(type));
     if (category === undefined) throw new Error(`no picker category holds ${type}`);
     const compact = (value: string): string => value.replace(/\s+/g, "");

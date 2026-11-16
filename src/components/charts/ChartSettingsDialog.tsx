@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSyncExternalStore } from "react";
 import { useEffectiveTheme } from "@/hooks/use-effective-theme";
 import {
@@ -67,6 +67,43 @@ function writeColors(settings: ChartSettings, colors: ChartColorSettings): void 
   writeChartSettings(normalizeChartSettings({ ...settings, colors }));
 }
 
+/**
+ * The native color popup closes when React writes `value` back during a drag.
+ * This input stays uncontrolled while the drag is the change it just reported,
+ * and only takes a color that arrived from outside.
+ */
+function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (color: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const reported = useRef(value);
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input === null || value === reported.current) return;
+    reported.current = value;
+    input.value = value;
+  }, [value]);
+
+  return (
+    <input
+      ref={inputRef}
+      type="color"
+      aria-label={label}
+      defaultValue={value}
+      onChange={(event) => {
+        const next = event.target.value.toLowerCase();
+        reported.current = next;
+        onChange(next);
+      }}
+      onBlur={(event) => {
+        if (event.currentTarget.value.toLowerCase() === value) return;
+        event.currentTarget.value = value;
+        reported.current = value;
+      }}
+      className="h-8 w-10 cursor-pointer rounded border border-hairline bg-canvas p-0.5"
+    />
+  );
+}
+
 function ColorField({
   label,
   pickerLabel,
@@ -87,15 +124,7 @@ function ColorField({
         <input type="checkbox" checked={enabled} onChange={(event) => onChange(event.target.checked ? fallback : "")} />
         {label}
       </label>
-      {enabled && (
-        <input
-          type="color"
-          aria-label={pickerLabel}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-8 w-10 cursor-pointer rounded border border-hairline bg-canvas p-0.5"
-        />
-      )}
+      {enabled && <ColorInput label={pickerLabel} value={value} onChange={onChange} />}
     </div>
   );
 }
@@ -121,13 +150,11 @@ function ChartColorList({ settings }: { settings: ChartSettings }) {
       <span className="text-xs text-fg-muted">Chart colors, up to {CHART_COLOR_LIMIT}</span>
       <div className="flex flex-wrap items-center gap-2">
         {series.map((color, index) => (
-          <span key={color} className="flex items-center gap-1">
-            <input
-              type="color"
-              aria-label={`Chart color ${index + 1}`}
+          <span key={index} className="flex items-center gap-1">
+            <ColorInput
+              label={`Chart color ${index + 1}`}
               value={color}
-              onChange={(event) => replaceChartColor(settings, index, event.target.value)}
-              className="h-8 w-10 cursor-pointer rounded border border-hairline bg-canvas p-0.5"
+              onChange={(next) => replaceChartColor(settings, index, next)}
             />
             <button
               type="button"
