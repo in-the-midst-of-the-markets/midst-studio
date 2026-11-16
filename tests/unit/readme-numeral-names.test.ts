@@ -51,7 +51,7 @@ const ENGINE_NAMES = EXTERNAL_DATABASE_TYPES.map((type) => DB_UI_CONFIG[type].la
  * digits. Every other file writes it out.
  */
 const READMES: ReadonlyArray<{ file: string; now: string; before: string }> = [
-  { file: "README.md", now: "Seventy-eight", before: "Seventy-seven" },
+  { file: "README.md", now: "Seventy-nine", before: "Seventy-eight" },
   { file: "README_zh.md", now: "六十种引擎", before: "五十九种引擎" },
   { file: "README_es.md", now: "Sesenta", before: "Cincuenta y nueve" },
   { file: "README_pt.md", now: "Sessenta", before: "Cinquenta e nove" },

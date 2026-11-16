@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Seventy-nine type-ids are supported by seventy-seven provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Eighty type-ids are supported by seventy-eight provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -350,6 +350,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Pipedrive | `pipedrive` | SQL (the Pipedrive API, read-only) | [providers/pipedrive.md](./providers/pipedrive.md) |
 | TikTok Ads | `tiktokads` | SQL (the Marketing API, read-only) | [providers/tiktokads.md](./providers/tiktokads.md) |
 | Meta Ads | `metaads` | SQL (the Marketing API, read-only) | [providers/metaads.md](./providers/metaads.md) |
+| Amazon Ads | `amazonads` | SQL (the Advertising API, read-only) | [providers/amazonads.md](./providers/amazonads.md) |
 | PayPal | `paypal` | SQL (the PayPal REST API, read-only) | [providers/paypal.md](./providers/paypal.md) |
 | Microsoft Excel | `excel` | SQL (Microsoft Graph, one workbook, read-only) | [providers/excel.md](./providers/excel.md) |
 | Google Sheets | `googlesheets` | SQL (Sheets API, one spreadsheet, read-only) | [providers/googlesheets.md](./providers/googlesheets.md) |

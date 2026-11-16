@@ -162,6 +162,7 @@ const SeedDatabaseType = z.enum([
   "pipedrive",
   "tiktokads",
   "metaads",
+  "amazonads",
   "paypal",
   "excel",
   "googlesheets",

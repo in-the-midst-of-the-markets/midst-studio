@@ -58,6 +58,7 @@ import { MICROSOFTADS_EXECUTION_UI } from "@/lib/db/providers/sql/microsoftads/e
 import { PIPEDRIVE_EXECUTION_UI } from "@/lib/db/providers/sql/pipedrive/execution-ui";
 import { TIKTOKADS_EXECUTION_UI } from "@/lib/db/providers/sql/tiktokads/execution-ui";
 import { METAADS_EXECUTION_UI } from "@/lib/db/providers/sql/metaads/execution-ui";
+import { AMAZONADS_EXECUTION_UI } from "@/lib/db/providers/sql/amazonads/execution-ui";
 import { PAYPAL_EXECUTION_UI } from "@/lib/db/providers/sql/paypal/execution-ui";
 import { EXCEL_EXECUTION_UI } from "@/lib/db/providers/sql/excel/execution-ui";
 import { GOOGLESHEETS_EXECUTION_UI } from "@/lib/db/providers/sql/googlesheets/execution-ui";
@@ -144,6 +145,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   pipedrive: PIPEDRIVE_EXECUTION_UI,
   tiktokads: TIKTOKADS_EXECUTION_UI,
   metaads: METAADS_EXECUTION_UI,
+  amazonads: AMAZONADS_EXECUTION_UI,
   paypal: PAYPAL_EXECUTION_UI,
   excel: EXCEL_EXECUTION_UI,
   googlesheets: GOOGLESHEETS_EXECUTION_UI,

@@ -185,6 +185,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // Two past the registry once Datadog joined it.
   "seventy-nine": 79,
   eighty: 80,
+  // Two past the registry once Amazon Ads joined it.
+  "eighty-one": 81,
 };
 
 /**

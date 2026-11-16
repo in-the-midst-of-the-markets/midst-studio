@@ -40,6 +40,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   pipedrive: null,
   tiktokads: null,
   metaads: null,
+  amazonads: null,
   paypal: null,
   excel: null,
   googlesheets: null,

@@ -76,6 +76,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   pipedrive: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   tiktokads: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   metaads: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  amazonads: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   paypal: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   excel: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   googlesheets: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',

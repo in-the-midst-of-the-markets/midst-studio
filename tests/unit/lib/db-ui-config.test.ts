@@ -158,6 +158,7 @@ const ALL_TYPES: DatabaseType[] = [
   "pipedrive",
   "tiktokads",
   "metaads",
+  "amazonads",
   "paypal",
   "excel",
   "googlesheets",
@@ -407,6 +408,7 @@ describe("db-ui-config", () => {
       }
       const refusing = ALL_TYPES.filter((type) => !offersSshTunnel(type));
       expect(refusing.sort()).toEqual([
+        "amazonads",
         "amazonbusiness",
         "bigquery",
         "cin7",
@@ -472,6 +474,7 @@ describe("db-ui-config", () => {
       }
       expect(ALL_TYPES.filter((type) => !offersSslPanel(type)).sort()).toEqual([
         "airtable",
+        "amazonads",
         "amazonbusiness",
         "bigquery",
         "cin7",
@@ -1220,6 +1223,7 @@ describe("declared connection-field copy (#1085)", () => {
       "pipedrive",
       "tiktokads",
       "metaads",
+      "amazonads",
       "paypal",
       "excel",
       "googlesheets",
@@ -1855,6 +1859,8 @@ describe("db-showcase", () => {
         "shipstation",
         "crisp",
         "datadog",
+        // Last, behind Datadog: Sponsored Products on the Advertising API.
+        "amazonads",
       ]);
     });
   });
@@ -2112,6 +2118,7 @@ describe("the Snowflake entry", () => {
       "pipedrive",
       "tiktokads",
       "metaads",
+      "amazonads",
       "paypal",
       "mixpanel",
       "customapi",

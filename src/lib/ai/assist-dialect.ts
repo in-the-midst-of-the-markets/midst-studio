@@ -426,6 +426,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  amazonads: {
+    rule: "sql is one read-only SELECT of one Amazon Ads resource, such as campaign. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins, no COUNT.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   paypal: {
     rule: "sql is one read-only SELECT of one PayPal list, such as transaction. WHERE, ORDER BY and LIMIT are allowed. No writes, no joins, no COUNT.",
     sample: SQL_SAMPLE,

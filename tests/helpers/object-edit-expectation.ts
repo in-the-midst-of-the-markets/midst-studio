@@ -167,6 +167,7 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "pipedrive",
   "tiktokads",
   "metaads",
+  "amazonads",
   "paypal",
   "excel",
   "googlesheets",

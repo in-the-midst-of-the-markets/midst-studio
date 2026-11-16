@@ -122,6 +122,7 @@ const SOURCE_DECLARATIONS: Readonly<Record<DatabaseType, readonly string[]>> = O
   pipedrive: [],
   tiktokads: [],
   metaads: [],
+  amazonads: [],
   paypal: [],
   excel: [],
   googlesheets: [],
@@ -359,6 +360,7 @@ const CENSUS_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "pipedrive",
   "tiktokads",
   "metaads",
+  "amazonads",
   "paypal",
   "excel",
   "googlesheets",
@@ -441,7 +443,7 @@ describe("the fleet census of object source declarations", () => {
     // EXTERNAL_DATABASE_TYPES.length (38 with db2, neo4j, milvus, qdrant, influxdb, influxdb3, oxia, databend,
     // bigquery, snowflake, s3, kubernetes, mqtt, firestore, rabbitmq, opcua, mtconnect and sparkplug) plus the
     // embedded store.
-    expect(CENSUS_TYPES).toHaveLength(79);
+    expect(CENSUS_TYPES).toHaveLength(80);
     expect(Object.keys(SOURCE_DECLARATIONS).sort()).toEqual([...SHIPPED_DATABASE_TYPES].sort());
   });
 
@@ -472,8 +474,8 @@ describe("the fleet census of object source declarations", () => {
     // BOTH source-bearing, sparkplug two kinds, BOTH source-bearing, weaviate one kind, source-bearing (#1566),
     // and clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, crisp, odoo, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets and mixpanel one kind each,
     // neither source-bearing, databricks one table kind, salesforce one table kind, and stardog one class kind, neither source-bearing.
-    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(88);
-    expect(rows).toHaveLength(240);
+    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(89);
+    expect(rows).toHaveLength(241);
   });
 
   test("the MariaDB branch declares two more, which an unconnected provider cannot show", async () => {
@@ -592,7 +594,7 @@ describe("the fleet census of object source declarations", () => {
     // brought: MTConnect's three (#1722), NETCONF's and Modbus's, SNMP's two (#1721) and
     // Sparkplug B's two (#1720), and Weaviate's one (#1566). Intercom adds one kind, and
     // Microsoft Dynamics adds one, and Microsoft Excel adds one, and Google Sheets adds one, and Amazon Redshift adds two, and CockroachDB adds two, and Mixpanel adds one, and Custom API adds one, and Salesforce adds one, and Stardog adds one, and ShipBob adds one, and ShipStation adds one, and Crisp adds one, and none of them carries a source.
-    expect(rows).toHaveLength(248);
+    expect(rows).toHaveLength(249);
 
     const halfDeclared = rows
       .filter((row) => row.kind.sourceLanguage !== undefined && row.kind.hasSource !== true)

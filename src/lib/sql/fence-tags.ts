@@ -63,6 +63,7 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   pipedrive: true,
   tiktokads: true,
   metaads: true,
+  amazonads: true,
   paypal: true,
   excel: true,
   googlesheets: true,

@@ -58,6 +58,7 @@ import { MICROSOFTADS_CONNECTION_STRING } from "@/lib/db/providers/sql/microsoft
 import { PIPEDRIVE_CONNECTION_STRING } from "@/lib/db/providers/sql/pipedrive/connection-string";
 import { TIKTOKADS_CONNECTION_STRING } from "@/lib/db/providers/sql/tiktokads/connection-string";
 import { METAADS_CONNECTION_STRING } from "@/lib/db/providers/sql/metaads/connection-string";
+import { AMAZONADS_CONNECTION_STRING } from "@/lib/db/providers/sql/amazonads/connection-string";
 import { PAYPAL_CONNECTION_STRING } from "@/lib/db/providers/sql/paypal/connection-string";
 import { EXCEL_CONNECTION_STRING } from "@/lib/db/providers/sql/excel/connection-string";
 import { GOOGLESHEETS_CONNECTION_STRING } from "@/lib/db/providers/sql/googlesheets/connection-string";
@@ -144,6 +145,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   pipedrive: PIPEDRIVE_CONNECTION_STRING,
   tiktokads: TIKTOKADS_CONNECTION_STRING,
   metaads: METAADS_CONNECTION_STRING,
+  amazonads: AMAZONADS_CONNECTION_STRING,
   paypal: PAYPAL_CONNECTION_STRING,
   excel: EXCEL_CONNECTION_STRING,
   googlesheets: GOOGLESHEETS_CONNECTION_STRING,
