@@ -35,6 +35,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   postgres: "exact",
   airtable: "exact",
   hubspot: "exact",
+  salesforce: "exact",
   stripe: "exact",
   clarity: "exact",
   googleanalytics: "exact",
@@ -216,7 +217,7 @@ describe("the declaration follows the check (#1147)", () => {
     const declaring = TYPES.filter((type) => EXPECTED_CONTAINER_PATH_SHAPES[type] !== "absent").sort();
     // Supabase is Postgres. The check runs in PostgresProvider, so the subclass file does not repeat it.
     const inherited = declaring.filter((type) => type !== "supabase");
-    expect(callers).toHaveLength(49);
+    expect(callers).toHaveLength(50);
     expect(callers).toEqual(inherited);
   });
 });

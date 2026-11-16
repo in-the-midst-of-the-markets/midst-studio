@@ -53,6 +53,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   postgres: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   airtable: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   hubspot: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  salesforce: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   stripe: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   clarity: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   googleanalytics: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',

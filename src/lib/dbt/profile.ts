@@ -16,6 +16,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   supabase: postgresTarget,
   airtable: unsupported,
   hubspot: unsupported,
+  salesforce: unsupported,
   stripe: unsupported,
   clarity: unsupported,
   googleanalytics: unsupported,

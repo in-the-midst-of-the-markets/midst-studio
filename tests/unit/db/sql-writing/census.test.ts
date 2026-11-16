@@ -93,6 +93,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   cockroach: "sql/cockroach/sql-writing",
   airtable: "sql/airtable/sql-writing",
   hubspot: "sql/hubspot/sql-writing",
+  salesforce: "sql/salesforce/sql-writing",
   stripe: "sql/stripe/sql-writing",
   clarity: "sql/clarity/sql-writing",
   googleanalytics: "sql/googleanalytics/sql-writing",

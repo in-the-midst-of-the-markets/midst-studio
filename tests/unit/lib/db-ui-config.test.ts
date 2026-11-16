@@ -135,6 +135,7 @@ const ALL_TYPES: DatabaseType[] = [
   "airtable",
   "supabase",
   "hubspot",
+  "salesforce",
   "stripe",
   "clarity",
   "googleanalytics",
@@ -421,6 +422,7 @@ describe("db-ui-config", () => {
         "pipedrive",
         "quickbooks",
         "rabbitmq",
+        "salesforce",
         "shopify",
         "snmp",
         "snowflake",
@@ -478,6 +480,7 @@ describe("db-ui-config", () => {
         "paypal",
         "pipedrive",
         "quickbooks",
+        "salesforce",
         "shopify",
         "snmp",
         "snowflake",
@@ -1164,6 +1167,7 @@ describe("declared connection-field copy (#1085)", () => {
       "airtable",
       "supabase",
       "hubspot",
+      "salesforce",
       "stripe",
       "clarity",
       "googleanalytics",
@@ -1802,6 +1806,7 @@ describe("db-showcase", () => {
         "saphana",
         // Last, behind SAP HANA: a SQL warehouse on the statement execution API.
         "databricks",
+        "salesforce",
       ]);
     });
   });
@@ -2037,6 +2042,7 @@ describe("the Snowflake entry", () => {
       "opcua",
       "airtable",
       "hubspot",
+      "salesforce",
       "stripe",
       "clarity",
       "googleanalytics",

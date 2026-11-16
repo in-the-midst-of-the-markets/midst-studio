@@ -38,6 +38,7 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   supabase: true,
   // A ```hubspot block holds the SQL subset the HubSpot connection sends to the CRM API.
   hubspot: true,
+  salesforce: true,
   // A ```stripe block holds the read-only SQL subset the Stripe connection sends to the API.
   stripe: true,
   clarity: true,

@@ -475,6 +475,21 @@ export const CONNECTION_FORM: {
       host: "The token is sent only to a host under airtable.com.",
     },
   },
+  salesforce: {
+    label: "Salesforce",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.salesforce,
+    fieldLabels: { password: "Access token", host: "My Domain" },
+    fieldPlaceholders: { password: "00D…", host: "mycompany.my.salesforce.com" },
+    fieldHints: {
+      password: "An access token. It is sent only to this host, as a bearer header.",
+      host: "The org's My Domain. The token is sent only to a host under salesforce.com.",
+    },
+  },
   hubspot: {
     label: "HubSpot",
     defaultPort: "",
@@ -2002,6 +2017,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "questdb",
   "saphana",
   "hubspot",
+  "salesforce",
   "stripe",
   "clarity",
   "googleanalytics",
@@ -2032,6 +2048,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
  */
 export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "hubspot",
+  "salesforce",
   "stripe",
   "clarity",
   "googleanalytics",

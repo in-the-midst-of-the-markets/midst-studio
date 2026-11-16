@@ -1090,6 +1090,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     postgres: "key-follows-in-an-alter",
     airtable: "engine-has-no-foreign-key",
     hubspot: "engine-has-no-foreign-key",
+    salesforce: "engine-has-no-foreign-key",
     stripe: "engine-has-no-foreign-key",
     clarity: "engine-has-no-foreign-key",
     googleanalytics: "engine-has-no-foreign-key",
@@ -1229,6 +1230,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   hubspot: {
     label: "HubSpot",
     reason: "HubSpot property changes are not generated here; create the property in HubSpot.",
+  },
+  salesforce: {
+    label: "Salesforce",
+    reason: "Salesforce object changes are not generated here; create the field in Salesforce.",
   },
   stripe: {
     label: "Stripe",
@@ -1795,6 +1800,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "redshift",
           "airtable",
           "hubspot",
+          "salesforce",
           "stripe",
           "clarity",
           "googleanalytics",
@@ -1846,6 +1852,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   postgres: "BEGIN;",
   airtable: false,
   hubspot: false,
+  salesforce: false,
   stripe: false,
   clarity: false,
   googleanalytics: false,
@@ -1978,6 +1985,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "redshift",
             "airtable",
             "hubspot",
+            "salesforce",
             "stripe",
             "clarity",
             "googleanalytics",

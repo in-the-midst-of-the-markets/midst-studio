@@ -32,6 +32,7 @@ import { ORACLE_SQL_GRAMMAR } from "@/lib/db/providers/sql/oracle-sql-grammar";
 import { OXIA_SQL_GRAMMAR } from "@/lib/db/providers/keyvalue/oxia/sql-grammar";
 import { AIRTABLE_SQL_GRAMMAR } from "@/lib/db/providers/sql/airtable/sql-grammar";
 import { HUBSPOT_SQL_GRAMMAR } from "@/lib/db/providers/sql/hubspot/sql-grammar";
+import { SALESFORCE_SQL_GRAMMAR } from "@/lib/db/providers/sql/salesforce/sql-grammar";
 import { STRIPE_SQL_GRAMMAR } from "@/lib/db/providers/sql/stripe/sql-grammar";
 import { CLARITY_SQL_GRAMMAR } from "@/lib/db/providers/sql/clarity/sql-grammar";
 import { GOOGLEANALYTICS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googleanalytics/sql-grammar";
@@ -114,6 +115,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   postgres: POSTGRES_SQL_GRAMMAR,
   airtable: AIRTABLE_SQL_GRAMMAR,
   hubspot: HUBSPOT_SQL_GRAMMAR,
+  salesforce: SALESFORCE_SQL_GRAMMAR,
   stripe: STRIPE_SQL_GRAMMAR,
   clarity: CLARITY_SQL_GRAMMAR,
   googleanalytics: GOOGLEANALYTICS_SQL_GRAMMAR,

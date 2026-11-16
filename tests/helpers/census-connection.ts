@@ -48,6 +48,7 @@ const UNCONNECTED = {
 const CENSUS_HOST: Partial<Record<DatabaseType, string>> = {
   airtable: "api.airtable.com",
   hubspot: "api.hubapi.com",
+  salesforce: "census.my.salesforce.com",
   stripe: "api.stripe.com",
   clarity: "www.clarity.ms",
   googleanalytics: "analyticsdata.googleapis.com",
@@ -82,6 +83,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   postgres: unconnected("postgres"),
   airtable: unconnected("airtable"),
   hubspot: unconnected("hubspot"),
+  salesforce: unconnected("salesforce"),
   stripe: unconnected("stripe"),
   clarity: unconnected("clarity"),
   googleanalytics: unconnected("googleanalytics"),
