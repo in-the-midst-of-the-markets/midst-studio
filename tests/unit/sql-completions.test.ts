@@ -1526,7 +1526,11 @@ describe("dialect completion words", () => {
   test("a dialect that declares no words matches the shared list, and none of them is offered Snowflake's", () => {
     for (const type of [...SHIPPED_DATABASE_TYPES.filter((t) => t !== "snowflake"), undefined]) {
       const offered = labels("SELECT ", type);
-      expect(offered, String(type)).not.toContain("QUALIFY");
+      // Databricks SQL lists QUALIFY in its own completion words. Every other dialect still must not offer it.
+      const ownKeywords = type === undefined ? undefined : resolveSqlGrammar(type).completionWords?.keywords;
+      if (!ownKeywords?.includes("QUALIFY")) {
+        expect(offered, String(type)).not.toContain("QUALIFY");
+      }
       expect(offered, String(type)).not.toContain("PARSE_JSON");
       if (type === undefined || resolveSqlGrammar(type).completionWords === undefined) {
         expect(offered.length, String(type)).toBe(labels("SELECT ").length);

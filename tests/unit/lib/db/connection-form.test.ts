@@ -386,6 +386,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "firestore",
       "rabbitmq",
       "snowflake",
+      "databricks",
       "opcua",
       "snmp",
       "sparkplug",

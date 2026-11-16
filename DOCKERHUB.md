@@ -63,7 +63,7 @@ A ready-to-use, fully-commented compose file is in the repo: [`docker-compose.ex
 
 ### Reaching your databases from inside the container
 
-**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host, or in another container, is not there, so a connection that works from a terminal fails here, and it fails as a timeout rather than as anything that mentions the host.
+**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host, or in another container, is not there, so a connection that works from a terminal times out here.
 
 Pick whichever fits how the database runs:
 

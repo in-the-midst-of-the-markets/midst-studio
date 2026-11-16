@@ -307,6 +307,8 @@ const CENSUS_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "questdb",
   // SAP HANA publishes schemas, tables and columns through SYS catalog views, and no definition text.
   "saphana",
+  // Databricks SQL publishes tables and columns through information_schema, and no definition text.
+  "databricks",
   // Amazon Redshift publishes schemas, tables and columns through information_schema, and no definition text.
   "redshift",
   // CockroachDB publishes schemas, tables and columns through information_schema, and no definition text.
@@ -449,8 +451,8 @@ describe("the fleet census of object source declarations", () => {
     // object is a value at a numbered place, with no text behind it to show), netconf two kinds,
     // BOTH source-bearing, sparkplug two kinds, BOTH source-bearing, weaviate one kind, source-bearing (#1566),
     // and clarity, googleanalytics, quickbooks, odoo, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets and mixpanel one kind each,
-    // neither source-bearing.
-    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(79);
+    // neither source-bearing, and databricks one table kind, not source-bearing.
+    expect(rows.filter((row) => row.kind.hasSource !== true)).toHaveLength(80);
     expect(rows).toHaveLength(232);
   });
 
