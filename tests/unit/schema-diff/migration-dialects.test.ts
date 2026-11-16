@@ -17,6 +17,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   postgres: ['ADD COLUMN "extra" integer;', 'DROP COLUMN "old";'],
   airtable: null,
   hubspot: null,
+  salesforce: null,
   stripe: null,
   clarity: null,
   googleanalytics: null,

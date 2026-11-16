@@ -146,6 +146,7 @@ describe("docs/MCP.md", () => {
       [
         "airtable",
         "hubspot",
+        "salesforce",
         "stripe",
         "clarity",
         "googleanalytics",

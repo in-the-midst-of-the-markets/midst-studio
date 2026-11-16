@@ -264,6 +264,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  salesforce: {
+    rule: "sql is one read-only SELECT or COUNT(*) from one Salesforce object, sent as SOQL. No JOIN and no writes. Do not rename columns.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   stripe: {
     rule: 'sql is one read-only Stripe Sigma SELECT or WITH, or a report preview SELECT * FROM "reports"."name". This connection does not write.',
     sample: SQL_SAMPLE,

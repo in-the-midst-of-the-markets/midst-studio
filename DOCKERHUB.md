@@ -63,7 +63,7 @@ A ready-to-use, fully-commented compose file is in the repo: [`docker-compose.ex
 
 ### Reaching your databases from inside the container
 
-**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host, or in another container, is not there, so a connection that works from a terminal times out here.
+**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host or in another container is not there, so it times out.
 
 Pick whichever fits how the database runs:
 
@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Seventy external engines share one interface.
-The seventy-first row is the embedded LibreDB store: it ships inside the image.
+Seventy-one external engines share one interface.
+The seventy-second row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -157,6 +157,7 @@ The seventy-first row is the embedded LibreDB store: it ships inside the image.
 | **Airtable** | none, HTTP | SQL over the Web API |
 | **Supabase** | `pg` | Hosted PostgreSQL |
 | **HubSpot** | none, HTTP | SQL over the CRM API |
+| **Salesforce** | none, HTTPS | Read-only SOQL |
 | **Stripe** | none, HTTP | Sigma SQL and REPORT, read-only |
 | **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
@@ -185,7 +186,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-six further engines speak a wire protocol of one of the seventy drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-six further engines speak a wire protocol of one of the seventy-one drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

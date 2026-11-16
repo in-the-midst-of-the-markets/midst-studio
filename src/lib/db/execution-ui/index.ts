@@ -35,6 +35,7 @@ import { ORACLE_EXECUTION_UI } from "@/lib/db/providers/sql/oracle-execution-ui"
 import { OXIA_EXECUTION_UI } from "@/lib/db/providers/keyvalue/oxia/execution-ui";
 import { AIRTABLE_EXECUTION_UI } from "@/lib/db/providers/sql/airtable/execution-ui";
 import { HUBSPOT_EXECUTION_UI } from "@/lib/db/providers/sql/hubspot/execution-ui";
+import { SALESFORCE_EXECUTION_UI } from "@/lib/db/providers/sql/salesforce/execution-ui";
 import { STRIPE_EXECUTION_UI } from "@/lib/db/providers/sql/stripe/execution-ui";
 import { CLARITY_EXECUTION_UI } from "@/lib/db/providers/sql/clarity/execution-ui";
 import { GOOGLEANALYTICS_EXECUTION_UI } from "@/lib/db/providers/sql/googleanalytics/execution-ui";
@@ -113,6 +114,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   postgres: POSTGRES_EXECUTION_UI,
   airtable: AIRTABLE_EXECUTION_UI,
   hubspot: HUBSPOT_EXECUTION_UI,
+  salesforce: SALESFORCE_EXECUTION_UI,
   stripe: STRIPE_EXECUTION_UI,
   clarity: CLARITY_EXECUTION_UI,
   googleanalytics: GOOGLEANALYTICS_EXECUTION_UI,

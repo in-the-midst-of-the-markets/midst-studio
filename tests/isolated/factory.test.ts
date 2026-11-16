@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stripe, clarity, googleanalytics, quickbooks, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1580,6 +1580,7 @@ describe("createDatabaseProvider", () => {
       libredb: { database: CENSUS_LIBREDB_FILE },
       airtable: { host: "api.airtable.com" },
       hubspot: { host: "api.hubapi.com" },
+      salesforce: { host: "census.my.salesforce.com" },
       stripe: { host: "api.stripe.com" },
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
@@ -1679,6 +1680,7 @@ describe("createDatabaseProvider", () => {
       libredb: { database: CENSUS_LIBREDB_FILE },
       airtable: { host: "api.airtable.com" },
       hubspot: { host: "api.hubapi.com" },
+      salesforce: { host: "census.my.salesforce.com" },
       stripe: { host: "api.stripe.com" },
       clarity: { host: "www.clarity.ms" },
       googleanalytics: { host: "analyticsdata.googleapis.com" },
@@ -1802,6 +1804,8 @@ describe("createDatabaseProvider", () => {
       "redis",
       // No cancel: the wire session sends the statement and does not keep a backend pid to cancel.
       "redshift",
+      // No cancel: a Salesforce read is one SOQL request, and the query API has nothing that stops it.
+      "salesforce",
       // No cancel: the session sends the statement and does not keep a handle that stops it.
       "saphana",
       // No cancel either, and the reason is UDP's: a Get is one datagram out and one back, with

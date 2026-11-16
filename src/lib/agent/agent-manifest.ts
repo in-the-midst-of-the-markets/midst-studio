@@ -93,6 +93,7 @@ export const AGENT_STATEMENT_LANGUAGE = Object.freeze({
   cockroach: null,
   airtable: null,
   hubspot: null,
+  salesforce: null,
   stripe: null,
   clarity: null,
   googleanalytics: null,

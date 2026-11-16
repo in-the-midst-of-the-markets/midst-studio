@@ -47,6 +47,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   postgres: true,
   airtable: true,
   hubspot: true,
+  salesforce: true,
   stripe: true,
   clarity: true,
   googleanalytics: true,
@@ -398,6 +399,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "questdb",
       "saphana",
       "hubspot",
+      "salesforce",
       "stripe",
       "clarity",
       "googleanalytics",
@@ -428,6 +430,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
     const databases = categories[1]?.types ?? [];
     expect(saas).toEqual([
       "hubspot",
+      "salesforce",
       "stripe",
       "clarity",
       "googleanalytics",

@@ -575,6 +575,22 @@ export const XeroIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A cloud, for a Salesforce org. Not the vendor mark. */
+export const SalesforceIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M7 18h10a4 4 0 0 0 .4-8 5 5 0 0 0-9.6-1.5A3.5 3.5 0 0 0 7 18z" />
+  </svg>
+);
+
 /** A sprocket, for a HubSpot account. Not the vendor mark. */
 export const HubSpotIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

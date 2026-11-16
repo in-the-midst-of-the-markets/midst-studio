@@ -180,6 +180,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   saphana: 69,
   // A SQL warehouse on the statement execution API, behind SAP HANA.
   databricks: 70,
+  // A CRM org on the REST query API, behind Databricks SQL.
+  salesforce: 71,
 };
 
 /**

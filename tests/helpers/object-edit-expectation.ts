@@ -128,6 +128,8 @@ export const EXPECTED_EDIT_ABSTAINERS: readonly DatabaseType[] = Object.freeze([
   "airtable",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The SQL editor is the way a record is written.
   "hubspot",
+  // No kind declares `hasSource`: Salesforce objects are not edited as source, which docs/providers/salesforce.md names.
+  "salesforce",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
   "stripe",
   // No kind declares acceptsSourceEdits or acceptsRowWrites. The connection is read-only.
