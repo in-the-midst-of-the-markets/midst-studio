@@ -45,13 +45,13 @@
     "Apache Kafka",
     "etcd",
     "Neo4j",
+    "Stardog",
     "Milvus",
     "Qdrant",
     "InfluxDB (InfluxQL)",
     "InfluxDB 3 (SQL)",
     "Oxia",
     "Databend",
-    "BigQuery",
     "SQL"
   ],
   "capabilities": {

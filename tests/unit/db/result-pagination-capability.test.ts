@@ -69,6 +69,7 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   airtable: true,
   hubspot: true,
   salesforce: true,
+  stardog: false,
   stripe: true,
   clarity: true,
   googleanalytics: true,

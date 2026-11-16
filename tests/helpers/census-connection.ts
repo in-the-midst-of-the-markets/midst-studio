@@ -84,6 +84,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   airtable: unconnected("airtable"),
   hubspot: unconnected("hubspot"),
   salesforce: unconnected("salesforce"),
+  stardog: unconnected("stardog"),
   stripe: unconnected("stripe"),
   clarity: unconnected("clarity"),
   googleanalytics: unconnected("googleanalytics"),

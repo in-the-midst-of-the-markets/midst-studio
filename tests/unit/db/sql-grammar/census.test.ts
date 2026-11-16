@@ -48,6 +48,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "supabase",
     "hubspot",
     "salesforce",
+    "stardog",
     "stripe",
     "clarity",
     "googleanalytics",

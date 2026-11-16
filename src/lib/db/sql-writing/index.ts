@@ -35,6 +35,7 @@ import { ORACLE_SQL_WRITING } from "@/lib/db/providers/sql/oracle-sql-writing";
 import { AIRTABLE_SQL_WRITING } from "@/lib/db/providers/sql/airtable/sql-writing";
 import { HUBSPOT_SQL_WRITING } from "@/lib/db/providers/sql/hubspot/sql-writing";
 import { SALESFORCE_SQL_WRITING } from "@/lib/db/providers/sql/salesforce/sql-writing";
+import { STARDOG_SQL_WRITING } from "@/lib/db/providers/sql/stardog/sql-writing";
 import { STRIPE_SQL_WRITING } from "@/lib/db/providers/sql/stripe/sql-writing";
 import { CLARITY_SQL_WRITING } from "@/lib/db/providers/sql/clarity/sql-writing";
 import { GOOGLEANALYTICS_SQL_WRITING } from "@/lib/db/providers/sql/googleanalytics/sql-writing";
@@ -120,6 +121,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   airtable: AIRTABLE_SQL_WRITING,
   hubspot: HUBSPOT_SQL_WRITING,
   salesforce: SALESFORCE_SQL_WRITING,
+  stardog: STARDOG_SQL_WRITING,
   stripe: STRIPE_SQL_WRITING,
   clarity: CLARITY_SQL_WRITING,
   googleanalytics: GOOGLEANALYTICS_SQL_WRITING,

@@ -172,6 +172,8 @@ const NUMERAL_WORDS: Record<string, number> = {
   // Two past the registry once Databricks SQL joined it.
   "seventy-two": 72,
   "seventy-three": 73,
+  // Two past the registry once Stardog joined it.
+  "seventy-four": 74,
 };
 
 /**

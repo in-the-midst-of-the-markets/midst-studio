@@ -34,6 +34,7 @@ import {
   EtcdIcon,
   Db2Icon,
   Neo4jIcon,
+  StardogIcon,
   QdrantIcon,
   WeaviateIcon,
   MilvusIcon,
@@ -218,6 +219,7 @@ export const DB_UI_CONFIG: {
   // because it clears the separation test, which is why `fuchsia` joined IDENTITY_ALTS in
   // tests/unit/theme-accent-contrast.test.ts with this entry, as `blue` did with etcd's.
   neo4j: branded(CONNECTION_FORM.neo4j, Neo4jIcon, "text-hue-fuchsia-alt"),
+  stardog: branded(CONNECTION_FORM.stardog, StardogIcon, "text-hue-indigo bg-hue-indigo/20"),
   // A mark drawn for Studio, never the project's logo or any vendor or Attu asset (vector-family spec 10.3).
   // Milvus's own mark is a blue. `hue-blue` is PostgreSQL's and its `-alt` etcd's, and `hue-sky` and its `-alt`
   // are taken; `hue-cyan-alt` fails the separation test and `hue-indigo-alt` clears it, which is why `indigo`

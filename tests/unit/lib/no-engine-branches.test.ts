@@ -154,7 +154,7 @@ export const REGISTRIES: readonly Listed[] = [
   {
     path: "src/lib/db/factory.ts",
     declaration: "createDatabaseProvider",
-    count: 72,
+    count: 73,
     reason: "the composition root, which maps each type id to its provider class",
   },
   {

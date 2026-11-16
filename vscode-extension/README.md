@@ -15,8 +15,8 @@ It requires VS Code 1.123 or later.
 - Relational and analytical: PostgreSQL, Amazon Redshift, CockroachDB, MySQL, SQL Server, SQLite, ClickHouse, Apache Druid, Trino, libSQL, Databend, BigQuery, Snowflake, Apache Spark, SAP HANA, Databricks SQL.
 - Document, key-value and wide-column: MongoDB, Couchbase, Firestore, Redis, etcd, Oxia, Apache Cassandra.
 - Search and vector: Elasticsearch, OpenSearch, Milvus, Qdrant, Weaviate.
-- Graph and time series: Neo4j, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), QuestDB.
-- SaaS: Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Custom API.
+- Graph and time series: Neo4j, Stardog, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), QuestDB.
+- SaaS: Airtable, Supabase, HubSpot, Salesforce, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Custom API.
 - Streams and messaging: Apache Kafka, RabbitMQ, MQTT.
 - Storage and platforms: S3-compatible object storage, Kubernetes.
 - Industrial and network: OPC UA, Sparkplug B, MTConnect, Modbus, SNMP, NETCONF.

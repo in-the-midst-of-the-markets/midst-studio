@@ -18,6 +18,7 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   airtable: null,
   hubspot: null,
   salesforce: null,
+  stardog: null,
   stripe: null,
   clarity: null,
   googleanalytics: null,

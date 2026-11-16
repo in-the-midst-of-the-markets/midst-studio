@@ -1741,3 +1741,76 @@ describe("QuestDB completion", () => {
     expect(formatted).toContain("FILL");
   });
 });
+
+describe("suggestions that name what you can run", () => {
+  test("a typed column ranks ahead of the keyword that shares its letters", () => {
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, createSchemaCache());
+    const items = monaco
+      ._getProvider()!
+      .provideCompletionItems(createMockModel("SELECT na"), createPosition(1, 10)).suggestions;
+    const name = items.find((item) => item.label === "name");
+    const join = items.find((item) => item.label === "NATURAL JOIN");
+    expect(name?.sortText?.startsWith("00")).toBe(true);
+    expect(join?.sortText?.startsWith("0")).toBe(true);
+    expect((name?.sortText ?? "") < (join?.sortText ?? "")).toBe(true);
+  });
+
+  test("an empty editor offers a query of a table the connection already lists", () => {
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, createSchemaCache());
+    const items = monaco._getProvider()!.provideCompletionItems(createMockModel(""), createPosition(1, 1)).suggestions;
+    const query = items.find((item) => item.label === "Query users");
+    expect(query?.insertText).toBe("SELECT id, name, email\nFROM users\nLIMIT 100");
+    expect(query?.detail).toBe("Query this table");
+    expect(items.filter((item) => String(item.label).startsWith("Query ")).length).toBeLessThanOrEqual(6);
+    const qualified = createMockMonaco();
+    registerSQLCompletionProvider(qualified, {
+      tableItems: [
+        {
+          label: "products",
+          labelLower: "products",
+          columnNames: "id, price",
+          segment: "products",
+          container: ["public"],
+          qualify: true,
+        },
+      ],
+      columnMap: new Map(),
+      allColumns: new Map(),
+    });
+    const qualifiedQuery = qualified
+      ._getProvider()!
+      .provideCompletionItems(createMockModel(""), createPosition(1, 1))
+      .suggestions.find((item) => item.label === "Query products");
+    expect(qualifiedQuery?.insertText).toBe("SELECT id, price\nFROM public.products\nLIMIT 100");
+  });
+
+  test("a subset dialect keeps its own snippets and does not invent a SQL query", () => {
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, createSchemaCache(), "hubspot");
+    const items = monaco._getProvider()!.provideCompletionItems(createMockModel(""), createPosition(1, 1)).suggestions;
+    expect(items.some((item) => String(item.label).startsWith("Query "))).toBe(false);
+  });
+
+  test("Stardog offers a class after a, and not a join", () => {
+    const iri = "http://example.org/Person";
+    const cache: SchemaCompletionCache = {
+      tableItems: [{ label: iri, labelLower: iri.toLowerCase(), columnNames: "http://example.org/name" }],
+      columnMap: new Map(),
+      allColumns: new Map(),
+    };
+    const monaco = createMockMonaco();
+    registerSQLCompletionProvider(monaco, cache, "stardog");
+    const at = (line: string) =>
+      monaco._getProvider()!.provideCompletionItems(createMockModel(line), createPosition(1, line.length + 1))
+        .suggestions;
+    const classes = at("SELECT ?s WHERE { ?s a ");
+    const person = classes.find((item) => item.label === iri);
+    expect(person?.insertText).toBe(`<${iri}>`);
+    expect(person?.sortText?.startsWith("00")).toBe(true);
+    expect(at("SELECT ").map((item) => item.label)).toContain("OPTIONAL");
+    expect(at("SELECT ").map((item) => item.label)).not.toContain("JOIN");
+    expect(at("SELECT ").some((item) => item.kind === 27 && item.label === "ASK")).toBe(true);
+  });
+});

@@ -171,6 +171,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   airtable: null,
   hubspot: null,
   salesforce: null,
+  stardog: null,
   stripe: null,
   clarity: null,
   googleanalytics: null,

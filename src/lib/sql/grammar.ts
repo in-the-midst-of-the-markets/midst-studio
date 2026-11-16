@@ -389,6 +389,11 @@ export interface SqlGrammar {
     readonly column?: readonly string[];
     readonly table?: readonly string[];
     /**
+     * Words after which the next token names a table or a class, even inside a column
+     * clause. Stardog offers a class after `a`. Absent means none.
+     */
+    readonly tableAfter?: readonly string[];
+    /**
      * Words this clause offers while the cursor is in it. `when: "first"` is the word right after the
      * clause (`TIMESERIES month`), and that slot offers these words alone. `when: "any"` adds them beside
      * the columns (`WHERE startDate = '7daysAgo'`). A key is the clause as `lastClause` spells it.

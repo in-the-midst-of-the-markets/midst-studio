@@ -38,6 +38,7 @@ import { ORACLE_MIGRATION_DDL } from "@/lib/db/providers/sql/oracle-migration-dd
 import { AIRTABLE_MIGRATION_DDL } from "@/lib/db/providers/sql/airtable/migration-ddl";
 import { HUBSPOT_MIGRATION_DDL } from "@/lib/db/providers/sql/hubspot/migration-ddl";
 import { SALESFORCE_MIGRATION_DDL } from "@/lib/db/providers/sql/salesforce/migration-ddl";
+import { STARDOG_MIGRATION_DDL } from "@/lib/db/providers/sql/stardog/migration-ddl";
 import { STRIPE_MIGRATION_DDL } from "@/lib/db/providers/sql/stripe/migration-ddl";
 import { CLARITY_MIGRATION_DDL } from "@/lib/db/providers/sql/clarity/migration-ddl";
 import { GOOGLEANALYTICS_MIGRATION_DDL } from "@/lib/db/providers/sql/googleanalytics/migration-ddl";
@@ -120,6 +121,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   airtable: AIRTABLE_MIGRATION_DDL,
   hubspot: HUBSPOT_MIGRATION_DDL,
   salesforce: SALESFORCE_MIGRATION_DDL,
+  stardog: STARDOG_MIGRATION_DDL,
   stripe: STRIPE_MIGRATION_DDL,
   clarity: CLARITY_MIGRATION_DDL,
   googleanalytics: GOOGLEANALYTICS_MIGRATION_DDL,

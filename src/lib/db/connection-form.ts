@@ -1287,6 +1287,23 @@ export const CONNECTION_FORM: {
         "etcd receives the password, then a token on every call, so a password needs an SSL mode other than disable, with or without an SSH tunnel.",
     },
   },
+  stardog: {
+    label: "Stardog",
+    defaultPort: "5820",
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.stardog,
+    fieldLabels: { database: "Database", allowInsecureAuth: "Send the password without TLS" },
+    fieldPlaceholders: { host: "stardog.example.com", database: "myDb" },
+    fieldHints: {
+      host: "The Stardog host, or a pasted http:// or https:// address. The default port is 5820.",
+      database: "The database name in the query path.",
+      user: "The Stardog user. It is sent as Basic authentication.",
+      password: "The user's password. It is sent only to this host.",
+      allowInsecureAuth:
+        "Ticked, the password crosses the network in cleartext to a host that is not this machine. A local server does not need this.",
+    },
+    showSshTunnel: false,
+  },
   neo4j: {
     label: "Neo4j",
     // The Bolt port. The HTTP port (7474) serves the browser and the HTTP API, which this provider never uses.
@@ -1992,6 +2009,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "etcd",
   "db2",
   "neo4j",
+  "stardog",
   "milvus",
   "qdrant",
   "influxdb",

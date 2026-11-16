@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Seventy-one external engines share one interface.
-The seventy-second row is the embedded LibreDB store: it ships inside the image.
+Seventy-two external engines share one interface.
+The seventy-third row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -158,6 +158,7 @@ The seventy-second row is the embedded LibreDB store: it ships inside the image.
 | **Supabase** | `pg` | Hosted PostgreSQL |
 | **HubSpot** | none, HTTP | SQL over the CRM API |
 | **Salesforce** | none, HTTPS | Read-only SOQL |
+| **Stardog** | none, HTTPS | Read-only SPARQL |
 | **Stripe** | none, HTTP | Sigma SQL and REPORT, read-only |
 | **Microsoft Clarity** | none, HTTP | Read-only export of the last 1 to 3 days |
 | **Google Analytics** | none, HTTP | Read-only GA4 report |
@@ -173,7 +174,7 @@ The seventy-second row is the embedded LibreDB store: it ships inside the image.
 | **NETCONF** | none | Read-only device read over SSH |
 | **SNMP** | none | Read-only agent read over UDP |
 | **Sparkplug B** | `mqtt-packet` | Read-only broker read |
-| **PayPal** | none, HTTP | Read-only REST lists: transactions, balances, invoices, disputes, products, plans and payouts |
+| **PayPal** | none, HTTP | Read-only REST lists |
 | **Microsoft Excel** | none, HTTP | Read-only workbook: worksheets on Microsoft Graph, the first row names the fields |
 | **Google Sheets** | none, HTTP | Read-only spreadsheet: worksheets on the Sheets API, the first row names the fields |
 | **Mixpanel** | none, HTTP | Read-only lists |
@@ -186,7 +187,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-six further engines speak a wire protocol of one of the seventy-one drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-six further engines speak a wire protocol of one of the seventy-two drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

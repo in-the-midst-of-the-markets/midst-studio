@@ -264,6 +264,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  stardog: {
+    rule: "sql is one read-only SPARQL SELECT or ASK. A class comes after a. No writes and no parameters.",
+    sample: SQL_SAMPLE,
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   salesforce: {
     rule: "sql is one read-only SELECT or COUNT(*) from one Salesforce object, sent as SOQL. No JOIN and no writes. Do not rename columns.",
     sample: SQL_SAMPLE,
