@@ -57,6 +57,7 @@ import { MICROSOFTADS_SQL_WRITING } from "@/lib/db/providers/sql/microsoftads/sq
 import { PIPEDRIVE_SQL_WRITING } from "@/lib/db/providers/sql/pipedrive/sql-writing";
 import { TIKTOKADS_SQL_WRITING } from "@/lib/db/providers/sql/tiktokads/sql-writing";
 import { METAADS_SQL_WRITING } from "@/lib/db/providers/sql/metaads/sql-writing";
+import { AMAZONADS_SQL_WRITING } from "@/lib/db/providers/sql/amazonads/sql-writing";
 import { PAYPAL_SQL_WRITING } from "@/lib/db/providers/sql/paypal/sql-writing";
 import { EXCEL_SQL_WRITING } from "@/lib/db/providers/sql/excel/sql-writing";
 import { GOOGLESHEETS_SQL_WRITING } from "@/lib/db/providers/sql/googlesheets/sql-writing";
@@ -149,6 +150,7 @@ export const SQL_WRITING: Readonly<Record<DatabaseType, SqlWritingSpec>> = Objec
   pipedrive: PIPEDRIVE_SQL_WRITING,
   tiktokads: TIKTOKADS_SQL_WRITING,
   metaads: METAADS_SQL_WRITING,
+  amazonads: AMAZONADS_SQL_WRITING,
   paypal: PAYPAL_SQL_WRITING,
   excel: EXCEL_SQL_WRITING,
   googlesheets: GOOGLESHEETS_SQL_WRITING,

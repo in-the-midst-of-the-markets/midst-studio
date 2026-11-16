@@ -1113,6 +1113,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     pipedrive: "engine-has-no-foreign-key",
     tiktokads: "engine-has-no-foreign-key",
     metaads: "engine-has-no-foreign-key",
+    amazonads: "engine-has-no-foreign-key",
     paypal: "engine-has-no-foreign-key",
     excel: "engine-has-no-foreign-key",
     googlesheets: "engine-has-no-foreign-key",
@@ -1329,6 +1330,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   metaads: {
     label: "Meta Ads",
     reason: "Meta Ads object changes are not generated here; this connection is read-only.",
+  },
+  amazonads: {
+    label: "Amazon Ads",
+    reason: "Amazon Ads object changes are not generated here; this connection is read-only.",
   },
   paypal: {
     label: "PayPal",
@@ -1858,6 +1863,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "pipedrive",
           "tiktokads",
           "metaads",
+          "amazonads",
           "paypal",
           "excel",
           "googlesheets",
@@ -1917,6 +1923,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   pipedrive: false,
   tiktokads: false,
   metaads: false,
+  amazonads: false,
   paypal: false,
   excel: false,
   googlesheets: false,
@@ -2057,6 +2064,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "pipedrive",
             "tiktokads",
             "metaads",
+            "amazonads",
             "paypal",
             "excel",
             "googlesheets",

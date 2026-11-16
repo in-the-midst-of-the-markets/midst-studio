@@ -510,6 +510,7 @@ const CONNECTION_FIELD_ROWS = {
   // An access token in `password`, and the advertiser id in `database`. The host must be business-api.tiktok.com.
   tiktokads: ["host", "password", "database"],
   metaads: ["host", "password", "database"],
+  amazonads: ["host", "user", "password", "database", "schema"],
   // A client id in `user` and a client secret in `password`. The host must be a PayPal API host.
   paypal: ["host", "user", "password"],
   // A client id in `user`, a client secret or access token in `password`, a tenant id in `database`, and a workbook path in `schema`.
@@ -702,6 +703,7 @@ export const SEED_ONLY_FIELDS: Readonly<Record<DatabaseType, SeedOnlyFields | nu
   pipedrive: null,
   tiktokads: null,
   metaads: null,
+  amazonads: null,
   paypal: null,
   excel: null,
   googlesheets: null,

@@ -169,6 +169,7 @@ describe("docs/MCP.md", () => {
         "pipedrive",
         "tiktokads",
         "metaads",
+        "amazonads",
         "paypal",
         "excel",
         "googlesheets",

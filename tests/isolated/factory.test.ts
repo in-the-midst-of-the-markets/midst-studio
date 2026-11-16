@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, crisp, datadog, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, crisp, datadog, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, amazonads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, crisp, datadog, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, crisp, datadog, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, amazonads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1609,6 +1609,7 @@ describe("createDatabaseProvider", () => {
       // The shared database is not an advertiser id, and the shared password is shorter than an access token.
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
+      amazonads: { host: "advertising-api.amazon.com", schema: "1234567890" },
       paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
       excel: {
         user: "11111111-1111-4111-8111-111111111111",
@@ -1715,6 +1716,7 @@ describe("createDatabaseProvider", () => {
       // The shared database is not an advertiser id, and the shared password is shorter than an access token.
       tiktokads: { host: "business-api.tiktok.com", database: "7123456789", password: "census-token" },
       metaads: { host: "graph.facebook.com", database: "100539998049706", password: "census-token" },
+      amazonads: { host: "advertising-api.amazon.com", schema: "1234567890" },
       paypal: { host: "api-m.paypal.com", user: "client-id", password: "census-secret" },
       excel: {
         user: "11111111-1111-4111-8111-111111111111",
@@ -1743,6 +1745,8 @@ describe("createDatabaseProvider", () => {
 
     expect(cannotCancel.sort()).toEqual([
       "airtable",
+      // No cancel: an Amazon Ads read is one POST, and the Advertising API has nothing that stops it.
+      "amazonads",
       // No cancel: an Amazon Business read is one GET, and the buying API has nothing that stops it.
       "amazonbusiness",
       "bigquery",

@@ -82,6 +82,50 @@ describe("a form body", () => {
     expect(listener.seen[1].body).toBe("");
   });
 
+  test("a named content type is sent with the JSON body, and the default stays JSON", async () => {
+    const listener = await httpListener(jsonAnswer(200, "{}"));
+    const { transport, url } = connect(listener);
+    await transport.request(
+      post(url("/sp/campaigns/list"), {
+        body: '{"maxResults":100}',
+        contentType: "application/vnd.spCampaign.v3+json",
+      }),
+    );
+    await transport.request(post(url("/plain"), { body: "{}" }));
+    expect(listener.seen.map(({ headers }) => headers["content-type"])).toEqual([
+      "application/vnd.spCampaign.v3+json",
+      "application/json",
+    ]);
+  });
+
+  test("a content type on the wrong payload, or one with parameters, is refused before any socket", async () => {
+    const listener = await httpListener(jsonAnswer(200, "{}"));
+    const { transport, url } = connect(listener);
+    const refused = async (extra: Partial<NodeRequest>): Promise<string> => {
+      try {
+        await transport.request(post(url("/query"), extra));
+        return "";
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseConfigError);
+        return (error as Error).message;
+      }
+    };
+    expect(await refused({ contentType: "application/vnd.spCampaign.v3+json" })).toBe(
+      "Invalid request: a content type belongs on a JSON body.",
+    );
+    expect(await refused({ form: { q: "secret-form" }, contentType: "application/json" })).toBe(
+      "Invalid request: a content type belongs on a JSON body.",
+    );
+    const leaked = "application/json; charset=secret-type";
+    expect(await refused({ body: "{}", contentType: leaked })).toBe(
+      "Invalid request: the content type must be one media type, with no parameters.",
+    );
+    expect(await refused({ body: "{}", contentType: leaked })).not.toContain("secret-type");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(listener.accepted()).toBe(0);
+    expect(listener.seen).toHaveLength(0);
+  });
+
   test("a request with both body and form is refused before any socket, naming neither value", async () => {
     const listener = await httpListener(jsonAnswer(200, "{}"));
     const { transport, url } = connect(listener);

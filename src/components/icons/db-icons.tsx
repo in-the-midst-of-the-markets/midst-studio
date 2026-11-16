@@ -504,6 +504,24 @@ export const MetaAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
   </svg>
 );
 
+/** A tag, for an Amazon Ads profile. Not the vendor mark. */
+export const AmazonAdsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M4 12l8-7 8 7-8 7-8-7z" />
+    <path d="M12 10.5v3" />
+    <path d="M12 9h.01" />
+  </svg>
+);
+
 /** Three rising bars, for a Mixpanel project. Not the vendor mark. */
 export const MixpanelIcon: React.FC<IconProps> = ({ className, ...props }) => (
   <svg

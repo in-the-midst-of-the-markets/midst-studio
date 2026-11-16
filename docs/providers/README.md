@@ -33,6 +33,7 @@ in lockstep with the code (see the tri-sync rule in [`../../CLAUDE.md`](../../CL
 | Pipedrive | `pipedrive` | SQL (CRM) | none (HTTP: the Pipedrive API) | SQL (a read-only subset translated to one API v2 list) | [pipedrive.md](./pipedrive.md) |
 | TikTok Ads | `tiktokads` | SQL (Marketing API) | none (HTTP: the Marketing API) | SQL (a read-only subset translated to one API v1.3 list) | [tiktokads.md](./tiktokads.md) |
 | Meta Ads | `metaads` | SQL (Marketing API) | none (HTTP: the Marketing API) | SQL (a read-only subset translated to one Graph API v27.0 list) | [metaads.md](./metaads.md) |
+| Amazon Ads | `amazonads` | SQL (Advertising API) | none (HTTP: the Advertising API) | SQL (a read-only subset translated to one Sponsored Products list) | [amazonads.md](./amazonads.md) |
 | PayPal | `paypal` | SQL (payments) | none (HTTP: the PayPal REST API) | SQL (a read-only subset translated to one REST list) | [paypal.md](./paypal.md) |
 | Microsoft Excel | `excel` | SQL (workbook) | none (HTTP: Microsoft Graph) | SQL (a read-only subset translated to one worksheet) | [excel.md](./excel.md) |
 | Google Sheets | `googlesheets` | SQL (spreadsheet) | none (HTTP: Sheets API) | SQL (a read-only subset translated to one worksheet) | [googlesheets.md](./googlesheets.md) |

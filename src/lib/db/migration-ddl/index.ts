@@ -60,6 +60,7 @@ import { MICROSOFTADS_MIGRATION_DDL } from "@/lib/db/providers/sql/microsoftads/
 import { PIPEDRIVE_MIGRATION_DDL } from "@/lib/db/providers/sql/pipedrive/migration-ddl";
 import { TIKTOKADS_MIGRATION_DDL } from "@/lib/db/providers/sql/tiktokads/migration-ddl";
 import { METAADS_MIGRATION_DDL } from "@/lib/db/providers/sql/metaads/migration-ddl";
+import { AMAZONADS_MIGRATION_DDL } from "@/lib/db/providers/sql/amazonads/migration-ddl";
 import { PAYPAL_MIGRATION_DDL } from "@/lib/db/providers/sql/paypal/migration-ddl";
 import { EXCEL_MIGRATION_DDL } from "@/lib/db/providers/sql/excel/migration-ddl";
 import { GOOGLESHEETS_MIGRATION_DDL } from "@/lib/db/providers/sql/googlesheets/migration-ddl";
@@ -149,6 +150,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   pipedrive: PIPEDRIVE_MIGRATION_DDL,
   tiktokads: TIKTOKADS_MIGRATION_DDL,
   metaads: METAADS_MIGRATION_DDL,
+  amazonads: AMAZONADS_MIGRATION_DDL,
   paypal: PAYPAL_MIGRATION_DDL,
   excel: EXCEL_MIGRATION_DDL,
   googlesheets: GOOGLESHEETS_MIGRATION_DDL,

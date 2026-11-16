@@ -39,6 +39,7 @@ export const DBT_TARGETS: Record<DatabaseType, DbtTarget | null> = {
   pipedrive: unsupported,
   tiktokads: unsupported,
   metaads: unsupported,
+  amazonads: unsupported,
   paypal: unsupported,
   excel: unsupported,
   googlesheets: unsupported,

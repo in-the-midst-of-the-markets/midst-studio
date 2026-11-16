@@ -184,6 +184,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "pipedrive",
       "tiktokads",
       "metaads",
+      "amazonads",
       "paypal",
       "excel",
       "googlesheets",

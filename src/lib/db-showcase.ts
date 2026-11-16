@@ -191,6 +191,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   crisp: 77,
   // Monitors, hosts and dashboards on the Datadog API, behind Crisp.
   datadog: 78,
+  // Sponsored Products on the Advertising API, behind Datadog.
+  amazonads: 79,
 };
 
 /**

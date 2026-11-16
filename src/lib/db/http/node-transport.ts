@@ -147,6 +147,12 @@ export interface NodeRequest {
    */
   readonly form?: Readonly<Record<string, string>>;
   /**
+   * The content type of `body`. Absent means `application/json`. A form keeps its own type.
+   * One media type, with no parameters, and only on a JSON body. The transport still owns the
+   * header, so a caller cannot set `content-type` beside it.
+   */
+  readonly contentType?: string;
+  /**
    * Headers of this request alone, each named in the transport's `requestHeaderNames` in the same spelling, each value
    * visible ASCII or space and at most 1024 bytes; anything else is refused before any socket. Never kept for the next.
    */
@@ -382,6 +388,10 @@ const TRUNCATED = "The server ended the response before it was complete";
 const SWITCHED_PROTOCOLS =
   "The server switched the connection to another protocol, and this transport reads HTTP only, so the response was not read";
 const BODY_AND_FORM = "Invalid request: give a body or form fields, not both";
+const CONTENT_TYPE_BODY = "Invalid request: a content type belongs on a JSON body.";
+const CONTENT_TYPE_TOKEN = "Invalid request: the content type must be one media type, with no parameters.";
+/** One media type and no parameters. Amazon Ads names a vendor type the default JSON type cannot replace. */
+const MEDIA_TYPE = /^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,63}\/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,80}$/;
 const INVALID_HEADER_NAMES = "Invalid requestHeaderNames: expected lower-case header names";
 const UNLISTED_HEADER = "Invalid request headers: a header this transport does not list was given";
 const NOT_A_RECORD = "Invalid request headers: expected a plain record of header names and values";
@@ -792,7 +802,15 @@ function payloadOf(request: NodeRequest): Payload | undefined {
   if (request.form !== undefined) {
     return { text: new URLSearchParams(request.form).toString(), contentType: "application/x-www-form-urlencoded" };
   }
-  return request.body === undefined ? undefined : { text: request.body, contentType: "application/json" };
+  if (request.body === undefined) return undefined;
+  return { text: request.body, contentType: request.contentType ?? "application/json" };
+}
+
+/** A content type is refused before a socket, and the refusal does not repeat the value. */
+function contentTypeOf(request: NodeRequest): void {
+  if (request.contentType === undefined) return;
+  if (request.body === undefined) throw new DatabaseConfigError(CONTENT_TYPE_BODY);
+  if (!MEDIA_TYPE.test(request.contentType)) throw new DatabaseConfigError(CONTENT_TYPE_TOKEN);
 }
 
 /** The connection's headers, then the request's own, then the transport's, which no earlier one can replace. */
@@ -1419,6 +1437,7 @@ export function createNodeTransport(options: NodeTransportOptions): NodeTranspor
       if (!isPositiveInteger(request.maxResponseBytes)) throw new DatabaseConfigError(INVALID_MAX_RESPONSE_BYTES);
       // Neither is dropped silently: a request naming both is refused before any socket.
       if (request.body !== undefined && request.form !== undefined) throw new DatabaseConfigError(BODY_AND_FORM);
+      contentTypeOf(request);
       const perRequest = perRequestHeaders(request.headers, requestHeaderNames);
       const target = parsedUrl(request.url);
       // A URL carrying userinfo would send it as an Authorization header, so it is refused like another origin.

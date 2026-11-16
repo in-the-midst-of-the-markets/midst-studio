@@ -116,6 +116,7 @@ const PLACEMENT: Readonly<Record<DatabaseType, string>> = {
   pipedrive: "sql/pipedrive/sql-writing",
   tiktokads: "sql/tiktokads/sql-writing",
   metaads: "sql/metaads/sql-writing",
+  amazonads: "sql/amazonads/sql-writing",
   paypal: "sql/paypal/sql-writing",
   excel: "sql/excel/sql-writing",
   googlesheets: "sql/googlesheets/sql-writing",

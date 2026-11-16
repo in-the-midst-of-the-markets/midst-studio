@@ -55,6 +55,7 @@ import { MICROSOFTADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/microsoftads/sq
 import { PIPEDRIVE_SQL_GRAMMAR } from "@/lib/db/providers/sql/pipedrive/sql-grammar";
 import { TIKTOKADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/tiktokads/sql-grammar";
 import { METAADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/metaads/sql-grammar";
+import { AMAZONADS_SQL_GRAMMAR } from "@/lib/db/providers/sql/amazonads/sql-grammar";
 import { PAYPAL_SQL_GRAMMAR } from "@/lib/db/providers/sql/paypal/sql-grammar";
 import { EXCEL_SQL_GRAMMAR } from "@/lib/db/providers/sql/excel/sql-grammar";
 import { GOOGLESHEETS_SQL_GRAMMAR } from "@/lib/db/providers/sql/googlesheets/sql-grammar";
@@ -145,6 +146,7 @@ export const SQL_GRAMMAR: Readonly<Record<DatabaseType, SqlGrammarSpec>> = Objec
   pipedrive: PIPEDRIVE_SQL_GRAMMAR,
   tiktokads: TIKTOKADS_SQL_GRAMMAR,
   metaads: METAADS_SQL_GRAMMAR,
+  amazonads: AMAZONADS_SQL_GRAMMAR,
   paypal: PAYPAL_SQL_GRAMMAR,
   excel: EXCEL_SQL_GRAMMAR,
   googlesheets: GOOGLESHEETS_SQL_GRAMMAR,

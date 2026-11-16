@@ -58,6 +58,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   pipedrive: "exact",
   tiktokads: "exact",
   metaads: "exact",
+  amazonads: "exact",
   paypal: "exact",
   excel: "exact",
   googlesheets: "exact",

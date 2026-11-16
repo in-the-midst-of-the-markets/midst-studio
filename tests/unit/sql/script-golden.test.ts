@@ -100,6 +100,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   pipedrive: "every-code-semicolon",
   tiktokads: "every-code-semicolon",
   metaads: "every-code-semicolon",
+  amazonads: "every-code-semicolon",
   paypal: "every-code-semicolon",
   excel: "every-code-semicolon",
   googlesheets: "every-code-semicolon",
