@@ -1,8 +1,15 @@
 import "../../setup-dom";
 import { afterEach, describe, expect, test } from "bun:test";
+import { act } from "react";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { ChartSettingsDialog } from "@/components/charts/ChartSettingsDialog";
-import { CHART_COLOR_LIMIT, DEFAULT_CHART_SETTINGS, readChartSettings } from "@/lib/charts/chart-settings";
+import {
+  CHART_COLOR_LIMIT,
+  DEFAULT_CHART_SETTINGS,
+  normalizeChartSettings,
+  readChartSettings,
+  writeChartSettings,
+} from "@/lib/charts/chart-settings";
 import { chartTheme } from "@/lib/charts/palette";
 
 afterEach(() => {
@@ -76,6 +83,52 @@ describe("ChartSettingsDialog", () => {
 
     fireEvent.click(view.getByRole("button", { name: "Reset" }));
     expect(readChartSettings()).toBe(DEFAULT_CHART_SETTINGS);
+  });
+
+  test("a drag keeps the color input and a saved color from outside still lands", () => {
+    const view = render(<ChartSettingsDialog onClose={() => {}} />);
+    fireEvent.click(view.getByLabelText("Background"));
+    const input = view.getByLabelText("Background color") as HTMLInputElement;
+    const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (proto?.set === undefined || proto.get === undefined) throw new Error("color input value is missing");
+    let writes = 0;
+    Object.defineProperty(input, "value", {
+      configurable: true,
+      get: () => proto.get?.call(input),
+      set: (next: string) => {
+        writes += 1;
+        proto.set?.call(input, next);
+      },
+    });
+
+    fireEvent.change(input, { target: { value: "#112233" } });
+    expect(writes).toBe(0);
+    expect(input.isConnected).toBe(true);
+    expect(readChartSettings().colors.background).toBe("#112233");
+    fireEvent.blur(input);
+    expect(writes).toBe(0);
+
+    act(() => {
+      writeChartSettings(
+        normalizeChartSettings({
+          ...readChartSettings(),
+          colors: { ...readChartSettings().colors, background: "#abcdef" },
+        }),
+      );
+    });
+    expect(input.value).toBe("#abcdef");
+    expect(writes).toBe(1);
+
+    fireEvent.click(view.getByRole("button", { name: "Add chart color" }));
+    fireEvent.click(view.getByRole("button", { name: "Add chart color" }));
+    const swatch = view.getByLabelText("Chart color 1") as HTMLInputElement;
+    const first = readChartSettings().colors.series[0] ?? "";
+    const second = readChartSettings().colors.series[1] ?? "";
+    fireEvent.change(swatch, { target: { value: second } });
+    expect(swatch.isConnected).toBe(true);
+    expect(readChartSettings().colors.series[0]).toBe(first);
+    fireEvent.blur(swatch);
+    expect(swatch.value).toBe(first);
   });
 
   test("closes from the backdrop, the close button, and escape", () => {
