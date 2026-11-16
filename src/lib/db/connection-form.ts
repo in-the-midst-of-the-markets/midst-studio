@@ -601,6 +601,54 @@ export const CONNECTION_FORM: {
       host: "The access token is sent only to na.business-api.amazon.com, eu.business-api.amazon.com, or jp.business-api.amazon.com. Leave this empty to use North America.",
     },
   },
+  shipbob: {
+    label: "ShipBob",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.shipbob,
+    fieldLabels: {
+      password: "Access token",
+      database: "Channel id",
+      host: "API host",
+    },
+    fieldPlaceholders: {
+      password: "Personal access token",
+      database: "56232",
+      host: "api.shipbob.com",
+    },
+    fieldHints: {
+      password: "The personal access token. It is sent only to api.shipbob.com or sandbox-api.shipbob.com.",
+      database: "Optional. A whole number from GET /channel, sent as shipbob_channel_id. Anything else is not sent.",
+      host: "Leave this empty to use api.shipbob.com. The sandbox host is sandbox-api.shipbob.com.",
+    },
+  },
+  shipstation: {
+    label: "ShipStation",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.shipstation,
+    fieldLabels: {
+      user: "API key",
+      password: "API secret",
+      host: "API host",
+    },
+    fieldPlaceholders: {
+      user: "API key",
+      password: "API secret",
+      host: "ssapi.shipstation.com",
+    },
+    fieldHints: {
+      user: "The V1 API key. It is the username of the Basic credential.",
+      password: "The V1 API secret. It is sent only to ssapi.shipstation.com.",
+      host: "Leave this empty to use ssapi.shipstation.com. The V2 host is refused.",
+    },
+  },
   quickbooks: {
     label: "QuickBooks Online",
     defaultPort: "",
@@ -2107,6 +2155,8 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "mixpanel",
   "cin7",
   "amazonbusiness",
+  "shipbob",
+  "shipstation",
   "customapi",
 ]);
 
@@ -2140,6 +2190,8 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "mixpanel",
   "cin7",
   "amazonbusiness",
+  "shipbob",
+  "shipstation",
   "customapi",
 ]);
 

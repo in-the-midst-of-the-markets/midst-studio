@@ -1468,7 +1468,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists milvus among the supported types, before qdrant and the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bneo4j, milvus, qdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1541,7 +1541,7 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists s3 between qdrant and kubernetes, kubernetes before the embedded store", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
+      /Supported types: .*\bqdrant, weaviate, s3, mqtt, opcua, mtconnect, modbus, snmp, rabbitmq, kubernetes, netconf, sparkplug, airtable, supabase, hubspot, salesforce, stardog, stripe, clarity, googleanalytics, quickbooks, cin7, amazonbusiness, shipbob, shipstation, odoo, shopify, notion, xero, intercom, dynamics, googleads, microsoftads, pipedrive, tiktokads, metaads, paypal, excel, googlesheets, mixpanel, customapi, libredb$/,
     );
   });
 
@@ -1587,6 +1587,8 @@ describe("createDatabaseProvider", () => {
       quickbooks: { host: "quickbooks.api.intuit.com" },
       cin7: { host: "inventory.dearsystems.com" },
       amazonbusiness: { host: "na.business-api.amazon.com" },
+      shipbob: { host: "api.shipbob.com" },
+      shipstation: { host: "ssapi.shipstation.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
@@ -1689,6 +1691,8 @@ describe("createDatabaseProvider", () => {
       quickbooks: { host: "quickbooks.api.intuit.com" },
       cin7: { host: "inventory.dearsystems.com" },
       amazonbusiness: { host: "na.business-api.amazon.com" },
+      shipbob: { host: "api.shipbob.com" },
+      shipstation: { host: "ssapi.shipstation.com" },
       odoo: { host: "census.odoo.com" },
       shopify: { host: "census.myshopify.com" },
       notion: { host: "api.notion.com" },
@@ -1819,6 +1823,10 @@ describe("createDatabaseProvider", () => {
       // No cancel either, and the reason is UDP's: a Get is one datagram out and one back, with
       // nothing in RFC 3416 that stops one in flight. A read is bounded instead, by the walk's
       // budget and by what one datagram can carry (#1721).
+      // No cancel: a ShipBob read is one GET, and the fulfillment API has nothing that stops it.
+      "shipbob",
+      // No cancel: a ShipStation read is one GET, and the V1 API has nothing that stops it.
+      "shipstation",
       // No cancel: a Shopify read is one POST, and the Admin API has nothing that stops it.
       "shopify",
       "snmp",

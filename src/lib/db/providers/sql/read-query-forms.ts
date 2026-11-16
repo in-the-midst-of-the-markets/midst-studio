@@ -178,6 +178,8 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   quickbooks: null,
   cin7: null,
   amazonbusiness: null,
+  shipbob: null,
+  shipstation: null,
   odoo: null,
   shopify: null,
   notion: null,

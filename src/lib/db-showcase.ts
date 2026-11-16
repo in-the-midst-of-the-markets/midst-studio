@@ -186,6 +186,8 @@ export const SHOWCASE_RANK: Record<DatabaseType, number> = {
   // An inventory account on the External API, behind the knowledge graph.
   cin7: 73,
   amazonbusiness: 74,
+  shipbob: 75,
+  shipstation: 76,
 };
 
 /**

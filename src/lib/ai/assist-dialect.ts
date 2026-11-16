@@ -320,6 +320,21 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  shipbob: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one ShipBob list. Filters use = and AND. Page with LIMIT. OFFSET must be a multiple of LIMIT. COUNT(*) counts channels only.",
+    sample: "SELECT Id, Name, Sku FROM Product WHERE SKU = 'WIDGET' LIMIT 50",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
+  shipstation: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one ShipStation list. Filters use = and AND. Page with LIMIT. OFFSET must be a multiple of LIMIT. COUNT(*) reads the list total.",
+    sample:
+      "SELECT OrderId, OrderNumber, OrderStatus, OrderTotal FROM \"Order\" WHERE OrderStatus = 'awaiting_shipment' LIMIT 100",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,

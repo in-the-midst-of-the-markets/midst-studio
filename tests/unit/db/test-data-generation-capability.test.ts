@@ -29,6 +29,8 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   quickbooks: false,
   cin7: false,
   amazonbusiness: false,
+  shipbob: false,
+  shipstation: false,
   odoo: false,
   shopify: false,
   notion: false,

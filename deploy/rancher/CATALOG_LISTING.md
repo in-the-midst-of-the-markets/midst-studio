@@ -181,9 +181,9 @@ versions are documented and validated for every release.
 
 ## Key features (bullet form, if the catalog template asks for them)
 
-- Seventy-four database engines in one browser-based IDE: PostgreSQL, MySQL, Oracle,
+- Seventy-six database engines in one browser-based IDE: PostgreSQL, MySQL, Oracle,
   Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, MongoDB, Redis, Couchbase, Firestore, ClickHouse, Apache Druid,
-  Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Amazon Redshift, CockroachDB, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core and Amazon Business
+  Elasticsearch, OpenSearch, Trino, Databend, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL), Apache Kafka, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, S3-compatible object storage, Kubernetes, MQTT, RabbitMQ, OPC UA, MTConnect, Modbus, NETCONF, SNMP, QuestDB, Sparkplug B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics, QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics, Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft Excel, Google Sheets, Mixpanel, Amazon Redshift, CockroachDB, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core, Amazon Business, ShipBob and ShipStation
 - One-click install from the Rancher Apps catalog — deployable with default values,
   zero configuration required
 - Optional AI assistance (Gemini, OpenAI, or a self-hosted model; off by default):

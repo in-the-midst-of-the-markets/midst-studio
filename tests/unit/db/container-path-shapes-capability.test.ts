@@ -43,6 +43,8 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   quickbooks: "exact",
   cin7: "exact",
   amazonbusiness: "exact",
+  shipbob: "exact",
+  shipstation: "exact",
   odoo: "exact",
   shopify: "exact",
   notion: "exact",

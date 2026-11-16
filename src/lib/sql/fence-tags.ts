@@ -47,6 +47,8 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   quickbooks: true,
   cin7: true,
   amazonbusiness: true,
+  shipbob: true,
+  shipstation: true,
   // A ```odoo block holds the read-only SQL subset the Odoo connection sends to JSON-2.
   odoo: true,
   shopify: true,

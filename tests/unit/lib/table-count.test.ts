@@ -61,6 +61,8 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   quickbooks: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   cin7: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   amazonbusiness: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  shipbob: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  shipstation: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   odoo: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   shopify: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   notion: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',

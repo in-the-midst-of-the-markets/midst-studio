@@ -55,6 +55,8 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "quickbooks",
     "cin7",
     "amazonbusiness",
+    "shipbob",
+    "shipstation",
     "odoo",
     "shopify",
     "notion",
