@@ -1,6 +1,7 @@
 import "../../setup-dom";
 
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { act } from "react";
 import { render, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { emptyDictionary } from "@/lib/data-dictionary";
 import type { DetailedObject } from "@/lib/db/detailed-object";
@@ -165,6 +166,18 @@ describe("TableNotes", () => {
       expect(view.getByRole("status").textContent).toBe("Imported 2 tables from the design.");
     });
     expect(storage.getDataDictionary("c1")?.tables.map((table) => table.path[0])).toEqual(["only_one", "a", "b"]);
+  });
+
+  test("a note saved from the diagram shows up here", () => {
+    const view = render(<TableNotes connectionId="c1" schema={schema} />);
+    act(() => {
+      storage.saveDataDictionary({
+        ...emptyDictionary("c1"),
+        notes: "from the diagram",
+        tables: [],
+      });
+    });
+    expect((view.getByLabelText("Notes about this database") as HTMLTextAreaElement).value).toBe("from the diagram");
   });
 
   test("switching connections drops the previous message", async () => {

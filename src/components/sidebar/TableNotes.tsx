@@ -4,17 +4,18 @@ import React, { useMemo, useState } from "react";
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import { objectPathLabel, pathKey } from "@/lib/db/object-path";
 import {
-  emptyDictionary,
   liveTable,
   mergeDesign,
   noteColumnNames,
   noteForObject,
   parseSchemaDesign,
+  replaceTableNote,
+  withoutTableNote,
   type DataDictionary,
   type TableEndorsement,
   type TableNote,
 } from "@/lib/data-dictionary";
-import { storage } from "@/lib/storage";
+import { useDataDictionary } from "@/hooks/use-data-dictionary";
 
 interface TableNotesProps {
   readonly connectionId: string;
@@ -45,8 +46,7 @@ function blank(path: readonly string[]): TableNote {
  * SQL, DBML, or JSON, including a snapshot from this app.
  */
 export function TableNotes({ connectionId, schema = EMPTY_SCHEMA }: TableNotesProps) {
-  const stored = storage.getDataDictionary(connectionId) ?? emptyDictionary(connectionId);
-  const [dictionary, setDictionary] = useState<DataDictionary>(stored);
+  const { dictionary, setDictionary, save: persist } = useDataDictionary(connectionId);
   const [loadedFor, setLoadedFor] = useState(connectionId);
   const [message, setMessage] = useState<string | null>(null);
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -54,16 +54,9 @@ export function TableNotes({ connectionId, schema = EMPTY_SCHEMA }: TableNotesPr
 
   if (loadedFor !== connectionId) {
     setLoadedFor(connectionId);
-    setDictionary(stored);
     setOpenKey(null);
     setMessage(null);
   }
-
-  const persist = (next: DataDictionary): void => {
-    const stamped = { ...next, connectionId, updatedAt: new Date().toISOString() };
-    storage.saveDataDictionary(stamped);
-    setDictionary(stamped);
-  };
 
   const rows = useMemo((): NoteRow[] => {
     const listed: NoteRow[] = [];
@@ -82,16 +75,8 @@ export function TableNotes({ connectionId, schema = EMPTY_SCHEMA }: TableNotesPr
     return listed;
   }, [dictionary.tables, schema]);
 
-  const revised = (path: readonly string[], update: (note: TableNote) => TableNote): DataDictionary => {
-    const object = schema.find((item) => pathKey(item.path) === pathKey(path));
-    const found = object ? noteForObject(dictionary.tables, object, schema) : null;
-    const current = found ?? dictionary.tables.find((note) => pathKey(note.path) === pathKey(path)) ?? blank(path);
-    const nextNote = update({ ...current, path });
-    const tables = dictionary.tables.filter(
-      (note) => pathKey(note.path) !== pathKey(current.path) && pathKey(note.path) !== pathKey(path),
-    );
-    return { ...dictionary, tables: [...tables, nextNote] };
-  };
+  const revised = (path: readonly string[], update: (note: TableNote) => TableNote): DataDictionary =>
+    replaceTableNote(dictionary, schema, path, update);
 
   const write = (path: readonly string[], update: (note: TableNote) => TableNote): void => {
     persist(revised(path, update));
@@ -275,10 +260,7 @@ export function TableNotes({ connectionId, schema = EMPTY_SCHEMA }: TableNotesPr
                     <button
                       type="button"
                       onClick={() => {
-                        persist({
-                          ...dictionary,
-                          tables: dictionary.tables.filter((note) => pathKey(note.path) !== pathKey(row.note.path)),
-                        });
+                        persist(withoutTableNote(dictionary, schema, row.path));
                         setOpenKey(null);
                       }}
                       className="text-[0.6875rem] text-muted-foreground underline"

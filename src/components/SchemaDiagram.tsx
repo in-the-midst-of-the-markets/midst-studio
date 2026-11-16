@@ -11,6 +11,7 @@ import {
   applyNodeChanges,
   getNodesBounds,
   useReactFlow,
+  type Connection,
   type EdgeTypes,
   type Node,
   type NodeChange,
@@ -18,18 +19,22 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { relationCountLabel, relationObjects, type DetailedObject } from "@/lib/db/detailed-object";
-import { objectPathLabel } from "@/lib/db/object-path";
+import { objectPathLabel, pathKey } from "@/lib/db/object-path";
 import type { ProviderCapabilities } from "@/lib/db/types";
+import { addRelationshipNote, noteForObject, type TableNote } from "@/lib/data-dictionary";
+import { useDataDictionary } from "@/hooks/use-data-dictionary";
 import { Download, Info, LoaderCircle, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
-import { DiagramActionsContext, type DiagramActions } from "./schema-diagram/diagram-context";
+import { DiagramNotes } from "./schema-diagram/DiagramNotes";
+import { DiagramActionsContext, DiagramNotesContext, type DiagramActions } from "./schema-diagram/diagram-context";
 import { FkEdge } from "./schema-diagram/FkEdge";
 import { TableNode } from "./schema-diagram/TableNode";
 import { EXPORT_BACKGROUND, exportViewportImage } from "./schema-diagram/export";
-import { buildGraph, graphSignature, type FkFlowEdge, type TableFlowNode } from "./schema-diagram/graph";
+import { buildGraph, diagramNodeId, graphSignature, type FkFlowEdge, type TableFlowNode } from "./schema-diagram/graph";
+import { columnLink, notedEdges } from "./schema-diagram/note-edges";
 import { createHighlightStore, HighlightStoreProvider } from "./schema-diagram/highlight-store";
 import { buildElkGraph, applyLayout } from "./schema-diagram/layout";
 import { createLayoutEngine, type LayoutEngine } from "./schema-diagram/layout-engine";
@@ -44,6 +49,7 @@ const edgeTypes: EdgeTypes = { fk: FkEdge };
 // the minimap becomes noise (and rendering cost) past a few hundred tables.
 const CULLING_THRESHOLD = 100;
 const MINIMAP_THRESHOLD = 300;
+const EMPTY_NOTES = new Map<string, TableNote>();
 
 /** Lets the exporting/layouting spinner paint before heavy synchronous work. */
 function yieldToPaint(): Promise<void> {
@@ -70,6 +76,11 @@ interface SchemaDiagramProps {
    * flight would read as a database with no tables.
    */
   capabilities?: ProviderCapabilities;
+  /**
+   * Whose notes a description, a column note, and a drawn relationship are saved under.
+   * Absent, the diagram stays a viewer: there is no connection to attach the notes to.
+   */
+  connectionId?: string;
 }
 
 /**
@@ -97,9 +108,12 @@ const DIAGRAM_THEME = {
   },
 } as const;
 
-function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProps) {
+function SchemaDiagramInner({ schema, onClose, capabilities, connectionId }: SchemaDiagramProps) {
   const mode = useEffectiveTheme();
   const diagram = DIAGRAM_THEME[mode];
+  const { dictionary, setDictionary, save } = useDataDictionary(connectionId ?? null);
+  const [editing, setEditing] = useState(false);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const deferredQuery = useDeferredValue(searchQuery);
@@ -138,17 +152,43 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
   // layout effect and the spinner read it, so it is computed once.
   const signature = useMemo(() => graphSignature(graph, compactMode), [graph, compactMode]);
 
-  // FK neighbors per table, for selection highlighting.
+  // Relationships a person noted, drawn on top of the catalog edges. They are not part of
+  // `graph`, so a new note does not ask ELK to lay the canvas out again.
+  const noteEdges = useMemo(
+    () =>
+      connectionId === undefined
+        ? []
+        : notedEdges({
+            schema: filteredSchema,
+            notes: dictionary.tables,
+            nodes: graph.nodes,
+            existing: graph.edges,
+            compact: compactMode,
+          }),
+    [connectionId, filteredSchema, dictionary.tables, graph.nodes, graph.edges, compactMode],
+  );
+
+  const notesByPath = useMemo(() => {
+    if (connectionId === undefined) return EMPTY_NOTES;
+    const map = new Map<string, TableNote>();
+    for (const object of relations) {
+      const found = noteForObject(dictionary.tables, object, relations);
+      if (found !== null) map.set(pathKey(object.path), found);
+    }
+    return map;
+  }, [connectionId, dictionary.tables, relations]);
+
+  // FK neighbors per table, for selection highlighting. Noted relationships count too.
   const adjacency = useMemo(() => {
     const map = new Map<string, Set<string>>();
-    for (const edge of graph.edges) {
+    for (const edge of [...graph.edges, ...noteEdges]) {
       if (!map.has(edge.source)) map.set(edge.source, new Set());
       if (!map.has(edge.target)) map.set(edge.target, new Set());
       map.get(edge.source)?.add(edge.target);
       map.get(edge.target)?.add(edge.source);
     }
     return map;
-  }, [graph.edges]);
+  }, [graph.edges, noteEdges]);
 
   const [nodes, setNodes] = useState<TableFlowNode[]>(graph.nodes);
   const [edges, setEdges] = useState<FkFlowEdge[]>(graph.edges);
@@ -302,6 +342,7 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
 
   const diagramActions = useMemo<DiagramActions>(
     () => ({
+      editing,
       // The NODE ID, which `buildGraph` writes as the object's `diagramNodeId`: a label is shared
       // by two objects in two containers and expanded whichever the set answered for (#789).
       toggleExpand: (nodeId: string) => {
@@ -316,7 +357,35 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
         });
       },
     }),
-    [],
+    [editing],
+  );
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (!editing) return;
+      const link = columnLink(connection);
+      if (link === null) {
+        setLinkMessage("Draw from a column to a column on another table.");
+        return;
+      }
+      const source = relations.find((table) => diagramNodeId(table.path) === link.sourceId);
+      const target = relations.find((table) => diagramNodeId(table.path) === link.targetId);
+      const sourceHas = source?.columns.some((column) => column.name === link.fromColumn) ?? false;
+      const targetHas = target?.columns.some((column) => column.name === link.toColumn) ?? false;
+      if (source === undefined || target === undefined || !sourceHas || !targetHas) {
+        setLinkMessage("Those columns are not on these tables.");
+        return;
+      }
+      save(
+        addRelationshipNote(dictionary, relations, source.path, {
+          fromColumn: link.fromColumn,
+          toTable: objectPathLabel(target.path),
+          toColumn: link.toColumn,
+        }),
+      );
+      setLinkMessage(null);
+    },
+    [dictionary, editing, relations, save],
   );
 
   const exportDiagram = useCallback(
@@ -369,6 +438,9 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
     ? `${schemaHasFkData ? "No usable FK relationships in this view." : "No FK data available."} Showing heuristic relationships (dashed).`
     : "No FK data available.";
 
+  const shownEdges = noteEdges.length === 0 ? edges : [...edges, ...noteEdges];
+  const relationshipCount = graph.edgeCount + noteEdges.length;
+
   if (relations.length === 0) {
     return (
       <div className="absolute inset-0 z-50 bg-canvas flex flex-col items-center justify-center">
@@ -387,146 +459,184 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
     >
       <HighlightStoreProvider value={highlightStore}>
         <DiagramActionsContext.Provider value={diagramActions}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            onNodesChange={onNodesChange}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            fitView
-            minZoom={0.05}
-            maxZoom={2.5}
-            onlyRenderVisibleElements={nodes.length > CULLING_THRESHOLD && exporting === null}
-            nodesConnectable={false}
-            // Drives @xyflow's OWN chrome (handles, attribution, control glyphs).
-            colorMode={mode}
-          >
-            <Background color={diagram.background} gap={20} />
-            {/* `fill-fg` rather than `fill-white`: the control glyphs are ink. */}
-            <Controls showInteractive={false} className="bg-raised border-hairline-strong fill-fg" />
-            {nodes.length <= MINIMAP_THRESHOLD && (
-              <MiniMap
-                pannable
-                zoomable
-                nodeColor={diagram.minimapNode}
-                maskColor={diagram.minimapMask}
-                style={{
-                  backgroundColor: diagram.minimapSurface,
-                  border: `1px solid ${diagram.minimapBorder}`,
-                }}
-              />
-            )}
+          <DiagramNotesContext.Provider value={notesByPath}>
+            <ReactFlow
+              nodes={nodes}
+              edges={shownEdges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodesChange={onNodesChange}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              onConnect={onConnect}
+              fitView
+              minZoom={0.05}
+              maxZoom={2.5}
+              onlyRenderVisibleElements={nodes.length > CULLING_THRESHOLD && exporting === null}
+              nodesConnectable={editing && !compactMode}
+              // Drives @xyflow's OWN chrome (handles, attribution, control glyphs).
+              colorMode={mode}
+            >
+              <Background color={diagram.background} gap={20} />
+              {/* `fill-fg` rather than `fill-white`: the control glyphs are ink. */}
+              <Controls showInteractive={false} className="bg-raised border-hairline-strong fill-fg" />
+              {nodes.length <= MINIMAP_THRESHOLD && (
+                <MiniMap
+                  pannable
+                  zoomable
+                  nodeColor={diagram.minimapNode}
+                  maskColor={diagram.minimapMask}
+                  style={{
+                    backgroundColor: diagram.minimapSurface,
+                    border: `1px solid ${diagram.minimapBorder}`,
+                  }}
+                />
+              )}
 
-            {/* Close button */}
-            <Panel position="top-right" className="p-4">
-              <div className="flex items-center gap-2">
-                {/* Export buttons */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-raised border-hairline-strong hover:bg-fill text-xs gap-1"
-                  disabled={exporting !== null}
-                  onClick={() => exportDiagram("png")}
-                >
-                  {exporting === "png" ? (
-                    <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Download strokeWidth={1.5} className="w-3 h-3" />
-                  )}{" "}
-                  PNG
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-raised border-hairline-strong hover:bg-fill text-xs gap-1"
-                  disabled={exporting !== null}
-                  onClick={() => exportDiagram("svg")}
-                >
-                  {exporting === "svg" ? (
-                    <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Download strokeWidth={1.5} className="w-3 h-3" />
-                  )}{" "}
-                  SVG
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`bg-raised border-hairline-strong hover:bg-fill text-xs ${compactMode ? "text-brand" : ""}`}
-                  onClick={() => setCompactMode(!compactMode)}
-                >
-                  {compactMode ? "Detail" : "Compact"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full bg-raised border-hairline-strong hover:bg-fill"
-                  onClick={onClose}
-                  aria-label="Close schema diagram"
-                >
-                  <X strokeWidth={1.5} className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </Panel>
-
-            {/* Info panel with stats and search */}
-            <Panel position="top-left" className="p-4">
-              <div className="bg-raised/80 backdrop-blur-md border border-hairline-strong p-3 rounded-xl shadow-2xl space-y-2">
-                <h3 className="text-xs font-medium text-fg mb-1 flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-brand-tint animate-pulse" />
-                  ERD Visualizer
-                </h3>
-                <div className="flex items-center gap-3 text-xs text-fg-muted">
-                  <span>{relationCountLabel(filteredSchema, capabilities)}</span>
-                  <span>{graph.edgeCount} relationships</span>
-                  {isLayouting && (
-                    <span className="flex items-center gap-1 text-fg-subtle">
+              {/* Close button */}
+              <Panel position="top-right" className="p-4">
+                <div className="flex items-center gap-2">
+                  {/* Export buttons */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-raised border-hairline-strong hover:bg-fill text-xs gap-1"
+                    disabled={exporting !== null}
+                    onClick={() => exportDiagram("png")}
+                  >
+                    {exporting === "png" ? (
                       <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
-                      layout
-                    </span>
+                    ) : (
+                      <Download strokeWidth={1.5} className="w-3 h-3" />
+                    )}{" "}
+                    PNG
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-raised border-hairline-strong hover:bg-fill text-xs gap-1"
+                    disabled={exporting !== null}
+                    onClick={() => exportDiagram("svg")}
+                  >
+                    {exporting === "svg" ? (
+                      <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Download strokeWidth={1.5} className="w-3 h-3" />
+                    )}{" "}
+                    SVG
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`bg-raised border-hairline-strong hover:bg-fill text-xs ${compactMode ? "text-brand" : ""}`}
+                    onClick={() => setCompactMode(!compactMode)}
+                  >
+                    {compactMode ? "Detail" : "Compact"}
+                  </Button>
+                  {connectionId !== undefined && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      aria-pressed={editing}
+                      aria-label={editing ? "Stop editing diagram" : "Edit diagram"}
+                      className={`bg-raised border-hairline-strong hover:bg-fill text-xs ${editing ? "text-brand" : ""}`}
+                      onClick={() => {
+                        setEditing((current) => !current);
+                        setLinkMessage(null);
+                      }}
+                    >
+                      {editing ? "Done" : "Edit"}
+                    </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full bg-raised border-hairline-strong hover:bg-fill"
+                    onClick={onClose}
+                    aria-label="Close schema diagram"
+                  >
+                    <X strokeWidth={1.5} className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
+              </Panel>
 
-                {/* Search */}
-                <div className="relative">
-                  <Search
-                    strokeWidth={1.5}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-fg-subtle"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Filter tables..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-7 pr-2 py-1.5 bg-fill border border-hairline-strong rounded text-xs text-fg-secondary placeholder:text-fg-subtle focus:outline-none focus:border-brand-tint/50"
-                  />
-                </div>
-
-                {/* No FK warning */}
-                {showHeuristicWarning && (
-                  <div className="flex items-start gap-1.5 text-[0.625rem] text-warning/80">
-                    <Info strokeWidth={1.5} className="w-3 h-3 mt-0.5 shrink-0" />
-                    <span>{heuristicWarningText}</span>
+              {/* Info panel with stats and search */}
+              <Panel position="top-left" className="p-4">
+                <div className="bg-raised/80 backdrop-blur-md border border-hairline-strong p-3 rounded-xl shadow-2xl space-y-2">
+                  <h3 className="text-xs font-medium text-fg mb-1 flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-brand-tint animate-pulse" />
+                    ERD Visualizer
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-fg-muted">
+                    <span>{relationCountLabel(filteredSchema, capabilities)}</span>
+                    <span>{relationshipCount} relationships</span>
+                    {isLayouting && (
+                      <span className="flex items-center gap-1 text-fg-subtle">
+                        <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
+                        layout
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Selected node info */}
-                {selectedTable && (
-                  <div className="text-xs text-brand border-t border-hairline pt-2">
-                    {/* The dotted ADDRESS and never the node id: the id is `diagramNodeId`, an
+                  {/* Search */}
+                  <div className="relative">
+                    <Search
+                      strokeWidth={1.5}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-fg-subtle"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Filter tables..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-7 pr-2 py-1.5 bg-fill border border-hairline-strong rounded text-xs text-fg-secondary placeholder:text-fg-subtle focus:outline-none focus:border-brand-tint/50"
+                    />
+                  </div>
+
+                  {/* No FK warning */}
+                  {showHeuristicWarning && (
+                    <div className="flex items-start gap-1.5 text-[0.625rem] text-warning/80">
+                      <Info strokeWidth={1.5} className="w-3 h-3 mt-0.5 shrink-0" />
+                      <span>{heuristicWarningText}</span>
+                    </div>
+                  )}
+
+                  {/* Selected node info */}
+                  {editing && (
+                    <p className="text-[0.625rem] leading-relaxed text-fg-muted">
+                      {compactMode
+                        ? "Switch to Detail, then drag from one column to a column on another table."
+                        : "Drag tables to rearrange them. Drag from a column to a column on another table to note a relationship."}
+                    </p>
+                  )}
+                  {linkMessage !== null && (
+                    <output className="block text-[0.625rem] text-warning/80">{linkMessage}</output>
+                  )}
+
+                  {selectedTable && (
+                    <div className="text-xs text-brand border-t border-hairline pt-2">
+                      {/* The dotted ADDRESS and never the node id: the id is `diagramNodeId`, an
                         escaped address nobody reads, and never the bare label, which two
                         objects in two containers share (#789). */}
-                    Selected: <span className="font-mono font-medium">{objectPathLabel(selectedTable.path)}</span>
-                    <button onClick={() => selectTable(null)} className="ml-2 text-fg-subtle hover:text-fg-tertiary">
-                      clear
-                    </button>
-                  </div>
-                )}
-              </div>
-            </Panel>
-          </ReactFlow>
+                      Selected: <span className="font-mono font-medium">{objectPathLabel(selectedTable.path)}</span>
+                      <button onClick={() => selectTable(null)} className="ml-2 text-fg-subtle hover:text-fg-tertiary">
+                        clear
+                      </button>
+                      {connectionId !== undefined && (
+                        <DiagramNotes
+                          table={selectedTable}
+                          schema={relations}
+                          dictionary={dictionary}
+                          onDraft={setDictionary}
+                          onSave={save}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Panel>
+            </ReactFlow>
+          </DiagramNotesContext.Provider>
 
           {/* Export overlay: covers the canvas while the live viewport
               transform is temporarily swapped for the fit-all capture. */}
@@ -542,10 +652,10 @@ function SchemaDiagramInner({ schema, onClose, capabilities }: SchemaDiagramProp
   );
 }
 
-export function SchemaDiagram({ schema, onClose, capabilities }: SchemaDiagramProps) {
+export function SchemaDiagram({ schema, onClose, capabilities, connectionId }: SchemaDiagramProps) {
   return (
     <ReactFlowProvider>
-      <SchemaDiagramInner schema={schema} onClose={onClose} capabilities={capabilities} />
+      <SchemaDiagramInner schema={schema} onClose={onClose} capabilities={capabilities} connectionId={connectionId} />
     </ReactFlowProvider>
   );
 }

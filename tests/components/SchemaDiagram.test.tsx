@@ -168,6 +168,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { SchemaDiagram } from "@/components/SchemaDiagram";
+import { emptyDictionary } from "@/lib/data-dictionary";
+import { storage } from "@/lib/storage";
 import { EXPORT_BACKGROUND, exportViewportImage, svgDataUrlToBlob } from "@/components/schema-diagram/export";
 import { FkEdge } from "@/components/schema-diagram/FkEdge";
 import {
@@ -1624,8 +1626,11 @@ describe("SchemaDiagram", () => {
       targetPosition: "left",
     } as never;
 
-    function renderEdge(store: ReturnType<typeof createHighlightStore>, heuristic: boolean) {
-      const props = { ...(edgeProps as Record<string, unknown>), data: { heuristic } };
+    function renderEdge(store: ReturnType<typeof createHighlightStore>, heuristic: boolean, noted = false) {
+      const props = {
+        ...(edgeProps as Record<string, unknown>),
+        data: noted ? { heuristic, noted: true } : { heuristic },
+      };
       return render(
         <HighlightStoreProvider value={store}>
           <svg>{React.createElement(FkEdge as unknown as React.ComponentType<Record<string, unknown>>, props)}</svg>
@@ -1649,6 +1654,16 @@ describe("SchemaDiagram", () => {
       const path = container.querySelector('[data-testid="mock-base-edge"]') as HTMLElement;
       expect(path.style.stroke).toBe("#6b7280");
       expect(path.style.strokeDasharray).toBe("4 2");
+    });
+
+    test("a noted relationship is dashed in the brand color and labeled note", () => {
+      const store = createHighlightStore();
+      store.select("orders", new Set(["users"]));
+      const { container } = renderEdge(store, false, true);
+      const path = container.querySelector('[data-testid="mock-base-edge"]') as HTMLElement;
+      expect(path.style.stroke).toBe("#9546de");
+      expect(path.style.strokeDasharray).toBe("2 2");
+      expect(within(container).queryByText("note")).not.toBeNull();
     });
 
     test("edge touching the selected table is highlighted and labeled", () => {
@@ -2251,5 +2266,110 @@ describe("SchemaDiagram kind filtering", () => {
     const { container } = render(<SchemaDiagram schema={inventory} onClose={() => {}} />);
 
     expect(container.querySelector('[data-testid="node-order_total"]')).not.toBeNull();
+  });
+
+  describe("notes on the diagram", () => {
+    type Connect = (connection: {
+      source: string | null;
+      target: string | null;
+      sourceHandle: string | null;
+      targetHandle: string | null;
+    }) => void;
+
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    test("a saved note is shown on that table and not on a table with the same label", () => {
+      storage.saveDataDictionary({
+        ...emptyDictionary("shop"),
+        tables: [
+          {
+            path: ["libredb_objects", "app", "customers"],
+            description: "App shoppers",
+            endorsement: "normal",
+            columns: { email: "work address" },
+            columnTypes: {},
+            relationships: [],
+          },
+        ],
+      });
+      const { container } = render(<SchemaDiagram schema={sameLabelSchema} connectionId="shop" onClose={() => {}} />);
+      const app = container.querySelector(`[data-node-id="${diagramNodeId(["libredb_objects", "app", "customers"])}"]`);
+      const shop = container.querySelector(`[data-node-id="${diagramNodeId(["shop", "dbo", "customers"])}"]`);
+      expect(app?.textContent).toContain("App shoppers");
+      expect(shop?.textContent).not.toContain("App shoppers");
+    });
+
+    test("selecting a table saves a description, a column note, and how AI should use it", () => {
+      const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
+      fireEvent.click(view.container.querySelector('[data-node-id="posts"]')!);
+
+      const about = view.getByLabelText("Diagram note for posts");
+      fireEvent.change(about, { target: { value: "Blog posts" } });
+      fireEvent.blur(about, { target: { value: "Blog posts" } });
+      expect(view.container.querySelector('[data-node-id="posts"]')?.textContent).toContain("Blog posts");
+
+      const title = view.getByLabelText("Diagram note for posts.title");
+      fireEvent.change(title, { target: { value: "headline" } });
+      fireEvent.blur(title, { target: { value: "headline" } });
+      expect(view.container.querySelector('[title*="Note: headline"]')).not.toBeNull();
+
+      fireEvent.change(view.getByLabelText("How the diagram marks posts"), { target: { value: "excluded" } });
+      fireEvent.change(view.getByLabelText("How the diagram marks posts"), { target: { value: "nope" } });
+      expect(storage.getDataDictionary("c1")?.tables[0]).toMatchObject({
+        path: ["posts"],
+        description: "Blog posts",
+        endorsement: "normal",
+        columns: { title: "headline" },
+      });
+
+      fireEvent.click(view.getByRole("button", { name: "Clear notes on this table" }));
+      expect(storage.getDataDictionary("c1")?.tables).toEqual([]);
+      expect(view.container.querySelector('[data-node-id="posts"]')?.textContent).not.toContain("Blog posts");
+    });
+
+    test("editing draws a relationship between two columns and can remove it", () => {
+      const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
+      const connect = (connection: Parameters<Connect>[0]): void => {
+        act(() => {
+          (lastReactFlowProps.onConnect as Connect)(connection);
+        });
+      };
+
+      connect({ source: "posts", target: "users", sourceHandle: "title-right", targetHandle: "id-left" });
+      expect(storage.getDataDictionary("c1")).toBeNull();
+      expect(view.queryByRole("status")).toBeNull();
+
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
+      expect(lastReactFlowProps.nodesConnectable).toBe(true);
+      expect(view.getByText(/Drag tables to rearrange them/)).toBeDefined();
+
+      connect({ source: "posts", target: "posts", sourceHandle: "title-right", targetHandle: "id-left" });
+      expect(view.getByRole("status").textContent).toBe("Draw from a column to a column on another table.");
+
+      connect({ source: "posts", target: "users", sourceHandle: "missing-right", targetHandle: "id-left" });
+      expect(view.getByRole("status").textContent).toBe("Those columns are not on these tables.");
+
+      connect({ source: "posts", target: "users", sourceHandle: "title-right", targetHandle: "id-left" });
+      expect(view.queryByText("1 relationships")).not.toBeNull();
+      fireEvent.click(view.container.querySelector('[data-node-id="posts"]')!);
+      expect(view.getByText("title references users.id")).toBeDefined();
+
+      fireEvent.click(view.getByRole("button", { name: "Remove" }));
+      expect(view.queryByText("0 relationships")).not.toBeNull();
+      expect(view.queryByText("title references users.id")).toBeNull();
+      expect(storage.getDataDictionary("c1")?.tables[0].relationships).toEqual([]);
+    });
+
+    test("compact editing asks for Detail before a column can be dragged", () => {
+      const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
+      fireEvent.click(view.getByText("Compact").closest("button")!);
+      expect(lastReactFlowProps.nodesConnectable).toBe(false);
+      expect(view.getByText(/Switch to Detail/)).toBeDefined();
+      fireEvent.click(view.getByRole("button", { name: "Stop editing diagram" }));
+      expect(view.queryByText(/Switch to Detail/)).toBeNull();
+    });
   });
 });

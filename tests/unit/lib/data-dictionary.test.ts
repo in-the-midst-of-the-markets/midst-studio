@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  addRelationshipNote,
   applyDictionary,
   emptyDictionary,
   liveTable,
@@ -7,6 +8,9 @@ import {
   noteColumnNames,
   noteForObject,
   parseSchemaDesign,
+  removeRelationshipNote,
+  replaceTableNote,
+  withoutTableNote,
   type DataDictionary,
   type SchemaDesign,
   type TableNote,
@@ -372,5 +376,61 @@ describe("live tables", () => {
       ),
     ).toEqual(["id", "email", "extra", "ghost"]);
     expect(noteColumnNames(note(["draft"], { columns: { "": "skip", id: "key" } }), objects)).toEqual(["id"]);
+  });
+
+  test("a note written against a bare name is kept on the live address", () => {
+    const dictionary = emptyDictionary("c1");
+    const described = replaceTableNote(dictionary, objects, ["public", "users"], (item) => ({
+      ...item,
+      description: "Accounts",
+    }));
+    expect(described.tables).toEqual([note(["public", "users"], { description: "Accounts" })]);
+
+    const bare = replaceTableNote(
+      { ...dictionary, tables: [note(["users"], { description: "Old" })] },
+      objects,
+      ["public", "users"],
+      (item) => ({ ...item, description: "Accounts" }),
+    );
+    expect(bare.tables).toEqual([note(["public", "users"], { description: "Accounts" })]);
+
+    const designed = replaceTableNote(dictionary, objects, ["drafts"], (item) => ({
+      ...item,
+      description: "Not live",
+    }));
+    expect(designed.tables).toEqual([note(["drafts"], { description: "Not live" })]);
+  });
+
+  test("a relationship is recorded once and can be removed, and a missing note is left alone", () => {
+    const dictionary = emptyDictionary("c1");
+    const once = addRelationshipNote(dictionary, objects, ["public", "orders"], {
+      fromColumn: "user_id",
+      toTable: "public.users",
+      toColumn: "id",
+    });
+    const twice = addRelationshipNote(once, objects, ["public", "orders"], {
+      fromColumn: "user_id",
+      toTable: "public.users",
+      toColumn: "id",
+    });
+    expect(twice.tables[0].relationships).toEqual([{ fromColumn: "user_id", toTable: "public.users", toColumn: "id" }]);
+
+    const other = addRelationshipNote(twice, objects, ["public", "orders"], {
+      fromColumn: "status",
+      toTable: "public.users",
+      toColumn: "id",
+    });
+    const removed = removeRelationshipNote(other, objects, ["public", "orders"], {
+      fromColumn: "user_id",
+      toTable: "public.users",
+      toColumn: "id",
+    });
+    expect(removed.tables[0].relationships).toEqual([
+      { fromColumn: "status", toTable: "public.users", toColumn: "id" },
+    ]);
+
+    expect(withoutTableNote(dictionary, objects, ["missing"])).toBe(dictionary);
+    const bare = { ...dictionary, tables: [note(["users"], { description: "Accounts" })] };
+    expect(withoutTableNote(bare, objects, ["public", "users"]).tables).toEqual([]);
   });
 });

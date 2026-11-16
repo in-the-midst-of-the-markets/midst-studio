@@ -34,25 +34,23 @@ export const FkEdge = memo(function FkEdge({
   });
 
   const heuristic = data?.heuristic === true;
+  const noted = data?.noted === true;
   const stroke = heuristic ? "#6b7280" : "#9546de";
   const baseOpacity = heuristic ? 0.3 : 0.4;
   const opacity = highlight === "highlighted" ? 1 : highlight === "dimmed" ? 0.12 : baseOpacity;
   const strokeWidth = highlight === "highlighted" ? 2 : heuristic ? 1 : 1.5;
+  const dash = heuristic ? "4 2" : noted ? "2 2" : undefined;
 
   return (
     <>
-      <BaseEdge
-        id={id}
-        path={path}
-        style={{ stroke, strokeWidth, opacity, strokeDasharray: heuristic ? "4 2" : undefined }}
-      />
+      <BaseEdge id={id} path={path} style={{ stroke, strokeWidth, opacity, strokeDasharray: dash }} />
       {highlight === "highlighted" && (
         <EdgeLabelRenderer>
           <div
             className="absolute bg-raised/80 border border-hairline-strong rounded px-1 text-[0.5625rem] text-fg-tertiary pointer-events-none"
             style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
           >
-            {heuristic ? "1:N?" : "1:N"}
+            {heuristic ? "1:N?" : noted ? "note" : "1:N"}
           </div>
         </EdgeLabelRenderer>
       )}

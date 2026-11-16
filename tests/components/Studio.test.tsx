@@ -23,6 +23,7 @@ let capturedQueryToolbarProps: Record<string, unknown> = {};
 let capturedConnectionModalProps: Record<string, unknown> = {};
 let capturedSaveQueryModalProps: Record<string, unknown> = {};
 let capturedCommandPaletteProps: Record<string, unknown> = {};
+let capturedSchemaDiagramProps: Record<string, unknown> = {};
 let capturedSafetyDialogProps: Record<string, unknown> = {};
 let capturedMobileHeaderProps: Record<string, unknown> = {};
 let capturedDesktopHeaderProps: Record<string, unknown> = {};
@@ -415,7 +416,8 @@ mock.module("@/components/CommandPalette", () => ({
 }));
 
 mock.module("@/components/SchemaDiagram", () => ({
-  SchemaDiagram: () => {
+  SchemaDiagram: (props: Record<string, unknown>) => {
+    capturedSchemaDiagramProps = props;
     if (failingSplitViews.has("diagram")) throw new ChunkLoadError("Loading chunk 7 failed");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const React = require("react");
@@ -2025,11 +2027,13 @@ describe("Studio", () => {
   // Awaited because the diagram is code-split: opening it resolves a dynamic import
   // before the component can mount.
   test("CommandPalette onShowDiagram opens diagram", async () => {
+    connMgrOverride = { activeConnection: pgConn };
     const { queryByTestId } = render(<Studio />);
     expect(queryByTestId("schemadiagram")).toBeNull();
     const fn = capturedCommandPaletteProps.onShowDiagram as () => void;
     await act(async () => fn());
     expect(queryByTestId("schemadiagram")).not.toBeNull();
+    expect(capturedSchemaDiagramProps.connectionId).toBe("c1");
   });
 
   // --- QueryToolbar callbacks ---

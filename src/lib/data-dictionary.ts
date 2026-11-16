@@ -167,6 +167,78 @@ export function noteForObject(
   return notes.find((note) => note.path.length === 1 && liveTable(objects, note.path) === object) ?? null;
 }
 
+/**
+ * The note for `path`, with `update` applied, replacing any earlier note for that object.
+ *
+ * A bare name the live catalog can resolve is rewritten to that object's address, so a note
+ * taken on the diagram and a note taken in the sidebar land on one row.
+ */
+export function replaceTableNote(
+  dictionary: DataDictionary,
+  objects: readonly NamedColumns[],
+  path: readonly string[],
+  update: (note: TableNote) => TableNote,
+): DataDictionary {
+  const object = objects.find((item) => pathKey(item.path) === pathKey(path));
+  const found = object !== undefined ? noteForObject(dictionary.tables, object, objects) : null;
+  const byPath = dictionary.tables.find((note) => pathKey(note.path) === pathKey(path));
+  const current = found ?? byPath ?? blankTable(path);
+  const nextNote = update({ ...current, path: object?.path ?? current.path });
+  const tables = dictionary.tables.filter((note) => {
+    const key = pathKey(note.path);
+    return key !== pathKey(current.path) && key !== pathKey(nextNote.path);
+  });
+  return { ...dictionary, tables: [...tables, nextNote] };
+}
+
+/** Drops the note for this object. A path that has no note leaves the dictionary as it was. */
+export function withoutTableNote(
+  dictionary: DataDictionary,
+  objects: readonly NamedColumns[],
+  path: readonly string[],
+): DataDictionary {
+  const object = objects.find((item) => pathKey(item.path) === pathKey(path));
+  const found = object !== undefined ? noteForObject(dictionary.tables, object, objects) : null;
+  const byPath = dictionary.tables.find((note) => pathKey(note.path) === pathKey(path));
+  const current = found ?? byPath;
+  if (current === undefined) return dictionary;
+  return {
+    ...dictionary,
+    tables: dictionary.tables.filter((note) => {
+      const key = pathKey(note.path);
+      return key !== pathKey(current.path) && key !== pathKey(path);
+    }),
+  };
+}
+
+/** Records one column-to-column relationship on the source table's note. A repeat is a no-op. */
+export function addRelationshipNote(
+  dictionary: DataDictionary,
+  objects: readonly NamedColumns[],
+  path: readonly string[],
+  relationship: RelationshipNote,
+): DataDictionary {
+  return replaceTableNote(dictionary, objects, path, (note) => rememberRelationship(note, relationship));
+}
+
+/** Drops one column-to-column relationship from the source table's note. */
+export function removeRelationshipNote(
+  dictionary: DataDictionary,
+  objects: readonly NamedColumns[],
+  path: readonly string[],
+  relationship: RelationshipNote,
+): DataDictionary {
+  return replaceTableNote(dictionary, objects, path, (note) => ({
+    ...note,
+    relationships: note.relationships.filter(
+      (item) =>
+        item.fromColumn !== relationship.fromColumn ||
+        item.toTable !== relationship.toTable ||
+        item.toColumn !== relationship.toColumn,
+    ),
+  }));
+}
+
 export function liveTable(objects: readonly NamedColumns[], path: readonly string[]): NamedColumns | null {
   const exact = objects.find((object) => pathKey(object.path) === pathKey(path));
   if (exact !== undefined) return exact;

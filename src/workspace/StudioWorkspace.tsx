@@ -881,6 +881,7 @@ export function StudioWorkspace({
                         <SchemaDiagram
                           schema={conn.schema}
                           capabilities={conn.metadata?.capabilities}
+                          connectionId={conn.activeConnection?.id}
                           onClose={() => setShowDiagram(false)}
                         />
                       </React.Suspense>

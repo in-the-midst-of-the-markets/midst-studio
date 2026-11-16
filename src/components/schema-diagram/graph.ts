@@ -47,6 +47,8 @@ export function diagramNodeId(path: readonly string[]): string {
 
 export interface FkEdgeData extends Record<string, unknown> {
   heuristic: boolean;
+  /** A relationship the user noted on the diagram, rather than one the database declared. */
+  noted?: boolean;
 }
 
 export type FkFlowEdge = Edge<FkEdgeData, "fk">;

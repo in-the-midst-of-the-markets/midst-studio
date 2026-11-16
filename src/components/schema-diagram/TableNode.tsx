@@ -1,13 +1,13 @@
 "use client";
 
-import React, { memo, useEffect } from "react";
+import React, { memo, useContext, useEffect } from "react";
 import { Handle, Position, useUpdateNodeInternals, type NodeProps } from "@xyflow/react";
 import { Database, Hash, Key, Link2, Type } from "lucide-react";
-import { objectPathLabel } from "@/lib/db/object-path";
+import { objectPathLabel, pathKey } from "@/lib/db/object-path";
 import type { ColumnSchema } from "@/lib/types";
 import { isNumericType } from "../results-grid/numeric-sort";
 import { TABLE_SOURCE_HANDLE, TABLE_TARGET_HANDLE, type TableFlowNode } from "./graph";
-import { useDiagramActions } from "./diagram-context";
+import { DiagramNotesContext, useDiagramActions } from "./diagram-context";
 import { useTableHighlighted } from "./highlight-store";
 
 interface ColumnRowProps {
@@ -15,9 +15,24 @@ interface ColumnRowProps {
   isFk: boolean;
   hasSourceHandle: boolean;
   hasTargetHandle: boolean;
+  connectable: boolean;
+  columnNote?: string;
 }
 
-const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTargetHandle }: ColumnRowProps) {
+function handleStyle(connectable: boolean, edge: "left" | "right"): React.CSSProperties {
+  return connectable
+    ? { opacity: 1, width: 8, height: 8, [edge]: -4, background: "#9546de", border: "1px solid #fff" }
+    : { opacity: 0, [edge]: -5 };
+}
+
+const ColumnRow = memo(function ColumnRow({
+  column,
+  isFk,
+  hasSourceHandle,
+  hasTargetHandle,
+  connectable,
+  columnNote,
+}: ColumnRowProps) {
   const tooltip = [
     `${column.name}: ${column.type}`,
     column.isPrimary ? "PRIMARY KEY" : null,
@@ -28,6 +43,7 @@ const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTa
     column.defaultValue !== undefined
       ? `Default: ${column.defaultValue === "" ? "'' (empty string)" : column.defaultValue}`
       : null,
+    columnNote ? `Note: ${columnNote}` : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -42,8 +58,8 @@ const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTa
           type="source"
           position={Position.Right}
           id={`${column.name}-right`}
-          isConnectable={false}
-          style={{ opacity: 0, right: -5 }}
+          isConnectable={connectable}
+          style={handleStyle(connectable, "right")}
         />
       )}
       {hasTargetHandle && (
@@ -51,8 +67,8 @@ const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTa
           type="target"
           position={Position.Left}
           id={`${column.name}-left`}
-          isConnectable={false}
-          style={{ opacity: 0, left: -5 }}
+          isConnectable={connectable}
+          style={handleStyle(connectable, "left")}
         />
       )}
 
@@ -82,7 +98,8 @@ const ColumnRow = memo(function ColumnRow({ column, isFk, hasSourceHandle, hasTa
 
 export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFlowNode>) {
   const highlighted = useTableHighlighted(id);
-  const { toggleExpand } = useDiagramActions();
+  const { toggleExpand, editing } = useDiagramActions();
+  const note = useContext(DiagramNotesContext).get(pathKey(data.table.path));
   const updateNodeInternals = useUpdateNodeInternals();
   const { table, kindLabel, compact, visibleColumns, hiddenCount, sourceAnchors, targetAnchors } = data;
 
@@ -96,7 +113,7 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
   // it: the signature IS the handle set the effect synchronises React Flow
   // against, and it always carries its three separators, so the guard is true
   // whenever the effect runs.
-  const handleSignature = `${compact ? "c" : "d"}|${visibleColumns.length}|${sourceAnchors.join(",")}|${targetAnchors.join(",")}`;
+  const handleSignature = `${editing ? "e" : "v"}|${compact ? "c" : "d"}|${visibleColumns.length}|${sourceAnchors.join(",")}|${targetAnchors.join(",")}`;
   useEffect(() => {
     if (handleSignature) updateNodeInternals(id);
   }, [id, handleSignature, updateNodeInternals]);
@@ -137,6 +154,11 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
         )}
         <span className="text-[0.625rem] text-fg-subtle ml-auto">{table.columns?.length || 0} cols</span>
       </div>
+      {note !== undefined && note.description !== "" && (
+        <p className="line-clamp-3 whitespace-pre-wrap border-b border-hairline px-3 py-1 text-[0.625rem] leading-snug text-fg-secondary">
+          {note.description}
+        </p>
+      )}
       {!compact && (
         <div className="p-1">
           {visibleColumns.map((column) => (
@@ -144,8 +166,10 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
               key={column.name}
               column={column}
               isFk={sourceSet.has(column.name)}
-              hasSourceHandle={sourceSet.has(column.name)}
-              hasTargetHandle={targetSet.has(column.name)}
+              hasSourceHandle={editing || sourceSet.has(column.name)}
+              hasTargetHandle={editing || targetSet.has(column.name)}
+              connectable={editing}
+              columnNote={note?.columns[column.name]}
             />
           ))}
           {hiddenCount > 0 && (
