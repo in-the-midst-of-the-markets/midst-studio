@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import type { TableNote } from "@/lib/data-dictionary";
 
 /**
  * Imperative diagram actions consumed by node components. Passed through
@@ -9,11 +10,17 @@ import { createContext, useContext } from "react";
 export interface DiagramActions {
   /** Keyed by the NODE ID, which is the object's `diagramNodeId` and never its label (#789). */
   toggleExpand(nodeId: string): void;
+  /** While editing, every visible column offers a handle a relationship can be drawn from. */
+  editing: boolean;
 }
 
 export const DiagramActionsContext = createContext<DiagramActions>({
   toggleExpand: () => {},
+  editing: false,
 });
+
+/** Notes keyed by `pathKey(table.path)`, so a card can show its description without a graph rebuild. */
+export const DiagramNotesContext = createContext<ReadonlyMap<string, TableNote>>(new Map());
 
 export function useDiagramActions(): DiagramActions {
   return useContext(DiagramActionsContext);

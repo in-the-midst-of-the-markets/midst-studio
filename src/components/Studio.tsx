@@ -1424,6 +1424,7 @@ export default function Studio() {
                     <SchemaDiagram
                       schema={conn.schema}
                       capabilities={metadata?.capabilities}
+                      connectionId={conn.activeConnection?.id}
                       onClose={handleHideDiagram}
                     />
                   </React.Suspense>

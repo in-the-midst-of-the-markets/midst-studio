@@ -892,6 +892,7 @@ describe("StudioWorkspace", () => {
     expect(queryByTestId("schemadiagram")).toBeNull();
     await act(async () => (capturedSidebarProps.onShowDiagram as () => void)());
     expect(queryByTestId("schemadiagram")).not.toBeNull();
+    expect(capturedSchemaDiagramProps.connectionId).toBe("c1");
     act(() => (capturedSchemaDiagramProps.onClose as () => void)());
     expect(queryByTestId("schemadiagram")).toBeNull();
   });
