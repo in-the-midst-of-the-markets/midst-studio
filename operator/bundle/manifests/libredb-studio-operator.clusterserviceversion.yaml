@@ -34,8 +34,9 @@ metadata:
       B, Airtable, Supabase, HubSpot, Stripe, Microsoft Clarity, Google Analytics,
       QuickBooks Online, Odoo, Shopify, Notion, Xero, Intercom, Microsoft Dynamics,
       Google Ads, Microsoft Ads, Pipedrive, TikTok Ads, Meta Ads, PayPal, Microsoft
-      Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog, Cin7 Core, Amazon Business, ShipBob and ShipStation
-      - with AI-powered query assistance.
+      Excel, Google Sheets, Custom API, SAP HANA, Databricks SQL, Salesforce, Stardog,
+      Cin7 Core, Amazon Business, ShipBob and ShipStation - with AI-powered query
+      assistance.
     features.operators.openshift.io/disconnected: "false"
     features.operators.openshift.io/fips-compliant: "false"
     features.operators.openshift.io/proxy-aware: "false"
