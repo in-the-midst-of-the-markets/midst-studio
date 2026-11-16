@@ -676,6 +676,30 @@ export const CONNECTION_FORM: {
       host: "Leave this empty to use api.crisp.chat. Any other host is refused.",
     },
   },
+  datadog: {
+    label: "Datadog",
+    defaultPort: "",
+    defaultHost: "",
+    showConnectionStringToggle: false,
+    showSslPanel: false,
+    showSshTunnel: false,
+    connectionFields: CONNECTION_FIELDS.datadog,
+    fieldLabels: {
+      user: "API key",
+      password: "Application key",
+      host: "API host",
+    },
+    fieldPlaceholders: {
+      user: "API key",
+      password: "application key",
+      host: "api.datadoghq.com",
+    },
+    fieldHints: {
+      user: "The API key. It is sent as DD-API-KEY.",
+      password: "The application key. It is sent as DD-APPLICATION-KEY, only to the chosen Datadog API host.",
+      host: "Leave this empty to use api.datadoghq.com (US1). A site alias (us3, us5, eu, ap1, ap2, uk1, gov, us2-fed) or that site's API host is accepted. Any other host is refused.",
+    },
+  },
   quickbooks: {
     label: "QuickBooks Online",
     defaultPort: "",
@@ -2098,7 +2122,7 @@ export { DEFAULT_CONNECTION_TYPE };
 
 /**
  * The order the connection dialog's engine picker offers the engines in, for display (the dialog renders them as a
- * two-column grid).
+ * two-column grid inside the open category).
  *
  * It covers the whole `DatabaseType` union, because the same form edits saved connections, so an omitted type leaves
  * the picker with nothing selected. An engine missing from this list cannot be created at all, and the compiler cannot
@@ -2185,14 +2209,13 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "shipbob",
   "shipstation",
   "crisp",
+  "datadog",
   "customapi",
 ]);
 
 /**
- * Engines the connection dialog groups under SAAS Connectors. Everything else in
- * `CONNECTION_PICKER_ORDER` is a database, and each group keeps that order.
- * Custom API is in this list and is also drawn at the end of Databases.
- * The dialog draws a label before each group; clicking the label hides it.
+ * The SaaS engines, in picker order. Assist and the dialect tests read this list.
+ * The dialog does not draw it as one group: `PICKER_CATEGORY_MEMBERS` splits it.
  */
 export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "hubspot",
@@ -2221,34 +2244,78 @@ export const SAAS_PICKER_TYPES: readonly DatabaseType[] = Object.freeze([
   "shipbob",
   "shipstation",
   "crisp",
+  "datadog",
   "customapi",
 ]);
 
 export interface ConnectionPickerCategory {
-  readonly label: "SAAS Connectors" | "Databases";
+  readonly label: string;
   readonly types: readonly DatabaseType[];
 }
 
 /**
- * SAAS Connectors first, so HubSpot, Stripe, Clarity and Google Analytics are on screen when the dialog opens.
- * Databases follow. Custom API is the last button in both groups: one type id, chosen from either list.
- * The dialog hides a group when its label is clicked.
+ * One category of the connection dialog. Each engine is in exactly one category.
+ * Inside a category the dialog keeps `CONNECTION_PICKER_ORDER`.
+ */
+const PICKER_CATEGORY_MEMBERS: readonly ConnectionPickerCategory[] = [
+  { label: "Analytics", types: ["clarity", "googleanalytics", "mixpanel"] },
+  { label: "Advertising", types: ["googleads", "microsoftads", "metaads", "tiktokads"] },
+  { label: "Commerce", types: ["shopify", "odoo", "cin7", "amazonbusiness", "shipbob", "shipstation"] },
+  { label: "CRM", types: ["hubspot", "salesforce", "pipedrive", "dynamics"] },
+  { label: "Finance", types: ["stripe", "paypal", "quickbooks", "xero"] },
+  { label: "Support", types: ["intercom", "crisp"] },
+  { label: "Files", types: ["notion", "excel", "googlesheets"] },
+  { label: "Observability", types: ["datadog"] },
+  { label: "Custom", types: ["customapi"] },
+  {
+    label: "SQL",
+    types: [
+      "supabase",
+      "postgres",
+      "redshift",
+      "cockroach",
+      "mysql",
+      "sqlite",
+      "oracle",
+      "mssql",
+      "libsql",
+      "db2",
+      "saphana",
+    ],
+  },
+  {
+    label: "Warehouses",
+    types: ["clickhouse", "druid", "trino", "databend", "bigquery", "snowflake", "databricks", "spark", "questdb"],
+  },
+  { label: "Documents", types: ["mongodb", "couchbase", "firestore", "redis", "etcd"] },
+  { label: "Wide column", types: ["cassandra"] },
+  { label: "Search", types: ["elasticsearch", "opensearch"] },
+  { label: "Metrics", types: ["prometheus", "influxdb", "influxdb3"] },
+  { label: "Streams", types: ["kafka", "mqtt", "rabbitmq"] },
+  { label: "Graph", types: ["neo4j", "stardog", "milvus", "qdrant", "weaviate", "oxia"] },
+  { label: "Platforms", types: ["airtable", "duckdb", "s3", "kubernetes", "libredb"] },
+  { label: "Industrial", types: ["opcua", "snmp", "sparkplug", "mtconnect", "modbus", "netconf"] },
+];
+
+/**
+ * The dialog's categories, SaaS first and databases after. Each category keeps picker order.
+ * The dialog starts with every category collapsed except the one that holds the selected engine.
  */
 export function connectionPickerCategories(): readonly ConnectionPickerCategory[] {
-  const saas = new Set<string>(SAAS_PICKER_TYPES);
-  const databases: DatabaseType[] = [];
-  const connectors: DatabaseType[] = [];
-  for (const type of CONNECTION_PICKER_ORDER) {
-    if (saas.has(type)) connectors.push(type);
-    else databases.push(type);
-  }
-  // The last SAAS connector is Custom API. The Databases group ends with the same button.
-  const shared = connectors.at(-1);
-  if (shared !== undefined && !databases.includes(shared)) databases.push(shared);
-  return [
-    { label: "SAAS Connectors", types: connectors },
-    { label: "Databases", types: databases },
-  ];
+  const rank = new Map(CONNECTION_PICKER_ORDER.map((type, index) => [type, index]));
+  return PICKER_CATEGORY_MEMBERS.map((category) => ({
+    label: category.label,
+    types: [...category.types].sort((left, right) => (rank.get(left) ?? 0) - (rank.get(right) ?? 0)),
+  }));
+}
+
+/** Category labels that start collapsed: every category except the one that contains `selected`. */
+export function collapsedPickerLabels(selected: DatabaseType): ReadonlySet<string> {
+  return new Set(
+    connectionPickerCategories()
+      .filter((category) => !category.types.includes(selected))
+      .map((category) => category.label),
+  );
 }
 
 /** Whether the dialog offers the SSL / TLS panel: false only where the entry declares `showSslPanel: false`. */

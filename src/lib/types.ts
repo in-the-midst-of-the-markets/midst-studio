@@ -63,6 +63,10 @@ export type DatabaseType =
   // conversations, people, or operators. The website token is sent only to
   // api.crisp.chat. The workspace id is a UUID.
   | "crisp"
+  // Datadog. The REST API, read-only. One SELECT is one list of monitors, hosts,
+  // or dashboards. The API key and application key are sent only to an official
+  // Datadog API host.
+  | "datadog"
   // Odoo Online. The JSON-2 API, read-only. One SELECT is one search_read for a model.
   // Rows are not copied into another database. The host must end in odoo.com.
   | "odoo"

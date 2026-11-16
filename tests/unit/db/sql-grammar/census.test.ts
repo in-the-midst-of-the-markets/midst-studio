@@ -58,6 +58,7 @@ const FAMILIES: Record<string, readonly DatabaseType[]> = {
     "shipbob",
     "shipstation",
     "crisp",
+    "datadog",
     "odoo",
     "shopify",
     "notion",

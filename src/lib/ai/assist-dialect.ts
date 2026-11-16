@@ -342,6 +342,13 @@ const DIALECTS: Record<string, Dialect> = {
     sql: true,
     read: () => null,
   },
+  datadog: {
+    rule: "sql is one read-only SELECT or COUNT(*) of one Datadog list. Filters use = and AND. Monitors page up to 100 (default 30). Hosts page up to 1000. Dashboards page up to 100 and are not countable. COUNT(*) is monitors and hosts only.",
+    sample: "SELECT Id, Name, Status, Type FROM Monitor WHERE Status = 'Alert' LIMIT 30",
+    values: SQL_VALUES,
+    sql: true,
+    read: () => null,
+  },
   odoo: {
     rule: "sql is one read-only SELECT or COUNT(*) of one model. Combine filters with AND. No JOIN.",
     sample: SQL_SAMPLE,

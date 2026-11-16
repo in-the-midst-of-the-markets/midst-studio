@@ -140,6 +140,12 @@ export const REGISTRIES: readonly Listed[] = [
   { path: "src/lib/db/connection-form.ts", declaration: "CONNECTION_PICKER_ORDER", count: 1, reason: DISPLAY_ORDER },
   { path: "src/lib/db/connection-form.ts", declaration: "SAAS_PICKER_TYPES", count: 1, reason: DISPLAY_ORDER },
   {
+    path: "src/lib/db/connection-form.ts",
+    declaration: "PICKER_CATEGORY_MEMBERS",
+    count: 19,
+    reason: DISPLAY_ORDER,
+  },
+  {
     path: "src/lib/db/credential-warnings.ts",
     declaration: "CREDENTIAL_WARNINGS",
     count: 1,
@@ -154,7 +160,7 @@ export const REGISTRIES: readonly Listed[] = [
   {
     path: "src/lib/db/factory.ts",
     declaration: "createDatabaseProvider",
-    count: 78,
+    count: 79,
     reason: "the composition root, which maps each type id to its provider class",
   },
   {

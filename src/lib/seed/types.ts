@@ -150,6 +150,7 @@ const SeedDatabaseType = z.enum([
   "shipbob",
   "shipstation",
   "crisp",
+  "datadog",
   "odoo",
   "shopify",
   "notion",

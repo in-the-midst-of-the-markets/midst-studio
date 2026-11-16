@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ import {
 } from "@/components/ConnectionFieldControl";
 import { motion, AnimatePresence } from "framer-motion";
 import { CONNECTION_FORM_DEFAULTS, useConnectionForm } from "@/hooks/use-connection-form";
-import { connectionPickerCategories } from "@/lib/db/connection-form";
+import { collapsedPickerLabels, connectionPickerCategories } from "@/lib/db/connection-form";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ConnectionImportPanel } from "@/components/ConnectionImportPanel";
 
@@ -130,15 +130,6 @@ export function ConnectionModal({
   onTestConnection,
 }: ConnectionModalProps) {
   const isMobile = useIsMobile();
-  const [hiddenPickerCategories, setHiddenPickerCategories] = useState<ReadonlySet<string>>(() => new Set());
-  const togglePickerCategory = (label: string): void => {
-    setHiddenPickerCategories((current) => {
-      const next = new Set(current);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  };
   const {
     // Connection fields
     type,
@@ -231,6 +222,25 @@ export function ConnectionModal({
     editConnection,
     onTestConnection,
   });
+
+  const selectedType = useRef(type);
+  selectedType.current = type;
+  const openedAt = useRef(isOpen);
+  const [hiddenPickerCategories, setHiddenPickerCategories] = useState<ReadonlySet<string>>(() =>
+    collapsedPickerLabels(type),
+  );
+  useEffect(() => {
+    if (isOpen && !openedAt.current) setHiddenPickerCategories(collapsedPickerLabels(selectedType.current));
+    openedAt.current = isOpen;
+  }, [isOpen]);
+  const togglePickerCategory = (label: string): void => {
+    setHiddenPickerCategories((current) => {
+      const next = new Set(current);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
 
   // What an engine DECLARES for a connection field wins over this dialog's own words (#1085): an
   // engine that names a field differently says so on `DatabaseUIConfig` instead of growing an
@@ -422,8 +432,9 @@ export function ConnectionModal({
           </div>
 
           {/*
-            SAAS Connectors, then Databases. The label before each group hides that group's engines. The chosen
-            engine stays selected while its group is hidden, and a second click on the label shows it again.
+            Categories start collapsed, except the one that holds the selected engine. The label hides that
+            category's engines. The chosen engine stays selected while its category is hidden, and a second
+            click on the label shows it again.
           */}
           <div className="space-y-4">
             {connectionPickerCategories().map((category) => {
@@ -446,6 +457,9 @@ export function ConnectionModal({
                       <ChevronDown aria-hidden="true" className="w-3 h-3" />
                     )}
                     {category.label}
+                    <span aria-hidden="true" className="text-fg-subtle">
+                      {entries.length}
+                    </span>
                   </button>
                   {!hidden && entries.length > 0 && (
                     <div className="grid grid-cols-2 gap-3">

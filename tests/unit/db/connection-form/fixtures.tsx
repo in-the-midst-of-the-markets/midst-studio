@@ -5,6 +5,7 @@ import { act, cleanup, fireEvent, render, renderHook, screen } from "@testing-li
 import { ConnectionModal } from "@/components/ConnectionModal";
 import { useConnectionForm } from "@/hooks/use-connection-form";
 import { EXTERNAL_DATABASE_TYPES } from "@/lib/db/compatibility";
+import { connectionPickerCategories } from "@/lib/db/connection-form";
 import { DB_UI_CONFIG } from "@/lib/db-ui-config";
 import { filterByRoles } from "@/lib/seed/connection-filter";
 import type { SeedConnection } from "@/lib/seed/types";
@@ -140,12 +141,23 @@ export async function renderFormGolden(type: DatabaseType): Promise<string> {
         onTestConnection={async () => ({ success: true })}
       />,
     );
+    // The dialog opens with every category collapsed except the one holding the default engine. A golden
+    // for another engine opens that engine's category first, which is the click a person makes.
+    const category = connectionPickerCategories().find((entry) => entry.types.includes(type));
+    if (category === undefined) throw new Error(`no picker category holds ${type}`);
+    const compact = (value: string): string => value.replace(/\s+/g, "");
+    const header = Array.from(document.querySelectorAll("button")).find((button) => {
+      if (!button.hasAttribute("aria-expanded")) return false;
+      const raw = compact(button.textContent ?? "");
+      const label = compact(category.label);
+      return raw === label || (raw.startsWith(label) && /^\d+$/.test(raw.slice(label.length)));
+    });
+    if (header === undefined) throw new Error(`no picker category button for ${category.label}`);
+    if (header.getAttribute("aria-expanded") === "false") fireEvent.click(header);
     const named = buttonsNamed(DB_UI_CONFIG[type].label);
     const picker = named[0];
-    // Custom API is the last button in both groups, so the dialog draws it twice. Either one selects it.
-    const expected = type === "customapi" ? 2 : 1;
-    if (picker === undefined || named.length !== expected) {
-      throw new Error(`expected ${expected} ${type} picker button(s), drew ${named.length}`);
+    if (picker === undefined || named.length !== 1) {
+      throw new Error(`expected 1 ${type} picker button, drew ${named.length}`);
     }
     fireEvent.click(picker);
     lines.push("== discrete", ...dialogLines());

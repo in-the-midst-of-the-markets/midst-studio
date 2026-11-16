@@ -16,82 +16,44 @@ function openDialog(): void {
 }
 
 describe("connection picker categories", () => {
-  test("a click on Databases or SAAS Connectors hides that category, and the next click shows it", () => {
+  test("categories start collapsed except the selected engine, and a click opens one", () => {
     openDialog();
 
-    const databases = screen.getByRole("button", { name: "Databases" });
-    const saas = screen.getByRole("button", { name: "SAAS Connectors" });
-    expect(databases.getAttribute("aria-expanded")).toBe("true");
-    expect(saas.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Airtable" })).toBeDefined();
-    expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(2);
-    expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
-
-    fireEvent.click(databases);
-    expect(databases.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByRole("button", { name: "PostgreSQL" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Airtable" })).toBeNull();
-    expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
-
-    fireEvent.click(databases);
-    expect(databases.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Airtable" })).toBeDefined();
-
-    const order = screen.getAllByRole("button").map((button) => button.textContent?.replaceAll(/\s+/g, "") ?? "");
-    const stripeAt = order.indexOf("Stripe");
-    const clarityAt = order.indexOf("MicrosoftClarity");
-    const analyticsAt = order.indexOf("GoogleAnalytics");
-    const quickbooksAt = order.indexOf("QuickBooksOnline");
-    const odooAt = order.indexOf("Odoo");
-    const airtableAt = order.indexOf("Airtable");
-    const customAt = order.flatMap((name, index) => (name === "CustomAPI" ? [index] : []));
-    expect(stripeAt).toBeGreaterThan(-1);
-    expect(clarityAt).toBeGreaterThan(stripeAt);
-    expect(analyticsAt).toBeGreaterThan(clarityAt);
-    expect(quickbooksAt).toBeGreaterThan(analyticsAt);
-    expect(odooAt).toBeGreaterThan(quickbooksAt);
-    expect(airtableAt).toBeGreaterThan(odooAt);
-    const questdbAt = order.lastIndexOf("QuestDB");
-    expect(customAt).toHaveLength(2);
-    expect(customAt[0] ?? -1).toBeLessThan(airtableAt);
-    expect(order[(customAt[0] ?? -1) + 1]).toBe("Databases");
-    expect(order[questdbAt + 1]).toBe("SAPHANA");
-    const snowflakeAt = order.indexOf("Snowflake");
-    expect(order[snowflakeAt + 1]).toBe("DatabricksSQL");
-    expect(customAt[1]).toBe(questdbAt + 2);
-
-    fireEvent.click(saas);
-    expect(saas.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByRole("button", { name: "HubSpot" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Stripe" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Microsoft Clarity" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Google Analytics" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "QuickBooks Online" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Odoo" })).toBeNull();
+    const sql = screen.getByRole("button", { name: "SQL" });
+    const commerce = screen.getByRole("button", { name: "Commerce" });
+    const custom = screen.getByRole("button", { name: "Custom" });
+    expect(sql.getAttribute("aria-expanded")).toBe("true");
+    expect(commerce.getAttribute("aria-expanded")).toBe("false");
+    expect(custom.getAttribute("aria-expanded")).toBe("false");
     expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Supabase" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "HubSpot" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Stripe" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Airtable" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Custom API" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Datadog" })).toBeNull();
+
+    fireEvent.click(sql);
+    expect(sql.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: "PostgreSQL" })).toBeNull();
+
+    fireEvent.click(sql);
+    expect(sql.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "PostgreSQL" })).toBeDefined();
+
+    fireEvent.click(commerce);
+    expect(commerce.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Shopify" })).toBeDefined();
+    expect(screen.queryAllByRole("button", { name: "Custom API" })).toHaveLength(0);
+
+    fireEvent.click(custom);
     expect(screen.getAllByRole("button", { name: "Custom API" })).toHaveLength(1);
 
-    fireEvent.click(saas);
-    expect(saas.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("button", { name: "HubSpot" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Stripe" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Microsoft Clarity" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Google Analytics" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "QuickBooks Online" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Odoo" })).toBeDefined();
+    const warehouses = screen.getByRole("button", { name: "Warehouses" });
+    fireEvent.click(warehouses);
+    const order = screen.getAllByRole("button").map((button) => button.textContent?.replaceAll(/\s+/g, "") ?? "");
+    const snowflakeAt = order.indexOf("Snowflake");
+    expect(order[snowflakeAt + 1]).toBe("DatabricksSQL");
   });
 });

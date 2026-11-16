@@ -40,6 +40,7 @@ import {
   ShipBobIcon,
   ShipStationIcon,
   CrispIcon,
+  DatadogIcon,
 } from "@/components/icons/db-icons";
 
 describe("db-icons", () => {
@@ -84,6 +85,7 @@ describe("db-icons", () => {
     { name: "ShipBobIcon", Component: ShipBobIcon },
     { name: "ShipStationIcon", Component: ShipStationIcon },
     { name: "CrispIcon", Component: CrispIcon },
+    { name: "DatadogIcon", Component: DatadogIcon },
   ];
 
   for (const { name, Component, brandAsset } of icons) {

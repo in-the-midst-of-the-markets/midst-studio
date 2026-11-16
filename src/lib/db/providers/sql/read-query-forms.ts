@@ -181,6 +181,7 @@ export const READ_QUERY_FORMS: Readonly<Record<DatabaseType, ReadQueryForms | nu
   shipbob: null,
   shipstation: null,
   crisp: null,
+  datadog: null,
   odoo: null,
   shopify: null,
   notion: null,

@@ -46,6 +46,7 @@ import { AMAZONBUSINESS_EXECUTION_UI } from "@/lib/db/providers/sql/amazonbusine
 import { SHIPBOB_EXECUTION_UI } from "@/lib/db/providers/sql/shipbob/execution-ui";
 import { SHIPSTATION_EXECUTION_UI } from "@/lib/db/providers/sql/shipstation/execution-ui";
 import { CRISP_EXECUTION_UI } from "@/lib/db/providers/sql/crisp/execution-ui";
+import { DATADOG_EXECUTION_UI } from "@/lib/db/providers/sql/datadog/execution-ui";
 import { ODOO_EXECUTION_UI } from "@/lib/db/providers/sql/odoo/execution-ui";
 import { SHOPIFY_EXECUTION_UI } from "@/lib/db/providers/sql/shopify/execution-ui";
 import { NOTION_EXECUTION_UI } from "@/lib/db/providers/sql/notion/execution-ui";
@@ -131,6 +132,7 @@ export const EXECUTION_UI: Readonly<Record<DatabaseType, ExecutionUiSpec>> = Obj
   shipbob: SHIPBOB_EXECUTION_UI,
   shipstation: SHIPSTATION_EXECUTION_UI,
   crisp: CRISP_EXECUTION_UI,
+  datadog: DATADOG_EXECUTION_UI,
   odoo: ODOO_EXECUTION_UI,
   shopify: SHOPIFY_EXECUTION_UI,
   notion: NOTION_EXECUTION_UI,

@@ -16,6 +16,7 @@ import { DEFAULT_CONNECTION_TYPE } from "@/lib/db/default-connection-type";
 import {
   CONNECTION_FORM,
   CONNECTION_PICKER_ORDER,
+  collapsedPickerLabels,
   connectionPickerCategories,
   connectionFieldHint,
   connectionFieldPlaceholder,
@@ -58,6 +59,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   shipbob: true,
   shipstation: true,
   crisp: true,
+  datadog: true,
   odoo: true,
   shopify: true,
   notion: true,
@@ -432,49 +434,48 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "shipbob",
       "shipstation",
       "crisp",
+      "datadog",
       "customapi",
     ]);
   });
 
-  test("splits the picker into SAAS Connectors and Databases, each in picker order", () => {
+  test("splits the picker into categories, each type once and in picker order", () => {
     const categories = connectionPickerCategories();
-    expect(categories.map((category) => category.label)).toEqual(["SAAS Connectors", "Databases"]);
-    const saas = categories[0]?.types ?? [];
-    const databases = categories[1]?.types ?? [];
-    expect(saas).toEqual([
-      "hubspot",
-      "salesforce",
-      "stripe",
-      "clarity",
-      "googleanalytics",
-      "quickbooks",
-      "odoo",
-      "shopify",
-      "notion",
-      "xero",
-      "intercom",
-      "dynamics",
-      "googleads",
-      "microsoftads",
-      "pipedrive",
-      "tiktokads",
-      "metaads",
-      "paypal",
-      "excel",
-      "googlesheets",
-      "mixpanel",
-      "cin7",
-      "amazonbusiness",
-      "shipbob",
-      "shipstation",
-      "crisp",
-      "customapi",
+    expect(categories.map((category) => category.label)).toEqual([
+      "Analytics",
+      "Advertising",
+      "Commerce",
+      "CRM",
+      "Finance",
+      "Support",
+      "Files",
+      "Observability",
+      "Custom",
+      "SQL",
+      "Warehouses",
+      "Documents",
+      "Wide column",
+      "Search",
+      "Metrics",
+      "Streams",
+      "Graph",
+      "Platforms",
+      "Industrial",
     ]);
-    expect(databases[0]).toBe("airtable");
-    expect(databases[1]).toBe("supabase");
-    expect(databases.at(-1)).toBe("customapi");
-    expect(saas.at(-1)).toBe("customapi");
-    expect([...databases.slice(0, -1), ...saas]).toEqual([...CONNECTION_PICKER_ORDER]);
+    const seen = categories.flatMap((category) => [...category.types]);
+    expect(seen.sort()).toEqual([...CONNECTION_PICKER_ORDER].sort());
+    expect(new Set(seen).size).toBe(CONNECTION_PICKER_ORDER.length);
+    const rank = new Map(CONNECTION_PICKER_ORDER.map((type, index) => [type, index]));
+    for (const category of categories) {
+      const indexes = category.types.map((type) => rank.get(type) ?? -1);
+      expect(indexes).toEqual([...indexes].sort((left, right) => left - right));
+    }
+    expect(categories.find((category) => category.label === "Observability")?.types).toEqual(["datadog"]);
+    expect(categories.find((category) => category.label === "Custom")?.types).toEqual(["customapi"]);
+    expect(categories.find((category) => category.label === "SQL")?.types[0]).toBe("supabase");
+    expect(collapsedPickerLabels("postgres").has("SQL")).toBe(false);
+    expect(collapsedPickerLabels("postgres").has("Commerce")).toBe(true);
+    expect(collapsedPickerLabels("datadog").has("Observability")).toBe(false);
   });
 
   test("puts the four v0 engines in part 2 criterion 2's order", () => {
