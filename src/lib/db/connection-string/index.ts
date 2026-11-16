@@ -3,6 +3,7 @@ import { CASSANDRA_CONNECTION_STRING } from "@/lib/db/providers/sql/cassandra/co
 import { CLICKHOUSE_CONNECTION_STRING } from "@/lib/db/providers/sql/clickhouse/connection-string";
 import { COUCHBASE_CONNECTION_STRING } from "@/lib/db/providers/document/couchbase/connection-string";
 import { DATABEND_CONNECTION_STRING } from "@/lib/db/providers/sql/databend/connection-string";
+import { DATABRICKS_CONNECTION_STRING } from "@/lib/db/providers/sql/databricks/connection-string";
 import { DB2_CONNECTION_STRING } from "@/lib/db/providers/sql/db2/connection-string";
 import { DRUID_CONNECTION_STRING } from "@/lib/db/providers/sql/druid/connection-string";
 import { QUESTDB_CONNECTION_STRING } from "@/lib/db/providers/sql/questdb/connection-string";
@@ -83,6 +84,7 @@ export const CONNECTION_STRING: Readonly<Record<DatabaseType, ConnectionStringSp
   clickhouse: CLICKHOUSE_CONNECTION_STRING,
   couchbase: COUCHBASE_CONNECTION_STRING,
   databend: DATABEND_CONNECTION_STRING,
+  databricks: DATABRICKS_CONNECTION_STRING,
   db2: DB2_CONNECTION_STRING,
   druid: DRUID_CONNECTION_STRING,
   duckdb: DUCKDB_CONNECTION_STRING,

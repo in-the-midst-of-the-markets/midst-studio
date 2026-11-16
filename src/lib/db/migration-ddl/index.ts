@@ -24,6 +24,7 @@ import { CASSANDRA_MIGRATION_DDL } from "@/lib/db/providers/sql/cassandra/migrat
 import { CLICKHOUSE_MIGRATION_DDL } from "@/lib/db/providers/sql/clickhouse/migration-ddl";
 import { COCKROACH_MIGRATION_DDL } from "@/lib/db/providers/sql/cockroach/migration-ddl";
 import { DATABEND_MIGRATION_DDL } from "@/lib/db/providers/sql/databend/migration-ddl";
+import { DATABRICKS_MIGRATION_DDL } from "@/lib/db/providers/sql/databricks/migration-ddl";
 import { DB2_MIGRATION_DDL } from "@/lib/db/providers/sql/db2/migration-ddl";
 import { DRUID_MIGRATION_DDL } from "@/lib/db/providers/sql/druid/migration-ddl";
 import { QUESTDB_MIGRATION_DDL } from "@/lib/db/providers/sql/questdb/migration-ddl";
@@ -85,6 +86,7 @@ export const MIGRATION_DDL: Readonly<Record<DatabaseType, MigrationDdlSpec>> = O
   cockroach: COCKROACH_MIGRATION_DDL,
   couchbase: COUCHBASE_MIGRATION_DDL,
   databend: DATABEND_MIGRATION_DDL,
+  databricks: DATABRICKS_MIGRATION_DDL,
   db2: DB2_MIGRATION_DDL,
   druid: DRUID_MIGRATION_DDL,
   questdb: QUESTDB_MIGRATION_DDL,

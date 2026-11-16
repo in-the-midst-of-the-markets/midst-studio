@@ -69,6 +69,8 @@ describe("connection picker categories", () => {
     expect(customAt[0] ?? -1).toBeLessThan(airtableAt);
     expect(order[(customAt[0] ?? -1) + 1]).toBe("Databases");
     expect(order[questdbAt + 1]).toBe("SAPHANA");
+    const snowflakeAt = order.indexOf("Snowflake");
+    expect(order[snowflakeAt + 1]).toBe("DatabricksSQL");
     expect(customAt[1]).toBe(questdbAt + 2);
 
     fireEvent.click(saas);

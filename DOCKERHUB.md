@@ -63,7 +63,7 @@ A ready-to-use, fully-commented compose file is in the repo: [`docker-compose.ex
 
 ### Reaching your databases from inside the container
 
-**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host, or in another container, is not there, so a connection that works from a terminal fails here, and it fails as a timeout rather than as anything that mentions the host.
+**`localhost` in the connection dialog means *this container*, not your machine.** A database on the host, or in another container, is not there, so a connection that works from a terminal times out here.
 
 Pick whichever fits how the database runs:
 
@@ -110,8 +110,8 @@ Every one of those tags is published on three bases, and the suffix is appended 
 
 ## Supported databases
 
-Sixty-nine external engines share one interface.
-The seventieth row is the embedded LibreDB store: it ships inside the image.
+Seventy external engines share one interface.
+The seventy-first row is the embedded LibreDB store: it ships inside the image.
 
 | Database | Driver | Highlights |
 | :--- | :--- | :--- |
@@ -135,6 +135,7 @@ The seventieth row is the embedded LibreDB store: it ships inside the image.
 | **Databend** | none, HTTP | SQL IDE over its own query API, self-hosted or a Databend Cloud warehouse; `system.*` monitoring and `KILL QUERY`. No keys, so no inline row edits |
 | **BigQuery** | none, REST | GoogleSQL; EXPLAIN is a dry run |
 | **Snowflake** | none, REST | SQL API v2 |
+| **Databricks SQL** | none, HTTPS | Statement execution API |
 | **Apache Spark** | `@grpc/grpc-js` | Spark Connect 4.1+ |
 | **Apache Cassandra** | `cassandra-driver` (pure JS) | CQL editor over the native protocol, keyspace browser with partition and clustering keys marked, `system_views` monitoring. No row counts or sizes: Cassandra publishes only partition estimates and whole mebibytes, so neither is shown |
 | **Prometheus** | none, HTTP | PromQL editor, metric, rule and target browser |
@@ -184,7 +185,7 @@ Firestore, Prometheus, InfluxDB, Apache Kafka, MQTT, RabbitMQ, OPC UA, MTConnect
 
 ### Engines with no provider of their own
 
-Twenty-six further engines speak a wire protocol of one of the sixty-nine drivers above. Pick that driver. Each was measured on a real instance.
+Twenty-six further engines speak a wire protocol of one of the seventy drivers above. Pick that driver. Each was measured on a real instance.
 
 | Engine | Connect as | Support |
 | :--- | :--- | :--- |

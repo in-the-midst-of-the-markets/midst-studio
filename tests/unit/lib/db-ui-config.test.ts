@@ -115,6 +115,7 @@ const ALL_TYPES: DatabaseType[] = [
   "databend",
   "bigquery",
   "snowflake",
+  "databricks",
   "spark",
   "s3",
   "kubernetes",
@@ -401,6 +402,7 @@ describe("db-ui-config", () => {
         "bigquery",
         "clarity",
         "customapi",
+        "databricks",
         "dynamics",
         "excel",
         "firestore",
@@ -457,6 +459,7 @@ describe("db-ui-config", () => {
         "bigquery",
         "clarity",
         "customapi",
+        "databricks",
         "dynamics",
         "excel",
         "firestore",
@@ -1203,6 +1206,7 @@ describe("declared connection-field copy (#1085)", () => {
       "databend",
       "bigquery",
       "snowflake",
+      "databricks",
       "spark",
       "s3",
       "kubernetes",
@@ -1796,6 +1800,8 @@ describe("db-showcase", () => {
         "customapi",
         // Last, behind Custom API: an in-memory database on its own client, and the newest name.
         "saphana",
+        // Last, behind SAP HANA: a SQL warehouse on the statement execution API.
+        "databricks",
       ]);
     });
   });

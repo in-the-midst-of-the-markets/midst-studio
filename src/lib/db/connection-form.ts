@@ -1513,6 +1513,36 @@ export const CONNECTION_FORM: {
     showSshTunnel: false,
     showSslPanel: false,
   },
+  databricks: {
+    label: "Databricks SQL",
+    defaultPort: "443",
+    defaultHost: "",
+    // A pasted workspace address is a host. No connection string is stored.
+    showConnectionStringToggle: false,
+    connectionFields: CONNECTION_FIELDS.databricks,
+    fieldLabels: {
+      host: "Workspace host",
+      password: "Access token",
+      warehouse: "Warehouse ID",
+      database: "Catalog",
+      schema: "Schema",
+    },
+    fieldPlaceholders: {
+      host: "adb-0000000000000000.0.azuredatabricks.net",
+      warehouse: "",
+      database: "",
+      schema: "",
+    },
+    fieldHints: {
+      password: "A personal access token. It is sent only to this host, as a bearer header.",
+      warehouse: "The SQL warehouse id. The statement API refuses a statement that does not name one.",
+      database: "Optional. The catalog every statement runs in.",
+      schema: "Optional. When set, the tree shows this schema only.",
+    },
+    // HTTPS to the workspace host, with the system trust store. A tunnel would forward one address of several.
+    showSshTunnel: false,
+    showSslPanel: false,
+  },
   spark: {
     label: "Apache Spark",
     defaultPort: "15002",
@@ -1960,6 +1990,7 @@ export const CONNECTION_PICKER_ORDER: readonly DatabaseType[] = Object.freeze([
   "firestore",
   "rabbitmq",
   "snowflake",
+  "databricks",
   "opcua",
   "snmp",
   "sparkplug",

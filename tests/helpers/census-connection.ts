@@ -155,6 +155,7 @@ export const CENSUS_CONNECTION: Readonly<Record<DatabaseType, DatabaseConnection
   druid: unconnected("druid"),
   questdb: unconnected("questdb"),
   saphana: unconnected("saphana"),
+  databricks: unconnected("databricks"),
   redshift: unconnected("redshift"),
   cockroach: unconnected("cockroach"),
   trino: unconnected("trino"),

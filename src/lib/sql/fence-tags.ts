@@ -149,6 +149,7 @@ const ENGINE_FENCE_TAGS: Readonly<Record<DatabaseType, true>> = Object.freeze({
   questdb: true,
   // A ```saphana block holds one statement in SAP HANA's SQL, sent as it is through the `hdb` client.
   saphana: true,
+  databricks: true,
   // A ```redshift block holds one statement in Amazon Redshift's SQL, sent as it is on the PostgreSQL wire.
   redshift: true,
   // A ```cockroach block holds one statement in CockroachDB's SQL, sent as it is on the PostgreSQL wire.

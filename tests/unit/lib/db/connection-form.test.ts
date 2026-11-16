@@ -115,6 +115,7 @@ const PICKER_COVERAGE: Record<DatabaseType, boolean> = {
   sparkplug: true,
   questdb: true,
   saphana: true,
+  databricks: true,
   redshift: true,
   cockroach: true,
 };
@@ -385,6 +386,7 @@ describe("CONNECTION_PICKER_ORDER", () => {
       "firestore",
       "rabbitmq",
       "snowflake",
+      "databricks",
       "opcua",
       "snmp",
       "sparkplug",

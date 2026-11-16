@@ -1156,6 +1156,7 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     sparkplug: "engine-has-no-foreign-key",
     questdb: "engine-has-no-foreign-key",
     saphana: "engine-has-no-foreign-key",
+    databricks: "engine-has-no-foreign-key",
     redshift: "engine-has-no-foreign-key",
   };
 
@@ -1342,6 +1343,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   saphana: {
     label: "SAP HANA",
     reason: "SAP HANA table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.",
+  },
+  databricks: {
+    label: "Databricks SQL",
+    reason: "Databricks SQL table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.",
   },
   redshift: {
     label: "Amazon Redshift",
@@ -1786,6 +1791,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "sparkplug",
           "questdb",
           "saphana",
+          "databricks",
           "redshift",
           "airtable",
           "hubspot",
@@ -1917,6 +1923,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   sparkplug: false, // one JSON read request, not SQL text (`readsSqlText: false`), and no table DDL to wrap (the module's `tableDdl: "refused"`)
   questdb: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
   saphana: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
+  databricks: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
   redshift: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
 };
 
@@ -1967,6 +1974,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "sparkplug",
             "questdb",
             "saphana",
+            "databricks",
             "redshift",
             "airtable",
             "hubspot",

@@ -1226,13 +1226,13 @@ describe("createDatabaseProvider", () => {
   test("the factory error lists databend after trino, in the SQL block", async () => {
     const conn = makeConnection("not-an-engine");
     await expect(createDatabaseProvider(conn)).rejects.toThrow(
-      /Supported types: .*\bdruid, questdb, saphana, redshift, trino, databend, bigquery, snowflake, spark, cassandra\b/,
+      /Supported types: .*\bdruid, questdb, saphana, redshift, trino, databend, bigquery, snowflake, databricks, spark, cassandra\b/,
     );
   });
 
-  test("the factory error lists spark after snowflake, in the SQL block", async () => {
+  test("the factory error lists databricks between snowflake and spark, in the SQL block", async () => {
     const conn = makeConnection("not-an-engine");
-    await expect(createDatabaseProvider(conn)).rejects.toThrow(/\bsnowflake, spark, cassandra\b/);
+    await expect(createDatabaseProvider(conn)).rejects.toThrow(/\bsnowflake, databricks, spark, cassandra\b/);
   });
 
   test('creates provider for type "spark", unconnected, with the factory passing no transport', async () => {
@@ -1738,6 +1738,8 @@ describe("createDatabaseProvider", () => {
       "couchbase",
       // No cancel: a custom API read is one GET, and the API has nothing that stops it.
       "customapi",
+      // No cancel: the statement runs to the wait bound, and this session does not keep the statement id after it returns.
+      "databricks",
       "db2",
       "druid",
       // No cancel: a Dynamics read is one OData request, and the Web API has nothing that stops it.

@@ -67,6 +67,7 @@ const ROW_CLASS: Readonly<Record<string, string>> = {
   druid: "pair-dollar-plain-quote",
   questdb: "every-code-semicolon",
   saphana: "every-code-semicolon",
+  databricks: "every-code-semicolon",
   redshift: "every-code-semicolon",
   trino: "every-code-semicolon",
   cassandra: "every-code-semicolon",

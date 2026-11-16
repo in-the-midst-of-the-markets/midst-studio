@@ -102,6 +102,7 @@ const SeedDatabaseType = z.enum([
   "druid",
   "questdb",
   "saphana",
+  "databricks",
   "redshift",
   "cockroach",
   "elasticsearch",

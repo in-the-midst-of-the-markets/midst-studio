@@ -3477,6 +3477,9 @@ services:
   # SAP HANA is not started here. The server image is large and licensed, and this provider
   # was written against the public SQL reference with an injected session rather than a live server.
 
+  # Databricks SQL is not started here. A SQL warehouse is a hosted endpoint, and this provider
+  # was written against the statement execution API with an injected session rather than a live warehouse.
+
   risingwave:
     image: risingwavelabs/risingwave:latest
     container_name: libredb-risingwave

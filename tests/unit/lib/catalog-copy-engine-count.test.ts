@@ -167,7 +167,11 @@ const NUMERAL_WORDS: Record<string, number> = {
   "sixty-nine": 69,
   // Two past the registry once Custom API joined it.
   seventy: 70,
+  // Two past the registry once SAP HANA joined it.
   "seventy-one": 71,
+  // Two past the registry once Databricks SQL joined it.
+  "seventy-two": 72,
+  "seventy-three": 73,
 };
 
 /**

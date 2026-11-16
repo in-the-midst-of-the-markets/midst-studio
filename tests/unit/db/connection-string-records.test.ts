@@ -188,6 +188,7 @@ describe("CONNECTION_STRING_ACCEPTED against each provider's own declaration (Sp
       "customapi",
       "bigquery",
       "snowflake",
+      "databricks",
       "spark",
       "duckdb",
       "mssql",

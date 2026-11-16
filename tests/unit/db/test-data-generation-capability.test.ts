@@ -93,6 +93,7 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   sparkplug: false,
   questdb: false,
   saphana: false,
+  databricks: false,
   redshift: false,
 });
 

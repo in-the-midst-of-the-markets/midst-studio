@@ -266,7 +266,7 @@ QueryEditor                      /api/db/query
 
 ## Supported Databases
 
-Seventy type-ids are supported by sixty-eight provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
+Seventy-one type-ids are supported by sixty-nine provider modules: two pairs share one, `elasticsearch` and `opensearch` in `providers/sql/search/`, and `influxdb` and `influxdb3` in `providers/timeseries/influxdb/`.
 The count is derived from the exhaustive `SHIPPED` record in
 [`src/lib/db/compatibility.ts`](../src/lib/db/compatibility.ts) rather than written here twice - and
 the TABLE under it has to be checked by hand, which is the lesson a review left here: the numeral was
@@ -321,6 +321,7 @@ monitoring, limitations, …) see the prime docs in **[`docs/providers/`](./prov
 | Sparkplug B | `sparkplug` | Industrial (one MQTT broker, read-only) | [providers/sparkplug.md](./providers/sparkplug.md) |
 | QuestDB | `questdb` | SQL (time series, PostgreSQL wire protocol, port 8812) | [providers/questdb.md](./providers/questdb.md) |
 | SAP HANA | `saphana` | SQL (SAP HANA SQL, pure JavaScript client, port 30015) | [providers/saphana.md](./providers/saphana.md) |
+| Databricks SQL | `databricks` | SQL (the statement execution API, HTTPS, port 443) | [providers/databricks.md](./providers/databricks.md) |
 | Amazon Redshift | `redshift` | SQL (warehouse, PostgreSQL wire protocol, port 5439) | [providers/redshift.md](./providers/redshift.md) |
 | CockroachDB | `cockroach` | SQL (PostgreSQL wire protocol, port 26257) | [providers/cockroach.md](./providers/cockroach.md) |
 | Airtable | `airtable` | SQL (the Web API) | [providers/airtable.md](./providers/airtable.md) |
@@ -561,7 +562,7 @@ maintenance operations, and known limitations — is documented per provider und
 [`docs/providers/`](./providers/README.md). Start there for anything specific to PostgreSQL, MySQL,
 Oracle, Db2 LUW, SQL Server, SQLite, libSQL, DuckDB, Redis, MongoDB, Couchbase, Firestore, ClickHouse, Apache Druid,
 Elasticsearch, OpenSearch, Trino, BigQuery, Snowflake, Apache Spark, Apache Cassandra, Prometheus, InfluxDB (InfluxQL), InfluxDB 3 (SQL),
-Apache Kafka, MQTT, RabbitMQ, OPC UA, etcd, Neo4j, Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, or LibreDB.
+Apache Kafka, MQTT, RabbitMQ, OPC UA, etcd, Neo4j, Databricks SQL, Milvus, Qdrant, Weaviate, Oxia, Databend, S3-compatible object storage, Kubernetes, or LibreDB.
 
 Not every provider has every feature, and the docs record the absences rather than glossing over
 them. Druid is the sharpest case: its SQL has no `UPDATE`, no `DELETE` and no `CREATE TABLE`, no

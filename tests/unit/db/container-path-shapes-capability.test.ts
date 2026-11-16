@@ -65,6 +65,7 @@ const EXPECTED_CONTAINER_PATH_SHAPES: Readonly<
   druid: "exact",
   questdb: "exact",
   saphana: "exact",
+  databricks: "exact",
   redshift: "exact",
   cassandra: "exact",
   mongodb: "exact",
