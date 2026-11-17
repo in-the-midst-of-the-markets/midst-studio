@@ -1,6 +1,6 @@
 import React from "react";
 import { DatabaseConnection, ENVIRONMENT_LABELS } from "@/lib/types";
-import { isCrossDbJoins } from "@/lib/saved-join/connection";
+import { isAppKeptConnection } from "@/lib/query-cache/connection";
 import { Lock, Trash2, Pencil, Copy, Star, GripVertical, FolderInput, Check, StickyNote } from "lucide-react";
 import { getDBIcon } from "@/lib/db-ui-config";
 import {
@@ -74,7 +74,7 @@ export const ConnectionItem = React.memo(function ConnectionItem({
   onOpenNotes,
   notesOpen = false,
 }: ConnectionItemProps) {
-  const keptByApp = isCrossDbJoins(conn);
+  const keptByApp = isAppKeptConnection(conn);
   return (
     <div
       // A real `<button>` cannot wrap the edit/duplicate/delete buttons below (nested

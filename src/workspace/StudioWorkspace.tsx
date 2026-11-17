@@ -1076,6 +1076,7 @@ export function StudioWorkspace({
                         onApplyChanges={noop}
                         onDiscardChanges={noop}
                         onLoadQuery={handleLoadQuery}
+                        connections={conn.connections}
                         chartQuery={queryExec.bottomPanelMode === "charts" ? tabMgr.currentTab.query : undefined}
                         onChartFilter={queryExec.bottomPanelMode === "charts" ? applyChartFilter : undefined}
                         onLoadMore={

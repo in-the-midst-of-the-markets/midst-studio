@@ -10,6 +10,8 @@ process.env.SHARED_PG_PASS = "shared-secret";
 process.env.BOTH_PG_PASS = "both-secret";
 
 import { resolveConnection, SeedConnectionError } from "@/lib/seed/resolve-connection";
+import { QUERY_CACHE_ID } from "@/lib/query-cache/connection";
+import { queryCacheFile } from "@/lib/query-cache/path";
 import { resetCache } from "@/lib/seed";
 import { logger } from "@/lib/logger";
 
@@ -159,5 +161,23 @@ describe("resolve-connection under governance", () => {
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it("still opens the query cache when custom connections are switched off", async () => {
+    const result = await resolveConnection(
+      {
+        connectionId: QUERY_CACHE_ID,
+        connection: {
+          id: QUERY_CACHE_ID,
+          name: "Spoofed",
+          type: "duckdb",
+          database: "/tmp/spoofed.duckdb",
+          createdAt: new Date(),
+        },
+      },
+      { role: "user", username: "ada" },
+    );
+    expect(result.database).toBe(queryCacheFile("ada"));
+    expect(result.database).not.toContain("spoofed");
   });
 });

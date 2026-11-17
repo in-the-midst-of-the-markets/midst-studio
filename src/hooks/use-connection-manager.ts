@@ -19,6 +19,7 @@ import {
   crossDbJoinsSchema,
   isCrossDbJoins,
 } from "@/lib/saved-join/connection";
+import { isAppKeptConnection, QUERY_CACHE_ID, queryCacheConnection } from "@/lib/query-cache/connection";
 import { startManagedListRefresh } from "@/lib/connection-refresh";
 import {
   connectionAllowed,
@@ -187,7 +188,7 @@ export function useConnectionManager(storageReady = false) {
   const visibleConnections = useMemo(() => connectionsUnderPolicy(connections, policy), [connections, policy]);
   /** Null rather than a connection the server refuses, whichever path made it active. */
   const visibleActive =
-    activeConnection !== null && (isCrossDbJoins(activeConnection) || connectionAllowed(activeConnection, policy))
+    activeConnection !== null && (isAppKeptConnection(activeConnection) || connectionAllowed(activeConnection, policy))
       ? activeConnection
       : null;
   const [schema, setSchema] = useState<readonly DetailedObject[]>([]);
@@ -707,7 +708,7 @@ export function useConnectionManager(storageReady = false) {
             if (merged) {
               setConnections(merged);
               setActiveConnection((prev) =>
-                prev !== null && (isCrossDbJoins(prev) || connectionAllowed(prev, currentPolicy))
+                prev !== null && (isAppKeptConnection(prev) || connectionAllowed(prev, currentPolicy))
                   ? prev
                   : (connectionsUnderPolicy(merged, currentPolicy)[0] ?? null),
               );
@@ -783,7 +784,7 @@ export function useConnectionManager(storageReady = false) {
       );
       if (active === null) {
         setActiveConnection((prev) =>
-          prev !== null && (isCrossDbJoins(prev) || connectionAllowed(prev, currentPolicy))
+          prev !== null && (isAppKeptConnection(prev) || connectionAllowed(prev, currentPolicy))
             ? prev
             : (selectable[0] ?? null),
         );
@@ -791,7 +792,7 @@ export function useConnectionManager(storageReady = false) {
       }
       // Cross_DB_Joins is kept by the app, so it is never in the managed list. A refresh that
       // treated that as removal switched the editor to another database a few seconds after a run.
-      if (isCrossDbJoins(active) || selectable.some((c) => c.id === active.id)) return;
+      if (isAppKeptConnection(active) || selectable.some((c) => c.id === active.id)) return;
       setActiveConnection(selectable[0] ?? null);
       toast({ title: "Connection removed", description: `${active.name} is no longer available.` });
     };
@@ -847,6 +848,10 @@ export function useConnectionManager(storageReady = false) {
       const savedId = storage.getActiveConnectionId();
       if (savedId === CROSS_DB_JOINS_ID) {
         setActiveConnection(crossDbJoinsConnection());
+        return;
+      }
+      if (savedId === QUERY_CACHE_ID) {
+        setActiveConnection(queryCacheConnection());
         return;
       }
       if (selectable.length === 0) return;

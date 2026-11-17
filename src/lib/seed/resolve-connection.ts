@@ -6,6 +6,8 @@ import { ApiErrorCode } from "@/lib/api/error-codes";
 import { consumeRateLimit } from "@/lib/api/rate-limit";
 import { emitAuditEvent } from "@/lib/audit";
 import { CUSTOM_CONNECTIONS_DISABLED_MESSAGE, customConnectionsAllowed } from "@/lib/config/custom-connections";
+import { QUERY_CACHE_ID, QUERY_CACHE_NAME } from "@/lib/query-cache/connection";
+import { isInsideQueryCache, queryCacheFile } from "@/lib/query-cache/path";
 import { governanceEnabled } from "@/lib/governance/config";
 import { accessReviewEnabled } from "@/lib/kubernetes-access/config";
 import {
@@ -78,6 +80,15 @@ function auditUniformMiss(seedId: string, username: string, target: string): voi
   }
 }
 
+/** A file path a caller put on a connection, when the record names one. */
+function fileCandidate(connection: DatabaseConnection): string | null {
+  if (typeof connection.database === "string" && connection.database !== "") return connection.database;
+  if (typeof connection.connectionString === "string" && connection.connectionString !== "") {
+    return connection.connectionString;
+  }
+  return null;
+}
+
 export async function resolveConnection(
   body: { connection?: DatabaseConnection; connectionId?: string },
   session: Principal,
@@ -113,7 +124,27 @@ export async function resolveConnection(
   const claimedSeedId = connection?.id?.startsWith("seed:") ? connection.id : undefined;
   const effectiveId = connectionId ?? claimedSeedId;
 
+  // The query cache is this user's DuckDB file. The id is the whole claim: a path on the
+  // request is ignored, including when custom connections are switched off.
+  if (connectionId === QUERY_CACHE_ID || (connectionId == null && connection?.id === QUERY_CACHE_ID)) {
+    return {
+      id: QUERY_CACHE_ID,
+      name: QUERY_CACHE_NAME,
+      type: "duckdb",
+      database: queryCacheFile(session.username),
+      createdAt: new Date(0),
+      managed: false,
+    };
+  }
+
   if (connection && !effectiveId) {
+    const candidate = fileCandidate(connection);
+    if (candidate !== null && isInsideQueryCache(candidate)) {
+      throw new SeedConnectionError(
+        "This path is reserved for the query cache and cannot be opened as a connection",
+        400,
+      );
+    }
     /*
      * A CONNECTION THE CALLER SUPPLIED, WHICH THE OPERATOR MAY FORBID (ALLOW_CUSTOM_CONNECTIONS).
      *

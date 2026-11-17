@@ -1050,6 +1050,35 @@ Redis is a key-value store, so the `sql` field carries a Redis command instead o
 
 ---
 
+#### GET /api/db/query-cache
+
+#### POST /api/db/query-cache
+
+The signed-in user's query cache: one DuckDB file on the server, chosen from the username. A later read of that file is a normal DuckDB query on the **Query cache** connection. It does not run the source again.
+
+`GET` returns the tables already cached:
+
+```json
+{ "tables": [{ "tableName": "orders", "sourceName": "App", "sourceSql": "SELECT id FROM orders", "sourceConnectionId": "c1", "rowCount": 2, "cachedAt": "2026-01-01 00:00:00" }] }
+```
+
+`POST` writes one result. The same `tableName` replaces the rows, which is how a refresh updates the cache after the source query is run again.
+
+```json
+{
+  "tableName": "orders",
+  "fields": ["id"],
+  "rows": [{ "id": 1 }],
+  "sourceName": "App",
+  "sourceSql": "SELECT id FROM orders",
+  "sourceConnectionId": "c1"
+}
+```
+
+The answer is `{ "tableName": "orders", "rowCount": 1, "replaced": false }`. `replaced` is true when that name already held a table. A table name is one identifier. At most 10,000 rows are stored. A path inside the cache directory is refused on any other connection.
+
+---
+
 #### POST /api/db/maintenance
 
 Run database maintenance operations.
