@@ -976,7 +976,7 @@ describe("Studio", () => {
     render(<Studio />);
 
     const connections = capturedSidebarProps.connections as { id: string; name: string; type: string }[];
-    expect(connections.map((connection) => connection.id)).toEqual(["cross-db-joins", "c1"]);
+    expect(connections.map((connection) => connection.id)).toEqual(["cross-db-joins", "query-cache", "c1"]);
     expect(connections[0]).toMatchObject({ name: "Cross_DB_Joins", type: "duckdb" });
     expect(document.body.textContent).toContain("including one from the marketplace");
     const editor = document.querySelector('[data-panel-id="studio-editor-top"]');
@@ -1019,6 +1019,7 @@ describe("Studio", () => {
     expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({ title: "Query Saved" }));
 
     act(() => (capturedSidebarProps.onDeleteConnection as (id: string) => void)("cross-db-joins"));
+    act(() => (capturedSidebarProps.onDeleteConnection as (id: string) => void)("query-cache"));
     expect(mockStorageDeleteConnection).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toContain("Delete connection?");
   });

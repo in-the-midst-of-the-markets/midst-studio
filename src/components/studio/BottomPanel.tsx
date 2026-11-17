@@ -8,6 +8,7 @@ import type { MaskingConfig } from "@/lib/data-masking";
 import type { AgentArtifactHydration } from "@/components/agent/hydration";
 import type { CellChange } from "@/components/ResultsGrid";
 import { ResultsGrid } from "@/components/ResultsGrid";
+import { CacheResults } from "@/components/query-cache/CacheResults";
 import { QueryHistory } from "@/components/QueryHistory";
 import { SavedQueries } from "@/components/SavedQueries";
 import { ChunkBoundary, ViewLoading } from "@/components/LazyView";
@@ -118,6 +119,8 @@ interface BottomPanelProps {
   onDiscardChanges: () => void;
   // Actions
   onLoadQuery: (query: string) => void;
+  /** Connections a cached table can be refreshed from. Absent where the shell has no list. */
+  connections?: readonly DatabaseConnection[];
   /** The editor statement while Charts is open, so its placeholders can be changed there. */
   chartQuery?: string;
   onChartFilter?: (sql: string) => void;
@@ -156,6 +159,7 @@ export const BottomPanel = React.memo(function BottomPanel({
   onApplyChanges,
   onDiscardChanges,
   onLoadQuery,
+  connections,
   chartQuery,
   onChartFilter,
   onLoadMore,
@@ -452,29 +456,37 @@ export const BottomPanel = React.memo(function BottomPanel({
                   </div>
                 )}
                 {(runError === undefined || hydratedHere || displayedResult.rows.length > 0) && (
-                  <div className="flex-1 min-h-0">
-                    <ResultsGrid
+                  <div className="flex min-h-0 flex-1 flex-col">
+                    <CacheResults
                       result={displayedResult}
-                      onLoadMore={hydratedHere ? undefined : onLoadMore}
-                      isLoadingMore={isLoadingMore}
-                      supportsResultPagination={metadata?.capabilities.supportsResultPagination}
-                      // The statement these ROWS came from, for the ordering notice. Withheld
-                      // for a hydrated result for the same reason `onLoadMore` is: those rows
-                      // are an agent run's, and the tab's own statement did not produce them.
-                      resultQuery={hydratedHere ? undefined : resultQuery}
-                      databaseType={activeConnection?.type}
-                      maskingEnabled={maskingEnabled}
-                      onToggleMasking={onToggleMasking}
-                      userRole={userRole}
-                      maskingConfig={maskingConfig}
-                      editingEnabled={hydratedHere ? false : editingEnabled}
-                      inlineEditRefusedColumns={metadata?.capabilities.inlineEditRefusedColumns}
-                      maskingExemptColumns={metadata?.capabilities.maskingExemptColumns}
-                      pendingChanges={pendingChanges}
-                      onCellChange={onCellChange}
-                      onApplyChanges={onApplyChanges}
-                      onDiscardChanges={onDiscardChanges}
+                      sql={resultQuery ?? ""}
+                      source={activeConnection}
+                      connections={connections}
                     />
+                    <div className="min-h-0 flex-1">
+                      <ResultsGrid
+                        result={displayedResult}
+                        onLoadMore={hydratedHere ? undefined : onLoadMore}
+                        isLoadingMore={isLoadingMore}
+                        supportsResultPagination={metadata?.capabilities.supportsResultPagination}
+                        // The statement these ROWS came from, for the ordering notice. Withheld
+                        // for a hydrated result for the same reason `onLoadMore` is: those rows
+                        // are an agent run's, and the tab's own statement did not produce them.
+                        resultQuery={hydratedHere ? undefined : resultQuery}
+                        databaseType={activeConnection?.type}
+                        maskingEnabled={maskingEnabled}
+                        onToggleMasking={onToggleMasking}
+                        userRole={userRole}
+                        maskingConfig={maskingConfig}
+                        editingEnabled={hydratedHere ? false : editingEnabled}
+                        inlineEditRefusedColumns={metadata?.capabilities.inlineEditRefusedColumns}
+                        maskingExemptColumns={metadata?.capabilities.maskingExemptColumns}
+                        pendingChanges={pendingChanges}
+                        onCellChange={onCellChange}
+                        onApplyChanges={onApplyChanges}
+                        onDiscardChanges={onDiscardChanges}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

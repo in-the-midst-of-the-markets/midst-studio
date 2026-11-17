@@ -116,6 +116,7 @@ import { chartTheme } from "@/lib/charts/palette";
 import { restampThemeChrome } from "@/lib/charts/theme-chrome";
 import { schemaContextOf } from "@/lib/db/detailed-object";
 import { CROSS_DB_JOINS_ID, crossDbJoinsSchema, withCrossDbJoins } from "@/lib/saved-join/connection";
+import { withQueryCache } from "@/lib/query-cache/connection";
 import { storage } from "@/lib/storage";
 import type {
   ChartClickConfig,
@@ -172,7 +173,7 @@ export function DashboardStudio() {
   const [activeId, setActiveId] = useState<string | null>(() => storage.getActiveDashboardId());
   const [charts, setCharts] = useState<SavedChartConfig[]>(() => storage.getSavedCharts());
   const [connections] = useState<DatabaseConnection[]>(() => storage.getConnections());
-  const editorConnections = useMemo(() => withCrossDbJoins(connections), [connections]);
+  const editorConnections = useMemo(() => withQueryCache(withCrossDbJoins(connections)), [connections]);
   const savedQueries = useMemo(() => storage.getSavedQueries(), []);
   const [schemas, setSchemas] = useState<Record<string, string>>({});
   const [menu, setMenu] = useState<null | "root" | "charts" | "components">(null);

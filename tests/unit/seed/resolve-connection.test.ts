@@ -22,6 +22,8 @@ process.env.BOTH_PG_PASS = "both-secret";
 import * as seedIndex from "@/lib/seed";
 import { getManagedConnections, resetCache } from "@/lib/seed";
 import { resolveConnection, SeedConnectionError } from "@/lib/seed/resolve-connection";
+import { QUERY_CACHE_ID } from "@/lib/query-cache/connection";
+import { queryCacheDir, queryCacheFile } from "@/lib/query-cache/path";
 import { resetDiscoveryCache } from "@/lib/seed/discovery-loader";
 import * as vaultClient from "@/lib/seed/vault-client";
 import { logger } from "@/lib/logger";
@@ -685,5 +687,86 @@ describe("resolve-connection under governance", () => {
       resolveConnection({ connectionId: "seed:billing" }, { role: "admin", username: "admin" }),
     );
     expect(error).toMatchObject(NOT_FOUND);
+  });
+
+  it("opens the caller's own query cache and ignores a path on the request", async () => {
+    const result = await resolveConnection(
+      {
+        connection: {
+          id: QUERY_CACHE_ID,
+          name: "Not the cache",
+          type: "duckdb",
+          database: "/etc/passwd",
+          createdAt: new Date(),
+        },
+      },
+      { role: "user", username: "ada" },
+    );
+    expect(result.database).toBe(queryCacheFile("ada"));
+    expect(result.database).not.toBe("/etc/passwd");
+    expect(result.name).toBe("Query cache");
+    expect(result.managed).toBe(false);
+  });
+
+  it("resolves a query-cache connection id the same way", async () => {
+    const result = await resolveConnection({ connectionId: QUERY_CACHE_ID }, { role: "user", username: "ada" });
+    expect(result.id).toBe(QUERY_CACHE_ID);
+    expect(result.database).toBe(queryCacheFile("ada"));
+  });
+
+  it("refuses a caller-supplied path inside the query cache directory", async () => {
+    const stolen = path.join(queryCacheDir(), "other-user.duckdb");
+    const error = await resolveConnection(
+      {
+        connection: {
+          id: "mine",
+          name: "Mine",
+          type: "duckdb",
+          database: stolen,
+          createdAt: new Date(),
+        },
+      },
+      { role: "user", username: "ada" },
+    ).catch((thrown: unknown) => thrown);
+    expect(error).toBeInstanceOf(SeedConnectionError);
+    expect((error as SeedConnectionError).statusCode).toBe(400);
+    expect((error as SeedConnectionError).message).toContain("query cache");
+  });
+
+  it("refuses a connection string that points into the query cache when the database field is empty", async () => {
+    const error = await resolveConnection(
+      {
+        connection: {
+          id: "mine",
+          name: "Mine",
+          type: "sqlite",
+          database: "",
+          connectionString: path.join(queryCacheDir(), "other-user.duckdb"),
+          createdAt: new Date(),
+        },
+      },
+      { role: "user", username: "ada" },
+    ).catch((thrown: unknown) => thrown);
+    expect((error as SeedConnectionError).statusCode).toBe(400);
+  });
+});
+
+describe("resolve-connection query cache paths", () => {
+  it("keeps a connection string that is not in the query cache", async () => {
+    const result = await resolveConnection(
+      {
+        connection: {
+          id: "mine",
+          name: "Mine",
+          type: "sqlite",
+          database: "",
+          connectionString: "/tmp/notes.db",
+          createdAt: new Date(),
+        },
+      },
+      { role: "user", username: "ada" },
+    );
+    expect(result.connectionString).toBe("/tmp/notes.db");
+    expect(result.managed).toBe(false);
   });
 });

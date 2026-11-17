@@ -13,6 +13,7 @@ import {
 } from "@/lib/connection-refresh";
 import { useConnectionManager } from "@/hooks/use-connection-manager";
 import { CROSS_DB_JOINS_ID, crossDbJoinsConnection } from "@/lib/saved-join/connection";
+import { QUERY_CACHE_ID, queryCacheConnection } from "@/lib/query-cache/connection";
 import { SEED_CONFIG_UNREADABLE_REASON, type ManagedConnectionPayload } from "@/hooks/use-connection-payload";
 import { useTabManager } from "@/hooks/use-tab-manager";
 import { logger } from "@/lib/logger";
@@ -215,6 +216,22 @@ describe("useConnectionManager", () => {
     expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("/api/db/"))).toBe(false);
   });
 
+  test("restores Query cache without writing it into the saved connection list", async () => {
+    storage.setActiveConnectionId(QUERY_CACHE_ID);
+    mockGlobalFetch({
+      "/api/connections/managed": { ok: true, json: { connections: [] } },
+    });
+
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await waitFor(() => {
+      expect(result.current.activeConnection?.id).toBe(QUERY_CACHE_ID);
+    });
+    expect(result.current.activeConnection?.name).toBe("Query cache");
+    expect(result.current.activeConnection?.type).toBe("duckdb");
+    expect(storage.getConnections()).toEqual([]);
+  });
+
   test("Cross_DB_Joins stays selected when custom connections are off", async () => {
     mockGlobalFetch({
       "/api/connections/policy": { ok: true, json: { customConnections: false } },
@@ -229,6 +246,22 @@ describe("useConnectionManager", () => {
       result.current.setActiveConnection(crossDbJoinsConnection());
     });
     expect(result.current.activeConnection?.id).toBe(CROSS_DB_JOINS_ID);
+  });
+
+  test("Query cache stays selected when custom connections are off", async () => {
+    mockGlobalFetch({
+      "/api/connections/policy": { ok: true, json: { customConnections: false } },
+      "/api/connections/managed": { ok: true, json: { connections: [] } },
+    });
+    const { result } = renderHook(() => useConnectionManager(true));
+
+    await waitFor(() => {
+      expect(result.current.customConnections).toBe(false);
+    });
+    act(() => {
+      result.current.setActiveConnection(queryCacheConnection());
+    });
+    expect(result.current.activeConnection?.id).toBe(QUERY_CACHE_ID);
   });
 
   test("Cross_DB_Joins lists saved-query IDs and does not open a database", async () => {

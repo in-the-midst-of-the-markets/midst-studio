@@ -40,6 +40,7 @@ import { editorLanguageForTabType, resolveTabType } from "@/lib/editor/tab-langu
 import { newLocalId } from "@/lib/ids";
 import { savedQueryTableIdError } from "@/lib/saved-query-id";
 import { crossDbJoinsObjectAnswer, isCrossDbJoins, withCrossDbJoins } from "@/lib/saved-join/connection";
+import { isAppKeptConnection, withQueryCache } from "@/lib/query-cache/connection";
 import { buildConnectionPayload, catalogField, resolveAgentRunConnectionId } from "@/hooks/use-connection-payload";
 import { isMobileViewport, useIsMobile } from "@/hooks/use-mobile";
 import { useAgentCapability } from "@/hooks/use-agent-capability";
@@ -1169,19 +1170,19 @@ export default function Studio() {
     [handleGenerateSelect, handleGenerateCount, openSourceTab, runRowAction, isAdmin, openMaintenance, openCreateTable],
   );
 
-  const listedConnections = useMemo(() => withCrossDbJoins(conn.connections), [conn.connections]);
+  const listedConnections = useMemo(() => withQueryCache(withCrossDbJoins(conn.connections)), [conn.connections]);
   const crossDbObjectSource = useCallback<ObjectSource>(
     async (_connection, request) => crossDbJoinsObjectAnswer(storage.getSavedQueries(), request),
     [],
   );
 
   const requestDeleteConnection = useCallback((id: string) => {
-    if (isCrossDbJoins({ id })) return;
+    if (isAppKeptConnection({ id })) return;
     setPendingDeleteConnectionId(id);
   }, []);
 
   const handleDeleteConnection = (id: string) => {
-    if (isCrossDbJoins({ id })) return;
+    if (isAppKeptConnection({ id })) return;
     // Clean up the server-side provider cache and close connections and tunnels, best effort. The connection is sent as
     // every route is sent one, a connection of the user's own as its record: without governance the server removes only
     // the providers that record's own key names, and refuses a bare id outside the seed namespace (docs/API_DOCS.md, the
@@ -1706,6 +1707,7 @@ export default function Studio() {
                         onApplyChanges={editing.handleApplyChanges}
                         onDiscardChanges={editing.handleDiscardChanges}
                         onLoadQuery={handleLoadQuery}
+                        connections={listedConnections}
                         chartQuery={queryExec.bottomPanelMode === "charts" ? tabMgr.currentTab.query : undefined}
                         onChartFilter={queryExec.bottomPanelMode === "charts" ? applyChartFilter : undefined}
                         onLoadMore={

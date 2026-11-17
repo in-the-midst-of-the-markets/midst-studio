@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { ChevronDown, ChevronRight, FolderPlus, MoreHorizontal } from "lucide-react";
 import { DatabaseConnection } from "@/lib/types";
-import { isCrossDbJoins } from "@/lib/saved-join/connection";
+import { isAppKeptConnection } from "@/lib/query-cache/connection";
 import { applyConnectionOrder } from "@/lib/connection-order";
 import { buildConnectionSections, type ConnectionSection } from "@/lib/connection-groups";
 import type { ConnectionGroup } from "@/lib/storage/types";
@@ -153,8 +153,8 @@ export const ConnectionsList = React.memo(function ConnectionsList({
   onOpenNotes,
   notesConnectionId = null,
 }: ConnectionsListProps) {
-  const pinned = connections.filter((connection) => isCrossDbJoins(connection));
-  const listed = connections.filter((connection) => !isCrossDbJoins(connection));
+  const pinned = connections.filter((connection) => isAppKeptConnection(connection));
+  const listed = connections.filter((connection) => !isAppKeptConnection(connection));
   const ordered = applyConnectionOrder(listed, connectionOrder ?? []);
   const reorderable = onReorderConnections !== undefined;
   const groups = connectionGroups ?? [];
