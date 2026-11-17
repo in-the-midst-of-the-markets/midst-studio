@@ -1,7 +1,7 @@
 import type { DetailedObject } from "@/lib/db/detailed-object";
 import { resolveObjectAddress } from "@/lib/db/object-address";
-import { pathKey } from "@/lib/db/object-path";
-import { liveTable, type TableNote } from "@/lib/data-dictionary";
+import { objectPathLabel, pathKey } from "@/lib/db/object-path";
+import { liveTable, type RelationshipNote, type TableNote } from "@/lib/data-dictionary";
 import { diagramNodeId, TABLE_SOURCE_HANDLE, TABLE_TARGET_HANDLE, type FkFlowEdge } from "./graph";
 
 export interface ColumnLink {
@@ -124,4 +124,136 @@ function handleFor(
     return side === "source" ? `${column}-right` : `${column}-left`;
   }
   return side === "source" ? TABLE_SOURCE_HANDLE : TABLE_TARGET_HANDLE;
+}
+
+/** Columns that keep a handle after Edit is turned off, so a noted edge still has somewhere to attach. */
+export interface NotedColumnAnchors {
+  readonly sources: ReadonlySet<string>;
+  readonly targets: ReadonlySet<string>;
+}
+
+/**
+ * Column handles a noted relationship needs on each card. Edit mode mounts a handle on every
+ * column; leaving Edit removes those, and a noted edge whose handle id disappeared is not drawn.
+ * Catalog foreign keys already anchor their own columns. This is the rest.
+ */
+export function notedHandleColumns(
+  schema: readonly DetailedObject[],
+  notes: readonly TableNote[],
+): ReadonlyMap<string, NotedColumnAnchors> {
+  const sources = new Map<string, Set<string>>();
+  const targets = new Map<string, Set<string>>();
+  for (const note of notes) {
+    const source = sourceObject(schema, note);
+    if (source === null) continue;
+    const sourceId = diagramNodeId(source.path);
+    for (const rel of note.relationships) {
+      if (rel.fromColumn === "" || rel.toColumn === "") continue;
+      const resolution = resolveObjectAddress(schema, (object) => object.path, rel.toTable, source.path.slice(0, -1));
+      if (resolution.kind !== "resolved") continue;
+      const targetId = diagramNodeId(resolution.object.path);
+      if (targetId === sourceId) continue;
+      addColumn(sources, sourceId, rel.fromColumn);
+      addColumn(targets, targetId, rel.toColumn);
+    }
+  }
+  const anchors = new Map<string, NotedColumnAnchors>();
+  for (const id of new Set([...sources.keys(), ...targets.keys()])) {
+    anchors.set(id, {
+      sources: sources.get(id) ?? new Set<string>(),
+      targets: targets.get(id) ?? new Set<string>(),
+    });
+  }
+  return anchors;
+}
+
+function addColumn(map: Map<string, Set<string>>, id: string, column: string): void {
+  const existing = map.get(id);
+  if (existing !== undefined) {
+    existing.add(column);
+    return;
+  }
+  map.set(id, new Set([column]));
+}
+
+/** One relationship the selected card should name. `remove` is set only for a note Edit can drop. */
+export interface ListedRelationship {
+  readonly key: string;
+  readonly text: string;
+  readonly fromDatabase: boolean;
+  readonly remove: { readonly path: readonly string[]; readonly relationship: RelationshipNote } | null;
+}
+
+/**
+ * Relationships to show for one card: foreign keys the database declared, then notes.
+ * A database key is listed and never offered for removal. A note is listed from either card,
+ * and removal always edits the note on the source table.
+ */
+export function listedRelationships(
+  table: DetailedObject,
+  schema: readonly DetailedObject[],
+  notes: readonly TableNote[],
+): ListedRelationship[] {
+  const rows: ListedRelationship[] = [];
+  const here = pathKey(table.path);
+  let index = 0;
+  for (const fk of table.foreignKeys ?? []) {
+    const referenced = resolveObjectAddress(
+      schema,
+      (object) => object.path,
+      fk.referencedTable,
+      table.path.slice(0, -1),
+    );
+    const targetLabel = referenced.kind === "resolved" ? objectPathLabel(referenced.object.path) : fk.referencedTable;
+    index += 1;
+    rows.push({
+      key: `database:${index}:${fk.columnName}->${targetLabel}.${fk.referencedColumn}`,
+      text: `${fk.columnName} references ${targetLabel}.${fk.referencedColumn}`,
+      fromDatabase: true,
+      remove: null,
+    });
+  }
+  for (const other of schema) {
+    if (pathKey(other.path) === here) continue;
+    for (const fk of other.foreignKeys ?? []) {
+      const referenced = resolveObjectAddress(
+        schema,
+        (object) => object.path,
+        fk.referencedTable,
+        other.path.slice(0, -1),
+      );
+      if (referenced.kind !== "resolved" || pathKey(referenced.object.path) !== here) continue;
+      const sourceLabel = objectPathLabel(other.path);
+      index += 1;
+      rows.push({
+        key: `database:${index}:${sourceLabel}.${fk.columnName}->${fk.referencedColumn}`,
+        text: `${sourceLabel}.${fk.columnName} references ${fk.referencedColumn}`,
+        fromDatabase: true,
+        remove: null,
+      });
+    }
+  }
+  for (const note of notes) {
+    const source = sourceObject(schema, note);
+    if (source === null) continue;
+    const sourceHere = pathKey(source.path) === here;
+    const sourceLabel = objectPathLabel(source.path);
+    for (const rel of note.relationships) {
+      if (rel.fromColumn === "" || rel.toTable === "" || rel.toColumn === "") continue;
+      const resolution = resolveObjectAddress(schema, (object) => object.path, rel.toTable, source.path.slice(0, -1));
+      const targetHere = resolution.kind === "resolved" && pathKey(resolution.object.path) === here;
+      // Equal when the note is a self-link, or when it belongs to two other tables.
+      if (sourceHere === targetHere) continue;
+      index += 1;
+      rows.push({
+        key: `note:${index}:${sourceLabel}.${rel.fromColumn}->${rel.toTable}.${rel.toColumn}`,
+        text: sourceHere
+          ? `${rel.fromColumn} references ${rel.toTable}.${rel.toColumn}`
+          : `${sourceLabel}.${rel.fromColumn} references ${rel.toColumn}`,
+        fromDatabase: false,
+        remove: { path: source.path, relationship: rel },
+      });
+    }
+  }
+  return rows;
 }

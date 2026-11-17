@@ -14,11 +14,14 @@ import {
   type TableEndorsement,
   type TableNote,
 } from "@/lib/data-dictionary";
+import { listedRelationships } from "./note-edges";
 
 interface DiagramNotesProps {
   readonly table: DetailedObject;
   readonly schema: readonly DetailedObject[];
   readonly dictionary: DataDictionary;
+  /** Add and Remove are Edit mode. The list itself stays up either way. */
+  readonly editing: boolean;
   readonly onDraft: (next: DataDictionary) => void;
   readonly onSave: (next: DataDictionary) => void;
 }
@@ -40,9 +43,10 @@ const EMPTY_NOTE: TableNote = {
 
 /**
  * The same table notes the sidebar saves, written on the table that is selected in the diagram.
- * A description, a column note, and a relationship all go into that connection's dictionary.
+ * A description and a column note go into that connection's dictionary. Relationships are listed
+ * whether or not Edit is on; only Edit can add or remove a noted one.
  */
-export function DiagramNotes({ table, schema, dictionary, onDraft, onSave }: DiagramNotesProps) {
+export function DiagramNotes({ table, schema, dictionary, editing, onDraft, onSave }: DiagramNotesProps) {
   const label = objectPathLabel(table.path);
   const found = noteForObject(dictionary.tables, table, schema);
   const current = found ?? { ...EMPTY_NOTE, path: table.path };
@@ -52,6 +56,7 @@ export function DiagramNotes({ table, schema, dictionary, onDraft, onSave }: Dia
   const commit = (update: (note: TableNote) => TableNote): void => {
     onSave(replaceTableNote(dictionary, schema, table.path, update));
   };
+  const relationships = listedRelationships(table, schema, dictionary.tables);
   const targets = schema.filter((item) => pathKey(item.path) !== pathKey(table.path));
   const [fromColumn, setFromColumn] = useState(table.columns[0]?.name ?? "");
   const [toKey, setToKey] = useState("");
@@ -79,90 +84,99 @@ export function DiagramNotes({ table, schema, dictionary, onDraft, onSave }: Dia
 
   return (
     <div className="max-h-72 space-y-2 overflow-auto border-t border-hairline pt-2">
-      <div className="space-y-1">
-        <p className="text-[0.6875rem] font-medium text-fg">Relationship</p>
-        {targets.length === 0 ? (
-          <p className="text-[0.625rem] text-fg-muted">
-            Add another table to the diagram before noting a relationship.
-          </p>
-        ) : (
-          <>
-            <label className="block text-[0.6875rem] text-fg-muted">
-              From
-              <select
-                aria-label={`Relationship from ${label}`}
-                value={from}
-                onChange={(event) => setFromColumn(event.target.value)}
-                className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
-              >
-                {table.columns.map((column) => (
-                  <option key={column.name} value={column.name}>
-                    {column.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-[0.6875rem] text-fg-muted">
-              To table
-              <select
-                aria-label="Relationship to table"
-                value={target === undefined ? "" : pathKey(target.path)}
-                onChange={(event) => {
-                  setToKey(event.target.value);
-                  setToColumn("");
-                }}
-                className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
-              >
-                {targets.map((item) => (
-                  <option key={pathKey(item.path)} value={pathKey(item.path)}>
-                    {objectPathLabel(item.path)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-[0.6875rem] text-fg-muted">
-              To column
-              <select
-                aria-label="Relationship to column"
-                value={to}
-                onChange={(event) => setToColumn(event.target.value)}
-                className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
-              >
-                {(target?.columns ?? []).map((column) => (
-                  <option key={column.name} value={column.name}>
-                    {column.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={addRelationship}
-              className="rounded bg-brand-solid px-2 py-1 text-[0.6875rem] text-white"
-            >
-              Add relationship
-            </button>
-          </>
-        )}
-      </div>
-      {current.relationships.length > 0 && (
-        <ul className="space-y-1 text-[0.6875rem] text-fg-muted">
-          {current.relationships.map((rel) => {
-            const text = `${rel.fromColumn} references ${rel.toTable}.${rel.toColumn}`;
-            return (
-              <li key={text} className="flex items-center justify-between gap-2">
-                <span className="truncate">{text}</span>
+      {(editing || relationships.length > 0) && (
+        <div className="space-y-1">
+          <p className="text-[0.6875rem] font-medium text-fg">Relationships</p>
+          {editing &&
+            (targets.length === 0 ? (
+              <p className="text-[0.625rem] text-fg-muted">
+                Add another table to the diagram before noting a relationship.
+              </p>
+            ) : (
+              <>
+                <label className="block text-[0.6875rem] text-fg-muted">
+                  From
+                  <select
+                    aria-label={`Relationship from ${label}`}
+                    value={from}
+                    onChange={(event) => setFromColumn(event.target.value)}
+                    className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
+                  >
+                    {table.columns.map((column) => (
+                      <option key={column.name} value={column.name}>
+                        {column.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-[0.6875rem] text-fg-muted">
+                  To table
+                  <select
+                    aria-label="Relationship to table"
+                    value={target === undefined ? "" : pathKey(target.path)}
+                    onChange={(event) => {
+                      setToKey(event.target.value);
+                      setToColumn("");
+                    }}
+                    className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
+                  >
+                    {targets.map((item) => (
+                      <option key={pathKey(item.path)} value={pathKey(item.path)}>
+                        {objectPathLabel(item.path)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-[0.6875rem] text-fg-muted">
+                  To column
+                  <select
+                    aria-label="Relationship to column"
+                    value={to}
+                    onChange={(event) => setToColumn(event.target.value)}
+                    className="mt-1 w-full rounded border border-hairline-strong bg-fill px-2 py-1 text-xs text-fg-secondary"
+                  >
+                    {(target?.columns ?? []).map((column) => (
+                      <option key={column.name} value={column.name}>
+                        {column.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   type="button"
-                  onClick={() => onSave(removeRelationshipNote(dictionary, schema, table.path, rel))}
-                  className="shrink-0 rounded border border-hairline px-1.5 py-0.5 text-[0.625rem] text-fg hover:bg-fill"
+                  onClick={addRelationship}
+                  className="rounded bg-brand-solid px-2 py-1 text-[0.6875rem] text-white"
                 >
-                  Remove
+                  Add relationship
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              </>
+            ))}
+          {relationships.length > 0 && (
+            <ul className="space-y-1 text-[0.6875rem] text-fg-muted">
+              {relationships.map((row) => {
+                const removal = row.remove;
+                return (
+                  <li key={row.key} className="flex items-center justify-between gap-2">
+                    <span className="truncate">{row.text}</span>
+                    {row.fromDatabase ? (
+                      <span className="shrink-0 text-[0.625rem] text-fg-subtle">in the database</span>
+                    ) : editing && removal !== null ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onSave(removeRelationshipNote(dictionary, schema, removal.path, removal.relationship))
+                        }
+                        className="shrink-0 rounded border border-hairline px-1.5 py-0.5 text-[0.625rem] text-fg hover:bg-fill"
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       )}
       <p className="text-[0.625rem] leading-relaxed text-fg-muted">
         Notes on {label} are saved with this connection and sent to AI with the schema.
