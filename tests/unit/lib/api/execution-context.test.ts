@@ -55,6 +55,12 @@ describe("editorExecutionContext on a connection only its requester uses", () =>
     expect(editorExecutionContext(ADMIN, seed(["admin"]))).toEqual({ allowExternalFileAccess: true });
   });
 
+  test("an admin's narrowed copy of a seed also offered to another role gets the deny posture", () => {
+    const narrowed = { ...seed(["admin"]), sharedWithNonAdminRoles: true } as DatabaseConnection;
+    expect(editorExecutionContext(ADMIN, narrowed)).toEqual({ allowExternalFileAccess: false });
+    expect(editorExecutionContext(USER, narrowed)).toEqual({ allowExternalFileAccess: false });
+  });
+
   test("an inline connection keeps the requester posture whatever roles its body carries", () => {
     // A body is the caller's own text: roles on it decide nothing, and an inline connection is
     // one requester's, so the audience rule never reads them. Only the seed namespace, which

@@ -161,6 +161,19 @@ describe("authenticateBearer", () => {
     await expectDenied(await sign(claims({ sub: undefined })), "bearer_no_identity");
   });
 
+  test("refuses a domain outside OIDC_ALLOWED_EMAIL_DOMAINS and admits one on the list", async () => {
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "example.org";
+    await expectDenied(
+      await sign(claims({ email: "ada@example.test", email_verified: true })),
+      "bearer_domain_not_allowed",
+    );
+    await expectDenied(await sign(claims({ email: "ada@example.org" })), "bearer_domain_not_allowed");
+
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "example.test";
+    const admitted = await authenticate(await sign(claims({ email: "Ada@Example.test", email_verified: true })));
+    expect(admitted.kind).toBe("authenticated");
+  });
+
   test("refuses an account without a role once OIDC_USER_ROLES is set", async () => {
     process.env.OIDC_USER_ROLES = "user";
     await expectDenied(await sign(claims({ realm_access: { roles: ["guest"] } })), "bearer_no_role");

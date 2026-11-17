@@ -2,7 +2,8 @@
  * One SubjectAccessReview against a fake API server (src/lib/kubernetes-access/review.ts).
  *
  * The review is a trust boundary: an allowed answer opens a database's credentials to a person. So it is allowed only
- * for a 2xx `SubjectAccessReview` that echoes the asked user and says `allowed: true`, and every other outcome, an
+ * for a 2xx `SubjectAccessReview` that echoes the asked user and attributes and says `allowed: true`, and every other
+ * outcome, an
  * error, a timeout, a status that is not 2xx, a body that is malformed, too large or for another review, a token or CA
  * that cannot be read, fails, which every caller treats as a deny. The token and the CA are read again for every
  * review, so a rotated projected token is used at once.
@@ -49,9 +50,19 @@ afterEach(() => {
   api.restoreEnv();
 });
 
-/** A scripted 201 that echoes `user` with this status. */
-function reviewAnswer(status: Record<string, unknown>, user = DEV_A.user, kind = "SubjectAccessReview"): string {
-  return JSON.stringify({ kind, apiVersion: "authorization.k8s.io/v1", spec: { user }, status });
+/** A scripted 201 that echoes `user` and the asked attributes with this status. */
+function reviewAnswer(
+  status: Record<string, unknown>,
+  user = DEV_A.user,
+  kind = "SubjectAccessReview",
+  attributes: ResourceAttributes = SECRET,
+): string {
+  return JSON.stringify({
+    kind,
+    apiVersion: "authorization.k8s.io/v1",
+    spec: { user, resourceAttributes: attributes },
+    status,
+  });
 }
 
 describe("the request", () => {
@@ -202,6 +213,10 @@ describe("the answer", () => {
     ["no spec", JSON.stringify({ kind: "SubjectAccessReview", status: { allowed: true } })],
     ["allowed as text", reviewAnswer({ allowed: "true" })],
     ["another user's review", reviewAnswer({ allowed: true }, "u-someone-else")],
+    [
+      "another resource",
+      reviewAnswer({ allowed: true }, DEV_A.user, "SubjectAccessReview", { ...SECRET, name: "other" }),
+    ],
   ])("a body that is %s fails", async (_case, body) => {
     api.answer = { status: 201, body };
     expect(await requestAccessReview(DEV_A, SECRET)).toEqual({ kind: "failed", reason: "malformed" });

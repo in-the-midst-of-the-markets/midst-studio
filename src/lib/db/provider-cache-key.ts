@@ -187,6 +187,10 @@ export function providerOwner(connection: DatabaseConnection, owner: string | un
  * - The tunnel's SECRETS and `hostKeyFingerprint`. Its ROUTE is deliberately absent: `tunnelRoute`
  *   frames the four route values inside the fingerprint already, and this is the half that file
  *   explicitly leaves out as "a credential, not a route".
+ * - `managed` decides whom an empty credential signs in as: BigQuery and Firestore sign a keyless connection in with
+ *   the server's own identity only when `managed` is exactly true, the operator's grant. A seed the operator demotes to
+ *   `managed: false` keeps its id, server and empty credential, so without this a provider opened as the server went
+ *   on serving it. Framed last and only when exactly true, so every connection without the grant keeps the key it had.
  */
 async function credentialDigest(connection: DatabaseConnection): Promise<string> {
   const ssl = connection.ssl;
@@ -219,6 +223,8 @@ async function credentialDigest(connection: DatabaseConnection): Promise<string>
     tunnel?.privateKey ?? "",
     tunnel?.passphrase ?? "",
     tunnel?.hostKeyFingerprint ?? "",
+    // Last and only under the grant, so every connection without it keeps the key it had.
+    ...(connection.managed === true ? ["managed"] : []),
   ]
     .map((value) => `${value.length}:${value}`)
     .join("");
