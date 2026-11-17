@@ -7,7 +7,7 @@ import { objectPathLabel, pathKey } from "@/lib/db/object-path";
 import type { ColumnSchema } from "@/lib/types";
 import { isNumericType } from "../results-grid/numeric-sort";
 import { TABLE_SOURCE_HANDLE, TABLE_TARGET_HANDLE, type TableFlowNode } from "./graph";
-import { DiagramNotesContext, useDiagramActions } from "./diagram-context";
+import { DiagramAnchorsContext, DiagramNotesContext, useDiagramActions } from "./diagram-context";
 import { useTableHighlighted } from "./highlight-store";
 
 interface ColumnRowProps {
@@ -100,6 +100,7 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
   const highlighted = useTableHighlighted(id);
   const { toggleExpand, editing } = useDiagramActions();
   const note = useContext(DiagramNotesContext).get(pathKey(data.table.path));
+  const noted = useContext(DiagramAnchorsContext).get(id);
   const updateNodeInternals = useUpdateNodeInternals();
   const { table, kindLabel, compact, visibleColumns, hiddenCount, sourceAnchors, targetAnchors } = data;
 
@@ -113,13 +114,17 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
   // it: the signature IS the handle set the effect synchronises React Flow
   // against, and it always carries its three separators, so the guard is true
   // whenever the effect runs.
-  const handleSignature = `${editing ? "e" : "v"}|${compact ? "c" : "d"}|${visibleColumns.length}|${sourceAnchors.join(",")}|${targetAnchors.join(",")}`;
+  // Noted columns are part of the handle set even though they are not catalog anchors.
+  // A dictionary that arrives after the card mounted has to remeasure or the edge never attaches.
+  const handleSignature = `${editing ? "e" : "v"}|${compact ? "c" : "d"}|${visibleColumns.length}|${sourceAnchors.join(",")}|${targetAnchors.join(",")}|${joinColumns(noted?.sources)}|${joinColumns(noted?.targets)}`;
   useEffect(() => {
     if (handleSignature) updateNodeInternals(id);
   }, [id, handleSignature, updateNodeInternals]);
 
   const sourceSet = new Set(sourceAnchors);
   const targetSet = new Set(targetAnchors);
+  const notedSources = noted?.sources;
+  const notedTargets = noted?.targets;
 
   return (
     <div
@@ -166,8 +171,8 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
               key={column.name}
               column={column}
               isFk={sourceSet.has(column.name)}
-              hasSourceHandle={editing || sourceSet.has(column.name)}
-              hasTargetHandle={editing || targetSet.has(column.name)}
+              hasSourceHandle={editing || sourceSet.has(column.name) || (notedSources?.has(column.name) ?? false)}
+              hasTargetHandle={editing || targetSet.has(column.name) || (notedTargets?.has(column.name) ?? false)}
               connectable={editing}
               columnNote={note?.columns[column.name]}
             />
@@ -186,3 +191,8 @@ export const TableNode = memo(function TableNode({ id, data }: NodeProps<TableFl
     </div>
   );
 });
+
+function joinColumns(columns: ReadonlySet<string> | undefined): string {
+  if (columns === undefined) return "";
+  return [...columns].sort().join(",");
+}

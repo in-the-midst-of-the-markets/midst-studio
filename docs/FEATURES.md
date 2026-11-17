@@ -243,7 +243,7 @@ Two components are described below and a claim true of one can be false of the o
 *   **Enterprise Security First:** Environment variable protection with `.env.example` templates and strict Git tracking policies for credentials.
 
 ### 17. Visual Schema Explorer (ERD)
-*   **Interactive Entity-Relationship Diagrams:** React Flow–powered visualization of tables and their foreign-key relationships.
+*   **Interactive Entity-Relationship Diagrams:** React Flow–powered visualization of tables and their foreign-key relationships. Catalog foreign keys and noted relationships stay on the diagram outside Edit. Edit adds or removes a noted relationship; a foreign key the database declared is listed and is not dropped.
 *   **Pan, Zoom & Reposition:** Freely navigate large schemas and drag nodes into place.
 *   **Search & Filter:** Locate tables by name, with compact and detailed view modes.
 *   **Export:** Save diagrams as SVG or PNG for documentation.

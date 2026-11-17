@@ -85,7 +85,12 @@ mock.module("@xyflow/react", () => {
     MiniMap: () => React.createElement("div", { "data-testid": "mock-minimap" }),
     Controls: () => null,
     Background: () => null,
-    Handle: () => null,
+    Handle: ({ id, isConnectable }: { id?: string; isConnectable?: boolean }) =>
+      React.createElement("span", {
+        "data-testid": "mock-handle",
+        "data-handle-id": id ?? "",
+        "data-connectable": isConnectable ? "true" : "false",
+      }),
     BaseEdge: ({ id, path, style }: Record<string, unknown>) =>
       React.createElement("path", { "data-testid": "mock-base-edge", "data-edge-id": id, d: path, style }),
     EdgeLabelRenderer: ({ children }: { children: unknown }) => children,
@@ -104,8 +109,8 @@ mock.module("@xyflow/react", () => {
     useUpdateNodeInternals: () => mockUpdateNodeInternals,
     Position: { Top: "top", Bottom: "bottom", Left: "left", Right: "right" },
     MarkerType: { ArrowClosed: "arrowclosed" },
-    Panel: ({ children, position }: { children: unknown; position?: string }) =>
-      React.createElement("div", { "data-testid": `mock-panel-${position || "default"}` }, children),
+    Panel: ({ children, position, className }: { children: unknown; position?: string; className?: string }) =>
+      React.createElement("div", { "data-testid": `mock-panel-${position || "default"}`, className }, children),
   };
 });
 
@@ -2371,6 +2376,7 @@ describe("SchemaDiagram kind filtering", () => {
       fireEvent.click(view.getByRole("button", { name: "Expand ERD Visualizer" }));
       expect(view.getByPlaceholderText("Filter tables...")).toBeDefined();
 
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
       fireEvent.click(view.container.querySelector('[data-node-id="posts"]')!);
       fireEvent.change(view.getByLabelText("Relationship from posts"), { target: { value: "title" } });
       fireEvent.change(view.getByLabelText("Relationship to table"), { target: { value: "users" } });
@@ -2389,9 +2395,73 @@ describe("SchemaDiagram kind filtering", () => {
 
     test("a diagram with one table explains that a relationship needs another table", () => {
       const view = render(<SchemaDiagram schema={[schemaNoFK[0]]} connectionId="c1" onClose={() => {}} />);
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
       fireEvent.click(view.container.querySelector('[data-node-id="users"]')!);
       expect(view.getByText("Add another table to the diagram before noting a relationship.")).toBeDefined();
       expect(view.queryByRole("button", { name: "Add relationship" })).toBeNull();
+    });
+
+    test("a noted relationship stays visible outside Edit and can be removed from either table", () => {
+      storage.saveDataDictionary({
+        ...emptyDictionary("c1"),
+        tables: [
+          {
+            path: ["posts"],
+            description: "",
+            endorsement: "normal",
+            columns: {},
+            columnTypes: {},
+            relationships: [{ fromColumn: "title", toTable: "users", toColumn: "id" }],
+          },
+        ],
+      });
+      const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
+      expect(view.getByTestId("mock-panel-top-left").className).toContain("nopan");
+      expect(view.getByTestId("mock-panel-top-left").className).toContain("nowheel");
+      expect(view.getByTestId("mock-panel-top-right").className).toContain("nopan");
+      expect(view.queryByText("1 relationships")).not.toBeNull();
+
+      const posts = view.container.querySelector('[data-node-id="posts"]')!;
+      const users = view.container.querySelector('[data-node-id="users"]')!;
+      expect(posts.querySelector('[data-handle-id="title-right"]')?.getAttribute("data-connectable")).toBe("false");
+      expect(users.querySelector('[data-handle-id="id-left"]')?.getAttribute("data-connectable")).toBe("false");
+      expect(posts.querySelector('[data-handle-id="id-right"]')).toBeNull();
+
+      fireEvent.click(posts);
+      expect(view.getByText("title references users.id")).toBeDefined();
+      expect(view.queryByRole("button", { name: "Remove" })).toBeNull();
+      expect(view.queryByRole("button", { name: "Add relationship" })).toBeNull();
+
+      fireEvent.click(users);
+      expect(view.getByText("posts.title references id")).toBeDefined();
+      expect(view.queryByRole("button", { name: "Remove" })).toBeNull();
+
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
+      expect(users.querySelector('[data-handle-id="id-left"]')?.getAttribute("data-connectable")).toBe("true");
+      fireEvent.click(view.getByRole("button", { name: "Remove" }));
+      expect(view.queryByText("0 relationships")).not.toBeNull();
+      expect(storage.getDataDictionary("c1")?.tables[0].relationships).toEqual([]);
+
+      fireEvent.click(view.getByRole("button", { name: "Stop editing diagram" }));
+      expect(view.container.querySelector('[data-handle-id="title-right"]')).toBeNull();
+    });
+
+    test("a database relationship is listed outside Edit and has no Remove", () => {
+      const view = render(<SchemaDiagram schema={schemaMultiFK} connectionId="c1" onClose={() => {}} />);
+      fireEvent.click(view.container.querySelector('[data-node-id="orders"]')!);
+      expect(view.getByText("user_id references users.id")).toBeDefined();
+      expect(view.getAllByText("in the database").length).toBeGreaterThan(0);
+      expect(view.queryByRole("button", { name: "Remove" })).toBeNull();
+      expect(view.queryByRole("button", { name: "Add relationship" })).toBeNull();
+
+      fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
+      expect(view.getByText("user_id references users.id")).toBeDefined();
+      expect(view.queryByRole("button", { name: /^Remove / })).toBeNull();
+      expect(view.getByRole("button", { name: "Add relationship" })).toBeDefined();
+
+      fireEvent.click(view.container.querySelector('[data-node-id="users"]')!);
+      expect(view.getByText("orders.user_id references id")).toBeDefined();
+      expect(view.queryByRole("button", { name: /^Remove / })).toBeNull();
     });
 
     test("compact editing asks for Detail before a column can be dragged", () => {
