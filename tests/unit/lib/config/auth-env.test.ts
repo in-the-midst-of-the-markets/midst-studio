@@ -12,6 +12,7 @@ import {
   SESSION_TTL_MAX_SECONDS,
   SESSION_TTL_MIN_SECONDS,
   SESSION_TTL_OPENSHIFT_DEFAULT_SECONDS,
+  allowedEmailDomains,
   sessionTtlSeconds,
 } from "@/lib/config/auth-env";
 
@@ -204,6 +205,35 @@ describe("config/auth-env sessionTtlSeconds", () => {
       process.env.AUTH_SESSION_TTL_SECONDS = value;
       expect(() => sessionTtlSeconds()).toThrow(AuthConfigError);
       expect(() => sessionTtlSeconds()).toThrow("AUTH_SESSION_TTL_SECONDS");
+    }
+  });
+});
+
+describe("config/auth-env allowedEmailDomains", () => {
+  const orig = process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+
+  afterEach(() => {
+    if (orig === undefined) delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+    else process.env.OIDC_ALLOWED_EMAIL_DOMAINS = orig;
+  });
+
+  test("is empty when unset or blank", () => {
+    delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+    expect(allowedEmailDomains()).toEqual([]);
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "   ";
+    expect(allowedEmailDomains()).toEqual([]);
+  });
+
+  test("returns the listed hostnames, trimmed and lowercased", () => {
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = " Example.COM , example.org ";
+    expect(allowedEmailDomains()).toEqual(["example.com", "example.org"]);
+  });
+
+  test("throws AuthConfigError when an entry is not a bare hostname", () => {
+    for (const value of ["example", "https://example.com", ",", "example.com.", "user@example.com"]) {
+      process.env.OIDC_ALLOWED_EMAIL_DOMAINS = value;
+      expect(() => allowedEmailDomains()).toThrow(AuthConfigError);
+      expect(() => allowedEmailDomains()).toThrow("OIDC_ALLOWED_EMAIL_DOMAINS");
     }
   });
 });

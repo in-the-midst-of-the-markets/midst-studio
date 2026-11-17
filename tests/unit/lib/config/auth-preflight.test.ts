@@ -387,6 +387,57 @@ describe("config/auth-preflight AUTH_SESSION_TTL_SECONDS", () => {
   });
 });
 
+describe("config/auth-preflight OIDC_ALLOWED_EMAIL_DOMAINS", () => {
+  const orig = process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+  const origSecret = process.env.JWT_SECRET;
+
+  afterEach(() => {
+    if (orig === undefined) delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+    else process.env.OIDC_ALLOWED_EMAIL_DOMAINS = orig;
+    if (origSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = origSecret;
+  });
+
+  function runPreflight(): { result: boolean; exitCalls: Array<number | undefined>; banner: string } {
+    const originalExit = process.exit;
+    const exitCalls: Array<number | undefined> = [];
+    process.exit = ((code?: number) => {
+      exitCalls.push(code);
+    }) as unknown as typeof process.exit;
+    const errorSpy = spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const result = verifyAuthEnvAtBoot();
+      return { result, exitCalls, banner: errorSpy.mock.calls.flat().join("\n") };
+    } finally {
+      process.exit = originalExit;
+      errorSpy.mockRestore();
+    }
+  }
+
+  test("a value that is not a comma list of bare hostnames stops the boot", () => {
+    process.env.JWT_SECRET = "a-valid-secret-that-is-32-chars!";
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "not a host";
+    const { result, exitCalls, banner } = runPreflight();
+    expect(result).toBe(false);
+    expect(exitCalls).toEqual([1]);
+    expect(banner).toContain("KnowSQL cannot start");
+    expect(banner).toContain("OIDC_ALLOWED_EMAIL_DOMAINS");
+    expect(banner).toContain("example.com,example.org");
+  });
+
+  test("allows boot to continue when the list is unset or names bare hostnames", () => {
+    process.env.JWT_SECRET = "a-valid-secret-that-is-32-chars!";
+    for (const value of [undefined, "example.com", "example.com, example.org"]) {
+      if (value === undefined) delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+      else process.env.OIDC_ALLOWED_EMAIL_DOMAINS = value;
+      const { result, exitCalls, banner } = runPreflight();
+      expect(result).toBe(true);
+      expect(exitCalls).toEqual([]);
+      expect(banner).toBe("");
+    }
+  });
+});
+
 /**
  * STORAGE_POSTGRES_SCHEMA names the schema the PostgreSQL storage tables live in. A value that is
  * not a plain lowercase identifier would otherwise surface only at the first storage request, after

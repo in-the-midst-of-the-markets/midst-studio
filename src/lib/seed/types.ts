@@ -495,6 +495,13 @@ export interface ManagedConnection extends DatabaseConnection {
    */
   kubernetesSecret?: { readonly namespace: string; readonly name: string };
   /**
+   * Set in code by projectSeedConnection when the operator's own `roles` offer this seed to any role but admin, read
+   * before the projection narrows `roles` to the caller's. Never read from a file, because SeedConnectionSchema does
+   * not declare it; stripped by GET /api/connections/managed. editorExecutionContext decides the file-access posture
+   * from it, so every caller of one seed gets one posture and one cached handle.
+   */
+  sharedWithNonAdminRoles?: true;
+  /**
    * Under governance only, set by GET /api/connections/managed from the grant level the record was resolved for: "read"
    * when statements run under the connection's read credential. Never read from a file.
    */

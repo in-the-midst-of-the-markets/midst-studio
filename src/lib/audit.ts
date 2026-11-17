@@ -113,6 +113,11 @@ export type AuditReason =
    */
   | "oidc_no_role"
   /**
+   * OIDC_ALLOWED_EMAIL_DOMAINS is set and the token speaks for another domain, or names none. No session is created.
+   * The record names the account, which the provider vouched for.
+   */
+  | "oidc_domain_not_allowed"
+  /**
    * The provider authenticated the account, but its role claim held more than 20 claim roles matching
    * OIDC_ROLE_PREFIX or a claim role longer than 64 characters, so no session was created.
    */
@@ -287,6 +292,8 @@ export type AuditReason =
   | "bearer_token_invalid"
   | "bearer_no_role"
   | "bearer_no_identity"
+  /** OIDC_ALLOWED_EMAIL_DOMAINS is set and the access token's domain is not on it, or it names none. */
+  | "bearer_domain_not_allowed"
   // The rest are mcp_operation reasons, each with one meaning. Arguments that failed the tool's
   // input schema, which the SDK refuses before any handler runs and the route records.
   | "mcp_invalid_arguments"

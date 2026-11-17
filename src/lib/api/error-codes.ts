@@ -108,6 +108,12 @@ export const ApiErrorCode = {
    */
   BEARER_NO_IDENTITY: "BEARER_NO_IDENTITY",
 
+  /**
+   * A bearer access token verified, but OIDC_ALLOWED_EMAIL_DOMAINS is set and the token's domain is not on it (403,
+   * src/lib/oidc-identity.ts). Like BEARER_NO_ROLE, a fresh token for the same account is refused the same way.
+   */
+  BEARER_DOMAIN_NOT_ALLOWED: "BEARER_DOMAIN_NOT_ALLOWED",
+
   /** The caller holds a session, but the route is for admins only (403). */
   ADMIN_REQUIRED: "ADMIN_REQUIRED",
 

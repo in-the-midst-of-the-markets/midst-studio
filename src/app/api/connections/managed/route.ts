@@ -27,7 +27,8 @@ const OPENSHIFT_CACHE_HINT_MS = 10_000;
  * The server-only markers are not part of this response's shape, so they are removed before anything reaches the
  * browser: the literal marker (src/lib/seed/types.ts) tells the server how to resolve a connection's values, the
  * Kubernetes Secret marker which Secret the access review asks about, the reserved role (src/lib/seed/roles.ts) that
- * sets a connection apart for that review, so a reviewed connection reaches the browser with no role, and the grant
+ * sets a connection apart for that review, so a reviewed connection reaches the browser with no role, the audience
+ * marker the file-access posture is decided from (src/lib/seed/connection-filter.ts), and the grant
  * level (src/lib/governance/visible.ts) which credential a governed record carries. The level itself is no secret and
  * goes out as `access`, so a client can say a connection is read only before a write fails.
  */
@@ -35,6 +36,7 @@ function withoutServerMarkers(conn: GovernedRecord): ManagedConnection {
   const { grantLevel, ...copy } = conn;
   delete copy.literal;
   delete copy.kubernetesSecret;
+  delete copy.sharedWithNonAdminRoles;
   copy.roles = copy.roles.filter((role) => role !== KUBERNETES_REVIEWED_ROLE);
   return grantLevel === undefined ? copy : { ...copy, access: grantLevel };
 }

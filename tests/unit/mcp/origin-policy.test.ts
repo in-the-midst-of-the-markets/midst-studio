@@ -7,13 +7,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { configuredOriginHostnames, resetOriginCheckWarnings } from "@/lib/api/origin-check";
 import { MCP_URL_ENV } from "@/lib/mcp/config";
-import {
-  isLoopbackBind,
-  MCP_LOOPBACK_BINDS,
-  mcpHostAllowlist,
-  mcpOriginAllowlist,
-  mcpOriginHostRefusal,
-} from "@/lib/mcp/origin-policy";
+import { isLoopbackBind, mcpHostAllowlist, mcpOriginAllowlist, mcpOriginHostRefusal } from "@/lib/mcp/origin-policy";
 
 const MUTATED = ["HOSTNAME", "ALLOWED_ORIGINS", MCP_URL_ENV] as const;
 const saved = new Map<string, string | undefined>();
@@ -61,16 +55,15 @@ describe("configuredOriginHostnames", () => {
 });
 
 describe("the loopback bind", () => {
-  test("is exactly the three loopback names", () => {
-    expect([...MCP_LOOPBACK_BINDS]).toEqual(["127.0.0.1", "::1", "localhost"]);
-  });
+  test.each(["127.0.0.1", "127.1.2.3", "::1", "[::1]", "localhost", " LOCALHOST "])(
+    "%p is a loopback bind",
+    (value) => {
+      process.env.HOSTNAME = value;
+      expect(isLoopbackBind()).toBe(true);
+    },
+  );
 
-  test.each(["127.0.0.1", "::1", "localhost", " LOCALHOST "])("%p is a loopback bind", (value) => {
-    process.env.HOSTNAME = value;
-    expect(isLoopbackBind()).toBe(true);
-  });
-
-  test.each(["::", "0.0.0.0", "", "studio.internal"])("%p is not", (value) => {
+  test.each(["::", "[::]", "0.0.0.0", "128.0.0.1", "", "studio.internal"])("%p is not", (value) => {
     process.env.HOSTNAME = value;
     expect(isLoopbackBind()).toBe(false);
   });

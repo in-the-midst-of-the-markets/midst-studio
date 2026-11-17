@@ -1047,6 +1047,14 @@ describe("getPublicOrigin", () => {
     expect(getPublicOrigin(path)).toBe("http://localhost:3000");
     expect(getPublicOrigin(hash)).toBe("http://localhost:3000");
     expect(getPublicOrigin(user)).toBe("http://localhost:3000");
+    const star = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { "x-forwarded-host": "good.example*" },
+    });
+    const onlyStar = new Request("http://localhost:3000/api/auth/logout", {
+      headers: { "x-forwarded-host": "*" },
+    });
+    expect(getPublicOrigin(star)).toBe("http://localhost:3000");
+    expect(getPublicOrigin(onlyStar)).toBe("http://localhost:3000");
   });
 
   test("ignores a forwarded scheme that is not http or https", () => {

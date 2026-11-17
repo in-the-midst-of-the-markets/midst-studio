@@ -346,6 +346,51 @@ describe("GET /api/auth/oidc/callback", () => {
     );
   });
 
+  test("OIDC_ALLOWED_EMAIL_DOMAINS refuses another domain before the role is read", async () => {
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "example.org";
+    const spy = spyOn(console, "log").mockImplementation(() => {});
+    try {
+      mockExchangeCode.mockImplementationOnce(async () =>
+        exchanged({ ...defaultClaims, email: "ada@example.com", email_verified: true }),
+      );
+      const res = await GET(
+        new Request("http://localhost:3000/api/auth/oidc/callback?code=auth-code&state=test-state"),
+      );
+
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toBe("http://localhost:3000/login?error=oidc_domain_not_allowed");
+      expect(setCookies.has("auth-token")).toBe(false);
+      expect(mockMapOIDCRole).not.toHaveBeenCalled();
+      expect(mockCookieStore.delete).toHaveBeenCalledWith({ name: "oidc-state", path: "/" });
+      const lines = spy.mock.calls.map((call: unknown[]) => JSON.parse(call[0] as string) as Record<string, unknown>);
+      expect(lines[0]).toMatchObject({
+        event: "login_failure",
+        reason: "oidc_domain_not_allowed",
+        actor: "ada@example.com",
+      });
+    } finally {
+      spy.mockRestore();
+      delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+    }
+  });
+
+  test("OIDC_ALLOWED_EMAIL_DOMAINS still signs in a verified email on the list", async () => {
+    process.env.OIDC_ALLOWED_EMAIL_DOMAINS = "Example.COM";
+    try {
+      mockExchangeCode.mockImplementationOnce(async () =>
+        exchanged({ ...defaultClaims, email: "Ada@Example.com", email_verified: "true" }),
+      );
+      const res = await GET(
+        new Request("http://localhost:3000/api/auth/oidc/callback?code=auth-code&state=test-state"),
+      );
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).not.toContain("error=");
+      expect(await mintedSession()).toMatchObject({ username: "Ada@Example.com" });
+    } finally {
+      delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
+    }
+  });
+
   test("no matching role redirects to /login?error=oidc_no_role, sets no auth-token and audits oidc_no_role", async () => {
     mockMapOIDCRole.mockReturnValue(null);
     const spy = spyOn(console, "log").mockImplementation(() => {});

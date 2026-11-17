@@ -20,6 +20,7 @@ export const BEARER_ENV_KEYS = [
   "OIDC_ROLE_CLAIM",
   "OIDC_ADMIN_ROLES",
   "OIDC_USER_ROLES",
+  "OIDC_ALLOWED_EMAIL_DOMAINS",
   "OIDC_BEARER_AUDIENCE",
   "OIDC_BEARER_CLIENT_IDS",
 ] as const;
@@ -62,6 +63,7 @@ export function useBearerEnv(): void {
   process.env.OIDC_ROLE_CLAIM = "realm_access.roles";
   process.env.OIDC_ADMIN_ROLES = "admin";
   delete process.env.OIDC_USER_ROLES;
+  delete process.env.OIDC_ALLOWED_EMAIL_DOMAINS;
   process.env.OIDC_BEARER_AUDIENCE = BEARER_AUDIENCE;
   delete process.env.OIDC_BEARER_CLIENT_IDS;
   provider.keys = [signerJwk];

@@ -57,7 +57,9 @@ export function filterByRoles(connections: SeedConnection[], userRoles: string[]
 
 /**
  * The managed connection a seed connection becomes for a caller holding `userRoles`, whether or not its roles select
- * it: the role filter is filterByRoles' own step. It carries only the roles the caller holds, plus `*`.
+ * it: the role filter is filterByRoles' own step. It carries only the roles the caller holds, plus `*`, and, when the
+ * operator's own roles offer the seed to any role but admin, `sharedWithNonAdminRoles`, which those narrowed roles can
+ * no longer say.
  */
 export function projectSeedConnection(conn: SeedConnection, userRoles: string[]): ManagedConnection {
   assertSeedOnlyFieldsBelong(conn);
@@ -159,6 +161,10 @@ export function projectSeedConnection(conn: SeedConnection, userRoles: string[])
     managed: conn.managed ?? true,
     // Send only the roles the caller holds (plus wildcard), so browser never sees other teams' roles
     roles: conn.roles.filter((r) => r === "*" || userRoles.includes(r)),
+    // Whom the operator offers the seed to, read from its own roles rather than the narrowed ones above: the
+    // file-access posture is decided from it, so an admin's copy of a seed offered to ["admin", "user"] gets the
+    // posture a user's copy gets. Server-only: GET /api/connections/managed removes it.
+    ...(conn.roles.some((r) => r !== "admin") ? { sharedWithNonAdminRoles: true as const } : {}),
     seedId: conn.id,
   };
 }

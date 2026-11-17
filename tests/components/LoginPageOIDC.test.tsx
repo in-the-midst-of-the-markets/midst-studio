@@ -68,6 +68,16 @@ describe("LoginPage (OIDC mode)", () => {
 
   // The provider accepted the account but it holds neither role: trying again fails the same way
   // until someone assigns one, so the message sends the user to the administrator, not to a retry.
+  test("error=oidc_domain_not_allowed shows the domain message", () => {
+    setMockSearchParams(new URLSearchParams("error=oidc_domain_not_allowed"));
+    const { getByText, queryByText } = render(<LoginForm authProvider="oidc" passkey={null} />);
+    const message = getByText(
+      "Your account's email domain is not allowed to sign in to KnowSQL. Ask your administrator.",
+    );
+    expect(message.textContent).not.toMatch(/try again/i);
+    expect(queryByText("Authentication failed. Please try again.")).toBeNull();
+  });
+
   test("error=oidc_no_role shows the no-role message", () => {
     setMockSearchParams(new URLSearchParams("error=oidc_no_role"));
     const { getByText, queryByText } = render(<LoginForm authProvider="oidc" passkey={null} />);

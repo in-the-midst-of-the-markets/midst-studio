@@ -176,6 +176,13 @@ describe("the connection headers meet the rule a request's own headers meet, whe
     transport.close();
   });
 
+  test("a connection header named __proto__ is sent as its own header", async () => {
+    const listener = await rawHttpListener(OK);
+    const headers: Record<string, string> = { ["__proto__"]: "kept" };
+    await connect(listener, { headers }).request(get("/b/k"));
+    expect(lines(listener.heads[0])).toEqual(expect.arrayContaining(["__proto__: kept"]));
+  });
+
   test("a plain header and a 1024-character value are sent as given", async () => {
     const listener = await rawHttpListener(OK);
     await connect(listener, { headers: { "x-tenant": "t1", "x-long": "a".repeat(1024) } }).request(get("/b/k"));

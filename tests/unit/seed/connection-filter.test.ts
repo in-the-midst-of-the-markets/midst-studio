@@ -433,6 +433,15 @@ describe("projectSeedConnection", () => {
     }
   });
 
+  it("remembers a non-admin audience before narrowing the roles the caller holds", () => {
+    const shared = projectSeedConnection({ ...baseConn, roles: ["admin", "user"] }, ["admin"]);
+    expect(shared.roles).toEqual(["admin"]);
+    expect(shared.sharedWithNonAdminRoles).toBe(true);
+
+    const adminOnly = projectSeedConnection({ ...baseConn, roles: ["admin"] }, ["admin"]);
+    expect(adminOnly.sharedWithNonAdminRoles).toBeUndefined();
+  });
+
   it("projects a row the roles do not select, sending only the roles the caller holds", () => {
     const projected = projectSeedConnection({ ...baseConn, roles: ["admin", "team-dev"] }, ["user"]);
     expect(projected.seedId).toBe("test");

@@ -388,6 +388,8 @@ function firstHeaderValue(header: string | null): string | null {
  * hash is refused: it would turn a redirect into a different URL than the host the caller named.
  */
 function originOf(scheme: string, host: string): string | null {
+  // A star is a legal URL host and would redirect to it. Every other odd character already fails the checks below.
+  if (host.includes("*")) return null;
   let parsed: URL;
   try {
     parsed = new URL(`${scheme}://${host}`);

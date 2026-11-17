@@ -318,6 +318,13 @@ describe("providerCacheKey frames the owner of a per-user provider", () => {
   });
 });
 
+test("a managed grant and a demoted seed do not share a provider", async () => {
+  const granted = { ...base, managed: true as const };
+  const demoted = { ...base, managed: false as const };
+  expect(await providerCacheKey(granted)).not.toBe(await providerCacheKey(demoted));
+  expect(await providerCacheKey(demoted)).toBe(await providerCacheKey(base));
+});
+
 test("SQLite denied callers cannot reuse an administrator's handle", async () => {
   const connection: DatabaseConnection = {
     id: "sqlite-posture",

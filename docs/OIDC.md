@@ -422,6 +422,7 @@ No Studio code is specific to Rancher: it is the ordinary OIDC mode with the val
 | `OIDC_ROLE_CLAIM` | No | — | Claim path for role extraction (dot-notation supported) |
 | `OIDC_ADMIN_ROLES` | No | `admin` | Comma-separated values that map to admin role |
 | `OIDC_USER_ROLES` | No | unset | Comma-separated values that map to user role. Set, an account that holds neither an admin nor a user role is refused at sign-in ([Requiring a role](#requiring-a-role)). Needs `OIDC_ROLE_CLAIM` |
+| `OIDC_ALLOWED_EMAIL_DOMAINS` | No | unset | Comma-separated bare hostnames. Set, an account whose domain is not listed is refused before its role is read ([Limiting sign-in to email domains](#limiting-sign-in-to-email-domains)) |
 | `OIDC_ROLE_PREFIX` | No | unset | Prefix filter for custom roles from the OIDC role claim; see [Custom seed roles with OIDC_ROLE_PREFIX](#custom-seed-roles-with-oidc_role_prefix). Needs `OIDC_ROLE_CLAIM` |
 | `OIDC_PROMPT` | No | `login` | The `prompt` sent on sign-in: `login`, `consent`, `select_account`, or `omit` to send none; see [Single sign-on with OIDC_PROMPT](#single-sign-on-with-oidc_prompt) |
 | `OIDC_AUTO_REDIRECT` | No | off | `true`, `1`, `on` or `yes` sends a signed-out `GET /login` straight to the identity provider; see [Automatic redirect to the provider](#automatic-redirect-to-the-provider) |
@@ -529,6 +530,18 @@ OIDC_USER_ROLES=user
 | `["viewer"]`, `[]`, or no claim at all | Refused with `oidc_no_role` |
 
 > For the precise algorithm and provider-by-provider worked examples, see the [Role Mapping Engine](#role-mapping-engine) in Part 2.
+
+### Limiting sign-in to email domains
+
+Unset, `OIDC_ALLOWED_EMAIL_DOMAINS` changes nothing: every account the provider authenticates is admitted, and roles are applied as above.
+Set, the callback and a bearer access token are refused before any role is read unless the token's domain is one of the listed bare hostnames.
+Google (`OIDC_ISSUER` of `https://accounts.google.com`, a trailing slash and letter case aside) is read from the `hd` claim.
+Every other issuer is read from the domain of an email the provider marks verified (`email_verified` true, or the string `"true"`).
+An unverified email, an email with no domain, or a Google token with no `hd` is refused.
+The comparison is lowercased.
+An account outside the list gets no session: the callback sends it to `/login?error=oidc_domain_not_allowed`, the login page says "Your account's email domain is not allowed to sign in to KnowSQL. Ask your administrator.", and the audit trail records `login_failure` with reason `oidc_domain_not_allowed`.
+A bearer token for the same account is `403` with code `BEARER_DOMAIN_NOT_ALLOWED`.
+A value that names no domain, or an entry that is not a bare hostname, stops a standalone server at boot.
 
 ### Custom seed roles with OIDC_ROLE_PREFIX
 
@@ -642,7 +655,7 @@ How Studio answers:
 
 - A Bearer header decides alone on an API path that needs a session, even next to a valid cookie: a refused token answers `401` with `{"error":"Invalid access token","code":"AUTH_REQUIRED"}` and `WWW-Authenticate: Bearer error="invalid_token"`, never a redirect.
   Any other scheme, such as the `Basic` credentials a reverse proxy's basic authentication forwards, is ignored and the cookie decides.
-- A token that verifies but whose account Studio refuses answers `403`, with code `BEARER_NO_ROLE` when its claims map to no role and `BEARER_NO_IDENTITY` when it carries no `sub` or no username under the rule above.
+- A token that verifies but whose account Studio refuses answers `403`, with code `BEARER_NO_ROLE` when its claims map to no role, `BEARER_NO_IDENTITY` when it carries no `sub` or no username under the rule above, and `BEARER_DOMAIN_NOT_ALLOWED` when `OIDC_ALLOWED_EMAIL_DOMAINS` is set and the token's domain is not on it.
   A fresh token for the same account is refused the same way until an administrator changes the account, so a client shows the refusal instead of refreshing.
 - The public routes that read a session, `GET /api/auth/me`, `POST /api/auth/logout` and `POST /api/db/health`, decide the header the same way.
   The other routes under `/api/auth/` never read it, so a client holding an expired token can still sign in.
@@ -1435,6 +1448,7 @@ Both OIDC routes redirect to `/login?error=<code>` on failure, and record the sa
 | `oidc_state_invalid` | callback | State decryption failed or state mismatch | Tampered cookie, wrong JWT_SECRET, or CSRF attempt |
 | `oidc_no_claims` | callback | Token exchange returned no claims, or no string `sub` or `iss` | Provider returned invalid/empty ID token |
 | `oidc_no_role` | callback | `mapOIDCRole()` returned null: `OIDC_USER_ROLES` is set and the role claim holds no admin or user role | The account has no role at the provider; no session is created, and the audit record names the account |
+| `oidc_domain_not_allowed` | callback | `isEmailDomainAllowed()` returned false: `OIDC_ALLOWED_EMAIL_DOMAINS` is set and the token speaks for another domain, or names none | The account is outside the domains the operator listed; no session is created, and the audit record names the account |
 | `oidc_role_overflow` | callback | `mapOIDCClaimRoles()` returned overflow: matching roles exceed 20 or any role exceeds 64 bytes in UTF-8 | The account carries too many or excessively long roles; no session is created, and the audit record names the account |
 | `oidc_session_revoked` | callback | Governance mode only: the subject's latest `revoked_before` is at or after the current second | The control plane ended the account's sessions with a revocation that still applies, such as one dated ahead of Studio's clock; no session is created, and the audit record names the account |
 | `oidc_failed` | login, callback | Any other error after the provider answered | A discovery document that parses but lacks an endpoint, PKCE or state-cookie failure on login; network error, invalid client credentials, etc. on callback |
@@ -1448,6 +1462,7 @@ Both OIDC routes redirect to `/login?error=<code>` on failure, and record the sa
 | `oidc_config` | Single sign-on is not configured correctly on this server. Contact your administrator. |
 | `oidc_discovery` | The identity provider could not be reached. Try again later, or contact your administrator if this continues. |
 | `oidc_no_role` | Your account has no role that allows access to KnowSQL. Ask your administrator. |
+| `oidc_domain_not_allowed` | Your account's email domain is not allowed to sign in to KnowSQL. Ask your administrator. |
 | `oidc_role_overflow` | Your account has too many roles or a role name is too long. Ask your administrator. |
 | `oidc_session_revoked` | An administrator has ended your sessions. Try again later, or ask your administrator. |
 | anything else | Authentication failed. Please try again. |

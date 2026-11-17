@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { comparableIssuer, oidcUsername } from "@/lib/oidc-identity";
+import { comparableIssuer, emailDomainOf, isEmailDomainAllowed, oidcUsername } from "@/lib/oidc-identity";
 
 describe("comparableIssuer", () => {
   test("drops one trailing slash and normalizes the host, and is null for a value that is not a URL", () => {
@@ -48,5 +48,43 @@ describe("oidcUsername", () => {
     expect(oidcUsername({ email: "", preferred_username: "ada" })).toBe("ada");
     expect(oidcUsername({ email: 42, preferred_username: ["ada"] })).toBeNull();
     expect(oidcUsername({})).toBeNull();
+  });
+});
+
+describe("isEmailDomainAllowed", () => {
+  const allowed = ["example.com", "example.org"];
+
+  test("an empty list admits every account", () => {
+    expect(isEmailDomainAllowed({}, [], "https://idp.example.test")).toBe(true);
+  });
+
+  test("reads Google's hd claim, and ignores the email, when the issuer is Google", () => {
+    const claims = { hd: " Example.COM ", email: "ada@elsewhere.test", email_verified: true };
+    expect(isEmailDomainAllowed(claims, allowed, "https://accounts.google.com")).toBe(true);
+    expect(isEmailDomainAllowed(claims, allowed, "https://Accounts.Google.com/")).toBe(true);
+    expect(emailDomainOf({ email: "ada@example.com", email_verified: true }, "https://accounts.google.com")).toBeNull();
+    expect(isEmailDomainAllowed({ hd: "elsewhere.test" }, allowed, "https://accounts.google.com")).toBe(false);
+  });
+
+  test("reads the domain of an email the provider marks verified", () => {
+    expect(emailDomainOf({ email: "Ada@Example.COM", email_verified: true }, "https://idp.example.test")).toBe(
+      "example.com",
+    );
+    expect(
+      isEmailDomainAllowed({ email: "ada@example.org", email_verified: "true" }, allowed, "https://idp.example.test"),
+    ).toBe(true);
+    expect(isEmailDomainAllowed({ email: "ada@elsewhere.test", email_verified: true }, allowed, "https://idp")).toBe(
+      false,
+    );
+  });
+
+  test("trusts no domain when the email is unverified, empty, or has none", () => {
+    expect(emailDomainOf({ email: "ada@example.com", email_verified: false }, "https://idp.example.test")).toBeNull();
+    expect(emailDomainOf({ email: "ada@example.com", email_verified: "false" }, "https://idp.example.test")).toBeNull();
+    expect(emailDomainOf({ email: "ada@example.com" }, "https://idp.example.test")).toBeNull();
+    expect(emailDomainOf({ email: "ada", email_verified: true }, "https://idp.example.test")).toBeNull();
+    expect(emailDomainOf({ email: "ada@", email_verified: true }, "https://idp.example.test")).toBeNull();
+    expect(emailDomainOf({ email: "", hd: "example.com" }, "https://idp.example.test")).toBeNull();
+    expect(isEmailDomainAllowed({ email: "ada@example.com" }, allowed, "https://idp.example.test")).toBe(false);
   });
 });
