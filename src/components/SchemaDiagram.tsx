@@ -113,6 +113,7 @@ function SchemaDiagramInner({ schema, onClose, capabilities, connectionId }: Sch
   const diagram = DIAGRAM_THEME[mode];
   const { dictionary, setDictionary, save } = useDataDictionary(connectionId ?? null);
   const [editing, setEditing] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -563,75 +564,93 @@ function SchemaDiagramInner({ schema, onClose, capabilities, connectionId }: Sch
               {/* Info panel with stats and search */}
               <Panel position="top-left" className="p-4">
                 <div className="bg-raised/80 backdrop-blur-md border border-hairline-strong p-3 rounded-xl shadow-2xl space-y-2">
-                  <h3 className="text-xs font-medium text-fg mb-1 flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-brand-tint animate-pulse" />
-                    ERD Visualizer
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs text-fg-muted">
-                    <span>{relationCountLabel(filteredSchema, capabilities)}</span>
-                    <span>{relationshipCount} relationships</span>
-                    {isLayouting && (
-                      <span className="flex items-center gap-1 text-fg-subtle">
-                        <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
-                        layout
+                  <h3 className="text-xs font-medium text-fg">
+                    <button
+                      type="button"
+                      aria-expanded={panelOpen}
+                      aria-label={panelOpen ? "Collapse ERD Visualizer" : "Expand ERD Visualizer"}
+                      onClick={() => setPanelOpen((open) => !open)}
+                      className="flex w-full items-center gap-2 text-left"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-brand-tint animate-pulse" />
+                      ERD Visualizer
+                      <span className="ml-auto text-[0.625rem] font-normal text-fg-subtle">
+                        {panelOpen ? "Hide" : "Show"}
                       </span>
-                    )}
-                  </div>
+                    </button>
+                  </h3>
+                  {panelOpen && (
+                    <>
+                      <div className="flex items-center gap-3 text-xs text-fg-muted">
+                        <span>{relationCountLabel(filteredSchema, capabilities)}</span>
+                        <span>{relationshipCount} relationships</span>
+                        {isLayouting && (
+                          <span className="flex items-center gap-1 text-fg-subtle">
+                            <LoaderCircle strokeWidth={1.5} className="w-3 h-3 animate-spin" />
+                            layout
+                          </span>
+                        )}
+                      </div>
 
-                  {/* Search */}
-                  <div className="relative">
-                    <Search
-                      strokeWidth={1.5}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-fg-subtle"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Filter tables..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-7 pr-2 py-1.5 bg-fill border border-hairline-strong rounded text-xs text-fg-secondary placeholder:text-fg-subtle focus:outline-none focus:border-brand-tint/50"
-                    />
-                  </div>
+                      {/* Search */}
+                      <div className="relative">
+                        <Search
+                          strokeWidth={1.5}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-fg-subtle"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Filter tables..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full pl-7 pr-2 py-1.5 bg-fill border border-hairline-strong rounded text-xs text-fg-secondary placeholder:text-fg-subtle focus:outline-none focus:border-brand-tint/50"
+                        />
+                      </div>
 
-                  {/* No FK warning */}
-                  {showHeuristicWarning && (
-                    <div className="flex items-start gap-1.5 text-[0.625rem] text-warning/80">
-                      <Info strokeWidth={1.5} className="w-3 h-3 mt-0.5 shrink-0" />
-                      <span>{heuristicWarningText}</span>
-                    </div>
-                  )}
+                      {/* No FK warning */}
+                      {showHeuristicWarning && (
+                        <div className="flex items-start gap-1.5 text-[0.625rem] text-warning/80">
+                          <Info strokeWidth={1.5} className="w-3 h-3 mt-0.5 shrink-0" />
+                          <span>{heuristicWarningText}</span>
+                        </div>
+                      )}
 
-                  {/* Selected node info */}
-                  {editing && (
-                    <p className="text-[0.625rem] leading-relaxed text-fg-muted">
-                      {compactMode
-                        ? "Switch to Detail, then drag from one column to a column on another table."
-                        : "Drag tables to rearrange them. Drag from a column to a column on another table to note a relationship."}
-                    </p>
-                  )}
-                  {linkMessage !== null && (
-                    <output className="block text-[0.625rem] text-warning/80">{linkMessage}</output>
-                  )}
+                      {/* Selected node info */}
+                      {editing && (
+                        <p className="text-[0.625rem] leading-relaxed text-fg-muted">
+                          {compactMode
+                            ? "Switch to Detail to drag between columns, or use Add relationship."
+                            : "Drag tables to rearrange them. Add a relationship from the selected table, or drag from one column to another."}
+                        </p>
+                      )}
+                      {linkMessage !== null && (
+                        <output className="block text-[0.625rem] text-warning/80">{linkMessage}</output>
+                      )}
 
-                  {selectedTable && (
-                    <div className="text-xs text-brand border-t border-hairline pt-2">
-                      {/* The dotted ADDRESS and never the node id: the id is `diagramNodeId`, an
+                      {selectedTable && (
+                        <div className="text-xs text-brand border-t border-hairline pt-2">
+                          {/* The dotted ADDRESS and never the node id: the id is `diagramNodeId`, an
                         escaped address nobody reads, and never the bare label, which two
                         objects in two containers share (#789). */}
-                      Selected: <span className="font-mono font-medium">{objectPathLabel(selectedTable.path)}</span>
-                      <button onClick={() => selectTable(null)} className="ml-2 text-fg-subtle hover:text-fg-tertiary">
-                        clear
-                      </button>
-                      {connectionId !== undefined && (
-                        <DiagramNotes
-                          table={selectedTable}
-                          schema={relations}
-                          dictionary={dictionary}
-                          onDraft={setDictionary}
-                          onSave={save}
-                        />
+                          Selected: <span className="font-mono font-medium">{objectPathLabel(selectedTable.path)}</span>
+                          <button
+                            onClick={() => selectTable(null)}
+                            className="ml-2 text-fg-subtle hover:text-fg-tertiary"
+                          >
+                            clear
+                          </button>
+                          {connectionId !== undefined && (
+                            <DiagramNotes
+                              table={selectedTable}
+                              schema={relations}
+                              dictionary={dictionary}
+                              onDraft={setDictionary}
+                              onSave={save}
+                            />
+                          )}
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               </Panel>

@@ -2362,6 +2362,38 @@ describe("SchemaDiagram kind filtering", () => {
       expect(storage.getDataDictionary("c1")?.tables[0].relationships).toEqual([]);
     });
 
+    test("the visualizer collapses and a relationship is added from the selected table", () => {
+      const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
+      expect(view.getByPlaceholderText("Filter tables...")).toBeDefined();
+      fireEvent.click(view.getByRole("button", { name: "Collapse ERD Visualizer" }));
+      expect(view.queryByPlaceholderText("Filter tables...")).toBeNull();
+      expect(view.getByText("ERD Visualizer")).toBeDefined();
+      fireEvent.click(view.getByRole("button", { name: "Expand ERD Visualizer" }));
+      expect(view.getByPlaceholderText("Filter tables...")).toBeDefined();
+
+      fireEvent.click(view.container.querySelector('[data-node-id="posts"]')!);
+      fireEvent.change(view.getByLabelText("Relationship from posts"), { target: { value: "title" } });
+      fireEvent.change(view.getByLabelText("Relationship to table"), { target: { value: "users" } });
+      fireEvent.change(view.getByLabelText("Relationship to column"), { target: { value: "id" } });
+      fireEvent.click(view.getByRole("button", { name: "Add relationship" }));
+      expect(view.getByText("title references users.id")).toBeDefined();
+      expect(view.queryByText("1 relationships")).not.toBeNull();
+
+      fireEvent.click(view.container.querySelector('[data-node-id="users"]')!);
+      expect(view.getByLabelText("Relationship from users")).toBeDefined();
+      fireEvent.click(view.container.querySelector('[data-node-id="posts"]')!);
+      fireEvent.click(view.getByRole("button", { name: "Remove" }));
+      expect(view.queryByText("title references users.id")).toBeNull();
+      expect(storage.getDataDictionary("c1")?.tables[0].relationships).toEqual([]);
+    });
+
+    test("a diagram with one table explains that a relationship needs another table", () => {
+      const view = render(<SchemaDiagram schema={[schemaNoFK[0]]} connectionId="c1" onClose={() => {}} />);
+      fireEvent.click(view.container.querySelector('[data-node-id="users"]')!);
+      expect(view.getByText("Add another table to the diagram before noting a relationship.")).toBeDefined();
+      expect(view.queryByRole("button", { name: "Add relationship" })).toBeNull();
+    });
+
     test("compact editing asks for Detail before a column can be dragged", () => {
       const view = render(<SchemaDiagram schema={schemaNoFK} connectionId="c1" onClose={() => {}} />);
       fireEvent.click(view.getByRole("button", { name: "Edit diagram" }));
