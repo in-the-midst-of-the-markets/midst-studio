@@ -142,8 +142,16 @@ describe("assist schedules", () => {
           seconds: ASSIST_SCHEDULE_DAILY_SECONDS,
           minuteOfDay: 24 * 60,
           startsOn: "2026-11-20",
+          paused: "yes",
         },
-        { id: "hourly-clock", prompt: "Often", seconds: ASSIST_SCHEDULE_HOURLY_SECONDS, minuteOfDay: 60 },
+        {
+          id: "hourly-clock",
+          prompt: "Often",
+          seconds: ASSIST_SCHEDULE_HOURLY_SECONDS,
+          minuteOfDay: 60,
+          paused: false,
+        },
+        { id: "held", prompt: "Wait", seconds: 60, paused: true },
       ]),
     );
     expect(readAssistSchedules(store)).toEqual([
@@ -167,6 +175,7 @@ describe("assist schedules", () => {
       },
       { id: "broken-time", prompt: "Never", sourceIds: [], seconds: ASSIST_SCHEDULE_DAILY_SECONDS },
       { id: "hourly-clock", prompt: "Often", sourceIds: [], seconds: ASSIST_SCHEDULE_HOURLY_SECONDS },
+      { id: "held", prompt: "Wait", sourceIds: [], seconds: ASSIST_SCHEDULE_HOURLY_SECONDS, paused: true },
     ]);
     const extra = Array.from({ length: ASSIST_SCHEDULE_CAP + 1 }, (_, index) => schedule({ id: `s${index}` }));
     writeAssistSchedules(extra, store);
@@ -192,6 +201,7 @@ describe("assist schedules", () => {
 
   test("names a schedule from its first line and its sources", () => {
     expect(assistScheduleLabel(schedule({ prompt: "What changed?\nMore" }), [])).toBe("What changed? · Hourly");
+    expect(assistScheduleLabel(schedule({ paused: true }), [])).toBe("What changed? · Hourly · Paused");
     expect(
       assistScheduleLabel(schedule({ prompt: "   \nMore", sourceIds: ["q1", "gone"] }), [{ id: "q1", name: "Orders" }]),
     ).toBe("Saved sources · Orders · Hourly");

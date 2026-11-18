@@ -129,6 +129,44 @@ describe("/api/db/query-cache", () => {
     expect(again.status).toBe(200);
     expect(await (await get()).json()).toMatchObject({ tables: [{ refreshSeconds: 300 }] });
     expect((await postSchedule({ tableName: "other", refreshSeconds: 60 })).status).toBe(404);
+
+    const daily = await postSchedule({
+      tableName: "orders",
+      every: "daily",
+      minuteOfDay: 9 * 60,
+      startsOn: "2026-11-18",
+    });
+    expect(daily.status).toBe(200);
+    expect(await daily.json()).toEqual({
+      tableName: "orders",
+      refreshSeconds: 24 * 60 * 60,
+      refreshMinute: 9 * 60,
+      refreshStartsOn: "2026-11-18",
+    });
+    expect(await (await get()).json()).toMatchObject({
+      tables: [{ refreshSeconds: 24 * 60 * 60, refreshMinute: 9 * 60, refreshStartsOn: "2026-11-18" }],
+    });
+    const paused = await postSchedule({ tableName: "orders", paused: true });
+    expect(paused.status).toBe(200);
+    expect(await paused.json()).toEqual({ tableName: "orders", paused: true });
+    expect(await (await get()).json()).toMatchObject({
+      tables: [{ refreshPaused: true, refreshMinute: 9 * 60 }],
+    });
+    const resumed = await postSchedule({ tableName: "orders", paused: false });
+    expect(resumed.status).toBe(200);
+    expect(await resumed.json()).toEqual({ tableName: "orders", paused: false });
+    const afterResume = (await (await get()).json()) as { tables: { refreshPaused?: boolean }[] };
+    expect(afterResume.tables[0]).not.toHaveProperty("refreshPaused");
+    expect((await postSchedule({ tableName: "orders", paused: "yes" })).status).toBe(400);
+    expect((await postSchedule({ tableName: "missing", paused: true })).status).toBe(404);
+    const hourly = await postSchedule({ tableName: "orders", every: "hourly" });
+    expect(hourly.status).toBe(200);
+    expect(await hourly.json()).toEqual({ tableName: "orders", refreshSeconds: 60 * 60 });
+    const off = await postSchedule({ tableName: "orders", every: "off" });
+    expect(off.status).toBe(200);
+    expect(await off.json()).toEqual({ tableName: "orders", refreshSeconds: null });
+    expect((await postSchedule({ tableName: "orders", every: "weekly" })).status).toBe(400);
+    expect((await postSchedule({ tableName: "orders", every: "daily", minuteOfDay: 9 * 60 })).status).toBe(400);
   });
 
   test("refuses a schedule that is not a whole number of seconds at least a minute", async () => {

@@ -17,9 +17,14 @@ export interface CacheWrite {
   sourceSql: string;
   sourceConnectionId: string;
   /**
-   * Absent keeps the interval already stored. Null clears it. A number replaces it.
+   * Absent keeps the interval already stored. Null clears it. A number replaces it,
+   * and replaces the calendar clock with `refreshMinute` and `refreshStartsOn`.
    */
   refreshSeconds?: number | null;
+  /** Local minutes after midnight. Absent or null clears the daily clock time. */
+  refreshMinute?: number | null;
+  /** Local calendar day `YYYY-MM-DD`. Absent or null clears the start day. */
+  refreshStartsOn?: string | null;
 }
 
 /** Why `value` cannot be a cached table name, or null when it can. */

@@ -1058,13 +1058,13 @@ Redis is a key-value store, so the `sql` field carries a Redis command instead o
 
 The signed-in user's query cache: one DuckDB file on the server, chosen from the username. A later read of that file is a normal DuckDB query on the **Query cache** connection. It does not run the source again.
 
-`GET` returns the tables already cached. `refreshSeconds` is present when that table reruns its source on an interval while KnowSQL is open:
+`GET` returns the tables already cached. A daily schedule names the clock time in local minutes after midnight and the calendar day it may start. `refreshSeconds` is `86400` for that daily clock, `3600` for hourly, or another whole number of seconds for an older interval:
 
 ```json
-{ "tables": [{ "tableName": "orders", "sourceName": "App", "sourceSql": "SELECT id FROM orders", "sourceConnectionId": "c1", "rowCount": 2, "cachedAt": "2026-01-01 00:00:00", "refreshSeconds": 300 }] }
+{ "tables": [{ "tableName": "orders", "sourceName": "App", "sourceSql": "SELECT id FROM orders", "sourceConnectionId": "c1", "rowCount": 2, "cachedAt": "2026-01-01 00:00:00", "refreshSeconds": 86400, "refreshMinute": 540, "refreshStartsOn": "2026-11-18" }] }
 ```
 
-`POST /api/db/query-cache` writes one result. The same `tableName` replaces the rows, which is how a refresh updates the cache after the source query is run again. Omit `refreshSeconds` to keep the interval already stored. `null` clears it. A number replaces it, and it has to be a whole number of seconds from 60 up to 366 days.
+`POST /api/db/query-cache` writes one result. The same `tableName` replaces the rows, which is how a refresh updates the cache after the source query is run again. Omit `refreshSeconds` to keep the schedule already stored, including a daily clock time. `null` clears it. A number replaces the interval, clears any clock time, and has to be a whole number of seconds from 60 up to 366 days.
 
 ```json
 {
@@ -1080,10 +1080,14 @@ The signed-in user's query cache: one DuckDB file on the server, chosen from the
 
 The answer is `{ "tableName": "orders", "rowCount": 1, "replaced": false }`. `replaced` is true when that name already held a table. A table name is one identifier. At most 10,000 rows are stored. A path inside the cache directory is refused on any other connection.
 
-`POST /api/db/query-cache/schedule` changes only the interval. `refreshSeconds: null` means the table refreshes only when asked. A table that is not cached yet answers 404.
+`POST /api/db/query-cache/schedule` changes only the schedule. The calendar sends `every`: `daily` with `minuteOfDay` and `startsOn` (`YYYY-MM-DD`), `hourly`, or `off`. `off` cancels the run, so the table refreshes only when asked. `paused: true` keeps that calendar and stops the run. `paused: false` lets it run again. A paused table includes `refreshPaused: true` on `GET`. A body that still sends `refreshSeconds` keeps that interval and clears any clock time. A table that is not cached yet answers 404.
 
 ```json
-{ "tableName": "orders", "refreshSeconds": 300 }
+{ "tableName": "orders", "every": "daily", "minuteOfDay": 540, "startsOn": "2026-11-18" }
+```
+
+```json
+{ "tableName": "orders", "paused": true }
 ```
 
 ---

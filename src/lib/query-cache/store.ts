@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { readAssistDate } from "@/lib/ai/assist-schedule";
 import { openDuckDBClient, type DuckDBClient } from "@/lib/db/providers/sql/duckdb/client";
 import { bindValue, columnType } from "@/lib/query-cache/columns";
 import { cacheTableNameError, type CacheWrite } from "@/lib/query-cache/body";
@@ -44,8 +45,29 @@ function asRefresh(value: unknown): number | undefined {
   return numeric;
 }
 
+function asMinute(value: unknown): number | undefined {
+  if (typeof value === "boolean" || value == null) return undefined;
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric) || numeric < 0 || numeric >= 24 * 60) return undefined;
+  return numeric;
+}
+
+function asStarts(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return readAssistDate(value) ?? undefined;
+}
+
+function asPaused(value: unknown): boolean | undefined {
+  if (value === true || value === 1 || value === "1" || value === "true") return true;
+  return undefined;
+}
+
 function readEntry(row: Record<string, unknown>): CacheEntry {
   const refreshSeconds = asRefresh(row.refresh_seconds);
+  const refreshMinute = asMinute(row.refresh_minute);
+  const refreshStartsOn = asStarts(row.refresh_starts_on);
+  const refreshPaused = asPaused(row.refresh_paused);
   return {
     tableName: asText(row.table_name),
     sourceName: asText(row.source_name),
@@ -54,6 +76,9 @@ function readEntry(row: Record<string, unknown>): CacheEntry {
     rowCount: asCount(row.row_count),
     cachedAt: asText(row.cached_at),
     ...(refreshSeconds === undefined ? {} : { refreshSeconds }),
+    ...(refreshMinute === undefined ? {} : { refreshMinute }),
+    ...(refreshStartsOn === undefined ? {} : { refreshStartsOn }),
+    ...(refreshPaused === undefined ? {} : { refreshPaused }),
   };
 }
 
@@ -64,9 +89,12 @@ async function registryExists(runner: CacheRunner): Promise<boolean> {
   return found.rows.length > 0;
 }
 
-/** A cache file written before the interval existed has no such column. */
+/** A cache file written before the calendar existed is missing one of these columns. */
 async function ensureRefreshColumn(runner: CacheRunner): Promise<void> {
   await runner.run(`ALTER TABLE ${REGISTRY} ADD COLUMN IF NOT EXISTS refresh_seconds BIGINT`);
+  await runner.run(`ALTER TABLE ${REGISTRY} ADD COLUMN IF NOT EXISTS refresh_minute BIGINT`);
+  await runner.run(`ALTER TABLE ${REGISTRY} ADD COLUMN IF NOT EXISTS refresh_starts_on VARCHAR`);
+  await runner.run(`ALTER TABLE ${REGISTRY} ADD COLUMN IF NOT EXISTS refresh_paused BOOLEAN`);
 }
 
 /**
@@ -91,13 +119,18 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
       source_connection_id VARCHAR,
       row_count BIGINT,
       cached_at TIMESTAMP,
-      refresh_seconds BIGINT
+      refresh_seconds BIGINT,
+      refresh_minute BIGINT,
+      refresh_starts_on VARCHAR,
+      refresh_paused BOOLEAN
     )`,
   );
   await ensureRefreshColumn(runner);
-  // Omitted means keep the interval already stored. Null clears it.
+  // Omitted means keep the schedule already stored. Null clears it.
   const keepRefresh = input.refreshSeconds === undefined ? 1 : 0;
   const refreshSeconds = input.refreshSeconds ?? null;
+  const refreshMinute = input.refreshMinute ?? null;
+  const refreshStartsOn = input.refreshStartsOn ?? null;
   const existing = await runner.run("SELECT 1 FROM duckdb_tables() WHERE schema_name = 'main' AND table_name = ?", [
     input.tableName,
   ]);
@@ -115,15 +148,19 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
   }
   await runner.run(
     `INSERT INTO ${REGISTRY} (
-       table_name, source_name, source_sql, source_connection_id, row_count, cached_at, refresh_seconds
-     ) VALUES (?, ?, ?, ?, ?, now(), ?)
+       table_name, source_name, source_sql, source_connection_id, row_count, cached_at,
+       refresh_seconds, refresh_minute, refresh_starts_on, refresh_paused
+     ) VALUES (?, ?, ?, ?, ?, now(), ?, ?, ?, ?)
      ON CONFLICT (table_name) DO UPDATE SET
        source_name = excluded.source_name,
        source_sql = excluded.source_sql,
        source_connection_id = excluded.source_connection_id,
        row_count = excluded.row_count,
        cached_at = excluded.cached_at,
-       refresh_seconds = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_seconds ELSE excluded.refresh_seconds END`,
+       refresh_seconds = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_seconds ELSE excluded.refresh_seconds END,
+       refresh_minute = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_minute ELSE excluded.refresh_minute END,
+       refresh_starts_on = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_starts_on ELSE excluded.refresh_starts_on END,
+       refresh_paused = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_paused ELSE excluded.refresh_paused END`,
     [
       input.tableName,
       input.sourceName,
@@ -131,6 +168,12 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
       input.sourceConnectionId,
       input.rows.length,
       refreshSeconds,
+      refreshMinute,
+      refreshStartsOn,
+      false,
+      keepRefresh,
+      keepRefresh,
+      keepRefresh,
       keepRefresh,
     ],
   );
@@ -143,7 +186,8 @@ export async function listCachedQueries(runner: CacheRunner): Promise<CacheEntry
   await ensureRefreshColumn(runner);
   const listed = await runner.run(
     `SELECT table_name, source_name, source_sql, source_connection_id, row_count,
-            CAST(cached_at AS VARCHAR) AS cached_at, refresh_seconds
+            CAST(cached_at AS VARCHAR) AS cached_at, refresh_seconds, refresh_minute, refresh_starts_on,
+            refresh_paused
      FROM ${REGISTRY} ORDER BY table_name`,
   );
   return listed.rows.map(readEntry);
@@ -158,14 +202,35 @@ export async function setCacheRefresh(
   runner: CacheRunner,
   tableName: string,
   refreshSeconds: number | null,
+  refreshMinute: number | null = null,
+  refreshStartsOn: string | null = null,
 ): Promise<boolean> {
   const problem = cacheTableNameError(tableName);
   if (problem !== null) throw new QueryCacheError(problem);
   if (!(await registryExists(runner))) return false;
   await ensureRefreshColumn(runner);
   const updated = await runner.run(
-    `UPDATE ${REGISTRY} SET refresh_seconds = ? WHERE table_name = ? RETURNING table_name`,
-    [refreshSeconds, tableName],
+    `UPDATE ${REGISTRY}
+     SET refresh_seconds = ?, refresh_minute = ?, refresh_starts_on = ?, refresh_paused = false
+     WHERE table_name = ? RETURNING table_name`,
+    [refreshSeconds, refreshMinute, refreshStartsOn, tableName],
+  );
+  return updated.rows.length > 0;
+}
+
+/**
+ * Pause or resume one saved run.
+ *
+ * The calendar stays as it is. Returns false when the cache has no such table.
+ */
+export async function setCachePaused(runner: CacheRunner, tableName: string, paused: boolean): Promise<boolean> {
+  const problem = cacheTableNameError(tableName);
+  if (problem !== null) throw new QueryCacheError(problem);
+  if (!(await registryExists(runner))) return false;
+  await ensureRefreshColumn(runner);
+  const updated = await runner.run(
+    `UPDATE ${REGISTRY} SET refresh_paused = ? WHERE table_name = ? RETURNING table_name`,
+    [paused, tableName],
   );
   return updated.rows.length > 0;
 }

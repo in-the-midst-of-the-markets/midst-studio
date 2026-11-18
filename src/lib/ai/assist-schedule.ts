@@ -29,6 +29,8 @@ export interface AssistSchedule {
   readonly minuteOfDay?: number;
   /** Local calendar day `YYYY-MM-DD` the daily clock time may start. */
   readonly startsOn?: string;
+  /** Set while the run stays saved and does not fire. */
+  readonly paused?: true;
 }
 
 /** One day drawn on the month grid. */
@@ -278,7 +280,8 @@ function scheduleOf(value: unknown): AssistSchedule | null {
   const every = assistScheduleEvery(seconds);
   const rawMinute = "minuteOfDay" in value && typeof value.minuteOfDay === "number" ? value.minuteOfDay : undefined;
   const rawDay = "startsOn" in value && typeof value.startsOn === "string" ? value.startsOn : undefined;
-  return { id, prompt, sourceIds, seconds: secondsFor(every), ...storedClock(every, rawMinute, rawDay) };
+  const paused = "paused" in value && value.paused === true ? { paused: true as const } : {};
+  return { id, prompt, sourceIds, seconds: secondsFor(every), ...storedClock(every, rawMinute, rawDay), ...paused };
 }
 
 /** Schedules kept in this browser. A broken record is left out. */
@@ -344,7 +347,8 @@ export function assistScheduleLabel(
   const first = schedule.prompt.split("\n")[0]?.trim() ?? "";
   const lead = first === "" ? "Saved sources" : first;
   const extra = names.length === 0 ? "" : ` · ${names.join(", ")}`;
-  return `${lead}${extra} · ${cadenceOf(schedule, assistDateKey(new Date()))}`;
+  const words = `${lead}${extra} · ${cadenceOf(schedule, assistDateKey(new Date()))}`;
+  return schedule.paused === true ? `${words} · Paused` : words;
 }
 
 function cadenceOf(schedule: AssistSchedule, today: string): string {
