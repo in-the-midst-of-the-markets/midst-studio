@@ -57,9 +57,9 @@ describe("query cache names", () => {
   });
 
   test("treats a path it cannot resolve as outside the cache", () => {
-    const realpath = spyOn(fs, "realpathSync").mockImplementation(() => {
+    const realpath = spyOn(fs, "realpathSync").mockImplementation((() => {
       throw Object.assign(new Error("denied"), { code: "EACCES" });
-    });
+    }) as unknown as typeof fs.realpathSync);
     try {
       expect(isInsideQueryCache("/tmp/notes.duckdb")).toBe(false);
     } finally {
@@ -68,9 +68,9 @@ describe("query cache names", () => {
   });
 
   test("walks a missing path up to a directory that exists", () => {
-    const realpath = spyOn(fs, "realpathSync").mockImplementation(() => {
+    const realpath = spyOn(fs, "realpathSync").mockImplementation((() => {
       throw Object.assign(new Error("missing"), { code: "ENOENT" });
-    });
+    }) as unknown as typeof fs.realpathSync);
     try {
       expect(typeof isInsideQueryCache("/tmp/missing-cache.duckdb")).toBe("boolean");
     } finally {
@@ -102,7 +102,7 @@ describe("query cache columns", () => {
     expect(bindValue("ada", "VARCHAR")).toBe("ada");
     expect(bindValue(1, "VARCHAR")).toBe("1");
     expect(bindValue(true, "VARCHAR")).toBe("true");
-    expect(bindValue(1n, "VARCHAR")).toBe("1");
+    expect(bindValue(BigInt(1), "VARCHAR")).toBe("1");
     expect(bindValue({ id: 1 }, "VARCHAR")).toBe('{"id":1}');
     const cyclic: Record<string, unknown> = {};
     cyclic.self = cyclic;
@@ -190,7 +190,7 @@ describe("query cache store", () => {
             {
               table_name: 1,
               source_name: true,
-              source_sql: 2n,
+              source_sql: BigInt(2),
               source_connection_id: null,
               row_count: "4",
               cached_at: false,

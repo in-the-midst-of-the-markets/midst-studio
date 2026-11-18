@@ -156,6 +156,7 @@ const EXPECTED_COUNT: Readonly<Record<DatabaseType, string | null>> = Object.fre
   saphana: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
   databricks: 'SELECT COUNT(*) AS row_count\nFROM c0.`Order"Items`;',
   redshift: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
+  cockroach: 'SELECT COUNT(*) AS row_count\nFROM c0."Order""Items";',
 });
 
 async function censusCapabilities(type: DatabaseType): Promise<ProviderCapabilities> {

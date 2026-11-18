@@ -461,6 +461,8 @@ const GRAMMAR_COVERAGE: Record<DatabaseType, "established" | "default"> = {
   // Comments are `--` and a block comment; `#` is code and `//` is not a comment.
   databricks: "established",
   redshift: "established",
+  // CockroachDB's own grammar object. Comments are `--` and block comments; `#` is code and `//` is not a comment.
+  cockroach: "established",
   libredb: "default",
   // Not SQL at all - see SQL_TEXT_COVERAGE below.
   mongodb: "default",
@@ -897,6 +899,8 @@ const SQL_TEXT_COVERAGE: Record<DatabaseType, boolean> = {
   // SQL, and the statement text IS what the provider submits; it extends SQLBaseProvider.
   databricks: true,
   redshift: true,
+  // SQL, and the statement text is what the provider submits; it extends SQLBaseProvider.
+  cockroach: true,
   bigquery: true,
   // SQL, and the statement text IS what the provider submits; it extends SQLBaseProvider.
   snowflake: true,

@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { chartOptionForDisplay } from "@/lib/charts/chart-html";
 
+/** The drawn option keeps the input's type, while the assertions check the keys that were removed. */
+function record(value: unknown): Record<string, unknown> {
+  return value as Record<string, unknown>;
+}
+
 describe("chartOptionForDisplay", () => {
   test("drops a tooltip formatter that contains a tag and keeps a template", () => {
     const drawn = chartOptionForDisplay({
@@ -9,9 +14,9 @@ describe("chartOptionForDisplay", () => {
       series: [{ label: { formatter: "{b}\n{c}" }, tooltip: { formatter: "<b>{c}</b>" } }],
     });
     expect(drawn.title).toEqual({ text: "a < b" });
-    expect(drawn.tooltip).toEqual({});
+    expect(record(drawn.tooltip)).toEqual({});
     expect(drawn.series[0]?.label).toEqual({ formatter: "{b}\n{c}" });
-    expect(drawn.series[0]?.tooltip).toEqual({});
+    expect(record(drawn.series[0]?.tooltip)).toEqual({});
   });
 
   test("keeps a function formatter and a data view title that is plain text", () => {
@@ -60,9 +65,9 @@ describe("chartOptionForDisplay", () => {
       ],
     });
     expect(drawn.backgroundColor).toBe("transparent");
-    expect(drawn.color).toEqual(["#3987e5", {}]);
-    expect(drawn.tooltip).toEqual({ borderColor: "rgba(0, 0, 0, 0.4)", extra: null });
-    expect(drawn.series[0]?.itemStyle).toEqual({
+    expect(drawn.color as unknown[]).toEqual(["#3987e5", {}]);
+    expect(record(drawn.tooltip)).toEqual({ borderColor: "rgba(0, 0, 0, 0.4)", extra: null });
+    expect(record(drawn.series[0]?.itemStyle)).toEqual({
       color: "hsl(210 80% 40%)",
       color0: "#111111",
       borderColor0: "#222222",
@@ -80,7 +85,7 @@ describe("chartOptionForDisplay", () => {
         },
       },
     });
-    expect(gradient.tooltip.backgroundColor).toEqual({
+    expect(record(gradient.tooltip.backgroundColor)).toEqual({
       type: "linear",
       colorStops: [{ offset: 0 }, { offset: 1, color: "#ffffff" }],
     });

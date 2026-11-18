@@ -3215,7 +3215,7 @@ describe("AiAssist page", () => {
       if (typeof fn === "function" && Number(ms) >= 60_000) {
         const id = nextTimer++;
         fakeTimeouts.add(id);
-        timeouts.push({ fn, ms: Number(ms) });
+        timeouts.push({ fn: fn as () => void, ms: Number(ms) });
         return id as unknown as ReturnType<typeof setTimeout>;
       }
       return realTimeout(fn, ms as number, ...(rest as []));
