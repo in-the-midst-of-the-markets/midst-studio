@@ -164,6 +164,8 @@ export const PROVIDER_ROUTES_WITHOUT_A_CONNECTION_BODY: Readonly<Record<string, 
     "parses a dbt project request and resolves only the connectionId that request names, and only when one was sent, so a body that is not a project never reaches a connection (tests/api/dbt/routes.test.ts)",
   "db/query-cache":
     "writes the session's own query-cache DuckDB file, chosen from the username, and reads no connection from the request",
+  "db/query-cache/schedule":
+    "sets how often this session's query cache reruns one stored source, and reads no connection from the request",
   "db/disconnect":
     "builds none, and under governance resolves no connection: it removes only the caller's own cached providers of the connection id it names, which needs no grant; without governance it resolves a connection of the user's own only to name the cache entries it removes, the editor's and the execution profiles' of that record (tests/api/db/disconnect.test.ts)",
   "mcp/token":

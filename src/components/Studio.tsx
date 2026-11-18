@@ -21,6 +21,7 @@ import { StudioModals } from "@/components/studio/StudioModals";
 import { StudioOverlays } from "@/components/studio/StudioOverlays";
 import { AgentRail } from "@/components/agent/AgentRail";
 import { editorChatQuery, IdeQueryChat } from "@/components/ai-assist/IdeQueryChat";
+import { QueryCacheSchedule } from "@/components/query-cache/QueryCacheSchedule";
 import { DatabaseConnection, type ColumnSchema, SavedQuery } from "@/lib/types";
 import type { DatabaseObject } from "@/lib/db/types";
 import {
@@ -1293,6 +1294,7 @@ export default function Studio() {
 
   return (
     <div className="flex h-screen w-full bg-canvas text-fg overflow-hidden font-sans select-none">
+      <QueryCacheSchedule connections={listedConnections} onRefreshed={objectsChanged} />
       <ResizablePanelGroup id="studio-main" orientation="horizontal" className="h-full">
         {/* A stable `id` is what keeps the layout attached to the right panel once
             a sibling is conditional (the agent rail); it replaces v3's `order`,
@@ -1708,6 +1710,7 @@ export default function Studio() {
                         onDiscardChanges={editing.handleDiscardChanges}
                         onLoadQuery={handleLoadQuery}
                         connections={listedConnections}
+                        onCacheChanged={objectsChanged}
                         chartQuery={queryExec.bottomPanelMode === "charts" ? tabMgr.currentTab.query : undefined}
                         onChartFilter={queryExec.bottomPanelMode === "charts" ? applyChartFilter : undefined}
                         onLoadMore={

@@ -14,7 +14,13 @@ import {
 import { cacheTableNameError, readCacheBody } from "@/lib/query-cache/body";
 import { QueryCacheError, QUERY_CACHE_MAX_ROWS } from "@/lib/query-cache/limits";
 import { isInsideQueryCache, queryCacheFile } from "@/lib/query-cache/path";
-import { cacheQueryResult, listCachedQueries, withQueryCache, type CacheRunner } from "@/lib/query-cache/store";
+import {
+  cacheQueryResult,
+  listCachedQueries,
+  setCacheRefresh,
+  withQueryCache,
+  type CacheRunner,
+} from "@/lib/query-cache/store";
 import type { CacheWrite } from "@/lib/query-cache/body";
 
 describe("query cache names", () => {
@@ -212,6 +218,133 @@ describe("query cache store", () => {
     expect(listed[1]?.rowCount).toBe(0);
   });
 
+  test("reads a refresh interval from the types DuckDB returns", async () => {
+    const runner: CacheRunner = {
+      run: (sql) => {
+        if (sql.includes("duckdb_tables")) return Promise.resolve({ rows: [{ found: 1 }] });
+        if (sql.startsWith("ALTER")) return Promise.resolve({ rows: [] });
+        return Promise.resolve({
+          rows: [
+            {
+              table_name: "a",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: null,
+            },
+            {
+              table_name: "b",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: "",
+            },
+            {
+              table_name: "c",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: "   ",
+            },
+            {
+              table_name: "d",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: "60",
+            },
+            {
+              table_name: "e",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: 90,
+            },
+            {
+              table_name: "f",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: 0,
+            },
+            {
+              table_name: "g",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: 1.5,
+            },
+            {
+              table_name: "h",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: Number.NaN,
+            },
+            {
+              table_name: "i",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: BigInt(120),
+            },
+            {
+              table_name: "j",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: true,
+            },
+            {
+              table_name: "k",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_seconds: "nope",
+            },
+            {
+              table_name: "l",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+            },
+          ],
+        });
+      },
+    };
+    const listed = await listCachedQueries(runner);
+    expect(listed.find((entry) => entry.tableName === "d")?.refreshSeconds).toBe(60);
+    expect(listed.find((entry) => entry.tableName === "e")?.refreshSeconds).toBe(90);
+    expect(listed.find((entry) => entry.tableName === "i")?.refreshSeconds).toBe(120);
+    for (const name of ["a", "b", "c", "f", "g", "h", "j", "k", "l"]) {
+      expect(listed.find((entry) => entry.tableName === name)).not.toHaveProperty("refreshSeconds");
+    }
+  });
+
   test("writes a table and replaces it on the next cache of the same name", async () => {
     useRoot();
     const first = await withQueryCache("ada", (runner) => cacheQueryResult(runner, WRITE));
@@ -231,6 +364,9 @@ describe("query cache store", () => {
       rowCount: 1,
       sourceConnectionId: "c1",
     });
+    expect(listed[0]?.cachedAt).toBeTruthy();
+    expect(Number.isFinite(Date.parse(listed[0]?.cachedAt ?? ""))).toBe(true);
+    expect(listed[0]).not.toHaveProperty("refreshSeconds");
     await expect(withQueryCache("ada", async () => Promise.reject(new Error("stop")))).rejects.toThrow("stop");
   });
 
@@ -241,6 +377,56 @@ describe("query cache store", () => {
     expect(replaced).toMatchObject({ rowCount: 0, replaced: true });
     const rows = await withQueryCache("ada", (runner) => runner.run("SELECT * FROM main.orders"));
     expect(rows.rows).toEqual([]);
+  });
+
+  test("keeps a refresh interval across a replace, and an old registry gains the column", async () => {
+    useRoot();
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, { ...WRITE, refreshSeconds: 90 }));
+    await withQueryCache("ada", (runner) =>
+      cacheQueryResult(runner, { ...WRITE, rows: [{ id: 3, name: "Bea", note: null }] }),
+    );
+    const kept = await withQueryCache("ada", (runner) => listCachedQueries(runner));
+    expect(kept[0]?.refreshSeconds).toBe(90);
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, { ...WRITE, refreshSeconds: null }));
+    const cleared = await withQueryCache("ada", (runner) => listCachedQueries(runner));
+    expect(cleared[0]).not.toHaveProperty("refreshSeconds");
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, { ...WRITE, refreshSeconds: 120 }));
+    const set = await withQueryCache("ada", (runner) => setCacheRefresh(runner, "orders", 300));
+    expect(set).toBe(true);
+    const scheduled = await withQueryCache("ada", (runner) => listCachedQueries(runner));
+    expect(scheduled[0]?.refreshSeconds).toBe(300);
+    const missing = await withQueryCache("ada", (runner) => setCacheRefresh(runner, "missing", 60));
+    expect(missing).toBe(false);
+    await expect(withQueryCache("ada", (runner) => setCacheRefresh(runner, "", 60))).rejects.toBeInstanceOf(
+      QueryCacheError,
+    );
+
+    useRoot();
+    await withQueryCache("bea", async (runner) => {
+      await runner.run("CREATE SCHEMA IF NOT EXISTS libredb");
+      await runner.run(
+        `CREATE TABLE libredb.query_cache (
+          table_name VARCHAR PRIMARY KEY,
+          source_name VARCHAR,
+          source_sql VARCHAR,
+          source_connection_id VARCHAR,
+          row_count BIGINT,
+          cached_at TIMESTAMP
+        )`,
+      );
+      await runner.run("INSERT INTO libredb.query_cache VALUES ('orders', 'App', 'SELECT 1', 'c1', 1, now())");
+    });
+    const migrated = await withQueryCache("bea", (runner) => listCachedQueries(runner));
+    expect(migrated[0]?.tableName).toBe("orders");
+    expect(migrated[0]).not.toHaveProperty("refreshSeconds");
+    expect(await withQueryCache("bea", (runner) => setCacheRefresh(runner, "orders", 60))).toBe(true);
+    expect((await withQueryCache("bea", (runner) => listCachedQueries(runner)))[0]?.refreshSeconds).toBe(60);
+  });
+
+  test("a schedule on a cache that has no registry is not stored", async () => {
+    const runner: CacheRunner = { run: () => Promise.resolve({ rows: [] }) };
+    expect(await setCacheRefresh(runner, "orders", 60)).toBe(false);
+    expect(await setCacheRefresh(runner, "orders", null)).toBe(false);
   });
 
   test("fails when the cache directory cannot be created", async () => {

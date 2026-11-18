@@ -16,6 +16,10 @@ export interface CacheWrite {
   sourceName: string;
   sourceSql: string;
   sourceConnectionId: string;
+  /**
+   * Absent keeps the interval already stored. Null clears it. A number replaces it.
+   */
+  refreshSeconds?: number | null;
 }
 
 /** Why `value` cannot be a cached table name, or null when it can. */

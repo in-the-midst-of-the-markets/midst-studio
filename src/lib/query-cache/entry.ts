@@ -6,4 +6,9 @@ export interface CacheEntry {
   sourceConnectionId: string;
   rowCount: number;
   cachedAt: string;
+  /**
+   * How often an open KnowSQL page reruns the source and replaces the rows.
+   * Absent when the table refreshes only when someone asks.
+   */
+  refreshSeconds?: number;
 }
