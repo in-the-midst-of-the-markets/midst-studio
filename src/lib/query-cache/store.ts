@@ -36,7 +36,16 @@ function asCount(value: unknown): number {
   return Number.isFinite(numeric) ? numeric : 0;
 }
 
+function asRefresh(value: unknown): number | undefined {
+  if (typeof value === "boolean" || value == null) return undefined;
+  if (typeof value === "string" && value.trim() === "") return undefined;
+  const numeric = Number(value);
+  if (!Number.isInteger(numeric) || numeric <= 0) return undefined;
+  return numeric;
+}
+
 function readEntry(row: Record<string, unknown>): CacheEntry {
+  const refreshSeconds = asRefresh(row.refresh_seconds);
   return {
     tableName: asText(row.table_name),
     sourceName: asText(row.source_name),
@@ -44,6 +53,7 @@ function readEntry(row: Record<string, unknown>): CacheEntry {
     sourceConnectionId: asText(row.source_connection_id),
     rowCount: asCount(row.row_count),
     cachedAt: asText(row.cached_at),
+    ...(refreshSeconds === undefined ? {} : { refreshSeconds }),
   };
 }
 
@@ -52,6 +62,11 @@ async function registryExists(runner: CacheRunner): Promise<boolean> {
     "SELECT 1 FROM duckdb_tables() WHERE schema_name = 'libredb' AND table_name = 'query_cache'",
   );
   return found.rows.length > 0;
+}
+
+/** A cache file written before the interval existed has no such column. */
+async function ensureRefreshColumn(runner: CacheRunner): Promise<void> {
+  await runner.run(`ALTER TABLE ${REGISTRY} ADD COLUMN IF NOT EXISTS refresh_seconds BIGINT`);
 }
 
 /**
@@ -75,9 +90,14 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
       source_sql VARCHAR,
       source_connection_id VARCHAR,
       row_count BIGINT,
-      cached_at TIMESTAMP
+      cached_at TIMESTAMP,
+      refresh_seconds BIGINT
     )`,
   );
+  await ensureRefreshColumn(runner);
+  // Omitted means keep the interval already stored. Null clears it.
+  const keepRefresh = input.refreshSeconds === undefined ? 1 : 0;
+  const refreshSeconds = input.refreshSeconds ?? null;
   const existing = await runner.run("SELECT 1 FROM duckdb_tables() WHERE schema_name = 'main' AND table_name = ?", [
     input.tableName,
   ]);
@@ -94,14 +114,25 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
     }
   }
   await runner.run(
-    `INSERT INTO ${REGISTRY} VALUES (?, ?, ?, ?, ?, now())
+    `INSERT INTO ${REGISTRY} (
+       table_name, source_name, source_sql, source_connection_id, row_count, cached_at, refresh_seconds
+     ) VALUES (?, ?, ?, ?, ?, now(), ?)
      ON CONFLICT (table_name) DO UPDATE SET
        source_name = excluded.source_name,
        source_sql = excluded.source_sql,
        source_connection_id = excluded.source_connection_id,
        row_count = excluded.row_count,
-       cached_at = excluded.cached_at`,
-    [input.tableName, input.sourceName, input.sourceSql, input.sourceConnectionId, input.rows.length],
+       cached_at = excluded.cached_at,
+       refresh_seconds = CASE WHEN ? = 1 THEN ${REGISTRY}.refresh_seconds ELSE excluded.refresh_seconds END`,
+    [
+      input.tableName,
+      input.sourceName,
+      input.sourceSql,
+      input.sourceConnectionId,
+      input.rows.length,
+      refreshSeconds,
+      keepRefresh,
+    ],
   );
   return { tableName: input.tableName, rowCount: input.rows.length, replaced: existing.rows.length > 0 };
 }
@@ -109,11 +140,34 @@ export async function cacheQueryResult(runner: CacheRunner, input: CacheWrite): 
 /** The tables this cache file records, in name order. An empty file has none. */
 export async function listCachedQueries(runner: CacheRunner): Promise<CacheEntry[]> {
   if (!(await registryExists(runner))) return [];
+  await ensureRefreshColumn(runner);
   const listed = await runner.run(
-    `SELECT table_name, source_name, source_sql, source_connection_id, row_count, cached_at
+    `SELECT table_name, source_name, source_sql, source_connection_id, row_count,
+            CAST(cached_at AS VARCHAR) AS cached_at, refresh_seconds
      FROM ${REGISTRY} ORDER BY table_name`,
   );
   return listed.rows.map(readEntry);
+}
+
+/**
+ * Set or clear how often `tableName` reruns its source.
+ *
+ * Returns false when the cache has no such table. The rows are left as they are.
+ */
+export async function setCacheRefresh(
+  runner: CacheRunner,
+  tableName: string,
+  refreshSeconds: number | null,
+): Promise<boolean> {
+  const problem = cacheTableNameError(tableName);
+  if (problem !== null) throw new QueryCacheError(problem);
+  if (!(await registryExists(runner))) return false;
+  await ensureRefreshColumn(runner);
+  const updated = await runner.run(
+    `UPDATE ${REGISTRY} SET refresh_seconds = ? WHERE table_name = ? RETURNING table_name`,
+    [refreshSeconds, tableName],
+  );
+  return updated.rows.length > 0;
 }
 
 /** Open this user's cache file, run `body`, and close the file either way. */

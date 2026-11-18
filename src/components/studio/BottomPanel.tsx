@@ -121,6 +121,8 @@ interface BottomPanelProps {
   onLoadQuery: (query: string) => void;
   /** Connections a cached table can be refreshed from. Absent where the shell has no list. */
   connections?: readonly DatabaseConnection[];
+  /** Called after a cache write, so the open object tree can reload. */
+  onCacheChanged?: () => void;
   /** The editor statement while Charts is open, so its placeholders can be changed there. */
   chartQuery?: string;
   onChartFilter?: (sql: string) => void;
@@ -160,6 +162,7 @@ export const BottomPanel = React.memo(function BottomPanel({
   onDiscardChanges,
   onLoadQuery,
   connections,
+  onCacheChanged,
   chartQuery,
   onChartFilter,
   onLoadMore,
@@ -462,6 +465,7 @@ export const BottomPanel = React.memo(function BottomPanel({
                       sql={resultQuery ?? ""}
                       source={activeConnection}
                       connections={connections}
+                      onCached={onCacheChanged}
                     />
                     <div className="min-h-0 flex-1">
                       <ResultsGrid

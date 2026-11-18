@@ -69,6 +69,8 @@ const DB_ROUTES = discoverRoutes(DB_API_DIR);
 const ROUTES_THAT_BUILD_NO_PROVIDER: Record<string, string> = {
   disconnect:
     "closes a provider already in the cache and never builds one; it resolves a connection the caller supplies only to name the cache entries it closes, so while custom connections are off it is refused there with the same 403 (tests/api/db/disconnect.test.ts)",
+  "query-cache/schedule":
+    "sets the refresh interval on the session's own query-cache file and never builds a provider from a connection the request names",
 };
 
 /** The two routes that also read a bare connection object as the whole body. */

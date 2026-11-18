@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { INVALID_REQUEST_BODY, readJsonObject } from "@/lib/api/json-object-body";
 import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
-import { readCacheBody } from "@/lib/query-cache/body";
+import { removeProvider } from "@/lib/db/factory";
+import { readCacheBody, type CacheWrite } from "@/lib/query-cache/body";
+import { QUERY_CACHE_ID } from "@/lib/query-cache/connection";
+import { readCacheRefresh } from "@/lib/query-cache/schedule";
 import { cacheQueryResult, listCachedQueries, withQueryCache } from "@/lib/query-cache/store";
 
 /**
@@ -37,7 +40,19 @@ export async function POST(req: NextRequest) {
     if (body === null) return NextResponse.json({ error: INVALID_REQUEST_BODY }, { status: 400 });
     const parsed = readCacheBody(body);
     if (typeof parsed === "string") return NextResponse.json({ error: parsed }, { status: 400 });
-    const result = await withQueryCache(guard.session.username, (runner) => cacheQueryResult(runner, parsed));
+    let write: CacheWrite = parsed;
+    if ("refreshSeconds" in body) {
+      const refreshSeconds = readCacheRefresh(body.refreshSeconds);
+      if (typeof refreshSeconds === "string") return NextResponse.json({ error: refreshSeconds }, { status: 400 });
+      write = { ...parsed, refreshSeconds };
+    }
+    // DuckDB keeps one writable handle per file. The editor's Query cache provider
+    // is that handle, and this write opens the file itself, so the editor handle
+    // is closed first. A second one would checkpoint its own catalog over the file.
+    // Every open Query cache handle shares this connection id, so they all close;
+    // the next read opens the file again.
+    await removeProvider(QUERY_CACHE_ID);
+    const result = await withQueryCache(guard.session.username, (runner) => cacheQueryResult(runner, write));
     return NextResponse.json(result);
   } catch (error) {
     return createErrorResponse(error, { route: "POST /api/db/query-cache" });

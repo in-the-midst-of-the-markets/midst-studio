@@ -814,6 +814,11 @@ export function StudioWorkspace({
       // host went light, in a light host only.
       className={cn("flex h-full w-full bg-canvas text-fg overflow-hidden font-sans select-none", className)}
     >
+      {/*
+        Scheduled cache refresh lives on the standalone Studio page. This
+        package ships no API routes, so the poll stays off this mount: it would
+        ask the host for `/api/db/query-cache` on every open.
+      */}
       <ResizablePanelGroup id="workspace-main" orientation="horizontal" className="h-full">
         {/* Sizes are strings on purpose: react-resizable-panels 4 reads a bare
             number as pixels and a unitless string as a percentage. */}
@@ -1077,6 +1082,7 @@ export function StudioWorkspace({
                         onDiscardChanges={noop}
                         onLoadQuery={handleLoadQuery}
                         connections={conn.connections}
+                        onCacheChanged={catalogChanged}
                         chartQuery={queryExec.bottomPanelMode === "charts" ? tabMgr.currentTab.query : undefined}
                         onChartFilter={queryExec.bottomPanelMode === "charts" ? applyChartFilter : undefined}
                         onLoadMore={

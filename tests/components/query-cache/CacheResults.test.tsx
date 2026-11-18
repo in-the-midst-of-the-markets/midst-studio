@@ -48,6 +48,7 @@ function renderCache(
       sql={props.sql ?? "SELECT id, name FROM orders"}
       source={props.source === undefined ? SOURCE : props.source}
       connections={props.connections ?? [SOURCE]}
+      onCached={props.onCached}
     />,
   );
   return calls;
@@ -216,6 +217,32 @@ describe("CacheResults", () => {
     expect((document.getElementById("query-cache-table") as HTMLInputElement).value).toBe("orders");
     const query = calls.find((call) => isSourceQuery(call.url));
     expect(query?.body).toMatchObject({ sql: entry.sourceSql, options: { limit: QUERY_CACHE_MAX_ROWS } });
+    const write = calls.find((call) => call.url.includes("query-cache") && call.body !== undefined);
+    expect(write?.body).not.toHaveProperty("refreshSeconds");
+  });
+
+  test("a refresh that writes a new table says how many rows were cached", async () => {
+    const entry = {
+      tableName: "orders",
+      sourceName: "App",
+      sourceSql: "SELECT 1",
+      sourceConnectionId: "c1",
+      rowCount: 1,
+      cachedAt: "t",
+    };
+    renderCache({}, (call) => {
+      if (isSourceQuery(call.url)) return { json: { rows: [{ id: 2 }], fields: RESULT.fields } };
+      if (call.body === undefined) return { json: { tables: [entry] } };
+      return { json: {} };
+    });
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("Refresh"));
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Refresh",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("Cached 1 rows as orders"));
   });
 
   test("tells the user to run the query when the source is not open or is a join", async () => {
@@ -235,7 +262,7 @@ describe("CacheResults", () => {
         (button) => button.textContent === "Refresh",
       ) as HTMLButtonElement,
     );
-    expect(document.body.textContent).toContain("not open here");
+    await waitFor(() => expect(document.body.textContent).toContain("not open here"));
     cleanup();
     renderCache(
       {
@@ -254,7 +281,7 @@ describe("CacheResults", () => {
         (button) => button.textContent === "Refresh",
       ) as HTMLButtonElement,
     );
-    expect(document.body.textContent).toContain("Run the join again");
+    await waitFor(() => expect(document.body.textContent).toContain("Run the join again"));
   });
 
   test("stops a refresh that the source refuses or that is larger than the cache", async () => {
@@ -397,5 +424,153 @@ describe("CacheResults", () => {
       ) as HTMLButtonElement,
     );
     await waitFor(() => expect(document.body.textContent).toContain("The source query failed."));
+  });
+
+  test("a blank refresh is off, and a short one is raised before it is saved", async () => {
+    const onCached = mock(() => {});
+    const recorded = renderCache({ onCached }, () => ({ json: { tables: [], replaced: false, rowCount: 1 } }));
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "30" } });
+    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
+    expect(document.body.textContent).toContain("Raised to 60 seconds");
+    expect(recorded.some((call) => call.body !== undefined)).toBe(false);
+    expect((document.getElementById("query-cache-refresh") as HTMLInputElement).value).toBe("60");
+
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "soon" } });
+    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
+    expect(document.body.textContent).toContain("whole number of seconds");
+
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, {
+      target: { value: "999999999" },
+    });
+    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
+    expect(document.body.textContent).toContain("366 days");
+
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "" } });
+    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("Cached 1 rows as orders"));
+    const write = recorded.find((call) => call.body !== undefined);
+    expect(write?.body).toMatchObject({ refreshSeconds: null, tableName: "orders" });
+    expect(onCached).toHaveBeenCalled();
+  });
+
+  test("sets an interval on a cached table, and fills it from the list", async () => {
+    const entry = {
+      tableName: "orders",
+      sourceName: "App",
+      sourceSql: "SELECT 1",
+      sourceConnectionId: "c1",
+      rowCount: 4,
+      cachedAt: "t",
+      refreshSeconds: 120,
+    };
+    const calls = renderCache({}, (call) => {
+      if (call.url.includes("/schedule")) {
+        return {
+          json: {
+            tableName: "orders",
+            refreshSeconds: (call.body as { refreshSeconds: number | null }).refreshSeconds,
+          },
+        };
+      }
+      return { json: { tables: [entry] } };
+    });
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("every 120s"));
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "orders",
+      ) as HTMLButtonElement,
+    );
+    expect((document.getElementById("query-cache-refresh") as HTMLInputElement).value).toBe("120");
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("refreshes every 120 seconds"));
+    expect(
+      calls.some(
+        (call) => call.url.includes("/schedule") && (call.body as { refreshSeconds: number }).refreshSeconds === 120,
+      ),
+    ).toBe(true);
+
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "" } });
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("refreshes only when you ask"));
+
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "" } });
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    expect(document.body.textContent).toContain("Enter a table name");
+
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "15" } });
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    expect(document.body.textContent).toContain("Raised to 60 seconds");
+    expect(
+      calls.some(
+        (call) => call.url.includes("/schedule") && (call.body as { refreshSeconds?: number }).refreshSeconds === 15,
+      ),
+    ).toBe(false);
+  });
+
+  test("a schedule the server refuses is a message", async () => {
+    renderCache({}, (call) =>
+      call.url.includes("/schedule")
+        ? { json: { error: "Cache the table before scheduling a refresh." }, status: 404 }
+        : { json: { tables: [] } },
+    );
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
+    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "90" } });
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("Cache the table before scheduling a refresh."));
+  });
+
+  test("a schedule answer that is not JSON, or a thrown value, is a message", async () => {
+    globalThis.fetch = mock(async (url: string, init?: RequestInit) => {
+      if (init?.body !== undefined && String(url).includes("/schedule")) return new Response("nope", { status: 500 });
+      return new Response(JSON.stringify({ tables: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    render(<CacheResults result={RESULT} sql="SELECT 1" source={SOURCE} connections={[SOURCE]} />);
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("The refresh interval could not be saved."));
+
+    globalThis.fetch = mock(async (url: string, init?: RequestInit) => {
+      if (init?.body !== undefined) return Promise.reject("offline");
+      return new Response(JSON.stringify({ tables: [] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    fireEvent.click(
+      Array.from(document.querySelectorAll("button")).find(
+        (button) => button.textContent === "Set interval",
+      ) as HTMLButtonElement,
+    );
+    await waitFor(() => expect(document.body.textContent).toContain("The refresh interval could not be saved."));
   });
 });
