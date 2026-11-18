@@ -699,6 +699,7 @@ export function AiAssist() {
       handles.push({ kind, id });
     };
     for (const schedule of schedules) {
+      if (schedule.paused === true) continue;
       const run = () => {
         if (stopped) return;
         const sources = schedule.sourceIds.flatMap((id) => {
@@ -1401,22 +1402,39 @@ export function AiAssist() {
                 </p>
               )}
               {schedules.length > 0 && (
-                <ul aria-label="Scheduled prompts" className="flex flex-col gap-1">
+                <ul aria-label="Saved runs" className="flex flex-col gap-1">
                   {schedules.map((schedule) => {
                     const label = assistScheduleLabel(schedule, savedCatalog);
+                    const held = schedule.paused === true;
                     return (
                       <li key={schedule.id} className="flex items-center justify-between gap-2 text-xs text-fg">
                         <span className="min-w-0 truncate" title={label}>
                           {label}
                         </span>
-                        <button
-                          type="button"
-                          aria-label={`Remove ${label}`}
-                          onClick={() => writeAssistSchedules(schedules.filter((item) => item.id !== schedule.id))}
-                          className="shrink-0 rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
-                        >
-                          Remove
-                        </button>
+                        <span className="flex shrink-0 items-center gap-1">
+                          <button
+                            type="button"
+                            aria-label={`${held ? "Resume" : "Pause"} ${label}`}
+                            onClick={() =>
+                              writeAssistSchedules(
+                                schedules.map((item) =>
+                                  item.id === schedule.id ? { ...item, paused: held ? undefined : true } : item,
+                                ),
+                              )
+                            }
+                            className="rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+                          >
+                            {held ? "Resume" : "Pause"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Cancel ${label}`}
+                            onClick={() => writeAssistSchedules(schedules.filter((item) => item.id !== schedule.id))}
+                            className="rounded px-1.5 py-0.5 text-fg-muted hover:bg-fill-subtle hover:text-fg"
+                          >
+                            Cancel
+                          </button>
+                        </span>
                       </li>
                     );
                   })}

@@ -3298,9 +3298,14 @@ describe("AiAssist page", () => {
       expect(await view.findAllByText("What changed?")).toBeTruthy();
       await waitFor(() => expect(planPosts().length).toBeGreaterThan(before));
       expect(intervals.at(-1)?.ms).toBe(ASSIST_SCHEDULE_DAILY_SECONDS * 1000);
-      fireEvent.click(
-        view.getByRole("button", { name: `Remove ${view.getByText(dailyLabel, { exact: false }).textContent}` }),
-      );
+      const shown = view.getByText(dailyLabel, { exact: false }).textContent ?? "";
+      fireEvent.click(view.getByRole("button", { name: `Pause ${shown}` }));
+      expect(view.getByText(`${shown} · Paused`)).toBeTruthy();
+      expect(fakeTimeouts.size).toBe(0);
+      fireEvent.click(view.getByRole("button", { name: `Resume ${shown} · Paused` }));
+      expect(view.getByText(shown)).toBeTruthy();
+      expect(fakeTimeouts.size).toBeGreaterThan(0);
+      fireEvent.click(view.getByRole("button", { name: `Cancel ${shown}` }));
       expect(view.queryByText(dailyLabel, { exact: false })).toBeNull();
       view.unmount();
       run?.fn();

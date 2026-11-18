@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test";
 import {
   MAX_CACHE_REFRESH_SECONDS,
   cacheIsDue,
-  readCacheIntervalText,
+  cacheScheduleDraft,
+  cacheScheduleLabel,
   readCacheRefresh,
   readScheduleBody,
 } from "@/lib/query-cache/schedule";
@@ -42,21 +43,43 @@ function json(body: unknown, status = 200): Response {
 }
 
 describe("cache refresh schedule", () => {
-  test("reads the field the same way a chart does, and refuses a year-long gap", () => {
-    expect(readCacheIntervalText("")).toEqual({ ok: true, seconds: null, raised: false });
-    expect(readCacheIntervalText("   ")).toEqual({ ok: true, seconds: null, raised: false });
-    expect(readCacheIntervalText("soon")).toEqual({ ok: false, error: "Refresh must be a whole number of seconds." });
-    expect(readCacheIntervalText("30")).toEqual({ ok: true, seconds: 60, raised: true });
-    expect(readCacheIntervalText("60")).toEqual({ ok: true, seconds: 60, raised: false });
-    expect(readCacheIntervalText(String(MAX_CACHE_REFRESH_SECONDS))).toMatchObject({
-      ok: true,
-      seconds: MAX_CACHE_REFRESH_SECONDS,
-      raised: false,
+  test("opens the calendar on today, and on a stored clock", () => {
+    const now = new Date(2026, 10, 18, 15, 0, 0);
+    expect(cacheScheduleDraft(undefined, now)).toEqual({
+      every: "daily",
+      minuteOfDay: 9 * 60,
+      startsOn: "2026-11-18",
+      year: 2026,
+      month: 10,
     });
-    expect(readCacheIntervalText(String(MAX_CACHE_REFRESH_SECONDS + 1))).toEqual({
-      ok: false,
-      error: "A refresh can be at most 366 days.",
-    });
+    expect(cacheScheduleDraft({ refreshSeconds: 60 * 60 }, now).every).toBe("hourly");
+    expect(cacheScheduleDraft({ refreshSeconds: 24 * 60 * 60 }, now).every).toBe("daily");
+    expect(cacheScheduleDraft({ refreshSeconds: 120 }, now).every).toBe("off");
+    expect(cacheScheduleDraft({}, now).every).toBe("daily");
+    expect(
+      cacheScheduleDraft({ refreshMinute: 10 * 60, refreshStartsOn: "2026-11-20", refreshSeconds: 24 * 60 * 60 }, now),
+    ).toMatchObject({ every: "daily", minuteOfDay: 600, startsOn: "2026-11-20", year: 2026, month: 10 });
+    expect(cacheScheduleDraft({ refreshMinute: 10 * 60, refreshStartsOn: "nope" }, now).startsOn).toBe("2026-11-18");
+    expect(cacheScheduleDraft({ refreshMinute: 10 * 60 }, now).startsOn).toBe("2026-11-18");
+    expect(cacheScheduleDraft({ refreshMinute: 24 * 60 }, now).every).toBe("daily");
+  });
+
+  test("names a daily clock, an hourly repeat, and a leftover interval", () => {
+    expect(cacheScheduleLabel({})).toBe("");
+    expect(cacheScheduleLabel({ refreshSeconds: 60 * 60 })).toBe("Hourly");
+    expect(cacheScheduleLabel({ refreshSeconds: 24 * 60 * 60 })).toBe("Daily");
+    expect(cacheScheduleLabel({ refreshSeconds: 120 })).toBe("every 120s");
+    expect(cacheScheduleLabel({ refreshMinute: 9 * 60 }, "2026-11-18")).toBe("Daily at 9:00 AM");
+    expect(cacheScheduleLabel({ refreshMinute: 9 * 60, refreshStartsOn: "2026-11-18" }, "2026-11-18")).toBe(
+      "Daily at 9:00 AM",
+    );
+    expect(cacheScheduleLabel({ refreshMinute: 9 * 60, refreshStartsOn: "nope" }, "2026-11-18")).toBe(
+      "Daily at 9:00 AM",
+    );
+    expect(cacheScheduleLabel({ refreshMinute: 9 * 60, refreshStartsOn: "2026-11-20" }, "2026-11-18")).toBe(
+      "Daily at 9:00 AM · Nov 20",
+    );
+    expect(cacheScheduleLabel({ refreshMinute: 99 * 60 })).toBe("");
   });
 
   test("reads a stored interval, or the sentence that refuses it", () => {
@@ -81,6 +104,39 @@ describe("cache refresh schedule", () => {
     expect(cacheIsDue(entry({ cachedAt: "2026-01-01T00:01:30.000Z" }), now)).toBe(false);
     expect(cacheIsDue(entry({ cachedAt: "2026-01-01T00:01:00.000Z" }), now)).toBe(true);
     expect(cacheIsDue(entry({ cachedAt: "2026-01-01T00:00:00.000Z" }), now)).toBe(true);
+
+    const minute = 9 * 60;
+    const before = new Date(2026, 10, 18, 8, 59, 0).getTime();
+    const after = new Date(2026, 10, 18, 9, 1, 0).getTime();
+    const daily = {
+      refreshSeconds: 24 * 60 * 60,
+      refreshMinute: minute,
+      refreshStartsOn: "2026-11-18",
+    };
+    expect(cacheIsDue(entry({ ...daily, cachedAt: new Date(2026, 10, 17, 9, 0).toISOString() }), before)).toBe(false);
+    expect(cacheIsDue(entry({ ...daily, cachedAt: new Date(2026, 10, 17, 9, 0).toISOString() }), after)).toBe(true);
+    expect(cacheIsDue(entry({ ...daily, cachedAt: "not-a-time" }), after)).toBe(true);
+    expect(cacheIsDue(entry({ ...daily, cachedAt: new Date(2026, 10, 18, 9, 0).toISOString() }), after)).toBe(false);
+    expect(
+      cacheIsDue(
+        entry({ ...daily, cachedAt: new Date(2026, 10, 18, 9, 0).toISOString() }),
+        new Date(2026, 10, 19, 9, 1).getTime(),
+      ),
+    ).toBe(true);
+    expect(cacheIsDue(entry({ ...daily, refreshStartsOn: undefined, cachedAt: "not-a-time" }), after)).toBe(true);
+    expect(cacheIsDue(entry({ ...daily, refreshStartsOn: "nope" }), before)).toBe(true);
+    expect(
+      cacheIsDue(entry({ refreshMinute: 30 * 60, refreshSeconds: 60, cachedAt: "2026-01-01T00:01:00.000Z" }), now),
+    ).toBe(true);
+    expect(
+      cacheIsDue(entry({ ...daily, refreshStartsOn: "2026-11-20", cachedAt: "2000-01-01T00:00:00.000Z" }), after),
+    ).toBe(false);
+    expect(cacheIsDue(entry({ ...daily, refreshPaused: true, cachedAt: "2000-01-01T00:00:00.000Z" }), after)).toBe(
+      false,
+    );
+    expect(
+      cacheIsDue(entry({ refreshSeconds: 60, refreshPaused: true, cachedAt: "2000-01-01T00:00:00.000Z" }), now),
+    ).toBe(false);
   });
 
   test("reads a schedule body", () => {
@@ -91,10 +147,50 @@ describe("cache refresh schedule", () => {
     expect(readScheduleBody({ tableName: "orders", refreshSeconds: null })).toEqual({
       tableName: "orders",
       refreshSeconds: null,
+      refreshMinute: null,
+      refreshStartsOn: null,
     });
     expect(readScheduleBody({ tableName: "orders", refreshSeconds: 90 })).toEqual({
       tableName: "orders",
       refreshSeconds: 90,
+      refreshMinute: null,
+      refreshStartsOn: null,
+    });
+    expect(readScheduleBody({ tableName: "orders", every: "weekly" })).toContain("hourly, daily");
+    expect(readScheduleBody({ tableName: "orders", every: 1 })).toContain("hourly, daily");
+    expect(readScheduleBody({ tableName: "orders", every: " Hourly " })).toMatchObject({
+      refreshSeconds: 60 * 60,
+      refreshMinute: null,
+      refreshStartsOn: null,
+    });
+    expect(readScheduleBody({ tableName: "orders", every: "off" })).toMatchObject({
+      refreshSeconds: null,
+      refreshMinute: null,
+    });
+    expect(readScheduleBody({ tableName: "orders", every: "daily" })).toBe("Choose a time.");
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 1.5 })).toBe("Choose a time.");
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: -1 })).toBe("Choose a time.");
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 24 * 60 })).toBe("Choose a time.");
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 9 * 60 })).toBe("Choose a day.");
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 9 * 60, startsOn: "yesterday" })).toBe(
+      "Choose a day.",
+    );
+    expect(readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 9 * 60, startsOn: "2026-02-31" })).toBe(
+      "Choose a day.",
+    );
+    expect(readScheduleBody({ tableName: "orders", paused: true })).toEqual({ tableName: "orders", paused: true });
+    expect(readScheduleBody({ tableName: "orders", paused: false })).toEqual({ tableName: "orders", paused: false });
+    expect(readScheduleBody({ tableName: "orders", paused: "yes" })).toBe("Say whether the run is paused.");
+    expect(readScheduleBody({ tableName: "orders", every: "off", paused: true })).toMatchObject({
+      refreshSeconds: null,
+    });
+    expect(
+      readScheduleBody({ tableName: "orders", every: "daily", minuteOfDay: 9 * 60, startsOn: "2026-11-18" }),
+    ).toEqual({
+      tableName: "orders",
+      refreshSeconds: 24 * 60 * 60,
+      refreshMinute: 9 * 60,
+      refreshStartsOn: "2026-11-18",
     });
   });
 

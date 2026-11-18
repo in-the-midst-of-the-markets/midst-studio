@@ -3,7 +3,7 @@ import { INVALID_REQUEST_BODY, readJsonObject } from "@/lib/api/json-object-body
 import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 import { readScheduleBody } from "@/lib/query-cache/schedule";
-import { setCacheRefresh, withQueryCache } from "@/lib/query-cache/store";
+import { setCachePaused, setCacheRefresh, withQueryCache } from "@/lib/query-cache/store";
 
 /**
  * POST /api/db/query-cache/schedule
@@ -19,13 +19,27 @@ export async function POST(req: NextRequest) {
     if (body === null) return NextResponse.json({ error: INVALID_REQUEST_BODY }, { status: 400 });
     const parsed = readScheduleBody(body);
     if (typeof parsed === "string") return NextResponse.json({ error: parsed }, { status: 400 });
+    if ("paused" in parsed && !("refreshSeconds" in parsed)) {
+      const saved = await withQueryCache(guard.session.username, (runner) =>
+        setCachePaused(runner, parsed.tableName, parsed.paused),
+      );
+      if (!saved) {
+        return NextResponse.json({ error: "Cache the table before scheduling a refresh." }, { status: 404 });
+      }
+      return NextResponse.json({ tableName: parsed.tableName, paused: parsed.paused });
+    }
     const saved = await withQueryCache(guard.session.username, (runner) =>
-      setCacheRefresh(runner, parsed.tableName, parsed.refreshSeconds),
+      setCacheRefresh(runner, parsed.tableName, parsed.refreshSeconds, parsed.refreshMinute, parsed.refreshStartsOn),
     );
     if (!saved) {
       return NextResponse.json({ error: "Cache the table before scheduling a refresh." }, { status: 404 });
     }
-    return NextResponse.json({ tableName: parsed.tableName, refreshSeconds: parsed.refreshSeconds });
+    return NextResponse.json({
+      tableName: parsed.tableName,
+      refreshSeconds: parsed.refreshSeconds,
+      ...(parsed.refreshMinute === null ? {} : { refreshMinute: parsed.refreshMinute }),
+      ...(parsed.refreshStartsOn === null ? {} : { refreshStartsOn: parsed.refreshStartsOn }),
+    });
   } catch (error) {
     return createErrorResponse(error, { route: "POST /api/db/query-cache/schedule" });
   }

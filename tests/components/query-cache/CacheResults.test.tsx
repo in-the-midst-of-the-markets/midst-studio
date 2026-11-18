@@ -426,37 +426,28 @@ describe("CacheResults", () => {
     await waitFor(() => expect(document.body.textContent).toContain("The source query failed."));
   });
 
-  test("a blank refresh is off, and a short one is raised before it is saved", async () => {
+  function buttonNamed(text: string, root: ParentNode = document): HTMLButtonElement {
+    const found = Array.from(root.querySelectorAll("button")).find((button) => button.textContent?.trim() === text);
+    if (found === undefined) throw new Error(`missing button ${text}`);
+    return found as HTMLButtonElement;
+  }
+
+  test("caching rows leaves the schedule alone", async () => {
     const onCached = mock(() => {});
     const recorded = renderCache({ onCached }, () => ({ json: { tables: [], replaced: false, rowCount: 1 } }));
     fireEvent.click(document.querySelector("button") as HTMLButtonElement);
     await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
     fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "30" } });
-    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
-    expect(document.body.textContent).toContain("Raised to 60 seconds");
-    expect(recorded.some((call) => call.body !== undefined)).toBe(false);
-    expect((document.getElementById("query-cache-refresh") as HTMLInputElement).value).toBe("60");
-
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "soon" } });
-    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
-    expect(document.body.textContent).toContain("whole number of seconds");
-
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, {
-      target: { value: "999999999" },
-    });
-    fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
-    expect(document.body.textContent).toContain("366 days");
-
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "" } });
     fireEvent.click(document.querySelector("button[type='submit']") as HTMLButtonElement);
     await waitFor(() => expect(document.body.textContent).toContain("Cached 1 rows as orders"));
     const write = recorded.find((call) => call.body !== undefined);
-    expect(write?.body).toMatchObject({ refreshSeconds: null, tableName: "orders" });
+    expect(write?.body).toMatchObject({ tableName: "orders" });
+    expect(write?.body).not.toHaveProperty("refreshSeconds");
+    expect(write?.body).not.toHaveProperty("every");
     expect(onCached).toHaveBeenCalled();
   });
 
-  test("sets an interval on a cached table, and fills it from the list", async () => {
+  test("saves a daily calendar schedule and fills it from the list", async () => {
     const entry = {
       tableName: "orders",
       sourceName: "App",
@@ -464,68 +455,112 @@ describe("CacheResults", () => {
       sourceConnectionId: "c1",
       rowCount: 4,
       cachedAt: "t",
-      refreshSeconds: 120,
+      refreshSeconds: 24 * 60 * 60,
+      refreshMinute: 600,
+      refreshStartsOn: "2026-11-20",
     };
+    let paused = false;
     const calls = renderCache({}, (call) => {
       if (call.url.includes("/schedule")) {
-        return {
-          json: {
-            tableName: "orders",
-            refreshSeconds: (call.body as { refreshSeconds: number | null }).refreshSeconds,
-          },
-        };
+        const body = call.body as { paused?: boolean };
+        if (body.paused === true) paused = true;
+        if (body.paused === false) paused = false;
+        return { json: { tableName: "orders" } };
       }
-      return { json: { tables: [entry] } };
+      return { json: { tables: [{ ...entry, ...(paused ? { refreshPaused: true } : {}) }] } };
     });
     fireEvent.click(document.querySelector("button") as HTMLButtonElement);
-    await waitFor(() => expect(document.body.textContent).toContain("every 120s"));
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "orders",
-      ) as HTMLButtonElement,
+    await waitFor(() => expect(document.querySelector("[aria-label='Saved runs']")).not.toBeNull());
+    const runLabel = "orders · Daily at 10:00 AM · Nov 20";
+    fireEvent.click(document.querySelector(`[aria-label='Pause ${runLabel}']`) as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("orders is paused."));
+    expect(calls.some((call) => (call.body as { paused?: boolean } | undefined)?.paused === true)).toBe(true);
+    fireEvent.click(document.querySelector(`[aria-label='Resume ${runLabel} · Paused']`) as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("orders will run again."));
+    expect(calls.some((call) => (call.body as { paused?: boolean } | undefined)?.paused === false)).toBe(true);
+    fireEvent.click(buttonNamed("orders"));
+    await waitFor(() => expect(document.body.textContent).toContain("Save schedule"));
+    const start = document.querySelector("[aria-label='Start time']") as HTMLSelectElement;
+    expect(start.value).toBe("600");
+    fireEvent.change(start, { target: { value: "540" } });
+    fireEvent.keyDown(start, { key: "a" });
+    fireEvent.click(document.querySelector("[aria-label='Next month']") as HTMLButtonElement);
+    fireEvent.click(document.querySelector("[aria-label='Previous month']") as HTMLButtonElement);
+    const day = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.getAttribute("aria-pressed") === "false" && button.getAttribute("aria-label")?.includes(","),
     );
-    expect((document.getElementById("query-cache-refresh") as HTMLInputElement).value).toBe("120");
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
-    await waitFor(() => expect(document.body.textContent).toContain("refreshes every 120 seconds"));
-    expect(
-      calls.some(
-        (call) => call.url.includes("/schedule") && (call.body as { refreshSeconds: number }).refreshSeconds === 120,
-      ),
-    ).toBe(true);
+    fireEvent.click(day as HTMLButtonElement);
+    window.dispatchEvent(new Event("resize"));
+    fireEvent.click(buttonNamed("Save schedule"));
+    await waitFor(() => expect(document.body.textContent).toContain("refreshes daily at 9:00 AM"));
+    const saved = calls.find((call) => (call.body as { every?: string } | undefined)?.every === "daily");
+    expect(saved?.body).toMatchObject({ every: "daily", minuteOfDay: 540, tableName: "orders" });
 
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "" } });
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.change(document.querySelector("[aria-label='Schedule interval']") as HTMLSelectElement, {
+      target: { value: "hourly" },
+    });
+    expect(document.querySelector("[aria-label='Start time']")).toBeNull();
+    fireEvent.keyDown(document.querySelector("[aria-label='Schedule interval']") as HTMLSelectElement, {
+      key: "Enter",
+    });
+    await waitFor(() => expect(document.body.textContent).toContain("refreshes hourly"));
+    expect(calls.some((call) => (call.body as { every?: string } | undefined)?.every === "hourly")).toBe(true);
+
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.change(document.querySelector("[aria-label='Schedule interval']") as HTMLSelectElement, {
+      target: { value: "off" },
+    });
+    fireEvent.change(document.querySelector("[aria-label='Schedule interval']") as HTMLSelectElement, {
+      target: { value: "weekly" },
+    });
+    fireEvent.click(buttonNamed("Save schedule"));
     await waitFor(() => expect(document.body.textContent).toContain("refreshes only when you ask"));
 
-    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "" } });
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
-    expect(document.body.textContent).toContain("Enter a table name");
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.click(buttonNamed("Cancel", document.querySelector("[aria-label='Schedule']") as HTMLElement));
+    expect(document.body.textContent).not.toContain("Save schedule");
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.click(document.querySelector("[aria-label='Close schedule']") as HTMLButtonElement);
+    expect(document.body.textContent).not.toContain("Save schedule");
 
-    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "15" } });
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
+    const cancelRun = document.querySelector("[aria-label^='Cancel orders']") as HTMLButtonElement;
+    fireEvent.click(cancelRun);
+    await waitFor(() =>
+      expect(calls.filter((call) => (call.body as { every?: string } | undefined)?.every === "off").length).toBe(2),
     );
-    expect(document.body.textContent).toContain("Raised to 60 seconds");
-    expect(
-      calls.some(
-        (call) => call.url.includes("/schedule") && (call.body as { refreshSeconds?: number }).refreshSeconds === 15,
-      ),
-    ).toBe(false);
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "" } });
+    fireEvent.click(buttonNamed("Save schedule"));
+    expect(document.body.textContent).toContain("Enter a table name");
+  });
+
+  test("a pause the server refuses is a message", async () => {
+    const entry = {
+      tableName: "orders",
+      sourceName: "App",
+      sourceSql: "SELECT 1",
+      sourceConnectionId: "c1",
+      rowCount: 1,
+      cachedAt: "t",
+      refreshSeconds: 60 * 60,
+    };
+    let mode: "text" | "throw" = "text";
+    globalThis.fetch = mock(async (url: string, init?: RequestInit) => {
+      if (init?.body !== undefined && String(url).includes("/schedule")) {
+        if (mode === "throw") return Promise.reject("offline");
+        return new Response("nope", { status: 500 });
+      }
+      return new Response(JSON.stringify({ tables: [entry] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    render(<CacheResults result={RESULT} sql="SELECT 1" source={SOURCE} connections={[SOURCE]} />);
+    fireEvent.click(document.querySelector("button") as HTMLButtonElement);
+    await waitFor(() => expect(document.querySelector("[aria-label='Pause orders · Hourly']")).not.toBeNull());
+    fireEvent.click(document.querySelector("[aria-label='Pause orders · Hourly']") as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("The run could not be changed."));
+    mode = "throw";
+    fireEvent.click(document.querySelector("[aria-label='Pause orders · Hourly']") as HTMLButtonElement);
+    await waitFor(() => expect(document.body.textContent).toContain("The run could not be changed."));
   });
 
   test("a schedule the server refuses is a message", async () => {
@@ -537,12 +572,8 @@ describe("CacheResults", () => {
     fireEvent.click(document.querySelector("button") as HTMLButtonElement);
     await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
     fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
-    fireEvent.change(document.getElementById("query-cache-refresh") as HTMLInputElement, { target: { value: "90" } });
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.click(buttonNamed("Save schedule"));
     await waitFor(() => expect(document.body.textContent).toContain("Cache the table before scheduling a refresh."));
   });
 
@@ -555,22 +586,15 @@ describe("CacheResults", () => {
     fireEvent.click(document.querySelector("button") as HTMLButtonElement);
     await waitFor(() => expect(document.getElementById("query-cache-table")).not.toBeNull());
     fireEvent.change(document.getElementById("query-cache-table") as HTMLInputElement, { target: { value: "orders" } });
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
+    fireEvent.click(buttonNamed("Schedule"));
+    fireEvent.click(buttonNamed("Save schedule"));
     await waitFor(() => expect(document.body.textContent).toContain("The refresh interval could not be saved."));
 
     globalThis.fetch = mock(async (url: string, init?: RequestInit) => {
       if (init?.body !== undefined) return Promise.reject("offline");
       return new Response(JSON.stringify({ tables: [] }), { status: 200 });
     }) as unknown as typeof fetch;
-    fireEvent.click(
-      Array.from(document.querySelectorAll("button")).find(
-        (button) => button.textContent === "Set interval",
-      ) as HTMLButtonElement,
-    );
+    fireEvent.click(buttonNamed("Save schedule"));
     await waitFor(() => expect(document.body.textContent).toContain("The refresh interval could not be saved."));
   });
 });

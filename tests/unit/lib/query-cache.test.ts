@@ -17,6 +17,7 @@ import { isInsideQueryCache, queryCacheFile } from "@/lib/query-cache/path";
 import {
   cacheQueryResult,
   listCachedQueries,
+  setCachePaused,
   setCacheRefresh,
   withQueryCache,
   type CacheRunner,
@@ -332,6 +333,204 @@ describe("query cache store", () => {
               row_count: 1,
               cached_at: "t",
             },
+            {
+              table_name: "m",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: 540,
+              refresh_starts_on: "2026-11-18",
+            },
+            {
+              table_name: "n",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: "0",
+              refresh_starts_on: " 2026-01-02 ",
+            },
+            {
+              table_name: "o",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: "",
+              refresh_starts_on: "",
+            },
+            {
+              table_name: "p",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: "   ",
+              refresh_starts_on: "nope",
+            },
+            {
+              table_name: "q",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: -1,
+              refresh_starts_on: "2026-02-31",
+            },
+            {
+              table_name: "r",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: 24 * 60,
+              refresh_starts_on: 1,
+            },
+            {
+              table_name: "s",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: 1.5,
+              refresh_starts_on: true,
+            },
+            {
+              table_name: "t",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: Number.NaN,
+            },
+            {
+              table_name: "u",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: BigInt(30),
+              refresh_starts_on: "2026-12-01",
+            },
+            {
+              table_name: "v",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: true,
+            },
+            {
+              table_name: "w",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: "nope",
+            },
+            {
+              table_name: "x",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_minute: null,
+              refresh_starts_on: null,
+            },
+            {
+              table_name: "y",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: true,
+            },
+            {
+              table_name: "z",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: 1,
+            },
+            {
+              table_name: "aa",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: "1",
+            },
+            {
+              table_name: "ab",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: "true",
+            },
+            {
+              table_name: "ac",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: false,
+            },
+            {
+              table_name: "ad",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: 0,
+            },
+            {
+              table_name: "ae",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: "false",
+            },
+            {
+              table_name: "af",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: "no",
+            },
+            {
+              table_name: "ag",
+              source_name: "App",
+              source_sql: "SELECT 1",
+              source_connection_id: "c1",
+              row_count: 1,
+              cached_at: "t",
+              refresh_paused: null,
+            },
           ],
         });
       },
@@ -340,8 +539,51 @@ describe("query cache store", () => {
     expect(listed.find((entry) => entry.tableName === "d")?.refreshSeconds).toBe(60);
     expect(listed.find((entry) => entry.tableName === "e")?.refreshSeconds).toBe(90);
     expect(listed.find((entry) => entry.tableName === "i")?.refreshSeconds).toBe(120);
-    for (const name of ["a", "b", "c", "f", "g", "h", "j", "k", "l"]) {
-      expect(listed.find((entry) => entry.tableName === name)).not.toHaveProperty("refreshSeconds");
+    expect(listed.find((entry) => entry.tableName === "m")).toMatchObject({
+      refreshMinute: 540,
+      refreshStartsOn: "2026-11-18",
+    });
+    expect(listed.find((entry) => entry.tableName === "n")).toMatchObject({
+      refreshMinute: 0,
+      refreshStartsOn: "2026-01-02",
+    });
+    expect(listed.find((entry) => entry.tableName === "u")).toMatchObject({
+      refreshMinute: 30,
+      refreshStartsOn: "2026-12-01",
+    });
+    for (const name of ["y", "z", "aa", "ab"]) {
+      expect(listed.find((entry) => entry.tableName === name)?.refreshPaused).toBe(true);
+    }
+    for (const name of [
+      "a",
+      "b",
+      "c",
+      "f",
+      "g",
+      "h",
+      "j",
+      "k",
+      "l",
+      "o",
+      "p",
+      "q",
+      "r",
+      "s",
+      "t",
+      "v",
+      "w",
+      "x",
+      "ac",
+      "ad",
+      "ae",
+      "af",
+      "ag",
+    ]) {
+      const found = listed.find((entry) => entry.tableName === name);
+      expect(found).not.toHaveProperty("refreshSeconds");
+      expect(found).not.toHaveProperty("refreshMinute");
+      expect(found).not.toHaveProperty("refreshStartsOn");
+      expect(found).not.toHaveProperty("refreshPaused");
     }
   });
 
@@ -395,6 +637,30 @@ describe("query cache store", () => {
     expect(set).toBe(true);
     const scheduled = await withQueryCache("ada", (runner) => listCachedQueries(runner));
     expect(scheduled[0]?.refreshSeconds).toBe(300);
+    expect(await withQueryCache("ada", (runner) => setCacheRefresh(runner, "orders", 86_400, 540, "2026-11-18"))).toBe(
+      true,
+    );
+    const clock = await withQueryCache("ada", (runner) => listCachedQueries(runner));
+    expect(clock[0]).toMatchObject({ refreshSeconds: 86_400, refreshMinute: 540, refreshStartsOn: "2026-11-18" });
+    expect(await withQueryCache("ada", (runner) => setCachePaused(runner, "orders", true))).toBe(true);
+    expect((await withQueryCache("ada", (runner) => listCachedQueries(runner)))[0]?.refreshPaused).toBe(true);
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, WRITE));
+    expect((await withQueryCache("ada", (runner) => listCachedQueries(runner)))[0]?.refreshPaused).toBe(true);
+    expect(await withQueryCache("ada", (runner) => setCachePaused(runner, "missing", true))).toBe(false);
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, WRITE));
+    expect((await withQueryCache("ada", (runner) => listCachedQueries(runner)))[0]).toMatchObject({
+      refreshMinute: 540,
+      refreshStartsOn: "2026-11-18",
+    });
+    await withQueryCache("ada", (runner) => cacheQueryResult(runner, { ...WRITE, refreshSeconds: 120 }));
+    const clearedClock = await withQueryCache("ada", (runner) => listCachedQueries(runner));
+    expect(clearedClock[0]?.refreshSeconds).toBe(120);
+    expect(clearedClock[0]).not.toHaveProperty("refreshMinute");
+    expect(clearedClock[0]).not.toHaveProperty("refreshStartsOn");
+    expect(clearedClock[0]).not.toHaveProperty("refreshPaused");
+    await expect(withQueryCache("ada", (runner) => setCachePaused(runner, "", true))).rejects.toBeInstanceOf(
+      QueryCacheError,
+    );
     const missing = await withQueryCache("ada", (runner) => setCacheRefresh(runner, "missing", 60));
     expect(missing).toBe(false);
     await expect(withQueryCache("ada", (runner) => setCacheRefresh(runner, "", 60))).rejects.toBeInstanceOf(
@@ -427,6 +693,7 @@ describe("query cache store", () => {
     const runner: CacheRunner = { run: () => Promise.resolve({ rows: [] }) };
     expect(await setCacheRefresh(runner, "orders", 60)).toBe(false);
     expect(await setCacheRefresh(runner, "orders", null)).toBe(false);
+    expect(await setCachePaused(runner, "orders", true)).toBe(false);
   });
 
   test("fails when the cache directory cannot be created", async () => {
