@@ -111,6 +111,8 @@ const EXPECTED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   saphana: true,
   databricks: true,
   redshift: true,
+  // SQLBaseProvider.prepareQuery writes LIMIT ... OFFSET, and the provider declares the flag.
+  cockroach: true,
   trino: true,
   couchbase: true,
   opensearch: true,

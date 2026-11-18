@@ -1167,6 +1167,8 @@ describe("generateMigrationSQL: SQLite's grammar declares a foreign key only ins
     saphana: "engine-has-no-foreign-key",
     databricks: "engine-has-no-foreign-key",
     redshift: "engine-has-no-foreign-key",
+    // tableDdl is refused, so a foreign key is never written.
+    cockroach: "engine-has-no-foreign-key",
   };
 
   for (const [dialectId, entry] of Object.entries(GRAMMAR)) {
@@ -1396,6 +1398,10 @@ const MODIFIED_COLUMN_COVERAGE: Record<
   redshift: {
     label: "Amazon Redshift",
     reason: "Amazon Redshift table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.",
+  },
+  cockroach: {
+    label: "CockroachDB",
+    reason: "CockroachDB table changes are not generated here; write the CREATE TABLE or ALTER TABLE by hand.",
   },
   // Measured on Trino 476 and NOT an "unsupported" guess: the PostgreSQL branch's own
   // text is a SYNTAX error here (`ALTER TABLE ... ALTER COLUMN id TYPE varchar` ->
@@ -1838,6 +1844,7 @@ describe("generateMigrationSQL: dialects that cannot modify a column", () => {
           "saphana",
           "databricks",
           "redshift",
+          "cockroach",
           "airtable",
           "hubspot",
           "salesforce",
@@ -1988,6 +1995,7 @@ const TRANSACTION_WRAPPER_COVERAGE: Record<DatabaseType, "BEGIN;" | "BEGIN TRANS
   saphana: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
   databricks: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
   redshift: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
+  cockroach: false, // the module's `tableDdl: "refused"`; no BEGIN/COMMIT wrapper is emitted
 };
 
 // Both creation and modification paths must use the same wrapper policy.
@@ -2039,6 +2047,7 @@ describe("generateMigrationSQL: transaction wrapper by dialect", () => {
             "saphana",
             "databricks",
             "redshift",
+            "cockroach",
             "airtable",
             "hubspot",
             "salesforce",

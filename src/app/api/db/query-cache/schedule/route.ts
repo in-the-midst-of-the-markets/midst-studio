@@ -4,6 +4,12 @@ import { createErrorResponse } from "@/lib/api/errors";
 import { guardRoute } from "@/lib/api/require-session";
 import { readScheduleBody } from "@/lib/query-cache/schedule";
 import { setCachePaused, setCacheRefresh, withQueryCache } from "@/lib/query-cache/store";
+import type { CachePause, CacheSchedule } from "@/lib/query-cache/schedule";
+
+/** A pause request carries `paused` and no refresh fields, so the schedule fields stay typed. */
+function isCachePause(value: CacheSchedule | CachePause): value is CachePause {
+  return "paused" in value && !("refreshSeconds" in value);
+}
 
 /**
  * POST /api/db/query-cache/schedule
@@ -19,7 +25,7 @@ export async function POST(req: NextRequest) {
     if (body === null) return NextResponse.json({ error: INVALID_REQUEST_BODY }, { status: 400 });
     const parsed = readScheduleBody(body);
     if (typeof parsed === "string") return NextResponse.json({ error: parsed }, { status: 400 });
-    if ("paused" in parsed && !("refreshSeconds" in parsed)) {
+    if (isCachePause(parsed)) {
       const saved = await withQueryCache(guard.session.username, (runner) =>
         setCachePaused(runner, parsed.tableName, parsed.paused),
       );

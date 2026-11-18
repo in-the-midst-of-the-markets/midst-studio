@@ -104,6 +104,8 @@ const OFFERED: Readonly<Record<DatabaseType, boolean>> = Object.freeze({
   saphana: false,
   databricks: false,
   redshift: false,
+  // supportsTestDataGeneration is false: the connection does not offer row writes.
+  cockroach: false,
 });
 
 const TYPES = Object.keys(OFFERED) as DatabaseType[];

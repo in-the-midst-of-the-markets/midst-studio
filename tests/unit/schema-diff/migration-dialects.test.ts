@@ -102,6 +102,8 @@ const COLUMN_GRAMMAR: Record<DatabaseType, [string, string] | null> = {
   saphana: null,
   databricks: null,
   redshift: null,
+  // tableDdl is refused: the migration prints the refusal and no ALTER.
+  cockroach: null,
 };
 
 describe("migration dialect regressions (#284)", () => {
