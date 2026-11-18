@@ -8,7 +8,6 @@ import { ObjectSourceView, type ObjectSourcePatch } from "@/components/object-so
 // MobileNav and mobile tab panels excluded in embedded mode — platform provides its own navigation
 import { QueryEditor, QueryEditorRef } from "@/components/QueryEditor";
 import { StudioTabBar, QueryToolbar, BottomPanel } from "@/components/studio/index";
-import { QueryCacheSchedule } from "@/components/query-cache/QueryCacheSchedule";
 import { SIDEBAR_MIN_SIZE_PX } from "@/components/studio/pane-floors";
 import { StudioModals } from "@/components/studio/StudioModals";
 import { DEFAULT_MASKING_CONFIG, type MaskingConfig } from "@/lib/data-masking";
@@ -815,7 +814,11 @@ export function StudioWorkspace({
       // host went light, in a light host only.
       className={cn("flex h-full w-full bg-canvas text-fg overflow-hidden font-sans select-none", className)}
     >
-      <QueryCacheSchedule connections={conn.connections} onRefreshed={catalogChanged} />
+      {/*
+        Scheduled cache refresh lives on the standalone Studio page. This
+        package ships no API routes, so the poll stays off this mount: it would
+        ask the host for `/api/db/query-cache` on every open.
+      */}
       <ResizablePanelGroup id="workspace-main" orientation="horizontal" className="h-full">
         {/* Sizes are strings on purpose: react-resizable-panels 4 reads a bare
             number as pixels and a unitless string as a percentage. */}
